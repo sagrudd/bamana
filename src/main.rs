@@ -21,6 +21,7 @@ use commands::{
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
     deduplicate::DeduplicateRequest,
+    forensic_inspect::ForensicInspectRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
@@ -79,6 +80,17 @@ fn main() -> ExitCode {
                 full_scan: args.full_scan,
                 reindex: args.reindex,
                 json_pretty: cli.global.json_pretty,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::ForensicInspect(args) => {
+            let input = args.input;
+            let response = commands::forensic_inspect::run(ForensicInspectRequest {
+                input: input.clone(),
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                max_findings: args.max_findings,
+                scopes: args.resolved_scopes(),
             });
             emit_response(&response, cli.global.json_pretty)
         }

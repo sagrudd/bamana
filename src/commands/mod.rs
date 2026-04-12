@@ -7,6 +7,7 @@ pub mod check_tag;
 pub mod checksum;
 pub mod consume;
 pub mod deduplicate;
+pub mod forensic_inspect;
 pub mod header;
 pub mod identify;
 pub mod index;

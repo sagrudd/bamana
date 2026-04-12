@@ -184,6 +184,62 @@ Key output concepts:
 `format`, `mode`, `identity_mode`, `keep_policy`, `execution`, `summary`,
 `ranges`, `output`, `index`, `checksum_verification`, `notes`.
 
+## `forensic_inspect`
+
+Synopsis:
+`bamana forensic_inspect --input <file> [--sample-records <N>] [--full-scan] [--inspect-header] [--inspect-rg] [--inspect-pg] [--inspect-readnames] [--inspect-tags] [--inspect-duplication] [--max-findings <N>]`
+
+Semantics:
+Performs forensic-style provenance inspection of a single BAM input and reports
+hallmarks that are consistent with concatenation, repeated appended blocks,
+coerced monolithic collections, weak provenance discipline, or suspicious
+metadata/body transitions.
+
+Current inspection areas:
+
+* header anomalies such as duplicate `@RG`/`@PG` identifiers, sparse
+  provenance, and suspicious sample/platform mixtures
+* read-group mismatches between header declarations and record-level `RG:Z`
+  usage
+* broken or disconnected `@PG` chains
+* read-name regime shifts between early and late body windows
+* duplicate-block and whole-file-append hallmarks using `qname_seq_qual`
+  identity
+* selected aux-tag regime shifts when `--inspect-tags` is enabled
+
+Scope semantics:
+
+* when no explicit `--inspect-*` flags are supplied, the default suite is
+  `header`, `read_groups`, `program_chain`, `read_names`, and
+  `duplication_hallmarks`
+* `--inspect-tags` is opt-in in the current slice
+* the first slice is BAM-only; other formats are reported as unsupported for
+  this command
+
+Scan semantics:
+
+* header inspection is always complete for the parsed BAM header
+* bounded mode inspects the first `N` records only for body-oriented evidence
+* full-scan mode inspects the BAM body to EOF and can support stronger
+  collection-level conclusions
+* every finding reports whether its evidence was header-only, bounded body
+  evidence, full body evidence, or a combined header/body basis
+
+Does prove:
+Only the provenance anomalies and collection-hallmark findings explicitly
+reported in the JSON payload under the inspected scopes and scan mode that were
+actually used.
+
+Does not prove:
+It is not a structural-validation contract, not a duplicate-marking contract,
+and not a fraud-detection contract. It does not prove intentional misconduct.
+In bounded mode it does not prove whole-file absence of suspicious body-level
+anomalies.
+
+Key output concepts:
+`format`, `scan_mode`, `scopes`, `records_examined`, `summary`, `findings`,
+`assessment`, `notes`.
+
 ## `annotate_rg`
 
 Synopsis:

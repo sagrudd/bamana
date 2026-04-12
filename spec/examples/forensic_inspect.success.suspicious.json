@@ -1,0 +1,123 @@
+{
+  "ok": true,
+  "command": "forensic_inspect",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "scan_mode": "full",
+    "scopes": {
+      "header": true,
+      "read_groups": true,
+      "program_chain": true,
+      "read_names": true,
+      "tags": true,
+      "duplication_hallmarks": true
+    },
+    "records_examined": 400000,
+    "summary": {
+      "findings_total": 4,
+      "high_findings": 2,
+      "warning_findings": 2,
+      "info_findings": 0,
+      "category_counts": [
+        {
+          "category": "concatenation_hallmark",
+          "count": 1
+        },
+        {
+          "category": "program_chain_anomaly",
+          "count": 1
+        },
+        {
+          "category": "read_group_inconsistency",
+          "count": 1
+        },
+        {
+          "category": "read_name_regime_shift",
+          "count": 1
+        }
+      ]
+    },
+    "findings": [
+      {
+        "category": "concatenation_hallmark",
+        "severity": "high",
+        "confidence": "high",
+        "evidence_strength": "strong",
+        "evidence_scope": "body_full",
+        "record_range_1": {
+          "start": 1,
+          "end": 200000
+        },
+        "record_range_2": {
+          "start": 200001,
+          "end": 400000
+        },
+        "message": "A large ordered block of read identities appears twice in direct succession, consistent with file append duplication.",
+        "recommended_follow_up": [
+          "inspect_duplication",
+          "deduplicate",
+          "checksum"
+        ]
+      },
+      {
+        "category": "read_group_inconsistency",
+        "severity": "warning",
+        "confidence": "high",
+        "evidence_strength": "moderate",
+        "evidence_scope": "body_full",
+        "message": "Observed RG tags in alignment records that are not declared in the BAM header.",
+        "recommended_follow_up": [
+          "header",
+          "validate",
+          "reheader"
+        ]
+      },
+      {
+        "category": "program_chain_anomaly",
+        "severity": "warning",
+        "confidence": "medium",
+        "evidence_strength": "moderate",
+        "evidence_scope": "header_only",
+        "message": "Header contains multiple disconnected @PG chains: aligner_a, aligner_b.",
+        "recommended_follow_up": [
+          "header",
+          "reheader"
+        ]
+      },
+      {
+        "category": "read_name_regime_shift",
+        "severity": "high",
+        "confidence": "high",
+        "evidence_strength": "strong",
+        "evidence_scope": "body_full",
+        "message": "A sharp transition in read-name structure was observed between the early and late portions of the examined records (colon-delimited to simple-token).",
+        "recommended_follow_up": [
+          "inspect_duplication",
+          "checksum",
+          "forensic_inspect --full-scan"
+        ]
+      }
+    ],
+    "assessment": {
+      "suspicion_detected": true,
+      "likely_concatenation_or_coercion": true,
+      "recommended_follow_up": [
+        "inspect_duplication",
+        "deduplicate",
+        "validate",
+        "checksum",
+        "header",
+        "reheader"
+      ]
+    },
+    "notes": [
+      "forensic_inspect reports provenance anomalies and coercion hallmarks; it is not a structural validator.",
+      "forensic_inspect is not duplicate marking and does not make biological claims about PCR or molecular duplication.",
+      "Forensic findings indicate provenance anomalies or collection mishandling, not biological interpretation or fraud attribution.",
+      "Duplication hallmarks in this slice use qname_seq_qual identity for BAM body inspection.",
+      "Aux-tag inspection in this slice is selective and regime-oriented; it does not attempt exhaustive semantic interpretation of every auxiliary field."
+    ]
+  },
+  "error": null
+}

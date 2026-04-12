@@ -142,3 +142,27 @@ Key concepts:
 This contract is intentionally not a molecular duplicate-marking contract. It
 describes removal of suspicious collection-duplication blocks under an explicit
 policy, not broad biological duplicate collapse.
+
+## `forensic_inspect`
+
+The `forensic_inspect` payload is provenance-oriented, anomaly-focused, and
+explicit about evidence scope.
+
+Key concepts:
+
+* explicit inspected scopes for header, read groups, program chain, read names,
+  tags, and duplication hallmarks
+* explicit scan mode (`bounded` or `full`) for body-oriented evidence
+* stable finding taxonomy for provenance anomalies such as
+  `program_chain_anomaly`, `read_group_inconsistency`, and
+  `concatenation_hallmark`
+* severity, confidence, evidence strength, and evidence-scope fields kept
+  distinct from one another
+* conservative overall assessment that can report `null` for likely
+  concatenation/coercion when bounded evidence is insufficient
+* follow-up recommendations that point automation toward other Bamana commands
+  rather than taking action automatically
+
+This contract is intentionally not a structural-validation contract and not a
+fraud-detection contract. It reports evidence-driven provenance anomalies and
+collection-hygiene hallmarks only.

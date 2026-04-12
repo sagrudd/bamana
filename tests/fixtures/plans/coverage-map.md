@@ -275,8 +275,21 @@ Contract assertions to reserve explicitly:
 
 Target fixture coverage:
 
-* `tiny.clean.bam`: clean success
-* `tiny.forensic.bam.rg_pg_inconsistent`: header/program provenance findings
-* `tiny.forensic.bam.readname_shift`: read-name regime-shift findings
-* `tiny.forensic.bam.concatenated_signature`: high-confidence suspicious result
+* `tiny.clean.bam`: clean success with no provenance findings
+* `tiny.forensic.bam.concatenated_signature`: duplicate-block and append
+  hallmark findings
+* `tiny.forensic.bam.rg_pg_inconsistent`: header/program/read-group mismatch
+  findings
+* `tiny.forensic.bam.readname_shift`: read-name regime-shift and optional
+  tag-schema-shift findings
 * `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+
+Contract assertions to reserve explicitly:
+
+* finding categories remain machine-readable and stable-minded
+* `severity`, `confidence`, `evidence_strength`, and `evidence_scope` remain
+  distinct fields
+* bounded scans do not overclaim whole-file conclusions
+* the command remains explicit that it reports provenance anomalies and
+  coercion hallmarks, not structural validity, duplicate marking, or fraud
+  attribution

@@ -25,6 +25,7 @@
         "invalid_header_mutation",
         "invalid_rg_request",
         "invalid_deduplicate_mode",
+        "invalid_forensic_scope",
         "invalid_record",
         "invalid_index",
         "invalid_fastq",

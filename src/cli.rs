@@ -7,6 +7,7 @@ use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
 use crate::forensics::deduplicate::{DeduplicateKeepPolicy, DeduplicateMode};
 use crate::forensics::duplication::DuplicationIdentityMode;
+use crate::forensics::forensic_inspect::ForensicScope;
 use crate::ingest::{
     consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
     cram::ConsumeReferencePolicy,
@@ -43,6 +44,9 @@ pub enum Commands {
     InspectDuplication(InspectDuplicationArgs),
     /// Remove suspicious collection-duplication blocks conservatively.
     Deduplicate(DeduplicateArgs),
+    /// Inspect provenance anomalies and concatenation/coercion hallmarks.
+    #[command(name = "forensic_inspect")]
+    ForensicInspect(ForensicInspectArgs),
     /// Insert, replace, or normalize per-record RG:Z tags across BAM alignment records.
     #[command(name = "annotate_rg")]
     AnnotateRg(AnnotateRgArgs),
@@ -160,6 +164,71 @@ pub struct DeduplicateArgs {
     /// Overwrite existing output or report paths.
     #[arg(long = "force")]
     pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ForensicInspectArgs {
+    /// Input BAM file to inspect for provenance anomalies.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Maximum records to inspect in bounded body-scan mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan the BAM body to EOF instead of stopping at the bounded record limit.
+    #[arg(long = "full-scan")]
+    pub full_scan: bool,
+    /// Inspect BAM header structure and metadata.
+    #[arg(long = "inspect-header")]
+    pub inspect_header: bool,
+    /// Inspect read-group declarations and record-level RG usage.
+    #[arg(long = "inspect-rg")]
+    pub inspect_rg: bool,
+    /// Inspect @PG program-chain structure.
+    #[arg(long = "inspect-pg")]
+    pub inspect_pg: bool,
+    /// Inspect read-name regime shifts and naming-style changes.
+    #[arg(long = "inspect-readnames")]
+    pub inspect_readnames: bool,
+    /// Inspect selected auxiliary-tag usage regimes.
+    #[arg(long = "inspect-tags")]
+    pub inspect_tags: bool,
+    /// Inspect duplicate-block and append hallmarks in record order.
+    #[arg(long = "inspect-duplication")]
+    pub inspect_duplication: bool,
+    /// Bound the number of reported findings.
+    #[arg(long = "max-findings", default_value_t = 25)]
+    pub max_findings: usize,
+}
+
+impl ForensicInspectArgs {
+    pub fn resolved_scopes(&self) -> ForensicScope {
+        let specific_requested = self.inspect_header
+            || self.inspect_rg
+            || self.inspect_pg
+            || self.inspect_readnames
+            || self.inspect_tags
+            || self.inspect_duplication;
+
+        if specific_requested {
+            ForensicScope {
+                header: self.inspect_header,
+                read_groups: self.inspect_rg,
+                program_chain: self.inspect_pg,
+                read_names: self.inspect_readnames,
+                tags: self.inspect_tags,
+                duplication_hallmarks: self.inspect_duplication,
+            }
+        } else {
+            ForensicScope {
+                header: true,
+                read_groups: true,
+                program_chain: true,
+                read_names: true,
+                tags: false,
+                duplication_hallmarks: true,
+            }
+        }
+    }
 }
 
 #[derive(Debug, Args)]

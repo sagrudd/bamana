@@ -28,6 +28,11 @@ Current scope also includes `bamana deduplicate` as the governed conservative
 remediation path for suspicious contiguous collection-duplication signatures
 when operators need a dry-run-first, auditable way to remove repeated blocks
 without conflating that action with molecular duplicate marking.
+Current scope also includes `bamana forensic_inspect` as the governed
+provenance-inspection path for BAM collections when operators need explicit
+hallmark reporting for concatenation, coercion, weak provenance discipline, or
+metadata/body mismatches that are operationally suspicious even when the file
+still parses.
 
 The project charter remains explicit that:
 
@@ -42,5 +47,8 @@ The project charter remains explicit that:
 * collection-duplication remediation must remain distinct from PCR duplicate
   marking, duplicate-flag interpretation, and aggressive global duplicate
   collapse unless a future contract says otherwise explicitly
+* provenance inspection must remain distinct from both structural validation
+  and fraud accusation; it reports evidence-driven anomalies and recommended
+  follow-up only
 * adjacent format support is intended to normalize into BAM rather than widen
   the public data model without discipline

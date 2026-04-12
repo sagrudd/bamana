@@ -34,6 +34,8 @@ pub enum AppError {
     InvalidRgRequest { path: PathBuf, detail: String },
     #[error("requested deduplicate mode is invalid: {path}")]
     InvalidDeduplicateMode { path: PathBuf, detail: String },
+    #[error("requested forensic inspection scope is invalid: {path}")]
+    InvalidForensicScope { path: PathBuf, detail: String },
     #[error("bam record could not be parsed: {path}")]
     InvalidRecord { path: PathBuf, detail: String },
     #[error("bam index could not be parsed: {path}")]
@@ -151,6 +153,7 @@ impl AppError {
             Self::InvalidHeaderMutation { .. } => "invalid_header_mutation",
             Self::InvalidRgRequest { .. } => "invalid_rg_request",
             Self::InvalidDeduplicateMode { .. } => "invalid_deduplicate_mode",
+            Self::InvalidForensicScope { .. } => "invalid_forensic_scope",
             Self::InvalidRecord { .. } => "invalid_record",
             Self::InvalidIndex { .. } => "invalid_index",
             Self::UnsupportedIndex { .. } => "unsupported_index",
@@ -215,6 +218,9 @@ impl AppError {
             }
             Self::InvalidDeduplicateMode { .. } => {
                 "Requested deduplicate mode or policy is not valid.".to_string()
+            }
+            Self::InvalidForensicScope { .. } => {
+                "Requested forensic inspection scope is not valid.".to_string()
             }
             Self::InvalidRecord { .. } => "BAM record could not be parsed.".to_string(),
             Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
@@ -315,6 +321,7 @@ impl AppError {
             Self::InvalidHeaderMutation { detail, .. } => Some(detail.clone()),
             Self::InvalidRgRequest { detail, .. } => Some(detail.clone()),
             Self::InvalidDeduplicateMode { detail, .. } => Some(detail.clone()),
+            Self::InvalidForensicScope { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
@@ -396,6 +403,10 @@ impl AppError {
             ),
             Self::InvalidDeduplicateMode { .. } => Some(
                 "Use a supported deduplicate mode such as contiguous-block or whole-file-append, and provide a distinct output path for applied remediation."
+                    .to_string(),
+            ),
+            Self::InvalidForensicScope { .. } => Some(
+                "Choose one or more supported forensic inspection scopes, or omit the scope flags to use the default provenance-inspection suite."
                     .to_string(),
             ),
             Self::InvalidRecord { .. } => Some(

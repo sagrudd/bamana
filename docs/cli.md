@@ -66,3 +66,11 @@ contiguous duplicated collection blocks under a selected policy. The first slice
 focuses on adjacent repeated blocks and whole-file append signatures, requires
 an explicit remediation mode, and keeps molecular duplicate semantics out of
 scope.
+
+`forensic_inspect` is the provenance-inspection companion to `validate`,
+`inspect_duplication`, and `deduplicate`. The first slice is BAM-first and
+inspects header structure, read-group usage, program-chain anomalies, read-name
+regime changes, duplicate-block hallmarks, and optional aux-tag regime shifts.
+It is explicitly not a structural validator, not duplicate marking, and not a
+fraud detector; it emits evidence-driven findings with conservative follow-up
+recommendations.
