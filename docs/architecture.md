@@ -46,6 +46,24 @@ Compatibility shims may remain temporarily in legacy paths such as
 `src/formats/bgzf.rs` and `src/ingest/fastq.rs`, but they are migration aids,
 not the architectural center.
 
+## Implementation Sequence
+
+The implementation sequence is intentionally substrate-first:
+
+1. native BGZF
+2. native BAM header codec
+3. native BAM record scanner
+4. native FASTQ / FASTQ.GZ parser
+5. command migration beginning with `verify`, `header`, and `subsample`
+
+This sequence is governed by:
+
+* [../ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
+* [roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+
+The architecture and roadmap must stay aligned. If command migration order
+changes, the rationale should be updated here and in the roadmap together.
+
 ## Command-To-Core Ownership Map
 
 ### Header And Metadata Commands

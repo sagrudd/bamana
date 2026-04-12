@@ -35,6 +35,23 @@ The following usages must not be introduced or reintroduced:
 * sort, merge, sampling, duplication, or provenance transforms driven by
   `noodles` record iteration
 
+## Milestone-Driven Replacement Plan
+
+The canonical roadmap now lives in:
+
+* [../roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+
+The migration sequence is intentionally engine-first:
+
+1. native BGZF
+2. native BAM header codec
+3. native BAM record scanner
+4. native FASTQ / FASTQ.GZ parser
+5. command migration beginning with `verify`, `header`, and `subsample`
+
+This order is retained because command migration without native substrate
+ownership would only move architectural ambiguity around rather than remove it.
+
 ## Phased Replacement Plan
 
 ### Phase 1
@@ -43,6 +60,7 @@ The following usages must not be introduced or reintroduced:
 * make the crate architecture explicit through `src/lib.rs`
 * convert old paths into compatibility shims where needed
 * document hot-path ownership and dependency policy
+* establish the roadmap and milestone acceptance template
 
 ### Phase 2
 
@@ -81,6 +99,28 @@ Recommended migration priority:
 6. transform engines
 7. metadata rewrite commands
 8. remaining compatibility fallbacks
+
+## Dependency Checkpoints
+
+### Checkpoint A
+
+`noodles` remains available only in:
+
+* CRAM compatibility
+* tests
+* fixture tooling
+* differential or oracle checks
+
+### Checkpoint B
+
+For each migrated command family, `noodles` is absent from the production code
+path and any old dependency is isolated behind an explicit shim or removed.
+
+### Checkpoint C
+
+Once enough command families are migrated, `noodles` should be further
+feature-gated, made optional, or moved closer to dev/test-only roles, while
+preserving any still-needed CRAM compatibility boundary.
 
 ## Transitional Code Rule
 

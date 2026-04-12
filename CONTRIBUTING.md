@@ -62,3 +62,40 @@ Prefer contributing to these Bamana-native core modules:
 
 Compatibility shims under older paths may remain temporarily, but new hot-path
 logic should target the native core modules directly.
+
+## Current Milestone
+
+The active migration milestone is tracked in:
+
+* [docs/roadmap/current_milestone.md](/Users/stephen/Projects/bamana/docs/roadmap/current_milestone.md)
+
+Before starting a large change, check that file and the canonical roadmap:
+
+* [ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
+* [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+
+## What “Done” Means For A Milestone
+
+A milestone is not done just because code landed. At minimum, it should have:
+
+* the owned modules implemented or materially strengthened
+* command integration identified or completed
+* tests added or updated
+* benchmark hooks defined and, where practical, run
+* docs updated
+* `noodles` usage reduced, isolated, or checkpointed explicitly
+
+## Benchmark-Aware Development Rule
+
+Native-core work should come with measurement hooks.
+
+Examples:
+
+* BGZF throughput for BGZF work
+* header parse latency for header-codec work
+* records/sec scan throughput for BAM scanner work
+* FASTQ parse throughput for FASTQ work
+* before/after command benchmarks for migrated commands
+
+If a change moves code but does not improve ownership or measurability, it is
+not sufficient progress for this roadmap.

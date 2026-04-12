@@ -50,6 +50,8 @@ See:
 * [docs/architecture.md](/Users/stephen/Projects/bamana/docs/architecture.md)
 * [docs/dependency-policy.md](/Users/stephen/Projects/bamana/docs/dependency-policy.md)
 * [docs/performance-core.md](/Users/stephen/Projects/bamana/docs/performance-core.md)
+* [ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
+* [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
 
 The current semantics are intentionally narrow:
 

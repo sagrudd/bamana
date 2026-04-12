@@ -93,3 +93,30 @@ This native-core rule is primarily about:
 
 CRAM may continue to require a staged compatibility approach while the project
 keeps its BAM/FASTQ performance core narrow and controlled.
+
+## Milestone Measurement Hooks
+
+The performance-core migration is tied to measurement, not just code movement.
+
+Expected benchmark hooks by milestone:
+
+* native BGZF
+  * BGZF read throughput
+  * BGZF write throughput
+  * EOF-check latency
+* native BAM header codec
+  * header parse latency
+  * header serialization cost
+* native BAM record scanner
+  * records/sec scan throughput
+  * selective-field extraction throughput
+* native FASTQ
+  * FASTQ parse throughput
+  * FASTQ.GZ parse throughput
+* command migration
+  * before/after `verify`
+  * before/after `header`
+  * before/after `subsample`
+
+These hooks should be treated as milestone evidence and reviewed alongside the
+code that introduces a new native substrate.

@@ -18,3 +18,12 @@ Supporting documents:
 * [docs/performance-core.md](/Users/stephen/Projects/bamana/docs/performance-core.md)
 * [docs/migration/noodles-demotion.md](/Users/stephen/Projects/bamana/docs/migration/noodles-demotion.md)
 * [docs/testing-oracles.md](/Users/stephen/Projects/bamana/docs/testing-oracles.md)
+* [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+
+Roadmap backbone:
+
+1. native BGZF
+2. native BAM header codec
+3. native BAM record scanner
+4. native FASTQ / FASTQ.GZ parser
+5. command migration beginning with `verify`, `header`, and `subsample`
