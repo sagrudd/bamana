@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/params.schema.json",
+  "title": "Bamana Benchmark Nextflow Parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "mapped_bams": {
+      "description": "Mapped BAM files for Scenario A style benchmarks.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "unmapped_bams": {
+      "description": "Unmapped BAM files for Scenario B style benchmarks.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "fastq_gzs": {
+      "description": "FASTQ.GZ files for ingestion and fastcat-style comparisons.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
+      }
+    },
+    "replicate_count": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3
+    },
+    "warmup_runs": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1
+    },
+    "subsample_fraction": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.1
+    },
+    "subsample_seed": {
+      "type": "integer",
+      "default": 104729
+    },
+    "subsample_mode": {
+      "type": "string",
+      "enum": ["deterministic", "random"],
+      "default": "deterministic"
+    },
+    "threads": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 4
+    },
+    "max_memory": {
+      "type": "string",
+      "default": "16 GB"
+    },
+    "output_dir": {
+      "type": "string",
+      "default": "benchmarks/results/latest"
+    },
+    "enable_plotting": {
+      "type": "boolean",
+      "default": true
+    },
+    "container_image": {
+      "type": "string",
+      "default": "bamana-bench:latest"
+    },
+    "bamana_bin": {
+      "type": "string",
+      "default": "../target/release/bamana"
+    }
+  }
+}

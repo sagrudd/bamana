@@ -33,6 +33,15 @@ provenance-inspection path for BAM collections when operators need explicit
 hallmark reporting for concatenation, coercion, weak provenance discipline, or
 metadata/body mismatches that are operationally suspicious even when the file
 still parses.
+Current roadmap scope now also reserves `bamana subsample` as a planned
+benchmark-driven command contract for deterministic or seeded-random
+subsampling of BAM and FASTQ.GZ inputs. This requirement exists so the
+benchmark framework can compare Bamana fairly against `samtools`, `seqtk`,
+`rasusa`, and related comparators without inventing an implicit command shape.
+The repository also now includes a reproducible benchmark framework under
+`benchmarks/`, with containerized Nextflow execution, R-based aggregation, and
+explicit comparator treatment for `samtools` as the canonical BAM baseline and
+`fastcat` as the ingestion-oriented ONT comparator.
 
 The project charter remains explicit that:
 
@@ -50,5 +59,8 @@ The project charter remains explicit that:
 * provenance inspection must remain distinct from both structural validation
   and fraud accusation; it reports evidence-driven anomalies and recommended
   follow-up only
+* benchmarking must remain explicit about unsupported, partial, or
+  roadmap-blocked comparator paths rather than presenting them as simple speed
+  outcomes
 * adjacent format support is intended to normalize into BAM rather than widen
   the public data model without discipline

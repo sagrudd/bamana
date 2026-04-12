@@ -79,6 +79,7 @@ The initial scope of Bamana includes development of a Rust-based command-line to
 * BAM sort
 * BAM header-only metadata mutation
 * BAM record-level read-group annotation
+* BAM and FASTQ.GZ subsampling under explicit deterministic or random policy
 * upstream file and directory ingestion into normalized BAM
 * index-aware operations
 * header and reference inspection
@@ -91,6 +92,7 @@ Representative initial commands may include:
 * `bamana verify`
 * `bamana consume`
 * `bamana annotate_rg`
+* `bamana subsample`
 * `bamana reheader`
 * `bamana check_eof`
 * `bamana check_map`
@@ -273,9 +275,18 @@ Benchmarking should include, where relevant:
 * CPU utilization
 * memory usage
 * I/O behavior
+* replicated runs with warmup policy
+* seeded random or deterministic subsampling where sampling is part of the
+  workload
 * indexed and unindexed cases
 * small, medium, and large BAM files
 * local and realistic production-style storage scenarios where possible
+
+The repository benchmark framework is expected to remain reproducible and
+containerized. `samtools` is the canonical BAM baseline. `fastcat` should be
+included explicitly for ONT-style ingestion and concatenation comparisons.
+Additional comparators such as `sambamba`, `seqtk`, and `rasusa` should be
+used where their scope matches the benchmarked operation.
 
 ## 13. Security and Operational Considerations
 

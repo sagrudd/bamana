@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/subsample.schema.json",
+  "title": "Bamana Subsample Response",
+  "description": "Planned contract for bamana subsample JSON output.",
+  "x-bamana-command": "subsample",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "format": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ", "FASTQ.GZ", "UNKNOWN"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["deterministic", "random"]
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "written", "overwritten"],
+      "properties": {
+        "path": { "type": "string" },
+        "written": { "type": "boolean" },
+        "overwritten": { "type": "boolean" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records_examined", "records_retained"],
+      "properties": {
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "records_retained": { "type": "integer", "minimum": 0 },
+        "fraction_requested": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "fraction_observed": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "successData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "mode", "fraction", "output", "summary", "notes"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "output": { "$ref": "#/$defs/output" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "failureData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "mode", "fraction"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "output": { "$ref": "#/$defs/output" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "subsample" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/successData" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "subsample" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

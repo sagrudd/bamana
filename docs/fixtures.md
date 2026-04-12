@@ -95,6 +95,16 @@ The fixture-planning layer is intended to support:
   `deduplicate`, and `forensic_inspect` against the tiny fixture trio without
   requiring a large corpus
 
+### Benchmark Inputs Versus Contract Fixtures
+
+The benchmark framework under
+[benchmarks/](/Users/stephen/Projects/bamana/benchmarks) is intentionally
+separate from the tiny contract-fixture corpus. Tiny fixtures exist for schema,
+golden-output, and semantic contract testing. Benchmark runs are expected to use
+real large user-supplied BAM and FASTQ.GZ inputs, often far too large for the
+fixture tree. This separation keeps contract tests small and CI-friendly while
+allowing the benchmarking layer to target production-scale workloads honestly.
+
 ## Consume Fixtures
 
 `consume` needs a separate fixture layer because it is the repository’s

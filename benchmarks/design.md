@@ -1,0 +1,269 @@
+# Benchmark Design
+
+## 1. Goals
+
+The benchmark framework exists to support both internal optimization work and
+publication-ready reporting. It is intended to answer:
+
+* how long Bamana takes on common BAM and FASTQ.GZ workflows
+* whether runtime is dominated by subsampling, sorting, indexing, or ingestion
+* whether Bamana is already competitive in any workflow slice
+* where Bamana is clearly slower and therefore needs targeted engineering work
+* whether Bamana eventually beats `fastcat` in ingestion or concatenation space
+* whether Bamana becomes faster and easier to use than `samtools` for the
+  operations it chooses to own
+
+The framework is not designed to manufacture a favorable result. It is designed
+to surface trustworthy evidence.
+
+## 2. Scenario Definitions
+
+### Scenario A: `mapped_bam_chain`
+
+Input:
+
+* mapped BAM
+
+Primary operation chain:
+
+1. subsample
+2. sort
+3. index
+
+Notes:
+
+* tools are allowed to use their natural best-order workflow so long as the
+  chosen order is documented
+* this scenario is the canonical BAM throughput baseline
+
+### Scenario B: `unmapped_bam_chain`
+
+Input:
+
+* unmapped BAM
+
+Primary operation chain:
+
+1. subsample
+2. optional normalization step if the tool requires it
+3. omit sort and index unless they are both valid and meaningful
+
+Notes:
+
+* the first framework treats this as a subsample-only comparison
+
+### Scenario C: `fastq_ingest_chain`
+
+Input:
+
+* FASTQ.GZ
+
+Primary operation chain:
+
+1. consume, concatenate, or normalize according to the tool's native role
+2. optional subsample if that is part of the selected comparator workflow
+3. sort or index only when the workflow actually produces sorted indexable BAM
+
+Notes:
+
+* Bamana uses `consume --mode unmapped`
+* `fastcat` is intentionally benchmarked as a partial ingestion comparator
+* `seqtk` is benchmarked as a partial FASTQ subsampling comparator
+* `samtools` and `sambamba` are recorded as unsupported for this scenario in
+  the first iteration
+
+## 3. Comparator Set
+
+### Canonical BAM Baseline
+
+* `samtools`
+
+Rationale:
+
+* best-established HTSlib-backed baseline
+* canonical point of comparison for BAM-oriented workflows
+
+### Additional BAM Comparator
+
+* `sambamba`
+
+Rationale:
+
+* commonly used for BAM sorting and indexing comparisons
+* useful to distinguish Bamana versus HTSlib from Bamana versus alternative
+  multi-threaded BAM tooling
+
+### FASTQ and Subsampling Comparators
+
+* `seqtk`
+* `rasusa`
+
+Rationale:
+
+* `seqtk` is a widely used FASTQ-oriented sampling baseline
+* `rasusa` is explicitly relevant for read and alignment downsampling, but its
+  semantics are often coverage- or count-based rather than purely fractional
+
+### ONT Ingestion Comparator
+
+* `EPI2ME fastcat`
+
+Rationale:
+
+* directly relevant to the project's ingestion and concatenation performance
+  target
+* one explicit project goal is to beat `fastcat` where Bamana chooses to own
+  similar operator workflows
+
+## 4. Fairness Policy
+
+The benchmark framework follows four fairness rules.
+
+### 4.1 Do Not Force Invalid Workflows
+
+If a tool does not support a scenario or operation meaningfully, record it as:
+
+* `unsupported`
+* `roadmap_blocked`
+* `partial`
+
+Do not force an invalid comparison and then describe it as a speed result.
+
+### 4.2 Use Sensible Native Order
+
+Per-tool workflows may use their natural best-order path, for example:
+
+* subsample then sort then index
+* concatenate only for `fastcat`
+
+The exact workflow path must still be recorded in `workflow_variant`.
+
+### 4.3 Keep Semantic Differences Explicit
+
+The result schema records `semantic_equivalence`:
+
+* `full`
+* `partial`
+* `unsupported`
+* `roadmap_blocked`
+
+This prevents partial ingestion or subsampling workflows from being treated as
+identical to BAM normalization workflows when they are not.
+
+### 4.4 Record Failures
+
+Unsupported, failed, and blocked runs are preserved in the result tables.
+Failures are data.
+
+## 5. Supported and Unsupported Matrix
+
+| Tool | `mapped_bam_chain` | `unmapped_bam_chain` | `fastq_ingest_chain` |
+| --- | --- | --- | --- |
+| `bamana` | roadmap blocked until `subsample` exists | roadmap blocked until `subsample` exists | supported via `consume --mode unmapped` |
+| `samtools` | supported | supported | unsupported |
+| `sambamba` | supported | supported | unsupported |
+| `seqtk` | unsupported | unsupported | partial |
+| `rasusa` | unsupported by default pending fair strategy pinning | unsupported by default pending fair strategy pinning | unsupported by default pending fair strategy pinning |
+| `fastcat` | unsupported | unsupported | partial |
+
+## 6. Input Expectations
+
+The framework is intended for large real files supplied by the user.
+
+Expected inputs include:
+
+* mapped BAM suitable for sort and index benchmarking
+* unmapped BAM for subsample-only benchmarking
+* FASTQ.GZ collections for ingestion and concatenation comparisons
+
+The pipeline computes input size and exact record counts once per input so the
+benchmark layer can report throughput rather than timing only.
+
+## 7. Replication Strategy
+
+The first framework includes:
+
+* `warmup_runs`
+* `replicate_count`
+* seeded subsampling
+* explicit `subsample_mode`
+
+Recommended first pass:
+
+* `warmup_runs = 1`
+* `replicate_count = 3` or `5`
+* fixed seed for deterministic mode
+
+Deterministic mode reduces workload variance. Repeated runs still capture
+system-level variance.
+
+## 8. Measurement Outputs
+
+Per-run rows record at least:
+
+* scenario
+* input type and input size
+* tool and tool version
+* workflow variant
+* replicate id and warmup status
+* subsample fraction, seed, and mode
+* wall-clock time
+* user and system CPU time
+* max RSS
+* input and output bytes
+* records processed
+* exit code
+* success flag
+* notes
+
+The schema is defined in
+[benchmarks/results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json).
+
+## 9. Publication Outputs
+
+The R layer generates:
+
+* per-run tidy TSV and JSON
+* aggregated summary TSV and JSON
+* support-matrix TSV and JSON
+* publication-ready PDF and PNG figures
+
+The initial figures include:
+
+* wall time by tool and scenario
+* throughput by tool and scenario
+* memory by tool and scenario
+* replicate variability
+* support-status heatmap
+
+## 10. Bamana Subsample Requirement
+
+The benchmark framework now requires a planned Bamana command:
+
+`bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>]`
+
+Benchmark expectations for this command:
+
+* support BAM and FASTQ.GZ at minimum
+* support `random` and `deterministic` modes
+* make seeded comparison possible
+* expose semantics clearly enough that comparator mismatches can be documented
+
+The benchmark framework treats this command as a required roadmap item and not
+as an already implemented CLI feature.
+
+## 11. Known Limitations of the First Iteration
+
+The first benchmark slice is intentionally honest about current limits:
+
+* Bamana BAM subsampling is blocked until `bamana subsample` is implemented
+* Bamana executable indexing is still incomplete for full mapped-BAM chains
+* `rasusa` is recorded explicitly but defaulted to unsupported until the
+  fractional versus coverage strategy is pinned fairly
+* `fastcat` is a partial comparator for ingestion space, not a BAM sort/index
+  baseline
+* the first plotting layer emphasizes end-to-end workflow variants rather than
+  detailed per-operation flame-style breakdowns
+
+These are acceptable first-iteration limitations so long as they remain
+documented.

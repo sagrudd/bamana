@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "command": "subsample",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "deterministic",
+    "fraction": 0.1,
+    "seed": 104729,
+    "output": {
+      "path": "input.subsampled.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "summary": {
+      "records_examined": 1000000,
+      "records_retained": 100143,
+      "fraction_requested": 0.1,
+      "fraction_observed": 0.100143
+    },
+    "notes": [
+      "This is a planned benchmark-governed command contract and may be stabilized before runtime implementation.",
+      "Subsampling semantics are explicit and distinct from duplicate marking, filtering, or provenance cleanup."
+    ]
+  },
+  "error": null
+}

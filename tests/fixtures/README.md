@@ -111,6 +111,11 @@ The trio fixtures are planned to plug into the contract layer as follows:
 * `cli_contract.rs`: remain largely fixture-independent, with representative
   trio fixture ids available for smoke-style invocation examples when needed
 
+The benchmark framework in
+[benchmarks/](/Users/stephen/Projects/bamana/benchmarks) is separate from this
+tiny fixture tree. Contract fixtures stay small and reviewable; performance
+benchmarks are expected to run against real large BAM and FASTQ.GZ collections.
+
 ## Consume Fixtures
 
 The fixture suite also reserves a focused planning layer for `consume`.

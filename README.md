@@ -26,6 +26,11 @@ The current repository contains the first concrete CLI slice for:
 * `bamana sort --bam <bamfile> --out <result.bam>`
 * `bamana merge --bam <bamfile1> <bamfile2> ... --out <result.bam>`
 
+The repository now also includes a benchmark-governed planned command contract
+for:
+
+* `bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>]`
+
 All command output is JSON.
 
 The current semantics are intentionally narrow:
@@ -69,6 +74,29 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 `sort` does not imply full BAM validity beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
 `merge` does not imply full validity of all inputs beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
+
+`subsample` is now a required planned command because the benchmark framework
+needs a governed Bamana contract for deterministic or seeded-random
+subsampling of BAM and FASTQ.GZ inputs. The benchmark layer does not pretend
+that this command is already implemented in the runtime CLI slice.
+
+## Benchmark Framework
+
+The repository now contains a containerized benchmarking framework under
+[benchmarks/](/Users/stephen/Projects/bamana/benchmarks). It provides:
+
+* a modular Nextflow DSL2 workflow
+* explicit comparator support for `samtools`, `sambamba`, `seqtk`, `rasusa`,
+  and `EPI2ME fastcat`
+* seeded replication and warmup-run support
+* per-run machine-readable benchmark rows
+* R-based aggregation and publication-ready plotting
+
+The canonical BAM baseline is `samtools`. `fastcat` is included explicitly for
+ONT-style ingestion and concatenation comparisons. The benchmark framework is
+designed for real large user-supplied BAM and FASTQ.GZ files and records
+unsupported or roadmap-blocked comparisons explicitly instead of silently
+dropping them.
 
 ## Example Invocations
 

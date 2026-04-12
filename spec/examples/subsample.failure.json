@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "command": "subsample",
+  "path": "input.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ",
+    "mode": "random",
+    "fraction": 1.2,
+    "seed": 104729
+  },
+  "error": {
+    "code": "invalid_fraction",
+    "message": "Requested subsample fraction is outside the supported range.",
+    "detail": "The current contract requires a fraction greater than 0 and less than or equal to 1.",
+    "hint": "Choose a fraction between 0 and 1 inclusive and retry."
+  }
+}

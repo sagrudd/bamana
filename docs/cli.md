@@ -28,6 +28,10 @@ The spec layer covers both:
 This separation is deliberate: repository-facing contract design should not wait
 for every implementation detail to be finished.
 
+`subsample` is now a planned benchmark-governed command. Its contract is being
+stabilized before runtime implementation because the benchmark framework needs
+an explicit Bamana subsampling interface for BAM and FASTQ.GZ comparisons.
+
 `consume` is the ingestion gateway into Bamana. It is the command that accepts
 files and directories containing supported upstream formats and normalizes them
 into a single BAM according to an explicit ingest mode. The current staged
@@ -74,3 +78,9 @@ regime changes, duplicate-block hallmarks, and optional aux-tag regime shifts.
 It is explicitly not a structural validator, not duplicate marking, and not a
 fraud detector; it emits evidence-driven findings with conservative follow-up
 recommendations.
+
+The repository also contains a benchmark framework under
+[benchmarks/](/Users/stephen/Projects/bamana/benchmarks). It uses Nextflow,
+containerized toolchains, replicated benchmark runs, and R-based aggregation to
+compare Bamana against `samtools`, `fastcat`, and other relevant comparators
+without forcing unsupported workflows into misleading timing results.

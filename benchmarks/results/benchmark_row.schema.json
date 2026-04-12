@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/results/benchmark_row.schema.json",
+  "title": "Bamana Benchmark Result Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "scenario",
+    "input_type",
+    "input_path",
+    "input_bytes",
+    "tool",
+    "tool_version",
+    "workflow_variant",
+    "semantic_equivalence",
+    "support_status",
+    "replicate",
+    "warmup_run",
+    "subsample_fraction",
+    "subsample_seed",
+    "subsample_mode",
+    "threads",
+    "exit_code",
+    "success",
+    "notes"
+  ],
+  "properties": {
+    "benchmark_id": { "type": "string" },
+    "scenario": {
+      "type": "string",
+      "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
+    },
+    "input_type": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ_GZ"]
+    },
+    "mapping_state": { "type": "string" },
+    "input_path": { "type": "string" },
+    "input_basename": { "type": "string" },
+    "input_bytes": { "type": "number", "minimum": 0 },
+    "input_records": { "type": "number", "minimum": 0 },
+    "tool": {
+      "type": "string",
+      "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
+    },
+    "tool_version": { "type": "string" },
+    "workflow_variant": { "type": "string" },
+    "semantic_equivalence": {
+      "type": "string",
+      "enum": ["full", "partial", "unsupported", "roadmap_blocked"]
+    },
+    "support_status": {
+      "type": "string",
+      "enum": ["completed", "failed", "unsupported", "roadmap_blocked"]
+    },
+    "replicate": { "type": "integer", "minimum": 0 },
+    "warmup_run": { "type": "boolean" },
+    "subsample_fraction": { "type": "number", "exclusiveMinimum": 0 },
+    "subsample_seed": { "type": "integer", "minimum": 0 },
+    "subsample_mode": {
+      "type": "string",
+      "enum": ["deterministic", "random"]
+    },
+    "threads": { "type": "integer", "minimum": 1 },
+    "wall_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "user_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "system_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "max_rss_bytes": { "type": ["number", "null"], "minimum": 0 },
+    "exit_code": { "type": "integer", "minimum": 0 },
+    "success": { "type": "boolean" },
+    "output_path": { "type": "string" },
+    "output_bytes": { "type": ["number", "null"], "minimum": 0 },
+    "compression_ratio": { "type": ["number", "null"], "minimum": 0 },
+    "records_processed": { "type": ["number", "null"], "minimum": 0 },
+    "container_image": { "type": "string" },
+    "command_line": { "type": "string" },
+    "notes": { "type": "string" },
+    "started_at": { "type": ["string", "null"] },
+    "finished_at": { "type": ["string", "null"] }
+  }
+}

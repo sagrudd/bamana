@@ -87,6 +87,43 @@ Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
 `checksum_verification`, `notes`.
 
+## `subsample`
+
+Synopsis:
+`bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>] [--force] [--json-pretty]`
+
+Semantics:
+Planned benchmark-governed command for downsampling a single BAM, FASTQ.GZ, or
+future FASTQ input under explicit deterministic or random policy. This command
+is reserved because the benchmark framework needs a stable Bamana subsampling
+contract for reproducible comparison against `samtools`, `seqtk`, `rasusa`, and
+related tools.
+
+Current planned modes:
+
+* `deterministic`: stable inclusion policy given identical input, fraction, and
+  version
+* `random`: seeded random policy using `--seed`
+
+Current planned input support:
+
+* `BAM`
+* `FASTQ.GZ`
+* optional `FASTQ` later if implemented in the same slice
+
+Does prove:
+Only the explicit subsampling policy, fraction, seed, and output path reported
+in JSON.
+
+Does not prove:
+It is not quality filtering, duplicate marking, or provenance cleanup. It does
+not imply semantic equivalence with comparator tools whose subsampling model is
+coverage-based or otherwise not directly fractional.
+
+Key output concepts:
+`format`, `mode`, `fraction`, `seed`, `records_examined`, `records_retained`,
+`output`, `notes`.
+
 ## `inspect_duplication`
 
 Synopsis:
