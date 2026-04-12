@@ -220,9 +220,27 @@ Each future `annotate_rg` fixture should support:
 
 The fixture plan also reserves a focused build-out path for:
 
+* `subsample`
 * `inspect_duplication`
 * `deduplicate`
 * `forensic_inspect`
+
+### `subsample`
+
+Target fixture coverage:
+
+* `tiny.clean.fastq`: deterministic repeatability and seeded-random repeatability
+* `tiny.clean.bam`: BAM subsampling success with header preservation
+* `tiny.invalid.fastq.truncated`: parse-failure path
+* `tiny.invalid.bam.truncated_record`: parse-failure path
+
+Contract assertions to reserve explicitly:
+
+* deterministic mode remains repeatable for identical input, fraction, and identity basis
+* seeded random mode remains reproducible for a given seed
+* retained encounter order is preserved by default
+* BAM index invalidation remains explicit after written output
+* invalid fraction errors remain machine-readable and distinct from parse failures
 
 ### `inspect_duplication`
 

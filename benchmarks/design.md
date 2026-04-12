@@ -159,7 +159,7 @@ Failures are data.
 
 | Tool | `mapped_bam_chain` | `unmapped_bam_chain` | `fastq_ingest_chain` |
 | --- | --- | --- | --- |
-| `bamana` | roadmap blocked until `subsample` exists | roadmap blocked until `subsample` exists | supported via `consume --mode unmapped` |
+| `bamana` | partial: `subsample` plus `sort`, with index still deferred | supported | supported via `consume --mode unmapped` |
 | `samtools` | supported | supported | unsupported |
 | `sambamba` | supported | supported | unsupported |
 | `seqtk` | unsupported | unsupported | partial |
@@ -238,7 +238,7 @@ The initial figures include:
 
 ## 10. Bamana Subsample Requirement
 
-The benchmark framework now requires a planned Bamana command:
+The benchmark framework now requires and uses the Bamana command:
 
 `bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>]`
 
@@ -249,14 +249,14 @@ Benchmark expectations for this command:
 * make seeded comparison possible
 * expose semantics clearly enough that comparator mismatches can be documented
 
-The benchmark framework treats this command as a required roadmap item and not
-as an already implemented CLI feature.
+The framework still records semantic mismatches honestly when comparator tools
+are coverage-based, count-based, or otherwise not directly equivalent to
+Bamana's fraction-based modes.
 
 ## 11. Known Limitations of the First Iteration
 
 The first benchmark slice is intentionally honest about current limits:
 
-* Bamana BAM subsampling is blocked until `bamana subsample` is implemented
 * Bamana executable indexing is still incomplete for full mapped-BAM chains
 * `rasusa` is recorded explicitly but defaulted to unsupported until the
   fractional versus coverage strategy is pinned fairly

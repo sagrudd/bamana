@@ -6,6 +6,7 @@ inspection, and transformation of BAM files and related bioinformatics formats.
 The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
+* `bamana subsample --input <file> --out <output>`
 * `bamana inspect_duplication --input <file>`
 * `bamana deduplicate --input <file> --out <cleaned_output>`
 * `bamana forensic_inspect --input <file>`
@@ -26,16 +27,12 @@ The current repository contains the first concrete CLI slice for:
 * `bamana sort --bam <bamfile> --out <result.bam>`
 * `bamana merge --bam <bamfile1> <bamfile2> ... --out <result.bam>`
 
-The repository now also includes a benchmark-governed planned command contract
-for:
-
-* `bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>]`
-
 All command output is JSON.
 
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
+* `subsample` selects a subset of BAM, FASTQ, or FASTQ.GZ records under an explicit random or deterministic policy, preserves encounter order of retained records, and reports seed, identity basis, filter policy, and retained counts explicitly for production and benchmarking workflows
 * `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
 * `deduplicate` removes suspicious duplicated contiguous collection blocks conservatively according to an explicit remediation policy, with first-slice focus on adjacent repeated blocks and whole-file append signatures rather than molecular duplicate biology
 * `forensic_inspect` inspects BAM provenance anomalies and coercion hallmarks such as suspicious header/program/read-group mismatches, read-name regime shifts, abrupt metadata transitions, and duplicate-block signatures that remain parseable but operationally suspicious
@@ -74,11 +71,7 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 `sort` does not imply full BAM validity beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
 `merge` does not imply full validity of all inputs beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
-
-`subsample` is now a required planned command because the benchmark framework
-needs a governed Bamana contract for deterministic or seeded-random
-subsampling of BAM and FASTQ.GZ inputs. The benchmark layer does not pretend
-that this command is already implemented in the runtime CLI slice.
+`subsample` does not imply exact-count sampling, quality filtering, duplicate marking, provenance cleanup, or BAM index regeneration unless those behaviors are reported explicitly.
 
 ## Benchmark Framework
 
@@ -95,13 +88,14 @@ The repository now contains a containerized benchmarking framework under
 The canonical BAM baseline is `samtools`. `fastcat` is included explicitly for
 ONT-style ingestion and concatenation comparisons. The benchmark framework is
 designed for real large user-supplied BAM and FASTQ.GZ files and records
-unsupported or roadmap-blocked comparisons explicitly instead of silently
-dropping them.
+unsupported or partial comparisons explicitly instead of silently dropping them.
 
 ## Example Invocations
 
 ```bash
 cargo run -- identify example.bam
+cargo run -- subsample --input input.bam --out input.subsampled.bam --fraction 0.1 --mode random --seed 12345
+cargo run -- subsample --input reads.fastq.gz --out reads.subsampled.fastq.gz --fraction 0.25 --mode deterministic --identity full_record
 cargo run -- inspect_duplication --input input.fastq.gz --full-scan
 cargo run -- inspect_duplication --input input.bam --identity qname_seq_qual_rg --min-block-size 100 --sample-records 250000
 cargo run -- deduplicate --input input.fastq.gz --out input.cleaned.fastq.gz --mode contiguous-block --dry-run
@@ -152,6 +146,17 @@ cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order quer
 `header` uses the binary BAM reference section as authoritative for reference
 names and lengths, and joins optional fields from textual `@SQ` records into the
 structured JSON view when present.
+
+`subsample` is Bamana's explicit selection command for BAM, FASTQ, and
+FASTQ.GZ inputs. The current slice supports seeded random Bernoulli-style
+per-record selection and deterministic hash-based selection using one of three
+identity bases: `qname`, `qname_seq`, or `full_record`. Encounter order of
+retained records is preserved. BAM headers are preserved, BAM-only filters
+(`mapped_only` and `primary_only`) exclude non-eligible records before
+sampling, and any pre-existing BAM index must be treated as invalid for the
+subsampled output unless a future slice reports successful regeneration
+explicitly. This command is intended both for production downsampling workflows
+and for reproducible benchmarking on large user-supplied inputs.
 
 `inspect_duplication` is the collection-duplication and operator-error
 inspection command. It is intentionally distinct from ordinary PCR duplicate

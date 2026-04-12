@@ -15,6 +15,7 @@ pub mod inspect_duplication;
 pub mod merge;
 pub mod reheader;
 pub mod sort;
+pub mod subsample;
 pub mod summary;
 pub mod validate;
 pub mod verify;

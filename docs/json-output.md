@@ -99,6 +99,28 @@ rewrite path for actual execution. Checksum verification, when requested, is
 reported over alignment-record content with header bytes excluded so the JSON
 can demonstrate header-only semantics honestly.
 
+## `subsample`
+
+The `subsample` payload is benchmark-friendly, explicit about reproducibility,
+and suitable for large BAM, FASTQ, and FASTQ.GZ inputs.
+
+Key concepts:
+
+* explicit selection mode (`random` or `deterministic`)
+* explicit requested fraction and the actual seed used for random mode
+* explicit deterministic identity basis (`qname`, `qname_seq`, or
+  `full_record`) when hash-based selection is used
+* exact execution counts for records examined, eligible records, retained
+  records, and the observed retained fraction
+* explicit order-preservation reporting
+* explicit BAM filter policy when `mapped_only` or `primary_only` is active
+* explicit BAM index invalidation and deferred reindex reporting
+
+This contract is intentionally explicit that seeded random mode is suitable for
+repeatable benchmarks and that deterministic mode is suitable for stable
+exact-repeatability checks across repeated runs of the same build and
+configuration.
+
 ## `inspect_duplication`
 
 The `inspect_duplication` payload is evidence-driven and operator-error

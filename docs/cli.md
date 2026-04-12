@@ -28,9 +28,11 @@ The spec layer covers both:
 This separation is deliberate: repository-facing contract design should not wait
 for every implementation detail to be finished.
 
-`subsample` is now a planned benchmark-governed command. Its contract is being
-stabilized before runtime implementation because the benchmark framework needs
-an explicit Bamana subsampling interface for BAM and FASTQ.GZ comparisons.
+`subsample` is now an implemented command for BAM, FASTQ, and FASTQ.GZ inputs.
+It provides seeded random Bernoulli-style subsampling and deterministic
+hash-based subsampling with explicit identity semantics. The command preserves
+encounter order of retained records, emits JSON only, and is designed to
+support both production workflows and reproducible benchmarking.
 
 `consume` is the ingestion gateway into Bamana. It is the command that accepts
 files and directories containing supported upstream formats and normalizes them

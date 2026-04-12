@@ -12,21 +12,36 @@ process RUN_BAMANA_BENCHMARK {
     path("${meta.run_id}.result.json"), emit: result_json
 
     script:
-    def outputTarget = meta.scenario == 'fastq_ingest_chain' ? "${meta.run_id}.output.bam" : ''
+    def outputTarget = ''
     def supportStatus = 'supported'
-    def semanticEquivalence = meta.scenario == 'fastq_ingest_chain' ? 'full' : 'roadmap_blocked'
+    def semanticEquivalence = 'full'
     def notes = ''
     def command = 'true'
+    def seedArg = meta.subsample_mode == 'random' ? "--seed ${meta.subsample_seed}" : ""
 
-    if (meta.scenario == 'fastq_ingest_chain') {
+    if (meta.scenario == 'mapped_bam_chain') {
+        outputTarget = "${meta.run_id}.sorted.bam"
+        semanticEquivalence = 'partial'
+        command = """\
+set -euo pipefail
+"${meta.bamana_bin}" subsample --input "${input_file}" --out "${meta.run_id}.subsampled.bam" --fraction ${meta.subsample_fraction} --mode ${meta.subsample_mode} ${seedArg} --force
+"${meta.bamana_bin}" sort --bam "${meta.run_id}.subsampled.bam" --out "${outputTarget}" --force
+"""
+        notes = 'Bamana mapped-BAM benchmarking now includes real subsample plus sort execution. The workflow remains partial because executable BAM index creation is still deferred.'
+    } else if (meta.scenario == 'unmapped_bam_chain') {
+        outputTarget = "${meta.run_id}.subsampled.bam"
+        command = """\
+set -euo pipefail
+"${meta.bamana_bin}" subsample --input "${input_file}" --out "${outputTarget}" --fraction ${meta.subsample_fraction} --mode ${meta.subsample_mode} ${seedArg} --force
+"""
+        notes = 'Bamana unmapped-BAM benchmarking now exercises the implemented subsample command directly.'
+    } else if (meta.scenario == 'fastq_ingest_chain') {
+        outputTarget = "${meta.run_id}.output.bam"
         command = """\
 set -euo pipefail
 "${meta.bamana_bin}" consume --input "${input_file}" --out "${outputTarget}" --mode unmapped --force
 """
-        notes = 'Bamana fastq ingestion uses consume because the benchmark framework also tracks current ingestion performance before subsample lands.'
-    } else {
-        supportStatus = 'roadmap_blocked'
-        notes = 'Bamana BAM benchmark path is blocked until bamana subsample exists and bamana index supports executable index creation.'
+        notes = 'Bamana fastq ingestion uses consume, while fastq subsample benchmarking can now be added in a later variant using the implemented subsample command.'
     }
 
     """

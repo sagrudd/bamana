@@ -7,10 +7,10 @@ const BAM_FPROPER_PAIR: u16 = 0x2;
 const BAM_FREVERSE: u16 = 0x10;
 const BAM_FREAD1: u16 = 0x40;
 const BAM_FREAD2: u16 = 0x80;
-const BAM_FSECONDARY: u16 = 0x100;
+pub const BAM_FSECONDARY: u16 = 0x100;
 const BAM_FQCFAIL: u16 = 0x200;
 const BAM_FDUP: u16 = 0x400;
-const BAM_FSUPPLEMENTARY: u16 = 0x800;
+pub const BAM_FSUPPLEMENTARY: u16 = 0x800;
 
 #[derive(Clone, Debug)]
 pub struct LightAlignmentRecord {

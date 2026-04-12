@@ -49,8 +49,8 @@ def inputTuples(List paths, String inputType, String mappingState) {
 def workflowVariantFor(String tool, String scenario) {
     def mapping = [
         bamana  : [
-            mapped_bam_chain  : 'planned_subsample_sort_index',
-            unmapped_bam_chain: 'planned_subsample_only',
+            mapped_bam_chain  : 'subsample_sort_partial_index',
+            unmapped_bam_chain: 'subsample_only',
             fastq_ingest_chain: 'consume_to_unmapped_bam'
         ],
         samtools: [

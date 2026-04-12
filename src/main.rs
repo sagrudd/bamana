@@ -6,6 +6,7 @@ mod forensics;
 mod formats;
 mod ingest;
 mod json;
+mod sampling;
 
 use std::process::ExitCode;
 
@@ -29,6 +30,7 @@ use commands::{
     merge::MergeRequest,
     reheader::ReheaderRequest,
     sort::SortRequest,
+    subsample::SubsampleRequest,
     summary::SummaryRequest,
     validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
@@ -44,6 +46,24 @@ fn main() -> ExitCode {
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
             let response: CommandResponse<IdentifyResponse> =
                 CommandResponse::from_result("identify", Some(path.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Subsample(args) => {
+            let input = args.input;
+            let response = commands::subsample::run(SubsampleRequest {
+                input: input.clone(),
+                out: args.out,
+                fraction: args.fraction,
+                mode: args.mode,
+                seed: args.seed,
+                identity: args.identity,
+                dry_run: args.dry_run,
+                create_index: args.create_index,
+                mapped_only: args.mapped_only,
+                primary_only: args.primary_only,
+                threads: args.threads,
+                force: args.force,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::InspectDuplication(args) => {

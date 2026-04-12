@@ -35,16 +35,18 @@ HTSlib-backed baseline for BAM manipulation. The framework also includes:
 
 ## Current Bamana Gaps
 
-The benchmark framework includes a planned `bamana subsample` contract, but the
-command is not implemented in the current CLI slice. As a result:
+The benchmark framework can now execute real Bamana subsampling on BAM, FASTQ,
+and FASTQ.GZ inputs. Remaining current gaps are:
 
-* Bamana FASTQ.GZ ingestion can already be benchmarked via `bamana consume`
-* Bamana BAM subsample workflows are recorded as `roadmap_blocked`
-* Bamana BAM sort-plus-index comparison remains incomplete until `subsample`
-  exists and executable index creation is available
+* Bamana executable BAM index creation is still incomplete for full
+  sort-plus-index parity
+* Bamana fastq-ingestion benchmarking still uses `consume`, while dedicated
+  fastq subsample benchmark variants remain to be layered in
+* comparator semantics still need careful review where tools are only partial
+  matches for a given scenario
 
-This is deliberate. The benchmark layer does not pretend the missing command
-already exists.
+This is deliberate. The benchmark layer records partial or unsupported
+comparisons explicitly instead of pretending the tools are directly equivalent.
 
 ## Directory Layout
 

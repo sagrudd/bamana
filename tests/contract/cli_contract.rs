@@ -11,6 +11,7 @@ fn cli_source_declares_stable_global_option_and_commands() {
     for token in [
         "pub json_pretty: bool",
         "Identify(IdentifyArgs)",
+        "Subsample(SubsampleArgs)",
         "InspectDuplication(InspectDuplicationArgs)",
         "Deduplicate(DeduplicateArgs)",
         "ForensicInspect(ForensicInspectArgs)",
@@ -43,10 +44,15 @@ fn cli_source_declares_key_subcommand_flags() {
     for token in [
         "long = \"bam\"",
         "long = \"input\"",
+        "long = \"fraction\"",
         "long = \"identity\"",
         "long = \"out\"",
+        "long = \"seed\"",
         "long = \"keep\"",
         "long = \"mode\"",
+        "long = \"create-index\"",
+        "long = \"mapped-only\"",
+        "long = \"primary-only\"",
         "long = \"recursive\"",
         "long = \"dry-run\"",
         "long = \"order\"",

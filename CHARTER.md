@@ -12,6 +12,11 @@ ingestion surface covers:
 * CRAM in alignment mode under explicit reference-policy handling
 * FASTQ and FASTQ.GZ in unmapped mode
 
+Current scope also includes `bamana subsample` as the governed record-selection
+path for BAM, FASTQ, and FASTQ.GZ inputs when operators need seeded random or
+deterministic subsampling with explicit JSON reporting suitable for production
+workflows and reproducible benchmarking.
+
 Current scope also includes `bamana reheader` as the governed header-only BAM
 metadata mutation path for workflows that need explicit `@RG`, `@PG`, `@CO`,
 and related header updates without implying record-level tag mutation.
@@ -33,11 +38,6 @@ provenance-inspection path for BAM collections when operators need explicit
 hallmark reporting for concatenation, coercion, weak provenance discipline, or
 metadata/body mismatches that are operationally suspicious even when the file
 still parses.
-Current roadmap scope now also reserves `bamana subsample` as a planned
-benchmark-driven command contract for deterministic or seeded-random
-subsampling of BAM and FASTQ.GZ inputs. This requirement exists so the
-benchmark framework can compare Bamana fairly against `samtools`, `seqtk`,
-`rasusa`, and related comparators without inventing an implicit command shape.
 The repository also now includes a reproducible benchmark framework under
 `benchmarks/`, with containerized Nextflow execution, R-based aggregation, and
 explicit comparator treatment for `samtools` as the canonical BAM baseline and
@@ -51,6 +51,9 @@ The project charter remains explicit that:
   mutation
 * record-level read-group annotation must remain distinct from header-only
   metadata mutation
+* subsampling must remain explicit about sampling mode, deterministic identity,
+  seed semantics, and the distinction between approximate fraction retention
+  and exact-count guarantees
 * collection-duplication inspection must remain distinct from PCR duplicate
   marking and duplicate-flag interpretation
 * collection-duplication remediation must remain distinct from PCR duplicate

@@ -79,7 +79,7 @@ The initial scope of Bamana includes development of a Rust-based command-line to
 * BAM sort
 * BAM header-only metadata mutation
 * BAM record-level read-group annotation
-* BAM and FASTQ.GZ subsampling under explicit deterministic or random policy
+* BAM, FASTQ, and FASTQ.GZ subsampling under explicit deterministic or random policy
 * upstream file and directory ingestion into normalized BAM
 * index-aware operations
 * header and reference inspection

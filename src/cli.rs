@@ -12,6 +12,7 @@ use crate::ingest::{
     consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
     cram::ConsumeReferencePolicy,
 };
+use crate::sampling::{DeterministicIdentity, SubsampleMode};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -39,6 +40,8 @@ pub struct Cli {
 pub enum Commands {
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
+    /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
+    Subsample(SubsampleArgs),
     /// Inspect suspicious collection-duplication and operator-error signatures.
     #[command(name = "inspect_duplication")]
     InspectDuplication(InspectDuplicationArgs),
@@ -91,6 +94,50 @@ pub enum Commands {
 pub struct IdentifyArgs {
     /// Path to inspect.
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct SubsampleArgs {
+    /// Input BAM, FASTQ, or FASTQ.GZ file to subsample.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Output path for the subsampled collection.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Requested approximate retained fraction.
+    #[arg(long = "fraction")]
+    pub fraction: f64,
+    /// Subsampling mode.
+    #[arg(long = "mode", value_enum)]
+    pub mode: SubsampleMode,
+    /// Seed for reproducible random subsampling; generated and reported if omitted.
+    #[arg(long = "seed")]
+    pub seed: Option<u64>,
+    /// Deterministic identity basis for hash-based selection.
+    #[arg(
+        long = "identity",
+        value_enum,
+        default_value_t = DeterministicIdentity::FullRecord
+    )]
+    pub identity: DeterministicIdentity,
+    /// Plan and count only; do not write output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Attempt to regenerate an index for BAM output when supported.
+    #[arg(long = "create-index")]
+    pub create_index: bool,
+    /// For BAM input, consider mapped records only and drop unmapped records from output.
+    #[arg(long = "mapped-only")]
+    pub mapped_only: bool,
+    /// For BAM input, consider primary alignments only and drop secondary/supplementary records from output.
+    #[arg(long = "primary-only")]
+    pub primary_only: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output path.
+    #[arg(long = "force")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

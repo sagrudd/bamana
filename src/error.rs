@@ -34,6 +34,12 @@ pub enum AppError {
     InvalidRgRequest { path: PathBuf, detail: String },
     #[error("requested deduplicate mode is invalid: {path}")]
     InvalidDeduplicateMode { path: PathBuf, detail: String },
+    #[error("requested subsample mode is invalid: {path}")]
+    InvalidSubsampleMode { path: PathBuf, detail: String },
+    #[error("requested subsample fraction is invalid: {path}")]
+    InvalidFraction { path: PathBuf, detail: String },
+    #[error("requested target record count is invalid: {path}")]
+    InvalidTargetRecords { path: PathBuf, detail: String },
     #[error("requested forensic inspection scope is invalid: {path}")]
     InvalidForensicScope { path: PathBuf, detail: String },
     #[error("bam record could not be parsed: {path}")]
@@ -153,6 +159,9 @@ impl AppError {
             Self::InvalidHeaderMutation { .. } => "invalid_header_mutation",
             Self::InvalidRgRequest { .. } => "invalid_rg_request",
             Self::InvalidDeduplicateMode { .. } => "invalid_deduplicate_mode",
+            Self::InvalidSubsampleMode { .. } => "invalid_subsample_mode",
+            Self::InvalidFraction { .. } => "invalid_fraction",
+            Self::InvalidTargetRecords { .. } => "invalid_target_records",
             Self::InvalidForensicScope { .. } => "invalid_forensic_scope",
             Self::InvalidRecord { .. } => "invalid_record",
             Self::InvalidIndex { .. } => "invalid_index",
@@ -218,6 +227,15 @@ impl AppError {
             }
             Self::InvalidDeduplicateMode { .. } => {
                 "Requested deduplicate mode or policy is not valid.".to_string()
+            }
+            Self::InvalidSubsampleMode { .. } => {
+                "Requested subsample mode or execution policy is not valid.".to_string()
+            }
+            Self::InvalidFraction { .. } => {
+                "The requested subsampling fraction is invalid.".to_string()
+            }
+            Self::InvalidTargetRecords { .. } => {
+                "The requested target record count is invalid.".to_string()
             }
             Self::InvalidForensicScope { .. } => {
                 "Requested forensic inspection scope is not valid.".to_string()
@@ -321,6 +339,9 @@ impl AppError {
             Self::InvalidHeaderMutation { detail, .. } => Some(detail.clone()),
             Self::InvalidRgRequest { detail, .. } => Some(detail.clone()),
             Self::InvalidDeduplicateMode { detail, .. } => Some(detail.clone()),
+            Self::InvalidSubsampleMode { detail, .. } => Some(detail.clone()),
+            Self::InvalidFraction { detail, .. } => Some(detail.clone()),
+            Self::InvalidTargetRecords { detail, .. } => Some(detail.clone()),
             Self::InvalidForensicScope { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
@@ -403,6 +424,18 @@ impl AppError {
             ),
             Self::InvalidDeduplicateMode { .. } => Some(
                 "Use a supported deduplicate mode such as contiguous-block or whole-file-append, and provide a distinct output path for applied remediation."
+                    .to_string(),
+            ),
+            Self::InvalidSubsampleMode { .. } => Some(
+                "Use mode random or deterministic, provide a distinct output path, and keep BAM-only filters away from FASTQ input."
+                    .to_string(),
+            ),
+            Self::InvalidFraction { .. } => Some(
+                "Provide --fraction with a value greater than 0 and less than or equal to 1, such as 0.1 or 0.25."
+                    .to_string(),
+            ),
+            Self::InvalidTargetRecords { .. } => Some(
+                "Use a positive target record count, or omit the option when only fraction-based subsampling is supported."
                     .to_string(),
             ),
             Self::InvalidForensicScope { .. } => Some(

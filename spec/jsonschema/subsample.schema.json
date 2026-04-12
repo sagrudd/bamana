@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/spec/jsonschema/subsample.schema.json",
   "title": "Bamana Subsample Response",
-  "description": "Planned contract for bamana subsample JSON output.",
+  "description": "Contract for bamana subsample JSON output.",
   "x-bamana-command": "subsample",
   "x-bamana-contract-version": "0.1.0",
   "$defs": {
@@ -12,7 +12,59 @@
     },
     "mode": {
       "type": "string",
-      "enum": ["deterministic", "random"]
+      "enum": ["random", "deterministic"]
+    },
+    "deterministicIdentity": {
+      "type": ["string", "null"],
+      "enum": ["qname", "qname_seq", "full_record", null]
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "fraction_requested",
+        "seed",
+        "deterministic_identity"
+      ],
+      "properties": {
+        "mode": { "$ref": "#/$defs/mode" },
+        "fraction_requested": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "deterministic_identity": {
+          "$ref": "#/$defs/deterministicIdentity"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run",
+        "records_examined",
+        "records_retained",
+        "fraction_retained_observed",
+        "order_preserved"
+      ],
+      "properties": {
+        "dry_run": { "type": "boolean" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "records_retained": { "type": "integer", "minimum": 0 },
+        "fraction_retained_observed": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "order_preserved": { "type": "boolean" },
+        "eligible_records_examined": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
     },
     "output": {
       "type": "object",
@@ -24,28 +76,43 @@
         "overwritten": { "type": "boolean" }
       }
     },
-    "summary": {
+    "index": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["records_examined", "records_retained"],
+      "required": [
+        "present_before",
+        "valid_after",
+        "reindex_requested",
+        "reindexed"
+      ],
       "properties": {
-        "records_examined": { "type": "integer", "minimum": 0 },
-        "records_retained": { "type": "integer", "minimum": 0 },
-        "fraction_requested": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-        "fraction_observed": { "type": "number", "minimum": 0, "maximum": 1 }
+        "present_before": { "type": "boolean" },
+        "valid_after": { "type": ["boolean", "null"] },
+        "reindex_requested": { "type": "boolean" },
+        "reindexed": { "type": "boolean" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" }
+      }
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapped_only", "primary_only"],
+      "properties": {
+        "mapped_only": { "type": "boolean" },
+        "primary_only": { "type": "boolean" }
       }
     },
     "successData": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["format", "mode", "fraction", "output", "summary", "notes"],
+      "required": ["format", "selection", "execution", "output", "notes"],
       "properties": {
         "format": { "$ref": "#/$defs/format" },
-        "mode": { "$ref": "#/$defs/mode" },
-        "fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "selection": { "$ref": "#/$defs/selection" },
+        "execution": { "$ref": "#/$defs/execution" },
         "output": { "$ref": "#/$defs/output" },
-        "summary": { "$ref": "#/$defs/summary" },
+        "index": { "$ref": "#/$defs/index" },
+        "filters": { "$ref": "#/$defs/filters" },
         "notes": {
           "type": "array",
           "items": { "type": "string" }
@@ -55,14 +122,14 @@
     "failureData": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["format", "mode", "fraction"],
+      "required": ["format"],
       "properties": {
         "format": { "$ref": "#/$defs/format" },
-        "mode": { "$ref": "#/$defs/mode" },
-        "fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "selection": { "$ref": "#/$defs/selection" },
+        "execution": { "$ref": "#/$defs/execution" },
         "output": { "$ref": "#/$defs/output" },
-        "summary": { "$ref": "#/$defs/summary" },
+        "index": { "$ref": "#/$defs/index" },
+        "filters": { "$ref": "#/$defs/filters" },
         "notes": {
           "type": "array",
           "items": { "type": "string" }

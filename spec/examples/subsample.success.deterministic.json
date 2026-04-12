@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "command": "subsample",
+  "path": "reads.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ",
+    "selection": {
+      "mode": "deterministic",
+      "fraction_requested": 0.25,
+      "seed": null,
+      "deterministic_identity": "full_record"
+    },
+    "execution": {
+      "dry_run": false,
+      "records_examined": 1000000,
+      "records_retained": 249811,
+      "fraction_retained_observed": 0.249811,
+      "order_preserved": true,
+      "eligible_records_examined": null
+    },
+    "output": {
+      "path": "reads.subsampled.fastq.gz",
+      "written": true,
+      "overwritten": false
+    },
+    "notes": [
+      "Subsample is intended for production workflows and reproducible benchmarking on large BAM and FASTQ inputs.",
+      "Retained record order follows input encounter order.",
+      "Deterministic hash-based subsampling was applied using the full_record identity basis.",
+      "FASTQ output compression is inferred from the output filename extension; .gz writes gzip-compressed FASTQ."
+    ]
+  },
+  "error": null
+}

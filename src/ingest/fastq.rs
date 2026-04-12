@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader, BufWriter, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use flate2::read::MultiGzDecoder;
@@ -109,33 +109,89 @@ pub(crate) fn read_next_fastq_record(
 }
 
 pub fn write_fastq_records(path: &Path, records: &[FastqRecord]) -> Result<(), AppError> {
-    let file = File::create(path).map_err(|error| AppError::WriteError {
-        path: path.to_path_buf(),
-        message: error.to_string(),
-    })?;
+    let mut writer = FastqWriter::create(path)?;
+    for record in records {
+        writer.write_record(record)?;
+    }
+    writer.finish()?;
+    Ok(())
+}
 
-    if path
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("gz"))
-    {
-        let writer = BufWriter::new(file);
-        let mut encoder = GzEncoder::new(writer, Compression::default());
-        write_fastq_records_to_writer(&mut encoder, records, path)?;
-        encoder.finish().map_err(|error| AppError::WriteError {
+pub struct FastqWriter {
+    path: PathBuf,
+    inner: FastqWriterInner,
+}
+
+enum FastqWriterInner {
+    Plain(BufWriter<File>),
+    Gzip(GzEncoder<BufWriter<File>>),
+}
+
+impl FastqWriter {
+    pub fn create(path: &Path) -> Result<Self, AppError> {
+        let file = File::create(path).map_err(|error| AppError::WriteError {
             path: path.to_path_buf(),
             message: error.to_string(),
         })?;
-    } else {
-        let mut writer = BufWriter::new(file);
-        write_fastq_records_to_writer(&mut writer, records, path)?;
-        writer.flush().map_err(|error| AppError::WriteError {
+
+        let inner = if path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("gz"))
+        {
+            FastqWriterInner::Gzip(GzEncoder::new(BufWriter::new(file), Compression::default()))
+        } else {
+            FastqWriterInner::Plain(BufWriter::new(file))
+        };
+
+        Ok(Self {
             path: path.to_path_buf(),
-            message: error.to_string(),
-        })?;
+            inner,
+        })
     }
 
-    Ok(())
+    pub fn write_record(&mut self, record: &FastqRecord) -> Result<(), AppError> {
+        for line in [
+            &record.raw_header_line,
+            &record.sequence,
+            &record.plus_line,
+            &record.quality,
+        ] {
+            self.write_all(line.as_bytes())?;
+            self.write_all(b"\n")?;
+        }
+
+        Ok(())
+    }
+
+    pub fn finish(mut self) -> Result<(), AppError> {
+        match &mut self.inner {
+            FastqWriterInner::Plain(writer) => {
+                writer.flush().map_err(|error| AppError::WriteError {
+                    path: self.path.clone(),
+                    message: error.to_string(),
+                })
+            }
+            FastqWriterInner::Gzip(encoder) => {
+                encoder.try_finish().map_err(|error| AppError::WriteError {
+                    path: self.path.clone(),
+                    message: error.to_string(),
+                })?;
+                Ok(())
+            }
+        }
+    }
+
+    fn write_all(&mut self, bytes: &[u8]) -> Result<(), AppError> {
+        match &mut self.inner {
+            FastqWriterInner::Plain(writer) => writer.write_all(bytes),
+            FastqWriterInner::Gzip(encoder) => encoder.write_all(bytes),
+        }
+        .map_err(|error| AppError::WriteError {
+            path: self.path.clone(),
+            message: error.to_string(),
+        })
+    }
 }
 
 fn read_next_line(reader: &mut dyn BufRead, path: &Path) -> Result<Option<String>, AppError> {
