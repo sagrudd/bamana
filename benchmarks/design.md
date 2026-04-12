@@ -166,6 +166,14 @@ Failures are data.
 | `rasusa` | unsupported by default pending fair strategy pinning | unsupported by default pending fair strategy pinning | unsupported by default pending fair strategy pinning |
 | `fastcat` | unsupported | unsupported | partial |
 
+The audited per-tool workflow definitions now live in:
+
+* [tools/workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md)
+* [tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
+
+Those files are the source of truth for supported versus unsupported tool and
+scenario pairings, exact `workflow_variant` ids, and wrapper entrypoints.
+
 ## 6. Input Expectations
 
 The framework is intended for large real files supplied by the user.
@@ -263,6 +271,29 @@ Per-run rows record at least:
 * exit code
 * success flag
 * notes
+
+### 8.1 Why Workflow Variants Matter
+
+Benchmarking is only interpretable if the framework records not just which
+tool ran, but what that tool actually did.
+
+The benchmark layer therefore separates:
+
+* tool identity: `bamana`, `samtools`, `fastcat`, and other comparators
+* workflow variant: the exact operation chain for a tool in one scenario, such
+  as `bamana_subsample_sort_partial_index` or `fastcat_concat_gzip`
+* wrapper implementation: the Nextflow module or shell wrapper that invoked the
+  comparator and captured version, command-path provenance, and outputs
+
+This matters because two tools can both participate in a scenario while still
+following materially different native command paths. Those paths must remain
+auditable in result tables and publication figures.
+
+The wrapper and registry contract for this layer lives in:
+
+* [tools/tool_wrapper_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/tool_wrapper_contract.md)
+* [tools/tool_registry.schema.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.schema.json)
+* [tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
 
 These fields are intended to make benchmark results interpretable when large
 input locality or staging policy differs across environments.

@@ -198,40 +198,40 @@ def manifestTuples(def manifestPath) {
 def workflowVariantFor(String tool, String scenario) {
     def mapping = [
         bamana  : [
-            mapped_bam_pipeline  : 'subsample_sort_partial_index',
-            unmapped_bam_pipeline: 'subsample_only',
-            fastq_consume_pipeline: 'consume_to_unmapped_bam',
-            subsample_only       : 'subsample_only'
+            mapped_bam_pipeline   : 'bamana_subsample_sort_partial_index',
+            unmapped_bam_pipeline : 'bamana_subsample_only',
+            fastq_consume_pipeline: 'bamana_consume_unmapped_bam',
+            subsample_only        : 'bamana_subsample_only'
         ],
         samtools: [
-            mapped_bam_pipeline  : 'subsample_sort_index',
-            unmapped_bam_pipeline: 'subsample_only',
+            mapped_bam_pipeline   : 'samtools_view_sort_index',
+            unmapped_bam_pipeline : 'samtools_view_subsample_only',
             fastq_consume_pipeline: 'unsupported',
-            subsample_only       : 'subsample_only'
+            subsample_only        : 'samtools_view_subsample_only'
         ],
         sambamba: [
-            mapped_bam_pipeline  : 'subsample_sort_index',
-            unmapped_bam_pipeline: 'subsample_only',
+            mapped_bam_pipeline   : 'sambamba_view_sort_index',
+            unmapped_bam_pipeline : 'sambamba_view_subsample_only',
             fastq_consume_pipeline: 'unsupported',
-            subsample_only       : 'subsample_only'
+            subsample_only        : 'sambamba_view_subsample_only'
         ],
         seqtk   : [
-            mapped_bam_pipeline  : 'unsupported',
-            unmapped_bam_pipeline: 'unsupported',
-            fastq_consume_pipeline: 'fractional_fastq_sample',
-            subsample_only       : 'fractional_fastq_sample'
+            mapped_bam_pipeline   : 'unsupported',
+            unmapped_bam_pipeline : 'unsupported',
+            fastq_consume_pipeline: 'seqtk_sample_gzip',
+            subsample_only        : 'seqtk_sample_gzip'
         ],
         rasusa  : [
-            mapped_bam_pipeline  : 'strategy_required',
-            unmapped_bam_pipeline: 'strategy_required',
-            fastq_consume_pipeline: 'strategy_required',
-            subsample_only       : 'strategy_required'
+            mapped_bam_pipeline   : 'rasusa_strategy_required',
+            unmapped_bam_pipeline : 'rasusa_strategy_required',
+            fastq_consume_pipeline: 'rasusa_strategy_required',
+            subsample_only        : 'rasusa_strategy_required'
         ],
         fastcat : [
-            mapped_bam_pipeline  : 'unsupported',
-            unmapped_bam_pipeline: 'unsupported',
-            fastq_consume_pipeline: 'fastq_concat_only',
-            subsample_only       : 'unsupported'
+            mapped_bam_pipeline   : 'unsupported',
+            unmapped_bam_pipeline : 'unsupported',
+            fastq_consume_pipeline: 'fastcat_concat_gzip',
+            subsample_only        : 'unsupported'
         ]
     ]
     return mapping[tool][scenario]

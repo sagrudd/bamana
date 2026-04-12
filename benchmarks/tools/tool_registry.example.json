@@ -1,0 +1,311 @@
+{
+  "registry_version": "1.0.0",
+  "tools": [
+    {
+      "id": "bamana",
+      "display_name": "Bamana",
+      "category": "mixed",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_bamana.nf",
+        "entrypoint": "RUN_BAMANA_BENCHMARK",
+        "supports_threads": true,
+        "supports_subsample": true,
+        "supports_sort": true,
+        "supports_index": false,
+        "supports_consume": true
+      },
+      "version_command": "\"${meta.bamana_bin}\" --version",
+      "supports_scenarios": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "bamana_subsample_sort_partial_index",
+          "status": "supported",
+          "operation_ordering": ["subsample", "sort"],
+          "notes": "Partial because executable BAM index creation remains deferred."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "bamana_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["subsample"],
+          "notes": "Direct BAM subsampling path."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "bamana_consume_unmapped_bam",
+          "status": "supported",
+          "operation_ordering": ["consume"],
+          "notes": "Consumes FASTQ.GZ into unmapped BAM."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "bamana_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["subsample"],
+          "notes": "Supports BAM and FASTQ.GZ."
+        }
+      ],
+      "notes": "Primary project tool; benchmark-native workflow remains explicit in results."
+    },
+    {
+      "id": "samtools",
+      "display_name": "samtools",
+      "category": "bam_toolkit",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_samtools.nf",
+        "entrypoint": "RUN_SAMTOOLS_BENCHMARK",
+        "supports_threads": true,
+        "supports_subsample": true,
+        "supports_sort": true,
+        "supports_index": true,
+        "supports_consume": false
+      },
+      "version_command": "samtools --version",
+      "supports_scenarios": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "subsample_only"
+      ],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "samtools_view_sort_index",
+          "status": "supported",
+          "operation_ordering": ["view_subsample", "sort", "index"],
+          "notes": "Canonical BAM comparator path."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "samtools_view_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["view_subsample"],
+          "notes": "Subsample-only BAM path without sort or index."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a suitable FASTQ consume comparator in the current framework."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "samtools_view_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["view_subsample"],
+          "notes": "BAM-only subsample comparator path."
+        }
+      ],
+      "notes": "Canonical BAM baseline for mapped and unmapped BAM scenarios."
+    },
+    {
+      "id": "fastcat",
+      "display_name": "EPI2ME fastcat",
+      "category": "consume_normalizer",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_fastcat.nf",
+        "entrypoint": "RUN_FASTCAT_BENCHMARK",
+        "supports_threads": false,
+        "supports_subsample": false,
+        "supports_sort": false,
+        "supports_index": false,
+        "supports_consume": true
+      },
+      "version_command": "fastcat --version",
+      "supports_scenarios": [
+        "fastq_consume_pipeline"
+      ],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a BAM sort/index comparator."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not an unmapped BAM toolkit comparator."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "fastcat_concat_gzip",
+          "status": "supported",
+          "operation_ordering": ["fastcat_concat", "gzip"],
+          "notes": "Partial comparator for FASTQ ingestion and concatenation workflows."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a subsampling comparator."
+        }
+      ],
+      "notes": "Included because one project goal is to beat fastcat in FASTQ ingestion and concatenation space."
+    },
+    {
+      "id": "sambamba",
+      "display_name": "sambamba",
+      "category": "bam_toolkit",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_sambamba.nf",
+        "entrypoint": "RUN_SAMBAMBA_BENCHMARK",
+        "supports_threads": true,
+        "supports_subsample": true,
+        "supports_sort": true,
+        "supports_index": true,
+        "supports_consume": false
+      },
+      "version_command": "sambamba --version",
+      "supports_scenarios": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "subsample_only"
+      ],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "sambamba_view_sort_index",
+          "status": "supported",
+          "operation_ordering": ["view_subsample", "sort", "index"],
+          "notes": "Additional BAM comparator."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "sambamba_view_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["view_subsample"],
+          "notes": "Subsample-only BAM path."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a FASTQ consume comparator."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "sambamba_view_subsample_only",
+          "status": "supported",
+          "operation_ordering": ["view_subsample"],
+          "notes": "BAM-only subsample comparator path."
+        }
+      ],
+      "notes": "Additional BAM comparator with multithreaded capabilities."
+    },
+    {
+      "id": "seqtk",
+      "display_name": "seqtk",
+      "category": "fastq_toolkit",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_seqtk.nf",
+        "entrypoint": "RUN_SEQTK_BENCHMARK",
+        "supports_threads": false,
+        "supports_subsample": true,
+        "supports_sort": false,
+        "supports_index": false,
+        "supports_consume": false
+      },
+      "version_command": "seqtk 2>&1",
+      "supports_scenarios": [
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a BAM comparator."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "unsupported",
+          "status": "unsupported",
+          "operation_ordering": [],
+          "notes": "Not a BAM comparator."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "seqtk_sample_gzip",
+          "status": "supported",
+          "operation_ordering": ["sample", "gzip"],
+          "notes": "Partial FASTQ-only comparator."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "seqtk_sample_gzip",
+          "status": "supported",
+          "operation_ordering": ["sample", "gzip"],
+          "notes": "FASTQ-only subsampling comparator."
+        }
+      ],
+      "notes": "Used for FASTQ-oriented partial benchmarking."
+    },
+    {
+      "id": "rasusa",
+      "display_name": "rasusa",
+      "category": "subsampler",
+      "wrapper": {
+        "type": "nextflow_process",
+        "path": "benchmarks/modules/run_rasusa.nf",
+        "entrypoint": "RUN_RASUSA_BENCHMARK",
+        "supports_threads": false,
+        "supports_subsample": true,
+        "supports_sort": false,
+        "supports_index": false,
+        "supports_consume": false
+      },
+      "version_command": "rasusa --version",
+      "supports_scenarios": [],
+      "workflow_variants": [
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "rasusa_strategy_required",
+          "status": "planned",
+          "operation_ordering": [],
+          "notes": "Deferred pending fair strategy definition."
+        },
+        {
+          "scenario": "unmapped_bam_pipeline",
+          "workflow_variant_id": "rasusa_strategy_required",
+          "status": "planned",
+          "operation_ordering": [],
+          "notes": "Deferred pending fair strategy definition."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "rasusa_strategy_required",
+          "status": "planned",
+          "operation_ordering": [],
+          "notes": "Deferred pending fair strategy definition."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "rasusa_strategy_required",
+          "status": "planned",
+          "operation_ordering": [],
+          "notes": "Deferred pending fair strategy definition."
+        }
+      ],
+      "notes": "Explicitly represented so deferred comparator strategy remains visible."
+    }
+  ]
+}

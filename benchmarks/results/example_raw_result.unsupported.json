@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "run_id": "fastcat.mapped_bam_pipeline.hg38_wgs_mapped.rep1",
   "timestamp_utc": "2026-04-12T11:42:20Z",
-  "benchmark_framework_version": "858da29",
+  "benchmark_framework_version": "tool-wrapper-contract-example",
   "scenario": "mapped_bam_pipeline",
   "workflow_variant": "unsupported",
   "tool": "fastcat",

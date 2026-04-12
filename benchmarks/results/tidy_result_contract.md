@@ -24,6 +24,13 @@ The raw JSON preserves nested execution context.
 
 The tidy row flattens that context into plotting-friendly columns.
 
+The canonical source for `tool`, `tool_version`, and `workflow_variant`
+semantics is now the benchmark tool-wrapper layer:
+
+* [benchmarks/tools/tool_wrapper_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/tool_wrapper_contract.md)
+* [benchmarks/tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
+* [benchmarks/tools/workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md)
+
 ## Required Columns
 
 Required tidy columns:
@@ -78,8 +85,9 @@ interpretation, for example:
 
 * `run_id`: unique identifier for one attempted run
 * `scenario`: stable scenario id such as `mapped_bam_pipeline`
-* `workflow_variant`: exact tool-specific execution path
-* `tool` and `tool_version`: comparator identity
+* `workflow_variant`: exact tool-specific execution path from the tool registry
+* `tool` and `tool_version`: comparator identity and discovered version as
+  reported by the wrapper contract
 
 ### Input Provenance
 

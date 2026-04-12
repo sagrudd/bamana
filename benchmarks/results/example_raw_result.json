@@ -2,9 +2,9 @@
   "schema_version": "1.0.0",
   "run_id": "bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1",
   "timestamp_utc": "2026-04-12T11:42:19Z",
-  "benchmark_framework_version": "858da29",
+  "benchmark_framework_version": "tool-wrapper-contract-example",
   "scenario": "mapped_bam_pipeline",
-  "workflow_variant": "subsample_sort_partial_index",
+  "workflow_variant": "bamana_subsample_sort_partial_index",
   "tool": "bamana",
   "tool_version": "bamana 0.1.0",
   "input": {

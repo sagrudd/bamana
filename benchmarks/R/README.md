@@ -13,6 +13,7 @@ Primary contract files:
 * [../results/result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json): structured raw per-run JSON contract
 * [../results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy row contract
 * [../results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): column-level semantics and aggregation rules
+* [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical tool and workflow variant ids used in tidy rows
 
 ## What `aggregate_results.R` Reads
 

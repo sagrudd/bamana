@@ -68,6 +68,7 @@ comparisons explicitly instead of pretending the tools are directly equivalent.
 * [inputs/](/Users/stephen/Projects/bamana/benchmarks/inputs): manifest schema, example manifest, and operator guidance
 * [params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json): benchmark parameter schema
 * [params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples): ready-to-edit example Nextflow params files
+* [tools/](/Users/stephen/Projects/bamana/benchmarks/tools): tool-wrapper contract, registry, and workflow-variant matrix
 * [Dockerfile](/Users/stephen/Projects/bamana/benchmarks/Dockerfile): reproducible benchmark environment
 
 ## Benchmark Scenarios
@@ -149,6 +150,20 @@ execution order. Instead, it records:
 Unsupported combinations are recorded explicitly in the result tables instead
 of being silently omitted or misreported as slow.
 
+The governing documents for this layer are:
+
+* [tools/tool_wrapper_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/tool_wrapper_contract.md)
+* [tools/workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md)
+* [tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
+
+Tool identity, workflow variant, and wrapper implementation are intentionally
+kept separate:
+
+* tool identity answers which comparator was benchmarked
+* workflow variant answers which exact operation chain that comparator ran
+* wrapper implementation answers how Nextflow invoked it and how provenance was
+  captured
+
 ## Result Outputs
 
 The benchmark result layer has two levels:
@@ -186,6 +201,10 @@ The key rule is that unsupported and failed runs remain explicit:
 * unsupported is not failure
 * failed is not unsupported
 * successful runs alone drive performance summaries
+
+The `tool`, `tool_version`, and `workflow_variant` fields are governed by the
+tool registry and wrapper contract so that publication figures can be traced
+back to an explicit comparator path rather than an implicit Nextflow branch.
 
 ## Quick Start With Your Own BAM or FASTQ.GZ Inputs
 
