@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 nextflow.enable.dsl = 2
 
 include { STAGE_INPUT } from './modules/stage_input'
@@ -31,15 +33,143 @@ def slugify(String value) {
         .replaceAll(/[^A-Za-z0-9._-]+/, '_')
 }
 
+def manifestInputType(String category) {
+    switch (category) {
+        case 'mapped_bam':
+        case 'unmapped_bam':
+            return 'BAM'
+        case 'fastq_gz':
+            return 'FASTQ_GZ'
+        default:
+            error "Unsupported benchmark input type '${category}' in manifest. Expected mapped_bam, unmapped_bam, or fastq_gz."
+    }
+}
+
+def manifestMappingState(String category, String declaredState) {
+    if (declaredState != null && !declaredState.trim().isEmpty()) {
+        return declaredState.trim()
+    }
+    switch (category) {
+        case 'mapped_bam':
+            return 'mapped'
+        case 'unmapped_bam':
+            return 'unmapped'
+        case 'fastq_gz':
+            return 'not_applicable'
+        default:
+            return 'unspecified'
+    }
+}
+
+def defaultScenarioMaterialization(String inputType) {
+    if (inputType == 'BAM') {
+        return 'source_or_subsampled_bam'
+    }
+    if (inputType == 'FASTQ_GZ') {
+        return 'source_or_subsampled_fastq_gz'
+    }
+    'source'
+}
+
+def defaultExpectedSortOrder(String category) {
+    switch (category) {
+        case 'mapped_bam':
+            return 'coordinate'
+        case 'unmapped_bam':
+            return 'unspecified'
+        case 'fastq_gz':
+            return 'not_applicable'
+        default:
+            return 'unspecified'
+    }
+}
+
+def defaultAllowedScenarios(String inputType, String mappingState) {
+    if (inputType == 'BAM' && mappingState == 'mapped') {
+        return ['mapped_bam_chain']
+    }
+    if (inputType == 'BAM' && mappingState == 'unmapped') {
+        return ['unmapped_bam_chain']
+    }
+    if (inputType == 'FASTQ_GZ') {
+        return ['fastq_ingest_chain']
+    }
+    return []
+}
+
 def inputTuples(List paths, String inputType, String mappingState) {
     paths.collect { pathString ->
         def inputFile = file(pathString, checkIfExists: true)
         def inputId = slugify(inputFile.getName())
         tuple(
             [
-                input_id     : inputId,
-                input_type   : inputType,
-                mapping_state: mappingState
+                input_id                  : inputId,
+                input_type                : inputType,
+                mapping_state             : mappingState,
+                source_input_id           : inputId,
+                source_input_path         : inputFile.toString(),
+                source_input_type         : inputType,
+                source_category           : inputType == 'FASTQ_GZ' ? 'fastq_gz' : "${mappingState}_bam",
+                description               : '',
+                expected_sort_order       : inputType == 'FASTQ_GZ' ? 'not_applicable' : (mappingState == 'mapped' ? 'coordinate' : 'unspecified'),
+                has_index                 : false,
+                reference_context         : 'unspecified',
+                source_owner              : 'user_supplied',
+                sensitivity_level         : 'unspecified',
+                storage_context           : params.storage_context.toString(),
+                staging_mode              : params.staging_mode.toString(),
+                scenario_materialization  : defaultScenarioMaterialization(inputType),
+                reuse_materialized_inputs : params.reuse_materialized_inputs as boolean,
+                include_staging_in_timing : params.include_staging_in_timing as boolean,
+                allowed_benchmark_scenarios: defaultAllowedScenarios(inputType, mappingState),
+                notes                     : ''
+            ],
+            inputFile
+        )
+    }
+}
+
+def manifestTuples(def manifestPath) {
+    if (manifestPath == null || manifestPath.toString().trim().isEmpty()) {
+        return []
+    }
+
+    def manifestFile = file(manifestPath.toString(), checkIfExists: true)
+    def manifest = new JsonSlurper().parseText(manifestFile.text)
+    def entries = manifest.entries instanceof Collection ? manifest.entries : []
+
+    entries.collect { entry ->
+        def category = entry.type.toString()
+        def inputType = manifestInputType(category)
+        def mappingState = manifestMappingState(category, entry.mapped_state?.toString())
+        def inputFile = file(entry.path.toString(), checkIfExists: true)
+        def allowedScenarios = normalizeList(entry.allowed_benchmark_scenarios)
+        if (allowedScenarios.isEmpty()) {
+            allowedScenarios = defaultAllowedScenarios(inputType, mappingState)
+        }
+
+        tuple(
+            [
+                input_id                  : entry.id.toString(),
+                input_type                : inputType,
+                mapping_state             : mappingState,
+                source_input_id           : entry.id.toString(),
+                source_input_path         : inputFile.toString(),
+                source_input_type         : inputType,
+                source_category           : category,
+                description               : entry.description?.toString() ?: '',
+                expected_sort_order       : entry.expected_sort_order?.toString() ?: defaultExpectedSortOrder(category),
+                has_index                 : (entry.has_index ?: false) as boolean,
+                reference_context         : entry.reference_context?.toString() ?: 'unspecified',
+                source_owner              : entry.source_owner?.toString() ?: 'unspecified',
+                sensitivity_level         : entry.sensitivity_level?.toString() ?: 'unspecified',
+                storage_context           : entry.storage_context?.toString() ?: params.storage_context.toString(),
+                staging_mode              : entry.staging_policy?.mode?.toString() ?: params.staging_mode.toString(),
+                scenario_materialization  : entry.scenario_materialization?.toString() ?: defaultScenarioMaterialization(inputType),
+                reuse_materialized_inputs : entry.reuse_materialized_inputs != null ? entry.reuse_materialized_inputs as boolean : params.reuse_materialized_inputs as boolean,
+                include_staging_in_timing : entry.include_staging_in_timing != null ? entry.include_staging_in_timing as boolean : params.include_staging_in_timing as boolean,
+                allowed_benchmark_scenarios: allowedScenarios,
+                notes                     : entry.notes?.toString() ?: ''
             ],
             inputFile
         )
@@ -84,6 +214,11 @@ def workflowVariantFor(String tool, String scenario) {
 
 def applicableScenarios(Map meta, List scenarios) {
     scenarios.findAll { scenario ->
+        if (meta.allowed_benchmark_scenarios instanceof Collection && !meta.allowed_benchmark_scenarios.isEmpty()) {
+            if (!meta.allowed_benchmark_scenarios.contains(scenario)) {
+                return false
+            }
+        }
         if (scenario == 'mapped_bam_chain') {
             return meta.input_type == 'BAM' && meta.mapping_state == 'mapped'
         }
@@ -149,12 +284,13 @@ workflow {
     def warmupRuns = params.warmup_runs as int
 
     def allInputs = []
+    allInputs.addAll(manifestTuples(params.input_manifest))
     allInputs.addAll(inputTuples(normalizeList(params.mapped_bams), 'BAM', 'mapped'))
     allInputs.addAll(inputTuples(normalizeList(params.unmapped_bams), 'BAM', 'unmapped'))
     allInputs.addAll(inputTuples(normalizeList(params.fastq_gzs), 'FASTQ_GZ', 'not_applicable'))
 
     if (allInputs.isEmpty()) {
-        error "No benchmark inputs were provided. Supply mapped_bams, unmapped_bams, and/or fastq_gzs."
+        error "No benchmark inputs were provided. Supply input_manifest, mapped_bams, unmapped_bams, and/or fastq_gzs."
     }
 
     raw_inputs = Channel.fromList(allInputs)

@@ -176,8 +176,28 @@ Expected inputs include:
 * unmapped BAM for subsample-only benchmarking
 * FASTQ.GZ collections for ingestion and concatenation comparisons
 
+The preferred input declaration mechanism is a manifest rather than ad hoc path
+lists. The manifest records:
+
+* source input id
+* source input path
+* input category
+* mapped state
+* expected sort order
+* index availability
+* storage context
+* staging policy
+* allowed scenarios
+
 The pipeline computes input size and exact record counts once per input so the
 benchmark layer can report throughput rather than timing only.
+
+The repository-level policy for source and derived benchmark inputs is defined
+in:
+
+* [input-policy.md](/Users/stephen/Projects/bamana/benchmarks/input-policy.md)
+* [staging.md](/Users/stephen/Projects/bamana/benchmarks/staging.md)
+* [cleanup.md](/Users/stephen/Projects/bamana/benchmarks/cleanup.md)
 
 ## 7. Replication Strategy
 
@@ -197,12 +217,25 @@ Recommended first pass:
 Deterministic mode reduces workload variance. Repeated runs still capture
 system-level variance.
 
+Replication policy for staged and derived inputs:
+
+* source inputs are read-only and external
+* staged inputs should be materialized before timing
+* deterministic or seeded derived inputs should be generated once per
+  source-plus-policy combination and reused across replicates
+* replicate content should remain stable unless a scenario explicitly studies
+  input randomness or cache effects
+
 ## 8. Measurement Outputs
 
 Per-run rows record at least:
 
 * scenario
+* source input id and source input path
+* staged input id and staged input path
 * input type and input size
+* staging mode and storage context
+* scenario materialization
 * tool and tool version
 * workflow variant
 * replicate id and warmup status
@@ -215,6 +248,9 @@ Per-run rows record at least:
 * exit code
 * success flag
 * notes
+
+These fields are intended to make benchmark results interpretable when large
+input locality or staging policy differs across environments.
 
 The schema is defined in
 [benchmarks/results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json).

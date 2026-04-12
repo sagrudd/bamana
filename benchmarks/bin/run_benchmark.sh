@@ -71,6 +71,23 @@ tool_version="$(
 input_bytes="$(jq -r '.input_bytes // empty' "$input_metrics_json")"
 input_records="$(jq -r '.records_processed // empty' "$input_metrics_json")"
 input_basename="$(basename "$input_path")"
+source_input_id="$(jq -r '.source_input_id // empty' "$input_metrics_json")"
+source_input_path="$(jq -r '.source_input_path // empty' "$input_metrics_json")"
+source_input_type="$(jq -r '.source_input_type // empty' "$input_metrics_json")"
+source_category="$(jq -r '.source_category // empty' "$input_metrics_json")"
+expected_sort_order="$(jq -r '.expected_sort_order // "unspecified"' "$input_metrics_json")"
+has_index="$(jq -r '.has_index // false' "$input_metrics_json")"
+reference_context="$(jq -r '.reference_context // "unspecified"' "$input_metrics_json")"
+source_owner="$(jq -r '.source_owner // "unspecified"' "$input_metrics_json")"
+sensitivity_level="$(jq -r '.sensitivity_level // "unspecified"' "$input_metrics_json")"
+staged_input_id="$(jq -r '.staged_input_id // empty' "$input_metrics_json")"
+staged_input_path="$(jq -r '.staged_input_path // empty' "$input_metrics_json")"
+staging_mode="$(jq -r '.staging_mode // "unspecified"' "$input_metrics_json")"
+staging_realization="$(jq -r '.staging_realization // "unspecified"' "$input_metrics_json")"
+scenario_materialization="$(jq -r '.scenario_materialization // "unspecified"' "$input_metrics_json")"
+reuse_materialized_inputs="$(jq -r '.reuse_materialized_inputs // false' "$input_metrics_json")"
+include_staging_in_timing="$(jq -r '.include_staging_in_timing // false' "$input_metrics_json")"
+storage_context="$(jq -r '.storage_context // "unspecified"' "$input_metrics_json")"
 
 stdout_path="${run_id}.stdout.log"
 stderr_path="${run_id}.stderr.log"
@@ -95,17 +112,34 @@ write_result() {
   local combined_notes="${14}"
 
   printf "%s\n" \
-    "benchmark_id	scenario	input_type	mapping_state	input_path	input_basename	input_bytes	input_records	tool	tool_version	workflow_variant	semantic_equivalence	support_status	replicate	warmup_run	subsample_fraction	subsample_seed	subsample_mode	threads	wall_seconds	user_cpu_seconds	system_cpu_seconds	cpu_seconds	max_rss_bytes	exit_code	success	output_path	output_bytes	compression_ratio	records_processed	container_image	command_line	notes	started_at	finished_at" \
-    "${run_id}	${scenario}	${input_type}	${mapping_state}	${input_path}	${input_basename}	${input_bytes}	${input_records}	${tool}	${tool_version}	${workflow_variant}	${semantic_equivalence}	${support_status}	${replicate}	${warmup_run}	${subsample_fraction}	${subsample_seed}	${subsample_mode}	${threads}	${wall_seconds}	${user_cpu_seconds}	${system_cpu_seconds}	${cpu_seconds}	${max_rss_bytes}	${exit_code}	${success}	${output_target}	${output_bytes}	${compression_ratio}	${records_processed}	${container_image}	${command_line}	${combined_notes}	${started_at}	${finished_at}" \
+    "benchmark_id	scenario	source_input_id	source_input_path	source_input_type	source_category	input_type	mapping_state	input_path	input_basename	expected_sort_order	has_index	reference_context	source_owner	sensitivity_level	staged_input_id	staged_input_path	staging_mode	staging_realization	scenario_materialization	reuse_materialized_inputs	include_staging_in_timing	storage_context	input_bytes	input_records	tool	tool_version	workflow_variant	semantic_equivalence	support_status	replicate	warmup_run	subsample_fraction	subsample_seed	subsample_mode	threads	wall_seconds	user_cpu_seconds	system_cpu_seconds	cpu_seconds	max_rss_bytes	exit_code	success	output_path	output_bytes	compression_ratio	records_processed	container_image	command_line	notes	started_at	finished_at" \
+    "${run_id}	${scenario}	${source_input_id}	${source_input_path}	${source_input_type}	${source_category}	${input_type}	${mapping_state}	${input_path}	${input_basename}	${expected_sort_order}	${has_index}	${reference_context}	${source_owner}	${sensitivity_level}	${staged_input_id}	${staged_input_path}	${staging_mode}	${staging_realization}	${scenario_materialization}	${reuse_materialized_inputs}	${include_staging_in_timing}	${storage_context}	${input_bytes}	${input_records}	${tool}	${tool_version}	${workflow_variant}	${semantic_equivalence}	${support_status}	${replicate}	${warmup_run}	${subsample_fraction}	${subsample_seed}	${subsample_mode}	${threads}	${wall_seconds}	${user_cpu_seconds}	${system_cpu_seconds}	${cpu_seconds}	${max_rss_bytes}	${exit_code}	${success}	${output_target}	${output_bytes}	${compression_ratio}	${records_processed}	${container_image}	${command_line}	${combined_notes}	${started_at}	${finished_at}" \
     >"${result_tsv}"
 
   jq -n \
     --arg benchmark_id "$run_id" \
     --arg scenario "$scenario" \
+    --arg source_input_id "$source_input_id" \
+    --arg source_input_path "$source_input_path" \
+    --arg source_input_type "$source_input_type" \
+    --arg source_category "$source_category" \
     --arg input_type "$input_type" \
     --arg mapping_state "$mapping_state" \
     --arg input_path "$input_path" \
     --arg input_basename "$input_basename" \
+    --arg expected_sort_order "$expected_sort_order" \
+    --argjson has_index "$has_index" \
+    --arg reference_context "$reference_context" \
+    --arg source_owner "$source_owner" \
+    --arg sensitivity_level "$sensitivity_level" \
+    --arg staged_input_id "$staged_input_id" \
+    --arg staged_input_path "$staged_input_path" \
+    --arg staging_mode "$staging_mode" \
+    --arg staging_realization "$staging_realization" \
+    --arg scenario_materialization "$scenario_materialization" \
+    --argjson reuse_materialized_inputs "$reuse_materialized_inputs" \
+    --argjson include_staging_in_timing "$include_staging_in_timing" \
+    --arg storage_context "$storage_context" \
     --argjson input_bytes "${input_bytes:-0}" \
     --argjson input_records "${input_records:-0}" \
     --arg tool "$tool" \
@@ -138,10 +172,27 @@ write_result() {
     '{
       benchmark_id: $benchmark_id,
       scenario: $scenario,
+      source_input_id: $source_input_id,
+      source_input_path: $source_input_path,
+      source_input_type: $source_input_type,
+      source_category: $source_category,
       input_type: $input_type,
       mapping_state: $mapping_state,
       input_path: $input_path,
       input_basename: $input_basename,
+      expected_sort_order: $expected_sort_order,
+      has_index: $has_index,
+      reference_context: $reference_context,
+      source_owner: $source_owner,
+      sensitivity_level: $sensitivity_level,
+      staged_input_id: $staged_input_id,
+      staged_input_path: $staged_input_path,
+      staging_mode: $staging_mode,
+      staging_realization: $staging_realization,
+      scenario_materialization: $scenario_materialization,
+      reuse_materialized_inputs: $reuse_materialized_inputs,
+      include_staging_in_timing: $include_staging_in_timing,
+      storage_context: $storage_context,
       input_bytes: $input_bytes,
       input_records: $input_records,
       tool: $tool,

@@ -5,6 +5,10 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "input_manifest": {
+      "description": "Optional JSON manifest describing large external benchmark inputs and their staging policy.",
+      "type": ["string", "null"]
+    },
     "mapped_bams": {
       "description": "Mapped BAM files for Scenario A style benchmarks.",
       "oneOf": [
@@ -77,6 +81,37 @@
     "output_dir": {
       "type": "string",
       "default": "benchmarks/results/latest"
+    },
+    "derived_input_dir": {
+      "type": "string",
+      "default": "benchmarks/results/latest/derived_inputs"
+    },
+    "staging_mode": {
+      "type": "string",
+      "enum": ["direct", "copy", "hardlink", "symlink", "stream", "scratch_copy"],
+      "default": "symlink"
+    },
+    "include_staging_in_timing": {
+      "type": "boolean",
+      "default": false
+    },
+    "reuse_materialized_inputs": {
+      "type": "boolean",
+      "default": true
+    },
+    "storage_context": {
+      "type": "string",
+      "default": "unspecified"
+    },
+    "cleanup_policy": {
+      "type": "string",
+      "enum": [
+        "retain_derived_retain_failed",
+        "retain_all",
+        "delete_ephemeral_keep_failures",
+        "delete_ephemeral_delete_failures"
+      ],
+      "default": "retain_derived_retain_failed"
     },
     "enable_plotting": {
       "type": "boolean",

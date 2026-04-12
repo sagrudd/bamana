@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/inputs/manifest.schema.json",
+  "title": "Bamana Benchmark Input Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "entries"],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "string",
+      "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
+    },
+    "stagingMode": {
+      "type": "string",
+      "enum": ["direct", "copy", "hardlink", "symlink", "stream", "scratch_copy"]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "type",
+        "description",
+        "mapped_state",
+        "expected_sort_order",
+        "has_index",
+        "estimated_bytes",
+        "estimated_records",
+        "reference_context",
+        "source_owner",
+        "sensitivity_level",
+        "staging_policy",
+        "allowed_benchmark_scenarios",
+        "notes"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": ["mapped_bam", "unmapped_bam", "fastq_gz"]
+        },
+        "description": { "type": "string" },
+        "mapped_state": {
+          "type": "string",
+          "enum": ["mapped", "unmapped", "not_applicable"]
+        },
+        "expected_sort_order": {
+          "type": "string",
+          "enum": ["coordinate", "queryname", "unspecified", "not_applicable"]
+        },
+        "has_index": { "type": "boolean" },
+        "estimated_bytes": { "type": "integer", "minimum": 0 },
+        "estimated_records": { "type": "integer", "minimum": 0 },
+        "reference_context": { "type": "string" },
+        "source_owner": { "type": "string" },
+        "sensitivity_level": { "type": "string" },
+        "human_genome_equivalent": { "type": ["boolean", "null"] },
+        "platform": { "type": ["string", "null"] },
+        "compression": { "type": ["string", "null"] },
+        "read_layout": { "type": ["string", "null"] },
+        "storage_context": { "type": ["string", "null"] },
+        "requires_local_storage": { "type": ["boolean", "null"] },
+        "allow_copy": { "type": ["boolean", "null"] },
+        "allow_symlink": { "type": ["boolean", "null"] },
+        "allow_hardlink": { "type": ["boolean", "null"] },
+        "scenario_materialization": { "type": ["string", "null"] },
+        "reuse_materialized_inputs": { "type": ["boolean", "null"] },
+        "include_staging_in_timing": { "type": ["boolean", "null"] },
+        "staging_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": { "$ref": "#/$defs/stagingMode" },
+            "prefer_local_scratch": { "type": ["boolean", "null"] },
+            "measure_staging_as_workflow": { "type": ["boolean", "null"] }
+          }
+        },
+        "allowed_benchmark_scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/scenario" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

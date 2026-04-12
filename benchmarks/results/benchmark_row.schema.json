@@ -7,6 +7,13 @@
   "required": [
     "benchmark_id",
     "scenario",
+    "source_input_id",
+    "source_input_path",
+    "source_input_type",
+    "staged_input_id",
+    "staged_input_path",
+    "staging_mode",
+    "scenario_materialization",
     "input_type",
     "input_path",
     "input_bytes",
@@ -31,6 +38,13 @@
       "type": "string",
       "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
     },
+    "source_input_id": { "type": "string" },
+    "source_input_path": { "type": "string" },
+    "source_input_type": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ_GZ"]
+    },
+    "source_category": { "type": "string" },
     "input_type": {
       "type": "string",
       "enum": ["BAM", "FASTQ_GZ"]
@@ -38,6 +52,22 @@
     "mapping_state": { "type": "string" },
     "input_path": { "type": "string" },
     "input_basename": { "type": "string" },
+    "expected_sort_order": { "type": "string" },
+    "has_index": { "type": "boolean" },
+    "reference_context": { "type": "string" },
+    "source_owner": { "type": "string" },
+    "sensitivity_level": { "type": "string" },
+    "staged_input_id": { "type": "string" },
+    "staged_input_path": { "type": "string" },
+    "staging_mode": {
+      "type": "string",
+      "enum": ["direct", "copy", "hardlink", "symlink", "stream", "scratch_copy"]
+    },
+    "staging_realization": { "type": "string" },
+    "scenario_materialization": { "type": "string" },
+    "reuse_materialized_inputs": { "type": "boolean" },
+    "include_staging_in_timing": { "type": "boolean" },
+    "storage_context": { "type": "string" },
     "input_bytes": { "type": "number", "minimum": 0 },
     "input_records": { "type": "number", "minimum": 0 },
     "tool": {

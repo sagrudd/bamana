@@ -5,6 +5,10 @@ Bamana. The framework is intended for real large user-supplied files, including
 whole human genome BAM inputs and large FASTQ.GZ collections, and is designed
 to answer performance questions honestly even when Bamana does not yet win.
 
+The repository does not ship those large benchmark inputs. Instead, it ships
+the policy, schema, staging guidance, and example manifest needed to describe
+and benchmark them reproducibly.
+
 ## Purpose
 
 The benchmark suite exists to answer:
@@ -58,6 +62,10 @@ comparisons explicitly instead of pretending the tools are directly equivalent.
 * [R/](/Users/stephen/Projects/bamana/benchmarks/R): aggregation and plotting scripts
 * [results/](/Users/stephen/Projects/bamana/benchmarks/results): result schema and output layout notes
 * [design.md](/Users/stephen/Projects/bamana/benchmarks/design.md): benchmark design and fairness policy
+* [input-policy.md](/Users/stephen/Projects/bamana/benchmarks/input-policy.md): source-versus-derived input governance
+* [staging.md](/Users/stephen/Projects/bamana/benchmarks/staging.md): staging and reuse policy
+* [cleanup.md](/Users/stephen/Projects/bamana/benchmarks/cleanup.md): cleanup and retention rules
+* [inputs/](/Users/stephen/Projects/bamana/benchmarks/inputs): manifest schema, example manifest, and operator guidance
 * [params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json): benchmark parameter schema
 * [Dockerfile](/Users/stephen/Projects/bamana/benchmarks/Dockerfile): reproducible benchmark environment
 
@@ -72,6 +80,44 @@ The first framework defines three core scenarios:
   including Bamana `consume` and `fastcat`
 
 Replication is built in via `replicate_count` and `warmup_runs`.
+
+## Benchmark Inputs
+
+Large inputs should be supplied by manifest whenever the benchmark needs to be
+repeatable across operators or environments.
+
+Recommended flow:
+
+1. keep source BAM and FASTQ.GZ files outside the repository
+2. describe them with a JSON manifest
+3. validate the manifest locally
+4. run Nextflow with `--input_manifest`
+
+The first-slice manifest scaffold lives at:
+
+* [inputs/manifest.schema.json](/Users/stephen/Projects/bamana/benchmarks/inputs/manifest.schema.json)
+* [inputs/example_manifest.json](/Users/stephen/Projects/bamana/benchmarks/inputs/example_manifest.json)
+* [inputs/README.md](/Users/stephen/Projects/bamana/benchmarks/inputs/README.md)
+
+## Staging and Reuse Policy
+
+The benchmark framework distinguishes:
+
+* Tier A source inputs: large user-supplied read-only files
+* Tier B derived inputs: subsampled or normalized scenario artifacts
+
+Default policy:
+
+* benchmark-managed staging occurs before timed execution
+* staging metadata is recorded per run
+* deterministic or seeded derived inputs should be reused across replicates
+* source inputs must never be deleted by cleanup
+
+The detailed policy is in:
+
+* [input-policy.md](/Users/stephen/Projects/bamana/benchmarks/input-policy.md)
+* [staging.md](/Users/stephen/Projects/bamana/benchmarks/staging.md)
+* [cleanup.md](/Users/stephen/Projects/bamana/benchmarks/cleanup.md)
 
 ## Fairness Policy
 
@@ -122,17 +168,26 @@ Run the workflow with Docker:
 
 ```bash
 cd benchmarks
+python bin/validate_inputs.py --manifest /abs/path/to/benchmark-inputs.json
 nextflow run main.nf \
   -profile docker \
-  --mapped_bams "/data/hg38.mapped.bam" \
-  --unmapped_bams "/data/hg38.unmapped.bam" \
-  --fastq_gzs "/data/run.fastq.gz" \
+  --input_manifest "/abs/path/to/benchmark-inputs.json" \
   --replicate_count 5 \
   --warmup_runs 1 \
   --subsample_fraction 0.1 \
   --subsample_seed 104729 \
   --output_dir "/workspace/benchmarks/results/latest"
 ```
+
+Direct path parameters remain available for ad hoc runs:
+
+* `--mapped_bams`
+* `--unmapped_bams`
+* `--fastq_gzs`
+
+Manifest-driven runs are preferred for audited or publication-oriented
+benchmarks because they preserve source-input ids, staging policy, storage
+context, and allowed scenario declarations.
 
 ## Installed Toolchain
 
@@ -154,3 +209,15 @@ print_tool_versions.sh
 ```
 
 to capture the installed version baseline inside the container.
+
+## Storage Profiles
+
+The benchmark config includes example profiles for locality-sensitive runs:
+
+* `-profile local_ssd`
+* `-profile shared_fs`
+* `-profile docker`
+
+These profiles mainly set storage-context and staging defaults. They do not
+change the benchmark interpretation by themselves; the per-run metadata still
+records staging mode and storage context explicitly.
