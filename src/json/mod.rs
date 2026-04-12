@@ -44,11 +44,20 @@ where
     }
 
     pub fn failure(command: &str, path: Option<&Path>, error: AppError) -> Self {
+        Self::failure_with_data(command, path, None, error)
+    }
+
+    pub fn failure_with_data(
+        command: &str,
+        path: Option<&Path>,
+        data: Option<T>,
+        error: AppError,
+    ) -> Self {
         Self {
             ok: false,
             command: command.to_string(),
             path: path.map(path_to_string),
-            data: None,
+            data,
             error: Some(error.to_json_error()),
         }
     }

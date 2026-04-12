@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -38,6 +38,11 @@ pub enum Commands {
     /// Assess mapping state and reference mapping metadata.
     #[command(name = "check_map")]
     CheckMap(CheckMapArgs),
+    /// Inspect BAM index presence, type, and shallow usability.
+    #[command(name = "check_index")]
+    CheckIndex(CheckIndexArgs),
+    /// Create a BAM index or report the deferred writer path honestly.
+    Index(IndexArgs),
     /// Assess declared and observed BAM sort characteristics.
     #[command(name = "check_sort")]
     CheckSort(CheckSortArgs),
@@ -83,4 +88,39 @@ pub struct CheckMapArgs {
     /// Prefer index-derived mapping information when a usable index exists.
     #[arg(long = "prefer-index", default_value_t = true)]
     pub prefer_index: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct CheckIndexArgs {
+    /// BAM file to inspect.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Fail if no usable index is available.
+    #[arg(long)]
+    pub require: bool,
+    /// Prefer CSI over BAI when multiple adjacent indices are present.
+    #[arg(long)]
+    pub prefer_csi: bool,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum IndexFormatArg {
+    Bai,
+    Csi,
+}
+
+#[derive(Debug, Args)]
+pub struct IndexArgs {
+    /// BAM file to index.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Explicit output path for the index file.
+    #[arg(long)]
+    pub out: Option<PathBuf>,
+    /// Overwrite an existing index output path.
+    #[arg(long)]
+    pub force: bool,
+    /// Requested output index format.
+    #[arg(long, value_enum)]
+    pub format: Option<IndexFormatArg>,
 }

@@ -32,6 +32,15 @@ pub enum AppError {
     InvalidIndex { path: PathBuf, detail: String },
     #[error("index format is not supported: {path}")]
     UnsupportedIndex { path: PathBuf, detail: String },
+    #[error("no usable bam index was found: {path}")]
+    MissingIndex {
+        path: PathBuf,
+        detail: Option<String>,
+    },
+    #[error("refusing to overwrite existing output: {path}")]
+    OutputExists { path: PathBuf },
+    #[error("functionality is not implemented for this input: {path}")]
+    Unimplemented { path: PathBuf, detail: String },
     #[error("mapping state could not be determined reliably: {path}")]
     ParseUncertainty { path: PathBuf, detail: String },
     #[error("file is truncated or incomplete: {path}")]
@@ -79,6 +88,9 @@ impl AppError {
             Self::InvalidRecord { .. } => "invalid_record",
             Self::InvalidIndex { .. } => "invalid_index",
             Self::UnsupportedIndex { .. } => "unsupported_index",
+            Self::MissingIndex { .. } => "missing_index",
+            Self::OutputExists { .. } => "output_exists",
+            Self::Unimplemented { .. } => "unimplemented",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
             Self::UnsupportedFormat { .. } => "unsupported_format",
@@ -102,11 +114,18 @@ impl AppError {
             Self::InvalidRecord { .. } => "BAM record could not be parsed.".to_string(),
             Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
+            Self::MissingIndex { .. } => "No usable BAM index was found.".to_string(),
+            Self::OutputExists { .. } => {
+                "Output index already exists and overwrite was not requested.".to_string()
+            }
+            Self::Unimplemented { .. } => {
+                "This functionality is not implemented in this slice.".to_string()
+            }
             Self::ParseUncertainty { .. } => {
                 "Mapping state could not be determined reliably from the available evidence."
                     .to_string()
             }
-            Self::TruncatedFile { .. } => "Expected BGZF EOF marker was not found.".to_string(),
+            Self::TruncatedFile { .. } => "File is truncated or incomplete.".to_string(),
             Self::UnsupportedFormat { .. } => {
                 "Detected format is not supported by this command.".to_string()
             }
@@ -125,6 +144,8 @@ impl AppError {
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
+            Self::MissingIndex { detail, .. } => detail.clone(),
+            Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
             Self::UnsupportedFormat { format, .. } => Some(format.clone()),
@@ -166,6 +187,16 @@ impl AppError {
             ),
             Self::UnsupportedIndex { .. } => Some(
                 "Provide a BAI index or rerun the command without relying on index-derived mapping counts."
+                    .to_string(),
+            ),
+            Self::MissingIndex { .. } => {
+                Some("Run bamana index --bam <file> or place a usable companion index next to the BAM.".to_string())
+            }
+            Self::OutputExists { .. } => {
+                Some("Rerun with --force to overwrite the existing index output.".to_string())
+            }
+            Self::Unimplemented { .. } => Some(
+                "Use an implemented index format for this BAM or extend the current index writer."
                     .to_string(),
             ),
             Self::ParseUncertainty { .. } => Some(

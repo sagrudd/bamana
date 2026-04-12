@@ -11,10 +11,12 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use commands::{
     check_eof::{CheckEofRequest, CheckEofResponse},
+    check_index::CheckIndexRequest,
     check_map::{CheckMapPayload, CheckMapRequest},
     check_sort::{CheckSortPayload, CheckSortRequest},
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
+    index::IndexRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
 use json::{CommandResponse, emit_response};
@@ -61,6 +63,25 @@ fn main() -> ExitCode {
             });
             let response: CommandResponse<CheckMapPayload> =
                 CommandResponse::from_result("check_map", Some(bam.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::CheckIndex(args) => {
+            let bam = args.bam;
+            let response = commands::check_index::run(CheckIndexRequest {
+                bam: bam.clone(),
+                require: args.require,
+                prefer_csi: args.prefer_csi,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Index(args) => {
+            let bam = args.bam;
+            let response = commands::index::run(IndexRequest {
+                bam: bam.clone(),
+                out: args.out,
+                force: args.force,
+                format: args.format,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::CheckSort(args) => {
