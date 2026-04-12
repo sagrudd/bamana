@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "sambamba.fastq_consume_pipeline.ont_reads_fastq_gz.rep1",
+  "timestamp_utc": "2026-04-12T11:42:55Z",
+  "benchmark_framework_version": "858da29",
+  "scenario": "fastq_consume_pipeline",
+  "workflow_variant": "unsupported",
+  "tool": "sambamba",
+  "tool_version": "sambamba 1.0",
+  "input": {
+    "source_input_id": "ont_reads_fastq_gz",
+    "source_input_path": "/data/benchmarks/reads.fastq.gz",
+    "source_input_type": "FASTQ_GZ",
+    "source_category": "fastq_gz",
+    "staged_input_id": "ont_reads_fastq_gz",
+    "staged_input_path": "/scratch/bench/ont_reads_fastq_gz.staged.fastq.gz",
+    "input_type": "FASTQ_GZ",
+    "mapped_state": "unknown",
+    "input_basename": "reads.fastq.gz",
+    "input_bytes": 64000000000,
+    "records_processed": 58000000,
+    "expected_sort_order": "not_applicable",
+    "has_index": false,
+    "reference_context": "{\"build_label\":\"not_applicable\",\"fasta_path\":null,\"required_for_interpretation\":false}"
+  },
+  "staging": {
+    "staging_mode": "scratch_copy",
+    "staging_realization": "copy",
+    "scenario_materialization": "source_or_subsampled_fastq_gz",
+    "reuse_materialized_inputs": true,
+    "include_in_timing": false,
+    "storage_context": "local_ssd"
+  },
+  "subsampling": {
+    "enabled": false,
+    "fraction": 0.25,
+    "seed": 104729,
+    "mode": "random",
+    "derived_input_id": null
+  },
+  "resources": {
+    "threads": 4,
+    "container_image": "bamana-bench:latest",
+    "memory_target": null,
+    "hardware_host_label": null
+  },
+  "execution": {
+    "replicate": 1,
+    "warmup_run": false,
+    "command_line": "sambamba consume /scratch/bench/ont_reads_fastq_gz.staged.fastq.gz",
+    "started_at": "2026-04-12T11:42:31Z",
+    "finished_at": "2026-04-12T11:42:55Z",
+    "wall_seconds": 24.18,
+    "user_cpu_seconds": 1.14,
+    "system_cpu_seconds": 0.49,
+    "cpu_seconds": 1.63,
+    "max_rss_bytes": 18833408,
+    "exit_code": 127
+  },
+  "result": {
+    "status": "failed",
+    "success": false,
+    "unsupported": false,
+    "failed": true,
+    "failure_category": "process_exit_nonzero",
+    "semantic_equivalence": "unsupported",
+    "support_status": "failed",
+    "output_path": "",
+    "output_bytes": null,
+    "compression_ratio": null,
+    "records_processed": 58000000,
+    "throughput_records_per_sec": 2398676.592225,
+    "throughput_bytes_per_sec": 2646815550.041357,
+    "generated_files": []
+  },
+  "notes": [
+    "Illustrative failure example showing a tool/scenario combination that was attempted and failed to execute."
+  ]
+}

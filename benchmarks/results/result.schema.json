@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/results/result.schema.json",
+  "title": "Bamana Benchmark Raw Result",
+  "description": "Structured raw per-run benchmark record emitted by the execution wrapper layer before tidy aggregation.",
+  "x-bamana-benchmark-contract-version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "timestamp_utc",
+    "benchmark_framework_version",
+    "scenario",
+    "workflow_variant",
+    "tool",
+    "tool_version",
+    "input",
+    "staging",
+    "subsampling",
+    "resources",
+    "execution",
+    "result",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "timestamp_utc": { "type": "string" },
+    "benchmark_framework_version": { "type": "string" },
+    "scenario": {
+      "type": "string",
+      "enum": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ]
+    },
+    "workflow_variant": { "type": "string" },
+    "tool": {
+      "type": "string",
+      "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
+    },
+    "tool_version": { "type": "string" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_input_id",
+        "source_input_path",
+        "source_input_type",
+        "source_category",
+        "staged_input_id",
+        "staged_input_path",
+        "input_type",
+        "mapped_state",
+        "input_basename",
+        "input_bytes",
+        "records_processed",
+        "expected_sort_order",
+        "has_index",
+        "reference_context"
+      ],
+      "properties": {
+        "source_input_id": { "type": "string" },
+        "source_input_path": { "type": "string" },
+        "source_input_type": { "type": "string" },
+        "source_category": { "type": "string" },
+        "staged_input_id": { "type": "string" },
+        "staged_input_path": { "type": "string" },
+        "input_type": { "type": "string" },
+        "mapped_state": { "type": "string" },
+        "input_basename": { "type": "string" },
+        "input_bytes": { "type": "number", "minimum": 0 },
+        "records_processed": { "type": ["number", "null"], "minimum": 0 },
+        "expected_sort_order": { "type": "string" },
+        "has_index": { "type": "boolean" },
+        "reference_context": { "type": ["string", "null"] }
+      }
+    },
+    "staging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staging_mode",
+        "staging_realization",
+        "scenario_materialization",
+        "reuse_materialized_inputs",
+        "include_in_timing",
+        "storage_context"
+      ],
+      "properties": {
+        "staging_mode": { "type": "string" },
+        "staging_realization": { "type": "string" },
+        "scenario_materialization": { "type": "string" },
+        "reuse_materialized_inputs": { "type": "boolean" },
+        "include_in_timing": { "type": "boolean" },
+        "storage_context": { "type": "string" }
+      }
+    },
+    "subsampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "fraction", "seed", "mode", "derived_input_id"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "seed": { "type": "integer", "minimum": 0 },
+        "mode": { "type": "string", "enum": ["deterministic", "random"] },
+        "derived_input_id": { "type": ["string", "null"] }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["threads", "container_image", "memory_target", "hardware_host_label"],
+      "properties": {
+        "threads": { "type": "integer", "minimum": 1 },
+        "container_image": { "type": "string" },
+        "memory_target": { "type": ["string", "null"] },
+        "hardware_host_label": { "type": ["string", "null"] }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replicate",
+        "warmup_run",
+        "command_line",
+        "started_at",
+        "finished_at",
+        "wall_seconds",
+        "user_cpu_seconds",
+        "system_cpu_seconds",
+        "cpu_seconds",
+        "max_rss_bytes",
+        "exit_code"
+      ],
+      "properties": {
+        "replicate": { "type": "integer", "minimum": 0 },
+        "warmup_run": { "type": "boolean" },
+        "command_line": { "type": "string" },
+        "started_at": { "type": ["string", "null"] },
+        "finished_at": { "type": ["string", "null"] },
+        "wall_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "user_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "system_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "max_rss_bytes": { "type": ["number", "null"], "minimum": 0 },
+        "exit_code": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "success",
+        "unsupported",
+        "failed",
+        "failure_category",
+        "semantic_equivalence",
+        "support_status",
+        "output_path",
+        "output_bytes",
+        "compression_ratio",
+        "records_processed",
+        "throughput_records_per_sec",
+        "throughput_bytes_per_sec",
+        "generated_files"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "unsupported", "failed", "skipped"]
+        },
+        "success": { "type": "boolean" },
+        "unsupported": { "type": "boolean" },
+        "failed": { "type": "boolean" },
+        "failure_category": { "type": ["string", "null"] },
+        "semantic_equivalence": {
+          "type": "string",
+          "enum": ["full", "partial", "unsupported", "roadmap_blocked"]
+        },
+        "support_status": {
+          "type": "string",
+          "enum": ["completed", "failed", "unsupported", "roadmap_blocked"]
+        },
+        "output_path": { "type": "string" },
+        "output_bytes": { "type": ["number", "null"], "minimum": 0 },
+        "compression_ratio": { "type": ["number", "null"], "minimum": 0 },
+        "records_processed": { "type": ["number", "null"], "minimum": 0 },
+        "throughput_records_per_sec": { "type": ["number", "null"], "minimum": 0 },
+        "throughput_bytes_per_sec": { "type": ["number", "null"], "minimum": 0 },
+        "generated_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

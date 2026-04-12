@@ -22,6 +22,8 @@ container_image=""
 output_target=""
 command_file=""
 notes=""
+schema_version="1.0.0"
+benchmark_framework_version="${BAMANA_BENCHMARK_FRAMEWORK_VERSION:-unspecified}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -88,6 +90,7 @@ scenario_materialization="$(jq -r '.scenario_materialization // "unspecified"' "
 reuse_materialized_inputs="$(jq -r '.reuse_materialized_inputs // false' "$input_metrics_json")"
 include_staging_in_timing="$(jq -r '.include_staging_in_timing // false' "$input_metrics_json")"
 storage_context="$(jq -r '.storage_context // "unspecified"' "$input_metrics_json")"
+reference_context="$(jq -r '.reference_context // empty' "$input_metrics_json")"
 
 stdout_path="${run_id}.stdout.log"
 stderr_path="${run_id}.stderr.log"
@@ -110,14 +113,58 @@ write_result() {
   local finished_at="${12}"
   local command_line="${13}"
   local combined_notes="${14}"
+  local throughput_records_per_sec=""
+  local throughput_bytes_per_sec=""
+  local status="failed"
+  local unsupported="false"
+  local failed="true"
+  local subsample_enabled="false"
+  local failure_category=""
+
+  if [[ "$scenario" == "mapped_bam_pipeline" || "$scenario" == "unmapped_bam_pipeline" || "$scenario" == "subsample_only" ]]; then
+    subsample_enabled="true"
+  fi
+
+  if [[ "$support_status" == "completed" && "$success" == "true" ]]; then
+    status="success"
+    unsupported="false"
+    failed="false"
+  elif [[ "$support_status" == "unsupported" || "$support_status" == "roadmap_blocked" ]]; then
+    status="unsupported"
+    unsupported="true"
+    failed="false"
+  else
+    status="failed"
+    unsupported="false"
+    failed="true"
+    if [[ "${exit_code:-0}" -ne 0 ]]; then
+      failure_category="process_exit_nonzero"
+    else
+      failure_category="execution_failed"
+    fi
+  fi
+
+  if [[ -n "${wall_seconds:-}" && "${wall_seconds:-}" != "null" ]]; then
+    if awk "BEGIN { exit !(${wall_seconds:-0} > 0) }"; then
+      if [[ -n "${records_processed:-}" ]]; then
+        throughput_records_per_sec="$(awk -v records="${records_processed:-0}" -v wall="${wall_seconds:-0}" 'BEGIN { if (wall > 0) printf "%.6f", (records / wall); else print "" }')"
+      fi
+      if [[ -n "${input_bytes:-}" ]]; then
+        throughput_bytes_per_sec="$(awk -v bytes="${input_bytes:-0}" -v wall="${wall_seconds:-0}" 'BEGIN { if (wall > 0) printf "%.6f", (bytes / wall); else print "" }')"
+      fi
+    fi
+  fi
 
   printf "%s\n" \
-    "benchmark_id	scenario	source_input_id	source_input_path	source_input_type	source_category	input_type	mapping_state	input_path	input_basename	expected_sort_order	has_index	reference_context	source_owner	sensitivity_level	staged_input_id	staged_input_path	staging_mode	staging_realization	scenario_materialization	reuse_materialized_inputs	include_staging_in_timing	storage_context	input_bytes	input_records	tool	tool_version	workflow_variant	semantic_equivalence	support_status	replicate	warmup_run	subsample_fraction	subsample_seed	subsample_mode	threads	wall_seconds	user_cpu_seconds	system_cpu_seconds	cpu_seconds	max_rss_bytes	exit_code	success	output_path	output_bytes	compression_ratio	records_processed	container_image	command_line	notes	started_at	finished_at" \
-    "${run_id}	${scenario}	${source_input_id}	${source_input_path}	${source_input_type}	${source_category}	${input_type}	${mapping_state}	${input_path}	${input_basename}	${expected_sort_order}	${has_index}	${reference_context}	${source_owner}	${sensitivity_level}	${staged_input_id}	${staged_input_path}	${staging_mode}	${staging_realization}	${scenario_materialization}	${reuse_materialized_inputs}	${include_staging_in_timing}	${storage_context}	${input_bytes}	${input_records}	${tool}	${tool_version}	${workflow_variant}	${semantic_equivalence}	${support_status}	${replicate}	${warmup_run}	${subsample_fraction}	${subsample_seed}	${subsample_mode}	${threads}	${wall_seconds}	${user_cpu_seconds}	${system_cpu_seconds}	${cpu_seconds}	${max_rss_bytes}	${exit_code}	${success}	${output_target}	${output_bytes}	${compression_ratio}	${records_processed}	${container_image}	${command_line}	${combined_notes}	${started_at}	${finished_at}" \
+    "schema_version	run_id	timestamp_utc	benchmark_framework_version	scenario	workflow_variant	tool	tool_version	source_input_id	source_input_path	source_input_type	source_category	staged_input_id	staged_input_path	input_type	mapping_state	input_basename	expected_sort_order	has_index	reference_context	source_owner	sensitivity_level	staging_mode	staging_realization	scenario_materialization	reuse_materialized_inputs	staging_included_in_timing	storage_context	input_bytes	input_records	replicate	warmup	subsample_enabled	subsample_fraction	subsample_seed	subsample_mode	threads	semantic_equivalence	status	support_status	success	unsupported	failed	exit_code	wall_seconds	user_cpu_seconds	system_cpu_seconds	cpu_seconds	max_rss_bytes	output_path	output_bytes	compression_ratio	records_processed	throughput_records_per_sec	throughput_bytes_per_sec	container_image	command_line	notes	started_at	finished_at" \
+    "${schema_version}	${run_id}	${finished_at}	${benchmark_framework_version}	${scenario}	${workflow_variant}	${tool}	${tool_version}	${source_input_id}	${source_input_path}	${source_input_type}	${source_category}	${staged_input_id}	${staged_input_path}	${input_type}	${mapping_state}	${input_basename}	${expected_sort_order}	${has_index}	${reference_context}	${source_owner}	${sensitivity_level}	${staging_mode}	${staging_realization}	${scenario_materialization}	${reuse_materialized_inputs}	${include_staging_in_timing}	${storage_context}	${input_bytes}	${input_records}	${replicate}	${warmup_run}	${subsample_enabled}	${subsample_fraction}	${subsample_seed}	${subsample_mode}	${threads}	${semantic_equivalence}	${status}	${support_status}	${success}	${unsupported}	${failed}	${exit_code}	${wall_seconds}	${user_cpu_seconds}	${system_cpu_seconds}	${cpu_seconds}	${max_rss_bytes}	${output_target}	${output_bytes}	${compression_ratio}	${records_processed}	${throughput_records_per_sec}	${throughput_bytes_per_sec}	${container_image}	${command_line}	${combined_notes}	${started_at}	${finished_at}" \
     >"${result_tsv}"
 
   jq -n \
-    --arg benchmark_id "$run_id" \
+    --arg schema_version "$schema_version" \
+    --arg run_id "$run_id" \
+    --arg timestamp_utc "$finished_at" \
+    --arg benchmark_framework_version "$benchmark_framework_version" \
     --arg scenario "$scenario" \
     --arg source_input_id "$source_input_id" \
     --arg source_input_path "$source_input_path" \
@@ -153,75 +200,107 @@ write_result() {
     --argjson subsample_seed "${subsample_seed:-0}" \
     --arg subsample_mode "$subsample_mode" \
     --argjson threads "${threads:-0}" \
-    --argjson wall_seconds "${wall_seconds:-0}" \
-    --argjson user_cpu_seconds "${user_cpu_seconds:-0}" \
-    --argjson system_cpu_seconds "${system_cpu_seconds:-0}" \
-    --argjson cpu_seconds "${cpu_seconds:-0}" \
-    --argjson max_rss_bytes "${max_rss_bytes:-0}" \
+    --argjson wall_seconds "${wall_seconds:-null}" \
+    --argjson user_cpu_seconds "${user_cpu_seconds:-null}" \
+    --argjson system_cpu_seconds "${system_cpu_seconds:-null}" \
+    --argjson cpu_seconds "${cpu_seconds:-null}" \
+    --argjson max_rss_bytes "${max_rss_bytes:-null}" \
     --argjson exit_code "${exit_code:-0}" \
     --argjson success "${success}" \
     --arg output_path "$output_target" \
-    --argjson output_bytes "${output_bytes:-0}" \
-    --argjson compression_ratio "${compression_ratio:-0}" \
+    --argjson output_bytes "${output_bytes:-null}" \
+    --argjson compression_ratio "${compression_ratio:-null}" \
     --argjson records_processed "${records_processed:-0}" \
+    --argjson throughput_records_per_sec "${throughput_records_per_sec:-null}" \
+    --argjson throughput_bytes_per_sec "${throughput_bytes_per_sec:-null}" \
     --arg container_image "$container_image" \
     --arg command_line "$command_line" \
     --arg notes "$combined_notes" \
     --arg started_at "$started_at" \
     --arg finished_at "$finished_at" \
+    --arg status "$status" \
+    --argjson success "${success}" \
+    --argjson unsupported "${unsupported}" \
+    --argjson failed "${failed}" \
+    --arg failure_category "$failure_category" \
+    --argjson warmup_run "${warmup_run}" \
+    --argjson subsample_enabled "${subsample_enabled}" \
     '{
-      benchmark_id: $benchmark_id,
+      schema_version: $schema_version,
+      run_id: $run_id,
+      timestamp_utc: $timestamp_utc,
+      benchmark_framework_version: $benchmark_framework_version,
       scenario: $scenario,
-      source_input_id: $source_input_id,
-      source_input_path: $source_input_path,
-      source_input_type: $source_input_type,
-      source_category: $source_category,
-      input_type: $input_type,
-      mapping_state: $mapping_state,
-      input_path: $input_path,
-      input_basename: $input_basename,
-      expected_sort_order: $expected_sort_order,
-      has_index: $has_index,
-      reference_context: $reference_context,
-      source_owner: $source_owner,
-      sensitivity_level: $sensitivity_level,
-      staged_input_id: $staged_input_id,
-      staged_input_path: $staged_input_path,
-      staging_mode: $staging_mode,
-      staging_realization: $staging_realization,
-      scenario_materialization: $scenario_materialization,
-      reuse_materialized_inputs: $reuse_materialized_inputs,
-      include_staging_in_timing: $include_staging_in_timing,
-      storage_context: $storage_context,
-      input_bytes: $input_bytes,
-      input_records: $input_records,
+      workflow_variant: $workflow_variant,
       tool: $tool,
       tool_version: $tool_version,
-      workflow_variant: $workflow_variant,
-      semantic_equivalence: $semantic_equivalence,
-      support_status: $support_status,
-      replicate: $replicate,
-      warmup_run: $warmup_run,
-      subsample_fraction: $subsample_fraction,
-      subsample_seed: $subsample_seed,
-      subsample_mode: $subsample_mode,
-      threads: $threads,
-      wall_seconds: $wall_seconds,
-      user_cpu_seconds: $user_cpu_seconds,
-      system_cpu_seconds: $system_cpu_seconds,
-      cpu_seconds: $cpu_seconds,
-      max_rss_bytes: $max_rss_bytes,
-      exit_code: $exit_code,
-      success: $success,
-      output_path: $output_path,
-      output_bytes: $output_bytes,
-      compression_ratio: $compression_ratio,
-      records_processed: $records_processed,
-      container_image: $container_image,
-      command_line: $command_line,
-      notes: $notes,
-      started_at: $started_at,
-      finished_at: $finished_at
+      input: {
+        source_input_id: $source_input_id,
+        source_input_path: $source_input_path,
+        source_input_type: $source_input_type,
+        source_category: $source_category,
+        staged_input_id: $staged_input_id,
+        staged_input_path: $staged_input_path,
+        input_type: $input_type,
+        mapped_state: $mapping_state,
+        input_basename: $input_basename,
+        input_bytes: $input_bytes,
+        records_processed: $input_records,
+        expected_sort_order: $expected_sort_order,
+        has_index: $has_index,
+        reference_context: $reference_context
+      },
+      staging: {
+        staging_mode: $staging_mode,
+        staging_realization: $staging_realization,
+        scenario_materialization: $scenario_materialization,
+        reuse_materialized_inputs: $reuse_materialized_inputs,
+        include_in_timing: $include_staging_in_timing,
+        storage_context: $storage_context
+      },
+      subsampling: {
+        enabled: $subsample_enabled,
+        fraction: $subsample_fraction,
+        seed: $subsample_seed,
+        mode: $subsample_mode,
+        derived_input_id: (if $subsample_enabled then $staged_input_id else null end)
+      },
+      resources: {
+        threads: $threads,
+        container_image: $container_image,
+        memory_target: null,
+        hardware_host_label: null
+      },
+      execution: {
+        replicate: $replicate,
+        warmup_run: $warmup_run,
+        command_line: $command_line,
+        started_at: $started_at,
+        finished_at: $finished_at,
+        wall_seconds: $wall_seconds,
+        user_cpu_seconds: $user_cpu_seconds,
+        system_cpu_seconds: $system_cpu_seconds,
+        cpu_seconds: $cpu_seconds,
+        max_rss_bytes: $max_rss_bytes,
+        exit_code: $exit_code
+      },
+      result: {
+        status: $status,
+        success: $success,
+        unsupported: $unsupported,
+        failed: $failed,
+        failure_category: (if $failure_category == "" then null else $failure_category end),
+        semantic_equivalence: $semantic_equivalence,
+        support_status: $support_status,
+        output_path: $output_path,
+        output_bytes: $output_bytes,
+        compression_ratio: $compression_ratio,
+        records_processed: $records_processed,
+        throughput_records_per_sec: $throughput_records_per_sec,
+        throughput_bytes_per_sec: $throughput_bytes_per_sec,
+        generated_files: (if $output_path == "" then [] else [$output_path] end)
+      },
+      notes: (if $notes == "" then [] else [$notes] end)
     }' \
     >"${result_json}"
 }

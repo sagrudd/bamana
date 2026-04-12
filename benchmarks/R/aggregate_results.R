@@ -40,8 +40,14 @@ runs <- result_files |>
 
 runs <- runs |>
   mutate(
+    warmup = as.logical(warmup),
     success = as.logical(success),
-    warmup_run = as.logical(warmup_run),
+    unsupported = as.logical(unsupported),
+    failed = as.logical(failed),
+    staging_included_in_timing = as.logical(staging_included_in_timing),
+    reuse_materialized_inputs = as.logical(reuse_materialized_inputs),
+    has_index = as.logical(has_index),
+    subsample_enabled = as.logical(subsample_enabled),
     across(
       c(
         input_bytes,
@@ -62,60 +68,78 @@ runs <- runs |>
       ),
       as.numeric
     ),
+    status = coalesce(status, support_status),
     throughput_records_per_sec = if_else(
-      !is.na(wall_seconds) & wall_seconds > 0,
+      is.na(throughput_records_per_sec) & !is.na(wall_seconds) & wall_seconds > 0,
       records_processed / wall_seconds,
-      NA_real_
+      throughput_records_per_sec
     ),
-    throughput_gb_per_sec = if_else(
-      !is.na(wall_seconds) & wall_seconds > 0,
-      (input_bytes / 1e9) / wall_seconds,
-      NA_real_
+    throughput_bytes_per_sec = if_else(
+      is.na(throughput_bytes_per_sec) & !is.na(wall_seconds) & wall_seconds > 0,
+      input_bytes / wall_seconds,
+      throughput_bytes_per_sec
     )
   )
 
 analysis_runs <- runs |>
-  filter(!warmup_run)
+  filter(!warmup)
 
 summary <- analysis_runs |>
   group_by(
+    schema_version,
     scenario,
     input_type,
     mapping_state,
     tool,
     workflow_variant,
     semantic_equivalence,
-    support_status,
+    source_input_id,
+    source_input_type,
+    staged_input_id,
     subsample_fraction,
     subsample_seed,
     subsample_mode,
     threads
   ) |>
   summarise(
-    run_count = n(),
-    successful_runs = sum(success, na.rm = TRUE),
-    median_wall_seconds = median(wall_seconds, na.rm = TRUE),
-    iqr_wall_seconds = IQR(wall_seconds, na.rm = TRUE),
-    sd_wall_seconds = sd(wall_seconds, na.rm = TRUE),
-    median_cpu_seconds = median(cpu_seconds, na.rm = TRUE),
-    median_max_rss_bytes = median(max_rss_bytes, na.rm = TRUE),
-    median_output_bytes = median(output_bytes, na.rm = TRUE),
-    median_records_per_sec = median(throughput_records_per_sec, na.rm = TRUE),
-    median_gb_per_sec = median(throughput_gb_per_sec, na.rm = TRUE),
+    n_runs = n(),
+    n_success = sum(status == "success", na.rm = TRUE),
+    n_failed = sum(status == "failed", na.rm = TRUE),
+    n_unsupported = sum(status == "unsupported", na.rm = TRUE),
+    n_skipped = sum(status == "skipped", na.rm = TRUE),
+    mean_wall_seconds = if_else(n_success > 0, mean(wall_seconds[status == "success"], na.rm = TRUE), NA_real_),
+    median_wall_seconds = if_else(n_success > 0, median(wall_seconds[status == "success"], na.rm = TRUE), NA_real_),
+    iqr_wall_seconds = if_else(n_success > 0, IQR(wall_seconds[status == "success"], na.rm = TRUE), NA_real_),
+    sd_wall_seconds = if_else(n_success > 1, sd(wall_seconds[status == "success"], na.rm = TRUE), NA_real_),
+    median_cpu_seconds = if_else(n_success > 0, median(cpu_seconds[status == "success"], na.rm = TRUE), NA_real_),
+    median_max_rss_bytes = if_else(n_success > 0, median(max_rss_bytes[status == "success"], na.rm = TRUE), NA_real_),
+    median_output_bytes = if_else(n_success > 0, median(output_bytes[status == "success"], na.rm = TRUE), NA_real_),
+    median_records_per_sec = if_else(n_success > 0, median(throughput_records_per_sec[status == "success"], na.rm = TRUE), NA_real_),
+    median_bytes_per_sec = if_else(n_success > 0, median(throughput_bytes_per_sec[status == "success"], na.rm = TRUE), NA_real_),
     .groups = "drop"
   )
 
 support_matrix <- analysis_runs |>
-  group_by(scenario, input_type, tool, workflow_variant, semantic_equivalence, support_status) |>
+  group_by(scenario, input_type, tool, workflow_variant, semantic_equivalence) |>
   summarise(
-    run_count = n(),
-    successful_runs = sum(success, na.rm = TRUE),
+    n_runs = n(),
+    n_success = sum(status == "success", na.rm = TRUE),
+    n_failed = sum(status == "failed", na.rm = TRUE),
+    n_unsupported = sum(status == "unsupported", na.rm = TRUE),
+    n_skipped = sum(status == "skipped", na.rm = TRUE),
+    status = case_when(
+      n_success > 0 ~ "success",
+      n_unsupported == n_runs ~ "unsupported",
+      n_failed > 0 ~ "failed",
+      n_skipped == n_runs ~ "skipped",
+      TRUE ~ "mixed"
+    ),
     notes = str_c(unique(na.omit(notes)), collapse = " | "),
     .groups = "drop"
   )
 
 failures <- analysis_runs |>
-  filter(support_status != "completed" | !success)
+  filter(status != "success" | !success)
 
 write_tsv(runs, file.path(outdir, "benchmark_runs.tsv"))
 write_json(runs, file.path(outdir, "benchmark_runs.json"), pretty = TRUE, auto_unbox = TRUE)

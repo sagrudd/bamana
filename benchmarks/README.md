@@ -151,6 +151,11 @@ of being silently omitted or misreported as slow.
 
 ## Result Outputs
 
+The benchmark result layer has two levels:
+
+* raw structured per-run JSON records
+* tidy flat per-run rows and grouped summaries for aggregation and plotting
+
 Per-run outputs include:
 
 * `*.result.tsv`
@@ -172,6 +177,15 @@ Publication-ready figures include:
 * memory by tool and scenario
 * replicate variability plots
 * support-status heatmaps
+
+Contracts and examples for this layer live under
+[results/](/Users/stephen/Projects/bamana/benchmarks/results).
+
+The key rule is that unsupported and failed runs remain explicit:
+
+* unsupported is not failure
+* failed is not unsupported
+* successful runs alone drive performance summaries
 
 ## Quick Start With Your Own BAM or FASTQ.GZ Inputs
 

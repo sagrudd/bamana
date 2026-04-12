@@ -270,6 +270,16 @@ input locality or staging policy differs across environments.
 The schema is defined in
 [benchmarks/results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json).
 
+The structured raw wrapper output is defined in
+[benchmarks/results/result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json).
+
+Contract rule:
+
+* raw JSON preserves nested execution context
+* tidy rows flatten that context for aggregation and plotting
+* contract changes should update the wrapper, aggregation script, plotting
+  script, and example result artifacts together
+
 ## 9. Publication Outputs
 
 The R layer generates:

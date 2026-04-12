@@ -21,8 +21,26 @@ Per-run rows should preserve both source and staged provenance, including:
 * `scenario_materialization`
 * `storage_context`
 
-The per-run result schema is documented in
-[benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json).
+Contracts:
+
+* [result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json): structured raw per-run JSON record
+* [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy per-run row contract
+* [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
+
+Examples:
+
+* [example_raw_result.json](/Users/stephen/Projects/bamana/benchmarks/results/example_raw_result.json)
+* [example_raw_result.unsupported.json](/Users/stephen/Projects/bamana/benchmarks/results/example_raw_result.unsupported.json)
+* [example_raw_result.failure.json](/Users/stephen/Projects/bamana/benchmarks/results/example_raw_result.failure.json)
+* [example_tidy_results.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_tidy_results.csv)
+* [example_tidy_summary.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_tidy_summary.csv)
+
+Design rule:
+
+* unsupported rows are not failures
+* failed rows are not unsupported
+* successful rows alone drive performance summaries
+* unsupported and failed rows remain visible for support and reliability analysis
 
 This directory is tracked for documentation and schema only. Large generated
 benchmark outputs should not be committed.

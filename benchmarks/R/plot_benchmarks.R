@@ -49,11 +49,11 @@ theme_bamana <- function() {
 }
 
 runs <- read_tsv(runs_tsv, show_col_types = FALSE) |>
-  filter(!warmup_run, support_status == "completed", success) |>
+  filter(!warmup, status == "success", success) |>
   mutate(tool = fct_inorder(tool))
 
 summary <- read_tsv(summary_tsv, show_col_types = FALSE) |>
-  filter(support_status == "completed") |>
+  filter(n_success > 0) |>
   mutate(tool = fct_inorder(tool))
 
 support <- read_tsv(support_tsv, show_col_types = FALSE) |>
@@ -107,15 +107,16 @@ variability_plot <- ggplot(runs, aes(x = replicate, y = wall_seconds, colour = t
   ) +
   theme_bamana()
 
-support_plot <- ggplot(support, aes(x = scenario, y = tool, fill = support_status)) +
+support_plot <- ggplot(support, aes(x = scenario, y = tool, fill = status)) +
   geom_tile(color = "white") +
-  geom_text(aes(label = support_status), size = 3) +
+  geom_text(aes(label = status), size = 3) +
   scale_fill_manual(
     values = c(
-      completed = "#1b9e77",
+      success = "#1b9e77",
       failed = "#d95f02",
       unsupported = "#bdbdbd",
-      roadmap_blocked = "#7570b3"
+      skipped = "#7570b3",
+      mixed = "#6a3d9a"
     )
   ) +
   labs(
