@@ -190,33 +190,11 @@ fn sort_records(
 }
 
 fn compare_coordinate_records(left: &SortableRecord, right: &SortableRecord) -> Ordering {
-    let left_unmapped = is_unmapped(&left.layout);
-    let right_unmapped = is_unmapped(&right.layout);
-
-    left_unmapped
-        .cmp(&right_unmapped)
-        .then_with(|| left.layout.ref_id.cmp(&right.layout.ref_id))
-        .then_with(|| left.layout.pos.cmp(&right.layout.pos))
-        .then_with(|| is_reverse(&left.layout).cmp(&is_reverse(&right.layout)))
-        .then_with(|| left.layout.read_name.cmp(&right.layout.read_name))
-        .then_with(|| left.layout.flags.cmp(&right.layout.flags))
-        .then_with(|| left.layout.next_ref_id.cmp(&right.layout.next_ref_id))
-        .then_with(|| left.layout.next_pos.cmp(&right.layout.next_pos))
-        .then_with(|| left.layout.tlen.cmp(&right.layout.tlen))
-        .then_with(|| left.ordinal.cmp(&right.ordinal))
+    compare_coordinate_layouts(&left.layout, left.ordinal, &right.layout, right.ordinal)
 }
 
 fn compare_queryname_records(left: &SortableRecord, right: &SortableRecord) -> Ordering {
-    left.layout
-        .read_name
-        .cmp(&right.layout.read_name)
-        .then_with(|| left.layout.ref_id.cmp(&right.layout.ref_id))
-        .then_with(|| left.layout.pos.cmp(&right.layout.pos))
-        .then_with(|| left.layout.flags.cmp(&right.layout.flags))
-        .then_with(|| left.layout.next_ref_id.cmp(&right.layout.next_ref_id))
-        .then_with(|| left.layout.next_pos.cmp(&right.layout.next_pos))
-        .then_with(|| left.layout.tlen.cmp(&right.layout.tlen))
-        .then_with(|| left.ordinal.cmp(&right.ordinal))
+    compare_queryname_layouts(&left.layout, left.ordinal, &right.layout, right.ordinal)
 }
 
 fn output_matches_input(input: &Path, output: &Path) -> bool {
@@ -237,6 +215,45 @@ fn temporary_output_path(output: &Path) -> PathBuf {
     output.with_file_name(format!(".{stem}.bamana-sort-{}.tmp", std::process::id()))
 }
 
+pub(crate) fn compare_coordinate_layouts(
+    left: &RecordLayout,
+    left_ordinal: u64,
+    right: &RecordLayout,
+    right_ordinal: u64,
+) -> Ordering {
+    let left_unmapped = is_unmapped(left);
+    let right_unmapped = is_unmapped(right);
+
+    left_unmapped
+        .cmp(&right_unmapped)
+        .then_with(|| left.ref_id.cmp(&right.ref_id))
+        .then_with(|| left.pos.cmp(&right.pos))
+        .then_with(|| is_reverse(left).cmp(&is_reverse(right)))
+        .then_with(|| left.read_name.cmp(&right.read_name))
+        .then_with(|| left.flags.cmp(&right.flags))
+        .then_with(|| left.next_ref_id.cmp(&right.next_ref_id))
+        .then_with(|| left.next_pos.cmp(&right.next_pos))
+        .then_with(|| left.tlen.cmp(&right.tlen))
+        .then_with(|| left_ordinal.cmp(&right_ordinal))
+}
+
+pub(crate) fn compare_queryname_layouts(
+    left: &RecordLayout,
+    left_ordinal: u64,
+    right: &RecordLayout,
+    right_ordinal: u64,
+) -> Ordering {
+    left.read_name
+        .cmp(&right.read_name)
+        .then_with(|| left.ref_id.cmp(&right.ref_id))
+        .then_with(|| left.pos.cmp(&right.pos))
+        .then_with(|| left.flags.cmp(&right.flags))
+        .then_with(|| left.next_ref_id.cmp(&right.next_ref_id))
+        .then_with(|| left.next_pos.cmp(&right.next_pos))
+        .then_with(|| left.tlen.cmp(&right.tlen))
+        .then_with(|| left_ordinal.cmp(&right_ordinal))
+}
+
 fn is_unmapped(record: &RecordLayout) -> bool {
     record.flags & 0x4 != 0 || record.ref_id < 0
 }
@@ -245,14 +262,14 @@ fn is_reverse(record: &RecordLayout) -> u8 {
     u8::from(record.flags & 0x10 != 0)
 }
 
-fn sort_order_name(order: SortOrder) -> &'static str {
+pub(crate) fn sort_order_name(order: SortOrder) -> &'static str {
     match order {
         SortOrder::Coordinate => "coordinate",
         SortOrder::Queryname => "queryname",
     }
 }
 
-fn queryname_suborder_name(suborder: Option<QuerynameSubOrder>) -> Option<&'static str> {
+pub(crate) fn queryname_suborder_name(suborder: Option<QuerynameSubOrder>) -> Option<&'static str> {
     match suborder {
         Some(QuerynameSubOrder::Natural) => Some("queryname:natural"),
         Some(QuerynameSubOrder::Lexicographical) => Some("queryname:lexicographical"),

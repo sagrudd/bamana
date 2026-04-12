@@ -108,6 +108,38 @@ pub fn compute_checksums(
     })
 }
 
+pub(crate) fn compute_canonical_digest_for_records(
+    records: &[RecordLayout],
+    filters: ChecksumFilters,
+    excluded_tags: &HashSet<[u8; 2]>,
+) -> Result<String, String> {
+    let mut digests = Vec::new();
+
+    for record in records {
+        if !record_included(record, filters) {
+            continue;
+        }
+        let serialized = serialize_record(record, excluded_tags)?;
+        digests.push(Sha256Hasher::digest(&frame_chunk(&serialized)).to_vec());
+    }
+
+    digests.sort_unstable();
+    let mut hasher = Sha256Hasher::new();
+    for digest in &digests {
+        update_with_chunk(&mut hasher, digest);
+    }
+
+    Ok(hex_digest(&hasher.finalize()))
+}
+
+pub(crate) fn extract_digest(payload: ChecksumPayload, mode: ChecksumMode) -> Option<String> {
+    payload
+        .results?
+        .into_iter()
+        .find(|result| result.mode == mode)
+        .map(|result| result.digest)
+}
+
 fn scan_record_checksums(
     reader: &mut BamReader,
     header_bytes: &[u8],
@@ -238,7 +270,7 @@ fn wants_mode(requested: ChecksumMode, candidate: ChecksumMode) -> bool {
     requested == ChecksumMode::All || requested == candidate
 }
 
-fn record_included(record: &RecordLayout, filters: ChecksumFilters) -> bool {
+pub(crate) fn record_included(record: &RecordLayout, filters: ChecksumFilters) -> bool {
     if filters.only_primary && (record.flags & 0x100 != 0 || record.flags & 0x800 != 0) {
         return false;
     }
@@ -248,7 +280,7 @@ fn record_included(record: &RecordLayout, filters: ChecksumFilters) -> bool {
     true
 }
 
-fn serialize_record(
+pub(crate) fn serialize_record(
     record: &RecordLayout,
     excluded_tags: &HashSet<[u8; 2]>,
 ) -> Result<Vec<u8>, String> {

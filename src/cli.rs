@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
+use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
 
 #[derive(Debug, Clone, Args)]
@@ -33,6 +34,8 @@ pub enum Commands {
     Identify(IdentifyArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
     Checksum(ChecksumArgs),
+    /// Merge multiple BAM inputs into a single BAM output.
+    Merge(MergeArgs),
     /// Sort a BAM file into a requested output ordering.
     Sort(SortArgs),
     /// Perform shallow BAM verification only.
@@ -91,6 +94,37 @@ pub struct ChecksumArgs {
     /// Hash only mapped alignments.
     #[arg(long = "mapped-only")]
     pub mapped_only: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct MergeArgs {
+    /// Input BAM files to merge.
+    #[arg(long = "bam", required = true, num_args = 1..)]
+    pub bam: Vec<PathBuf>,
+    /// Output BAM path.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Shorthand for --order coordinate.
+    #[arg(long)]
+    pub sort: bool,
+    /// Requested output merge mode.
+    #[arg(long = "order", value_enum)]
+    pub order: Option<MergeMode>,
+    /// Queryname sub-order, only meaningful for queryname merge output.
+    #[arg(long = "queryname-suborder", value_enum)]
+    pub queryname_suborder: Option<QuerynameSubOrder>,
+    /// Attempt to create an index for coordinate-sorted output.
+    #[arg(long = "create-index")]
+    pub create_index: bool,
+    /// Verify canonical multiset checksum preservation across the merge.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output file.
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

@@ -9,13 +9,13 @@ const MAX_HEADER_TEXT_BYTES: usize = 16 * 1024 * 1024;
 const MAX_REFERENCE_COUNT: usize = 1_000_000;
 const MAX_REFERENCE_NAME_BYTES: usize = 1024 * 1024;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct HeaderPayload {
     pub format: &'static str,
     pub header: BamHeaderView,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct BamHeaderView {
     pub raw_header_text: String,
     pub hd: HdRecord,
@@ -26,7 +26,7 @@ pub struct BamHeaderView {
     pub other_header_records: Vec<OtherHeaderRecord>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct HdRecord {
     pub version: Option<String>,
     pub sort_order: Option<String>,
@@ -34,7 +34,7 @@ pub struct HdRecord {
     pub group_order: Option<String>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct ReferenceHeaderFields {
     #[serde(rename = "M5")]
     pub m5: Option<String>,
@@ -48,7 +48,7 @@ pub struct ReferenceHeaderFields {
     pub topology: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ReferenceRecord {
     pub name: String,
     pub length: u32,
@@ -58,7 +58,7 @@ pub struct ReferenceRecord {
     pub text_header_length: Option<u32>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct ReadGroupRecord {
     #[serde(rename = "ID")]
     pub id: Option<String>,
@@ -80,7 +80,7 @@ pub struct ReadGroupRecord {
     pub other_fields: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct ProgramRecord {
     #[serde(rename = "ID")]
     pub id: Option<String>,
@@ -98,7 +98,7 @@ pub struct ProgramRecord {
     pub other_fields: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OtherHeaderRecord {
     pub record_type: String,
     pub raw_line: String,

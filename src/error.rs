@@ -37,6 +37,10 @@ pub enum AppError {
         path: PathBuf,
         detail: Option<String>,
     },
+    #[error("input bam headers are not compatible: {path}")]
+    IncompatibleHeaders { path: PathBuf, detail: String },
+    #[error("invalid merge request: {path}")]
+    InvalidMergeRequest { path: PathBuf, detail: String },
     #[error("refusing to overwrite existing output: {path}")]
     OutputExists { path: PathBuf },
     #[error("failed to write output: {path}")]
@@ -105,6 +109,8 @@ impl AppError {
             Self::InvalidIndex { .. } => "invalid_index",
             Self::UnsupportedIndex { .. } => "unsupported_index",
             Self::MissingIndex { .. } => "missing_index",
+            Self::IncompatibleHeaders { .. } => "incompatible_headers",
+            Self::InvalidMergeRequest { .. } => "invalid_merge_mode",
             Self::OutputExists { .. } => "output_exists",
             Self::WriteError { .. } => "write_error",
             Self::Unimplemented { .. } => "unimplemented",
@@ -139,6 +145,10 @@ impl AppError {
             Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
             Self::MissingIndex { .. } => "No usable BAM index was found.".to_string(),
+            Self::IncompatibleHeaders { .. } => {
+                "Input BAM headers are not compatible for merge.".to_string()
+            }
+            Self::InvalidMergeRequest { .. } => "Invalid BAM merge options.".to_string(),
             Self::OutputExists { .. } => {
                 "Output path already exists and overwrite was not requested.".to_string()
             }
@@ -185,6 +195,8 @@ impl AppError {
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
             Self::MissingIndex { detail, .. } => detail.clone(),
+            Self::IncompatibleHeaders { detail, .. } => Some(detail.clone()),
+            Self::InvalidMergeRequest { detail, .. } => Some(detail.clone()),
             Self::WriteError { message, .. } => Some(message.clone()),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ValidationFailed { detail, .. } => Some(detail.clone()),
@@ -240,6 +252,14 @@ impl AppError {
             Self::MissingIndex { .. } => {
                 Some("Run bamana index --bam <file> or place a usable companion index next to the BAM.".to_string())
             }
+            Self::IncompatibleHeaders { .. } => Some(
+                "Ensure all BAM inputs use the same reference dictionary before merging."
+                    .to_string(),
+            ),
+            Self::InvalidMergeRequest { .. } => Some(
+                "Use --sort as shorthand for --order coordinate, and only specify --queryname-suborder with --order queryname."
+                    .to_string(),
+            ),
             Self::OutputExists { .. } => {
                 Some("Rerun with --force to overwrite the existing index output.".to_string())
             }

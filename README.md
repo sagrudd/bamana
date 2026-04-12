@@ -18,6 +18,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana validate --bam <bamfile>`
 * `bamana checksum --bam <bamfile>`
 * `bamana sort --bam <bamfile> --out <result.bam>`
+* `bamana merge --bam <bamfile1> <bamfile2> ... --out <result.bam>`
 
 All command output is JSON.
 
@@ -36,6 +37,7 @@ The current semantics are intentionally narrow:
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
 * `sort` rewrites a BAM into an explicitly requested order using a deterministic in-memory first-slice engine with optional canonical checksum verification
+* `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
@@ -48,6 +50,7 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `validate` does not imply biological correctness, external reference concordance, or correctness of every optional-field semantic beyond the checks actually implemented.
 `checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 `sort` does not imply full BAM validity beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
+`merge` does not imply full validity of all inputs beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
 
 ## Example Invocations
 
@@ -80,6 +83,9 @@ cargo run -- checksum --bam example.bam --mode all
 cargo run -- sort --bam example.bam --out sorted.bam
 cargo run -- sort --bam example.bam --out qname.bam --order queryname --queryname-suborder lexicographical
 cargo run -- sort --bam example.bam --out sorted.bam --verify-checksum --create-index
+cargo run -- merge --bam shard1.bam shard2.bam --out merged.bam
+cargo run -- merge --bam a.bam b.bam --out merged.sorted.bam --sort --verify-checksum
+cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order queryname --queryname-suborder lexicographical
 ```
 
 `header` uses the binary BAM reference section as authoritative for reference
@@ -149,6 +155,17 @@ standard BAM indexing. Queryname output is not suitable for standard coordinate
 BAI indexing. Optional `--verify-checksum` support compares canonical
 order-insensitive checksums of the input and output so content preservation can
 be confirmed explicitly rather than implied.
+
+`merge` builds on the same writer and comparator family. By default it preserves
+input-file concatenation order. With `--sort` or `--order coordinate`, it reads
+all records, applies the same coordinate comparator family used by `sort`, and
+writes coordinate-ordered output. Queryname merge uses the same lexicographical
+queryname ordering family. The current implementation is in-memory and requires
+identical binary reference dictionaries across all inputs. Queryname and
+input-order merge outputs are not suitable for standard coordinate BAI
+indexing. Optional checksum verification compares the canonical
+order-insensitive multiset checksum of the combined inputs against the merged
+output.
 
 ## Development
 

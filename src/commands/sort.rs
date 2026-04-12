@@ -6,6 +6,7 @@ use crate::{
     bam::{
         checksum::{
             ChecksumAlgorithm, ChecksumFilters, ChecksumMode, ChecksumOptions, compute_checksums,
+            extract_digest,
         },
         index::IndexKind,
         sort::{QuerynameSubOrder, SortExecutionOptions, SortOrder, sort_bam},
@@ -301,18 +302,6 @@ fn verify_canonical_checksum(
         input_digest == output_digest,
     ))
 }
-
-fn extract_digest(
-    payload: crate::bam::checksum::ChecksumPayload,
-    mode: ChecksumMode,
-) -> Option<String> {
-    payload
-        .results?
-        .into_iter()
-        .find(|result| result.mode == mode)
-        .map(|result| result.digest)
-}
-
 fn map_transform_error(error: AppError, input_path: &std::path::Path) -> AppError {
     match error {
         AppError::InvalidHeader { detail, .. }

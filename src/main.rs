@@ -19,6 +19,7 @@ use commands::{
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
+    merge::MergeRequest,
     sort::SortRequest,
     summary::SummaryRequest,
     validate::ValidateRequest,
@@ -47,6 +48,20 @@ fn main() -> ExitCode {
                 exclude_tags: args.exclude_tags,
                 only_primary: args.only_primary,
                 mapped_only: args.mapped_only,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Merge(args) => {
+            let response = commands::merge::run(MergeRequest {
+                bam: args.bam,
+                out: args.out,
+                sort: args.sort,
+                order: args.order,
+                queryname_suborder: args.queryname_suborder,
+                create_index: args.create_index,
+                verify_checksum: args.verify_checksum,
+                threads: args.threads,
+                force: args.force,
             });
             emit_response(&response, cli.global.json_pretty)
         }
