@@ -5,4 +5,5 @@ pub mod check_sort;
 pub mod header;
 pub mod identify;
 pub mod index;
+pub mod summary;
 pub mod verify;

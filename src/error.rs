@@ -43,6 +43,8 @@ pub enum AppError {
     Unimplemented { path: PathBuf, detail: String },
     #[error("mapping state could not be determined reliably: {path}")]
     ParseUncertainty { path: PathBuf, detail: String },
+    #[error("bam summary could not be generated reliably: {path}")]
+    SummaryUncertainty { path: PathBuf, detail: String },
     #[error("file is truncated or incomplete: {path}")]
     TruncatedFile { path: PathBuf, detail: String },
     #[error("unsupported format for this command: {path}")]
@@ -92,6 +94,7 @@ impl AppError {
             Self::OutputExists { .. } => "output_exists",
             Self::Unimplemented { .. } => "unimplemented",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
+            Self::SummaryUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
             Self::UnsupportedFormat { .. } => "unsupported_format",
             Self::Internal { .. } => "internal_error",
@@ -125,6 +128,9 @@ impl AppError {
                 "Mapping state could not be determined reliably from the available evidence."
                     .to_string()
             }
+            Self::SummaryUncertainty { .. } => {
+                "BAM summary could not be generated reliably.".to_string()
+            }
             Self::TruncatedFile { .. } => "File is truncated or incomplete.".to_string(),
             Self::UnsupportedFormat { .. } => {
                 "Detected format is not supported by this command.".to_string()
@@ -147,6 +153,7 @@ impl AppError {
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
+            Self::SummaryUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
             Self::UnsupportedFormat { format, .. } => Some(format.clone()),
             Self::Internal { message } => Some(message.clone()),
@@ -200,6 +207,9 @@ impl AppError {
                     .to_string(),
             ),
             Self::ParseUncertainty { .. } => Some(
+                "Run bamana verify and, when available, bamana validate.".to_string(),
+            ),
+            Self::SummaryUncertainty { .. } => Some(
                 "Run bamana verify and, when available, bamana validate.".to_string(),
             ),
             Self::TruncatedFile { .. } => {

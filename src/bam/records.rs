@@ -1,11 +1,15 @@
 use crate::{bam::reader::BamReader, error::AppError};
 
 const BAM_CORE_SIZE: usize = 32;
+const BAM_FPAIRED: u16 = 0x1;
+const BAM_FPROPER_PAIR: u16 = 0x2;
 const BAM_FUNMAP: u16 = 0x4;
 const BAM_FREVERSE: u16 = 0x10;
 const BAM_FREAD1: u16 = 0x40;
 const BAM_FREAD2: u16 = 0x80;
 const BAM_FSECONDARY: u16 = 0x100;
+const BAM_FQCFAIL: u16 = 0x200;
+const BAM_FDUP: u16 = 0x400;
 const BAM_FSUPPLEMENTARY: u16 = 0x800;
 
 #[derive(Clone, Debug)]
@@ -13,11 +17,16 @@ pub struct LightAlignmentRecord {
     pub ref_id: i32,
     pub pos: i32,
     pub flags: u16,
+    pub mapping_quality: u8,
     pub read_name: String,
     pub is_unmapped: bool,
+    pub is_paired: bool,
+    pub is_proper_pair: bool,
     pub is_reverse: bool,
     pub is_secondary: bool,
     pub is_supplementary: bool,
+    pub is_qc_fail: bool,
+    pub is_duplicate: bool,
     pub is_read1: bool,
     pub is_read2: bool,
 }
@@ -57,7 +66,7 @@ pub fn read_next_light_record(
 
     let remaining = block_size - BAM_CORE_SIZE;
     let l_read_name = (bin_mq_nl & 0xff) as usize;
-    let _mapping_quality = ((bin_mq_nl >> 8) & 0xff) as u8;
+    let mapping_quality = ((bin_mq_nl >> 8) & 0xff) as u8;
     let n_cigar_op = (flag_nc & 0xffff) as usize;
     let flags = (flag_nc >> 16) as u16;
 
@@ -121,11 +130,16 @@ pub fn read_next_light_record(
         ref_id,
         pos,
         flags,
+        mapping_quality,
         read_name,
         is_unmapped: flags & BAM_FUNMAP != 0,
+        is_paired: flags & BAM_FPAIRED != 0,
+        is_proper_pair: flags & BAM_FPROPER_PAIR != 0,
         is_reverse: flags & BAM_FREVERSE != 0,
         is_secondary: flags & BAM_FSECONDARY != 0,
         is_supplementary: flags & BAM_FSUPPLEMENTARY != 0,
+        is_qc_fail: flags & BAM_FQCFAIL != 0,
+        is_duplicate: flags & BAM_FDUP != 0,
         is_read1: flags & BAM_FREAD1 != 0,
         is_read2: flags & BAM_FREAD2 != 0,
     }))

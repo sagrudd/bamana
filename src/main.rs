@@ -17,6 +17,7 @@ use commands::{
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
+    summary::SummaryRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
 use json::{CommandResponse, emit_response};
@@ -81,6 +82,18 @@ fn main() -> ExitCode {
                 out: args.out,
                 force: args.force,
                 format: args.format,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Summary(args) => {
+            let bam = args.bam;
+            let response = commands::summary::run(SummaryRequest {
+                bam: bam.clone(),
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                prefer_index: args.prefer_index,
+                include_mapq_hist: args.include_mapq_hist,
+                include_flags: args.include_flags,
             });
             emit_response(&response, cli.global.json_pretty)
         }

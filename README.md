@@ -13,6 +13,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana check_sort --bam <bamfile>`
 * `bamana check_index --bam <bamfile>`
 * `bamana index --bam <bamfile>`
+* `bamana summary --bam <bamfile>`
 
 All command output is JSON.
 
@@ -26,6 +27,7 @@ The current semantics are intentionally narrow:
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
 * `index` currently validates the BAM and resolves the output index path and format, but reports index creation as not yet implemented in this slice
+* `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
@@ -33,6 +35,7 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_index` does not imply that every random-access offset is correct or that the BAM and index are semantically matched beyond shallow inspection.
 `index` does not imply that BAM index writing has completed unless the response explicitly reports a created output.
+`summary` does not imply full BAM validity, valid EOF state, or validation of every optional field, tag, or record invariant.
 
 ## Example Invocations
 
@@ -49,6 +52,9 @@ cargo run -- check_index --bam example.bam
 cargo run -- check_index --bam example.bam --require
 cargo run -- index --bam example.bam
 cargo run -- index --bam example.bam --format csi --out example.bam.csi
+cargo run -- summary --bam example.bam
+cargo run -- summary --bam example.bam --sample-records 250000 --include-mapq-hist --include-flags
+cargo run -- summary --bam example.bam --full-scan --prefer-index
 ```
 
 `header` uses the binary BAM reference section as authoritative for reference
@@ -74,6 +80,12 @@ than proof that every indexed offset still matches the BAM.
 BAM, selecting a default output path (`<bam>.bai` or `<bam>.csi`), and enforcing
 overwrite rules. Actual BAI/CSI writing is still deferred, and the JSON error
 response makes that limitation explicit instead of pretending an index was built.
+
+`summary` combines BAM header metadata with a bounded scan by default and
+switches to full-file totals only when EOF is actually reached or `--full-scan`
+is used. When a usable BAI is available and `--prefer-index` is enabled,
+index-derived mapped/unmapped totals are reported separately from scan-derived
+record-category counts so the evidence source stays explicit.
 
 ## Development
 

@@ -43,6 +43,8 @@ pub enum Commands {
     CheckIndex(CheckIndexArgs),
     /// Create a BAM index or report the deferred writer path honestly.
     Index(IndexArgs),
+    /// Produce a fast operational summary of BAM characteristics.
+    Summary(SummaryArgs),
     /// Assess declared and observed BAM sort characteristics.
     #[command(name = "check_sort")]
     CheckSort(CheckSortArgs),
@@ -123,4 +125,26 @@ pub struct IndexArgs {
     /// Requested output index format.
     #[arg(long, value_enum)]
     pub format: Option<IndexFormatArg>,
+}
+
+#[derive(Debug, Args)]
+pub struct SummaryArgs {
+    /// BAM file to summarise.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Maximum number of alignment records to inspect in bounded-scan mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan the full alignment stream.
+    #[arg(long)]
+    pub full_scan: bool,
+    /// Prefer index-derived totals where a usable index exists.
+    #[arg(long = "prefer-index", default_value_t = true)]
+    pub prefer_index: bool,
+    /// Include a MAPQ histogram keyed by integer MAPQ.
+    #[arg(long = "include-mapq-hist")]
+    pub include_mapq_hist: bool,
+    /// Include a detailed flag-category section in the output.
+    #[arg(long = "include-flags")]
+    pub include_flags: bool,
 }
