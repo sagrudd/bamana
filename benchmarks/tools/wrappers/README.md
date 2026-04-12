@@ -1,99 +1,106 @@
-# Wrapper Examples
+# Benchmark Wrapper Scripts
 
-This directory documents wrapper examples for benchmark tools.
+This directory now contains real shell-wrapper skeletons for the initial
+benchmark comparator set:
 
-The current benchmark workflow does not yet invoke standalone wrapper scripts
-from this directory. Instead, it uses:
+* [bamana.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/bamana.sh)
+* [samtools.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/samtools.sh)
+* [fastcat.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/fastcat.sh)
+* [common.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/common.sh)
+* [wrapper_cli_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/wrapper_cli_contract.md)
 
-* per-tool Nextflow modules under [../../modules/](/Users/stephen/Projects/bamana/benchmarks/modules)
-* the shared timing wrapper [../../bin/run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh)
+## What These Wrappers Do
 
-These examples exist to make the execution contract explicit.
+These wrappers provide the stable execution-interface layer between:
 
-## Bamana Wrapper Example
+* the Nextflow benchmark modules
+* tool-specific command composition
+* the outer timing wrapper
+* the raw benchmark result contract
 
-Scenario: `mapped_bam_pipeline`
+They are planning wrappers rather than timing wrappers.
 
-Workflow variant: `bamana_subsample_sort_partial_index`
+Each wrapper:
 
-Expected inputs:
+* validates scenario and workflow-variant compatibility
+* creates deterministic output paths inside the requested output directory
+* writes an executable command file for the real tool invocation
+* writes a command provenance log
+* writes a small wrapper metadata JSON file
 
-* staged BAM input
-* threads
-* subsample fraction
-* subsample mode
-* optional seed when `random`
+The outer benchmark layer still measures runtime via
+[run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh).
 
-Normalized command path:
+## Supported Comparator Set
 
-```bash
-"${BAMANA_BIN}" subsample --input "${INPUT}" --out "${RUN_ID}.subsampled.bam" --fraction "${FRACTION}" --mode "${MODE}" ${SEED_ARG}
-"${BAMANA_BIN}" sort --bam "${RUN_ID}.subsampled.bam" --out "${RUN_ID}.sorted.bam"
-```
+Current shell wrappers exist for:
 
-Version command:
+* `bamana`
+* `samtools`
+* `fastcat`
 
-```bash
-"${BAMANA_BIN}" --version
-```
+The benchmark still keeps separate Nextflow modules per tool, but those
+modules now delegate command planning to these scripts rather than assembling
+tool commands inline.
 
-Unsupported behavior:
+## Unsupported Behavior
 
-* if a scenario is not supported, emit `support_status = unsupported` rather
-  than a fake failing command
+Unsupported combinations are explicit and machine-readable.
 
-## Samtools Wrapper Example
+When a wrapper receives an unsupported scenario or workflow variant, it:
 
-Scenario: `mapped_bam_pipeline`
+* emits wrapper metadata JSON with `status = unsupported`
+* emits `support_status = unsupported`
+* writes a no-op command file containing `true`
+* exits successfully so the benchmark framework can preserve an unsupported row
+  rather than a fake process failure
 
-Workflow variant: `samtools_view_sort_index`
+This is deliberate. Unsupported is not failure.
 
-Normalized command path:
+## Version and Command Provenance
 
-```bash
-samtools view -@ "${THREADS}" -s "${SEED}.${FRACTION_TOKEN}" -b "${INPUT}" -o "${RUN_ID}.subsampled.bam"
-samtools sort -@ "${THREADS}" -o "${RUN_ID}.sorted.bam" "${RUN_ID}.subsampled.bam"
-samtools index -@ "${THREADS}" "${RUN_ID}.sorted.bam"
-```
+Each wrapper records:
 
-Version command:
+* the tool id
+* the scenario id
+* the workflow variant id
+* the tool version command
+* the normalized command path
+* the deterministic output target
 
-```bash
-samtools --version
-```
+That information is then propagated into the raw benchmark result and tidy
+aggregation layers.
 
-## Fastcat Wrapper Example
+## Wrapper Result Files
 
-Scenario: `fastq_consume_pipeline`
+The wrapper metadata JSON is not the same as the final benchmark raw result
+JSON.
 
-Workflow variant: `fastcat_concat_gzip`
+Wrapper metadata answers:
 
-Normalized command path:
+* what command path should be run?
+* is this tool/scenario combination supported?
+* what output path should the outer timing wrapper treat as primary?
 
-```bash
-fastcat "${INPUT}" | gzip -c > "${RUN_ID}.fastcat.fastq.gz"
-```
+The benchmark raw result answers:
 
-Version command:
+* what actually happened at runtime?
+* how long did it take?
+* did it succeed, fail, or remain unsupported?
 
-```bash
-fastcat --version
-```
+## Nextflow Calling Pattern
 
-Unsupported behavior:
+The expected pattern is:
 
-* `mapped_bam_pipeline`
-* `unmapped_bam_pipeline`
-* `subsample_only`
+1. Nextflow calls a wrapper with scenario, workflow variant, input, and output
+   settings.
+2. The wrapper emits:
+   * `wrapper.json`
+   * `command.sh`
+   * `command.log`
+3. Nextflow reads the wrapper JSON.
+4. Nextflow passes `command.sh` to
+   [run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh).
 
-should be represented as unsupported rather than failed.
-
-## Extension Guidance
-
-If standalone shell wrappers are added later, they should preserve the same
-contract:
-
-* accept scenario and workflow variant context
-* emit a deterministic output target
-* expose a version command
-* remain compatible with `run_benchmark.sh`
+This makes the actual comparator path inspectable without duplicating command
+assembly across modules.

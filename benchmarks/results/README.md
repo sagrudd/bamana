@@ -27,6 +27,7 @@ Contracts:
 * [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy per-run row contract
 * [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
 * [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical `tool` and `workflow_variant` values
+* [support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md): support and capability reporting contract
 
 Examples:
 
@@ -35,6 +36,8 @@ Examples:
 * [example_raw_result.failure.json](/Users/stephen/Projects/bamana/benchmarks/results/example_raw_result.failure.json)
 * [example_tidy_results.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_tidy_results.csv)
 * [example_tidy_summary.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_tidy_summary.csv)
+* [example_support_matrix.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_support_matrix.csv)
+* [example_support_summary.csv](/Users/stephen/Projects/bamana/benchmarks/results/example_support_summary.csv)
 
 Design rule:
 

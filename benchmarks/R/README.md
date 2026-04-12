@@ -29,6 +29,17 @@ Each TSV row represents one attempted run and includes:
 * timing and memory fields where available
 * throughput fields or enough information to derive them
 
+`build_support_matrix.R` reads:
+
+* aggregated per-run tidy results such as `benchmark_runs.tsv`
+* the benchmark tool registry
+
+It then writes:
+
+* `support_matrix.csv`
+* `support_summary.csv`
+* optional `support_matrix.png` and `support_matrix.pdf`
+
 ## Unsupported and Failed Runs
 
 The R layer must preserve the difference between:
@@ -53,6 +64,13 @@ The aggregation script writes:
 * `benchmark_support_matrix.tsv` and `benchmark_support_matrix.json`
 * `benchmark_failures.tsv`
 
+The support-matrix script writes a capability-aware layer that keeps intended
+support and observed benchmark outcome separate:
+
+* `support_matrix.csv`
+* `support_summary.csv`
+* optional rendered support-matrix figures
+
 `benchmark_summary.*` should aggregate successful measured runs only for
 performance metrics, while still reporting:
 
@@ -73,5 +91,7 @@ performance metrics, while still reporting:
 If the tidy result contract changes, review:
 
 * `aggregate_results.R`
+* `build_support_matrix.R`
 * `plot_benchmarks.R`
 * [../results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md)
+* [../results/support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md)

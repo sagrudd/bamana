@@ -1,0 +1,5 @@
+tool,tool_version,scenario,workflow_variant,input_type,intended_support,attempted,n_runs,n_success,n_failed,n_unsupported,support_status,notes
+bamana,bamana 0.1.0,mapped_bam_pipeline,bamana_subsample_sort_partial_index,BAM,supported,true,2,2,0,0,supported_success,"Partial because executable BAM index creation remains deferred."
+samtools,samtools 1.20,mapped_bam_pipeline,samtools_view_sort_index,BAM,supported,true,1,0,1,0,supported_failed,"Canonical BAM comparator path. Illustrative failed run."
+fastcat,fastcat 0.7.4,mapped_bam_pipeline,unsupported,BAM,unsupported,false,0,0,0,0,unsupported,"Not a BAM sort/index comparator."
+bamana,,fastq_consume_pipeline,bamana_consume_unmapped_bam,FASTQ_GZ,supported,false,0,0,0,0,not_attempted,"Consumes FASTQ.GZ into unmapped BAM."

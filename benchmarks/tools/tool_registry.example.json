@@ -6,16 +6,19 @@
       "display_name": "Bamana",
       "category": "mixed",
       "wrapper": {
-        "type": "nextflow_process",
-        "path": "benchmarks/modules/run_bamana.nf",
-        "entrypoint": "RUN_BAMANA_BENCHMARK",
+        "type": "shell_script",
+        "path": "benchmarks/tools/wrappers/bamana.sh",
+        "entrypoint": "benchmarks/tools/wrappers/bamana.sh",
+        "orchestration_module": "benchmarks/modules/run_bamana.nf",
+        "cli_contract": "benchmarks/tools/wrappers/wrapper_cli_contract.md",
+        "timing_strategy": "plan_then_run_benchmark",
         "supports_threads": true,
         "supports_subsample": true,
         "supports_sort": true,
-        "supports_index": false,
+        "supports_index": true,
         "supports_consume": true
       },
-      "version_command": "\"${meta.bamana_bin}\" --version",
+      "version_command": "\"${bamana_bin}\" --version",
       "supports_scenarios": [
         "mapped_bam_pipeline",
         "unmapped_bam_pipeline",
@@ -29,6 +32,13 @@
           "status": "supported",
           "operation_ordering": ["subsample", "sort"],
           "notes": "Partial because executable BAM index creation remains deferred."
+        },
+        {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "bamana_subsample_sort_index",
+          "status": "planned",
+          "operation_ordering": ["subsample", "sort", "index"],
+          "notes": "Shell wrapper skeleton exists and will fail honestly at runtime if the required Bamana index path is not yet implemented."
         },
         {
           "scenario": "unmapped_bam_pipeline",
@@ -45,6 +55,27 @@
           "notes": "Consumes FASTQ.GZ into unmapped BAM."
         },
         {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "bamana_consume_only",
+          "status": "planned",
+          "operation_ordering": ["consume"],
+          "notes": "Alias wrapper variant for explicit consume-only benchmarking."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "bamana_consume_sort",
+          "status": "planned",
+          "operation_ordering": ["consume", "sort"],
+          "notes": "Wrapper skeleton exists for future normalization-plus-sort benchmarking."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "bamana_consume_sort_index",
+          "status": "planned",
+          "operation_ordering": ["consume", "sort", "index"],
+          "notes": "Wrapper skeleton exists and will fail honestly if the required runtime subcommands are unavailable."
+        },
+        {
           "scenario": "subsample_only",
           "workflow_variant_id": "bamana_subsample_only",
           "status": "supported",
@@ -59,9 +90,12 @@
       "display_name": "samtools",
       "category": "bam_toolkit",
       "wrapper": {
-        "type": "nextflow_process",
-        "path": "benchmarks/modules/run_samtools.nf",
-        "entrypoint": "RUN_SAMTOOLS_BENCHMARK",
+        "type": "shell_script",
+        "path": "benchmarks/tools/wrappers/samtools.sh",
+        "entrypoint": "benchmarks/tools/wrappers/samtools.sh",
+        "orchestration_module": "benchmarks/modules/run_samtools.nf",
+        "cli_contract": "benchmarks/tools/wrappers/wrapper_cli_contract.md",
+        "timing_strategy": "plan_then_run_benchmark",
         "supports_threads": true,
         "supports_subsample": true,
         "supports_sort": true,
@@ -90,6 +124,20 @@
           "notes": "Subsample-only BAM path without sort or index."
         },
         {
+          "scenario": "mapped_bam_pipeline",
+          "workflow_variant_id": "samtools_sort_index",
+          "status": "planned",
+          "operation_ordering": ["sort", "index"],
+          "notes": "Shell wrapper skeleton exists for benchmarking pre-materialized BAM inputs that skip subsampling in the comparator path."
+        },
+        {
+          "scenario": "subsample_only",
+          "workflow_variant_id": "samtools_subsample_only",
+          "status": "planned",
+          "operation_ordering": ["view_subsample"],
+          "notes": "Explicit alias for the BAM-only subsampling path."
+        },
+        {
           "scenario": "fastq_consume_pipeline",
           "workflow_variant_id": "unsupported",
           "status": "unsupported",
@@ -111,9 +159,12 @@
       "display_name": "EPI2ME fastcat",
       "category": "consume_normalizer",
       "wrapper": {
-        "type": "nextflow_process",
-        "path": "benchmarks/modules/run_fastcat.nf",
-        "entrypoint": "RUN_FASTCAT_BENCHMARK",
+        "type": "shell_script",
+        "path": "benchmarks/tools/wrappers/fastcat.sh",
+        "entrypoint": "benchmarks/tools/wrappers/fastcat.sh",
+        "orchestration_module": "benchmarks/modules/run_fastcat.nf",
+        "cli_contract": "benchmarks/tools/wrappers/wrapper_cli_contract.md",
+        "timing_strategy": "plan_then_run_benchmark",
         "supports_threads": false,
         "supports_subsample": false,
         "supports_sort": false,
@@ -145,6 +196,20 @@
           "status": "supported",
           "operation_ordering": ["fastcat_concat", "gzip"],
           "notes": "Partial comparator for FASTQ ingestion and concatenation workflows."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "fastcat_consume_only",
+          "status": "planned",
+          "operation_ordering": ["fastcat_concat", "gzip"],
+          "notes": "Explicit alias wrapper variant for consume-only or concatenation-only planning."
+        },
+        {
+          "scenario": "fastq_consume_pipeline",
+          "workflow_variant_id": "fastcat_fastq_concat_only",
+          "status": "planned",
+          "operation_ordering": ["fastcat_concat", "gzip"],
+          "notes": "Explicit alias wrapper variant for concatenation-only benchmarking."
         },
         {
           "scenario": "subsample_only",

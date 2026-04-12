@@ -12,61 +12,45 @@ process RUN_BAMANA_BENCHMARK {
     path("${meta.run_id}.result.json"), emit: result_json
 
     script:
-    def outputTarget = ''
-    def supportStatus = 'supported'
-    def semanticEquivalence = 'full'
-    def notes = ''
-    def command = 'true'
-    def seedArg = meta.subsample_mode == 'random' ? "--seed ${meta.subsample_seed}" : ""
-
-    if (meta.scenario == 'mapped_bam_pipeline') {
-        outputTarget = "${meta.run_id}.sorted.bam"
-        semanticEquivalence = 'partial'
-        command = """\
-set -euo pipefail
-"${meta.bamana_bin}" subsample --input "${input_file}" --out "${meta.run_id}.subsampled.bam" --fraction ${meta.subsample_fraction} --mode ${meta.subsample_mode} ${seedArg} --force
-"${meta.bamana_bin}" sort --bam "${meta.run_id}.subsampled.bam" --out "${outputTarget}" --force
-"""
-        notes = 'Bamana mapped-BAM benchmarking now includes real subsample plus sort execution. The workflow remains partial because executable BAM index creation is still deferred.'
-    } else if (meta.scenario == 'unmapped_bam_pipeline') {
-        outputTarget = "${meta.run_id}.subsampled.bam"
-        command = """\
-set -euo pipefail
-"${meta.bamana_bin}" subsample --input "${input_file}" --out "${outputTarget}" --fraction ${meta.subsample_fraction} --mode ${meta.subsample_mode} ${seedArg} --force
-"""
-        notes = 'Bamana unmapped-BAM benchmarking now exercises the implemented subsample command directly.'
-    } else if (meta.scenario == 'fastq_consume_pipeline') {
-        outputTarget = "${meta.run_id}.output.bam"
-        command = """\
-set -euo pipefail
-"${meta.bamana_bin}" consume --input "${input_file}" --out "${outputTarget}" --mode unmapped --force
-"""
-        notes = 'Bamana fastq ingestion uses consume, while fastq subsample benchmarking can now be added in a later variant using the implemented subsample command.'
-    } else if (meta.scenario == 'subsample_only') {
-        outputTarget = meta.input_type == 'FASTQ_GZ'
-            ? "${meta.run_id}.subsampled.fastq.gz"
-            : "${meta.run_id}.subsampled.bam"
-        command = """\
-set -euo pipefail
-"${meta.bamana_bin}" subsample --input "${input_file}" --out "${outputTarget}" --fraction ${meta.subsample_fraction} --mode ${meta.subsample_mode} ${seedArg} --force
-"""
-        notes = 'Bamana subsample-only benchmarking uses the implemented subsample command directly on the staged input.'
-    }
+    def wrapperPath = "${projectDir}/benchmarks/tools/wrappers/bamana.sh"
+    def sortOrder = meta.scenario == 'mapped_bam_pipeline' ? 'coordinate' : 'none'
 
     """
-    cat <<'EOF' > command.sh
-${command}
-EOF
-    chmod +x command.sh
+    wrapper_result="${meta.run_id}.wrapper.json"
+    command_file="${meta.run_id}.command.sh"
+    command_log="${meta.run_id}.command.log"
+    timing_output="${meta.run_id}.wrapper.time.json"
+
+    "${wrapperPath}" \
+      --scenario "${meta.scenario}" \
+      --workflow-variant "${meta.workflow_variant}" \
+      --input "${input_file}" \
+      --output-dir "${PWD}" \
+      --threads "${meta.threads}" \
+      --subsample-fraction "${meta.subsample_fraction}" \
+      --subsample-seed "${meta.subsample_seed}" \
+      --subsample-mode "${meta.subsample_mode}" \
+      --sort-order "${sortOrder}" \
+      --result-output "${wrapper_result}" \
+      --command-file "${command_file}" \
+      --command-log "${command_log}" \
+      --timing-output "${timing_output}" \
+      --bamana-bin "${meta.bamana_bin}"
+
+    support_status="$(jq -r '.support_status' "${wrapper_result}")"
+    semantic_equivalence="$(jq -r '.semantic_equivalence' "${wrapper_result}")"
+    output_target="$(jq -r '.output_paths.primary // ""' "${wrapper_result}")"
+    version_cmd="$(jq -r '.tool_version_command' "${wrapper_result}")"
+    notes="$(jq -r 'if (.notes | length) == 0 then "" else (.notes | join("; ")) end' "${wrapper_result}")"
 
     run_benchmark.sh \
       --run-id "${meta.run_id}" \
       --tool "bamana" \
-      --tool-version-cmd "${meta.bamana_bin} --version" \
+      --tool-version-cmd "${version_cmd}" \
       --scenario "${meta.scenario}" \
       --workflow-variant "${meta.workflow_variant}" \
-      --semantic-equivalence "${semanticEquivalence}" \
-      --support-status "${supportStatus}" \
+      --semantic-equivalence "${semantic_equivalence}" \
+      --support-status "${support_status}" \
       --input-type "${meta.input_type}" \
       --mapping-state "${meta.mapping_state}" \
       --input-path "${input_file}" \
@@ -78,8 +62,8 @@ EOF
       --subsample-mode "${meta.subsample_mode}" \
       --threads "${meta.threads}" \
       --container-image "${params.container_image}" \
-      --output-target "${outputTarget}" \
-      --command-file command.sh \
+      --output-target "${output_target}" \
+      --command-file "${command_file}" \
       --notes "${notes}"
     """
 }

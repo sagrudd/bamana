@@ -184,6 +184,8 @@ Aggregated outputs include:
 * `benchmark_summary.json`
 * `benchmark_support_matrix.tsv`
 * `benchmark_failures.tsv`
+* `support_matrix.csv`
+* `support_summary.csv`
 
 Publication-ready figures include:
 
@@ -192,6 +194,12 @@ Publication-ready figures include:
 * memory by tool and scenario
 * replicate variability plots
 * support-status heatmaps
+* support-matrix capability tables
+
+Build the capability-aware support layer with:
+
+* [R/build_support_matrix.R](/Users/stephen/Projects/bamana/benchmarks/R/build_support_matrix.R)
+* [results/support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md)
 
 Contracts and examples for this layer live under
 [results/](/Users/stephen/Projects/bamana/benchmarks/results).
@@ -201,6 +209,15 @@ The key rule is that unsupported and failed runs remain explicit:
 * unsupported is not failure
 * failed is not unsupported
 * successful runs alone drive performance summaries
+
+The support matrix now exists to answer the question timing plots cannot:
+
+* was this combination unsupported by design?
+* was it supported but not attempted?
+* was it attempted and failed?
+* or did it run successfully and simply perform poorly?
+
+Use timing plots and the support matrix together.
 
 The `tool`, `tool_version`, and `workflow_variant` fields are governed by the
 tool registry and wrapper contract so that publication figures can be traced

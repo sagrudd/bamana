@@ -34,9 +34,9 @@ Examples:
 
 Examples:
 
-* a dedicated Nextflow process module
 * a shell script that emits a command file
-* a common timing wrapper around a generated command file
+* a Nextflow process module that calls that shell wrapper
+* a common timing wrapper around the generated command file
 
 The benchmark layer must preserve all three.
 
@@ -70,7 +70,12 @@ A wrapper should be defined in terms of these concepts:
 * tool-specific execution paths such as `bamana_bin`
 
 The current pipeline passes these through Nextflow metadata and then into
+[wrapper shell scripts](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers)
+and then into
 [run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh).
+
+The wrapper-facing CLI is documented in
+[wrappers/wrapper_cli_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/wrapper_cli_contract.md).
 
 ## Required Wrapper Outputs
 
@@ -78,6 +83,7 @@ A wrapper must emit or allow the framework to capture:
 
 * the final primary output path
 * tool version string
+* tool version command
 * normalized command line
 * workflow variant id
 * scenario id
@@ -145,14 +151,25 @@ benchmark target.
 Current benchmark execution uses:
 
 * one Nextflow module per tool
-* module-local command assembly
+* one shell wrapper per primary comparator tool
+* the shell wrapper to generate:
+  * wrapper metadata JSON
+  * an executable command file
+  * a command provenance log
 * a shared timing wrapper:
   [run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh)
 
 This means the wrapper implementation type is currently best described as:
 
+* `shell_script` for per-tool command planning
 * `nextflow_process` for per-tool orchestration
 * `command_file_plus_timing_wrapper` for actual execution capture
+
+The initial concrete wrappers live at:
+
+* [wrappers/bamana.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/bamana.sh)
+* [wrappers/samtools.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/samtools.sh)
+* [wrappers/fastcat.sh](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/fastcat.sh)
 
 ## Adding a New Tool
 

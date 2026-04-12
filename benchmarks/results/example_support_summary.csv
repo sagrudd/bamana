@@ -1,0 +1,5 @@
+tool,scenario,support_status,workflow_variants,n_success,n_failed,n_unsupported,notes
+bamana,mapped_bam_pipeline,supported_success,bamana_subsample_sort_partial_index,2,0,0,"Mapped BAM path succeeded in the observed run set."
+samtools,mapped_bam_pipeline,supported_failed,samtools_view_sort_index,0,1,0,"Supported BAM baseline but the observed run set failed."
+fastcat,mapped_bam_pipeline,unsupported,unsupported,0,0,0,"fastcat is intentionally out of scope for BAM sort/index benchmarking."
+bamana,fastq_consume_pipeline,not_attempted,bamana_consume_unmapped_bam,0,0,0,"Supported in principle but omitted from this example run set."

@@ -328,6 +328,25 @@ The initial figures include:
 * replicate variability
 * support-status heatmap
 
+## 9.1 Why The Support Matrix Exists
+
+Timing figures alone are not sufficient for honest interpretation.
+
+A missing timing bar can mean:
+
+* the combination is explicitly unsupported
+* the combination is supported in principle but was not attempted in one run
+  set
+* the combination was attempted but failed
+
+The support matrix separates intended capability from observed outcome so those
+cases remain visible in review and publication artifacts.
+
+The support-matrix layer is defined in:
+
+* [results/support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md)
+* [R/build_support_matrix.R](/Users/stephen/Projects/bamana/benchmarks/R/build_support_matrix.R)
+
 ## 10. Bamana Subsample Requirement
 
 The benchmark framework now requires and uses the Bamana command:

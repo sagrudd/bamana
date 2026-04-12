@@ -12,53 +12,46 @@ process RUN_SAMTOOLS_BENCHMARK {
     path("${meta.run_id}.result.json"), emit: result_json
 
     script:
-    def fractionText = meta.subsample_fraction.toString()
-    def fractionToken = fractionText.startsWith('0.') ? fractionText.substring(2) : fractionText.replace('.', '')
-    def sampleArg = "${meta.subsample_seed}.${fractionToken}"
-    def outputTarget = ''
-    def supportStatus = 'supported'
-    def semanticEquivalence = 'full'
-    def notes = ''
-    def command = 'true'
-
-    if (meta.scenario == 'mapped_bam_pipeline') {
-        outputTarget = "${meta.run_id}.sorted.bam"
-        command = """\
-set -euo pipefail
-samtools view -@ ${meta.threads} -s ${sampleArg} -b "${input_file}" -o "${meta.run_id}.subsampled.bam"
-samtools sort -@ ${meta.threads} -o "${outputTarget}" "${meta.run_id}.subsampled.bam"
-samtools index -@ ${meta.threads} "${outputTarget}"
-"""
-        notes = 'samtools is the canonical BAM baseline and uses the natural subsample then sort then index order here.'
-    } else if (meta.scenario == 'unmapped_bam_pipeline' || meta.scenario == 'subsample_only') {
-        outputTarget = "${meta.run_id}.subsampled.bam"
-        command = """\
-set -euo pipefail
-samtools view -@ ${meta.threads} -s ${sampleArg} -b "${input_file}" -o "${outputTarget}"
-"""
-        notes = meta.scenario == 'subsample_only'
-            ? 'samtools subsample-only benchmarking runs the direct BAM subsampling path without sort or index.'
-            : 'Unmapped BAM scenario is benchmarked as subsample only because sort and index are not required for the first comparison.'
-    } else {
-        supportStatus = 'unsupported'
-        semanticEquivalence = 'unsupported'
-        notes = 'samtools is not benchmarked for raw FASTQ.GZ consume workflows in this first benchmark contract.'
-    }
+    def wrapperPath = "${projectDir}/benchmarks/tools/wrappers/samtools.sh"
+    def sortOrder = meta.scenario == 'mapped_bam_pipeline' ? 'coordinate' : 'none'
+    def createIndexFlag = meta.scenario == 'mapped_bam_pipeline' ? '--create-index' : ''
 
     """
-    cat <<'EOF' > command.sh
-${command}
-EOF
-    chmod +x command.sh
+    wrapper_result="${meta.run_id}.wrapper.json"
+    command_file="${meta.run_id}.command.sh"
+    command_log="${meta.run_id}.command.log"
+    timing_output="${meta.run_id}.wrapper.time.json"
+
+    "${wrapperPath}" \
+      --scenario "${meta.scenario}" \
+      --workflow-variant "${meta.workflow_variant}" \
+      --input "${input_file}" \
+      --output-dir "${PWD}" \
+      --threads "${meta.threads}" \
+      --subsample-fraction "${meta.subsample_fraction}" \
+      --subsample-seed "${meta.subsample_seed}" \
+      --subsample-mode "${meta.subsample_mode}" \
+      --sort-order "${sortOrder}" \
+      ${createIndexFlag} \
+      --result-output "${wrapper_result}" \
+      --command-file "${command_file}" \
+      --command-log "${command_log}" \
+      --timing-output "${timing_output}"
+
+    support_status="$(jq -r '.support_status' "${wrapper_result}")"
+    semantic_equivalence="$(jq -r '.semantic_equivalence' "${wrapper_result}")"
+    output_target="$(jq -r '.output_paths.primary // ""' "${wrapper_result}")"
+    version_cmd="$(jq -r '.tool_version_command' "${wrapper_result}")"
+    notes="$(jq -r 'if (.notes | length) == 0 then "" else (.notes | join("; ")) end' "${wrapper_result}")"
 
     run_benchmark.sh \
       --run-id "${meta.run_id}" \
       --tool "samtools" \
-      --tool-version-cmd "samtools --version" \
+      --tool-version-cmd "${version_cmd}" \
       --scenario "${meta.scenario}" \
       --workflow-variant "${meta.workflow_variant}" \
-      --semantic-equivalence "${semanticEquivalence}" \
-      --support-status "${supportStatus}" \
+      --semantic-equivalence "${semantic_equivalence}" \
+      --support-status "${support_status}" \
       --input-type "${meta.input_type}" \
       --mapping-state "${meta.mapping_state}" \
       --input-path "${input_file}" \
@@ -70,8 +63,8 @@ EOF
       --subsample-mode "${meta.subsample_mode}" \
       --threads "${meta.threads}" \
       --container-image "${params.container_image}" \
-      --output-target "${outputTarget}" \
-      --command-file command.sh \
+      --output-target "${output_target}" \
+      --command-file "${command_file}" \
       --notes "${notes}"
     """
 }

@@ -15,9 +15,18 @@ Files in this directory:
 * [workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md): supported and unsupported tool/scenario combinations
 * [tool_registry.schema.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.schema.json): machine-readable tool registry schema
 * [tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): initial registry content for Bamana and comparators
-* [wrappers/README.md](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/README.md): documented wrapper examples and conventions
+* [wrappers/README.md](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/README.md): concrete shell-wrapper skeletons and calling guidance
+* [wrappers/wrapper_cli_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers/wrapper_cli_contract.md): common wrapper-facing CLI and planning-result contract
 
-The current Nextflow pipeline uses per-tool module processes plus the common
-timing wrapper [../bin/run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh).
+The current Nextflow pipeline uses:
+
+* per-tool module processes for orchestration
+* shell wrappers under
+  [wrappers/](/Users/stephen/Projects/bamana/benchmarks/tools/wrappers)
+  for command planning
+* the common timing wrapper
+  [../bin/run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh)
+  for runtime measurement and result emission
+
 This directory documents that contract explicitly so the benchmark framework
 remains auditable.
