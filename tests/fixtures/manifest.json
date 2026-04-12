@@ -674,40 +674,170 @@
       "size_class": "tiny"
     },
     {
-      "id": "tiny.valid.cram_with_reference",
-      "path": "consume/tiny.valid.cram_with_reference.cram",
+      "id": "tiny.ref.primary",
+      "path": "cram/tiny.ref.primary.fasta",
+      "format": "FASTA",
+      "category": "consume",
+      "validity": "reference_material",
+      "status": "planned",
+      "description": "Tiny primary FASTA reserved as the explicit reference material for CRAM consume contract tests.",
+      "planned_status": "planned",
+      "primary_commands": ["consume"],
+      "secondary_commands": [],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate"],
+      "regeneration_strategy": "derive_tiny_reference_fasta_from_alignment_fixture_refdict",
+      "expected_artifacts": [],
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": false,
+      "reference_fixture_id": null,
+      "reference_policy_notes": "Used as the explicit FASTA for strict-policy CRAM consume success tests.",
+      "header_compatibility_group": "primary_refdict"
+    },
+    {
+      "id": "tiny.valid.cram.explicit_ref",
+      "path": "cram/tiny.valid.cram.explicit_ref.cram",
       "format": "CRAM",
       "category": "consume",
       "validity": "valid",
       "status": "planned",
-      "description": "Tiny CRAM input reserved for alignment-mode consume coverage with an explicit indexed FASTA reference.",
+      "description": "Tiny CRAM input reserved for alignment-mode consume coverage with an explicit FASTA reference under a strict policy.",
+      "planned_status": "planned",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate", "tiny.ref.primary"],
+      "regeneration_strategy": "derive_cram_from_tiny_valid_coordinate_with_indexed_reference",
+      "expected_artifacts": [
+        "expected/consume/consume.cram.explicit_ref.success.json"
+      ],
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": true,
+      "reference_fixture_id": "tiny.ref.primary",
+      "reference_policy_notes": "Expected to succeed under --reference-policy strict when --reference tiny.ref.primary.fasta is supplied.",
+      "header_compatibility_group": "primary_refdict"
+    },
+    {
+      "id": "tiny.valid.cram.reference_required",
+      "path": "consume/scenarios/tiny.valid.cram.reference_required",
+      "format": "CRAM",
+      "category": "consume",
+      "validity": "policy_failure",
+      "status": "planned",
+      "planned_status": "planned",
+      "description": "Strict-policy CRAM consume scenario reserved for required-reference failure coverage when the explicit-ref CRAM is used without --reference.",
+      "primary_commands": ["consume"],
+      "secondary_commands": [],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.cram.explicit_ref", "tiny.ref.primary"],
+      "regeneration_strategy": "invoke_strict_cram_consume_without_reference_argument",
+      "expected_artifacts": [
+        "expected/consume/consume.cram.reference_required.failure.json"
+      ],
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": true,
+      "reference_fixture_id": "tiny.ref.primary",
+      "reference_policy_notes": "Uses the same CRAM semantics as tiny.valid.cram.explicit_ref but must fail with reference_required when no explicit FASTA is supplied under strict policy.",
+      "header_compatibility_group": "primary_refdict"
+    },
+    {
+      "id": "tiny.valid.cram.compatible_refdict",
+      "path": "cram/tiny.valid.cram.compatible_refdict.cram",
+      "format": "CRAM",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "planned_status": "planned",
+      "description": "Tiny CRAM input reserved for alignment-mode consume compatibility tests with BAM companions that share the same reference dictionary.",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate", "tiny.ref.primary"],
+      "regeneration_strategy": "derive_cram_from_compatible_refdict_alignment_source",
+      "expected_artifacts": [
+        "expected/consume/consume.cram_bam.compatible.success.json"
+      ],
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": true,
+      "reference_fixture_id": "tiny.ref.primary",
+      "reference_policy_notes": "Used with tiny.valid.bam.compatible_refdict for compatible alignment-mode consume and with tiny.valid.bam.incompatible_refdict for incompatible_headers coverage.",
+      "header_compatibility_group": "compatibility_pair_a"
+    },
+    {
+      "id": "tiny.valid.bam.compatible_refdict",
+      "path": "bam/valid/tiny.valid.bam.compatible_refdict.bam",
+      "format": "BAM",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "planned_status": "planned",
+      "description": "Tiny BAM companion with the same reference dictionary as tiny.valid.cram.compatible_refdict for alignment-mode consume compatibility success.",
       "primary_commands": ["consume"],
       "secondary_commands": ["identify"],
       "generated": true,
       "source_fixture_ids": ["tiny.valid.coordinate"],
-      "regeneration_strategy": "derive_cram_from_tiny_valid_coordinate_with_indexed_reference",
+      "regeneration_strategy": "derive_bam_from_compatible_refdict_alignment_source",
       "expected_artifacts": [
-        "expected/consume/consume.tiny.valid.cram_with_reference.dry_run.success.json"
+        "expected/consume/consume.cram_bam.compatible.success.json"
       ],
-      "size_class": "tiny"
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": false,
+      "reference_fixture_id": null,
+      "reference_policy_notes": "Shares header_compatibility_group with tiny.valid.cram.compatible_refdict.",
+      "header_compatibility_group": "compatibility_pair_a"
     },
     {
-      "id": "tiny.valid.cram_embedded",
-      "path": "consume/tiny.valid.cram_embedded.cram",
+      "id": "tiny.valid.bam.incompatible_refdict",
+      "path": "bam/valid/tiny.valid.bam.incompatible_refdict.bam",
+      "format": "BAM",
+      "category": "consume",
+      "validity": "policy_failure",
+      "status": "planned",
+      "planned_status": "planned",
+      "description": "Tiny BAM companion with a conflicting reference dictionary reserved for consume incompatible_headers coverage when combined with the compatible CRAM fixture.",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate"],
+      "regeneration_strategy": "derive_bam_with_conflicting_reference_dictionary",
+      "expected_artifacts": [
+        "expected/consume/consume.cram_bam.incompatible.failure.json"
+      ],
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": false,
+      "reference_fixture_id": null,
+      "reference_policy_notes": "Intentionally conflicts with tiny.valid.cram.compatible_refdict to exercise conservative header-compatibility failure behavior.",
+      "header_compatibility_group": "compatibility_pair_b"
+    },
+    {
+      "id": "tiny.valid.cram.no_external_ref",
+      "path": "cram/tiny.valid.cram.no_external_ref.cram",
       "format": "CRAM",
       "category": "consume",
       "validity": "valid",
       "status": "planned",
-      "description": "Tiny CRAM input reserved for conservative allow-embedded or auto-conservative consume coverage when a reproducible no-external-reference fixture is available.",
+      "planned_status": "deferred",
+      "description": "Optional CRAM fixture reserved for future conservative no-external-reference consume coverage if a reproducible embedded or self-contained decode path becomes available.",
       "primary_commands": ["consume"],
       "secondary_commands": ["identify"],
       "generated": true,
       "source_fixture_ids": [],
-      "regeneration_strategy": "optional_hand_authored_or_documented_embedded_reference_cram",
+      "regeneration_strategy": "deferred_until_reproducible_no_external_reference_cram_generation_is_documented",
       "expected_artifacts": [
-        "expected/consume/consume.tiny.valid.cram_embedded.dry_run.success.json"
+        "expected/consume/consume.cram.no_external_ref.success.json"
       ],
-      "size_class": "tiny"
+      "size_class": "tiny",
+      "has_index": false,
+      "requires_reference": false,
+      "reference_fixture_id": null,
+      "reference_policy_notes": "Do not treat as present until a deterministic and reviewable no-external-reference CRAM can be produced.",
+      "header_compatibility_group": null
     },
     {
       "id": "tiny.valid.fastq",
@@ -760,24 +890,6 @@
       "regeneration_strategy": "compose_alignment_and_raw_inputs_in_one_request",
       "expected_artifacts": [
         "expected/consume/consume.tiny.consume.mixed_alignment_raw.failure.json"
-      ],
-      "size_class": "tiny"
-    },
-    {
-      "id": "tiny.consume.cram_reference_required",
-      "path": "consume/tiny.consume.cram_reference_required",
-      "format": "CRAM",
-      "category": "consume",
-      "validity": "policy_failure",
-      "status": "planned",
-      "description": "Strict-policy CRAM request reserved for consume required-reference failure coverage when no explicit FASTA is supplied.",
-      "primary_commands": ["consume"],
-      "secondary_commands": [],
-      "generated": true,
-      "source_fixture_ids": ["tiny.valid.cram_with_reference"],
-      "regeneration_strategy": "invoke_strict_cram_consume_without_reference_argument",
-      "expected_artifacts": [
-        "expected/consume/consume.tiny.consume.cram_reference_required.failure.json"
       ],
       "size_class": "tiny"
     },

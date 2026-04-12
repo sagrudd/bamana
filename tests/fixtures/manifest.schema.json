@@ -50,6 +50,15 @@
           "status": { "type": "string" },
           "description": { "type": "string" },
           "planned_status": { "type": "string" },
+          "requires_reference": { "type": "boolean" },
+          "reference_fixture_id": {
+            "type": ["string", "null"]
+          },
+          "reference_policy_notes": { "type": "string" },
+          "header_compatibility_group": {
+            "type": ["string", "null"]
+          },
+          "has_index": { "type": "boolean" },
           "duplication_signature": { "type": "string" },
           "expected_cleanliness": { "type": "string" },
           "forensic_hallmarks": {

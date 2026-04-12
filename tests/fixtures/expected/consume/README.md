@@ -13,10 +13,20 @@ Examples to reserve:
 
 * `consume.tiny.valid.coordinate.dry_run.success.json`
 * `consume.tiny.valid.sam.dry_run.success.json`
-* `consume.tiny.valid.cram_with_reference.dry_run.success.json`
-* `consume.tiny.valid.cram_embedded.dry_run.success.json`
+* `consume.cram.explicit_ref.success.json`
+* `consume.cram.reference_required.failure.json`
+* `consume.cram_bam.compatible.success.json`
+* `consume.cram_bam.incompatible.failure.json`
+* `consume.cram.no_external_ref.success.json` only if the corresponding fixture
+  is actually present and stable
 * `consume.tiny.valid.fastq.dry_run.success.json`
 * `consume.tiny.valid.fastq_gz.dry_run.success.json`
 * `consume.tiny.consume.mixed_alignment_raw.failure.json`
-* `consume.tiny.consume.cram_reference_required.failure.json`
 * `consume.tiny.consume.directory_tree.dry_run.success.json`
+
+Where possible, CRAM-oriented expected outputs should align with the canonical
+spec examples:
+
+* [consume.success.alignment.json](/Users/stephen/Projects/bamana/spec/examples/consume.success.alignment.json)
+* [consume.failure.reference_required.json](/Users/stephen/Projects/bamana/spec/examples/consume.failure.reference_required.json)
+* [consume.failure.incompatible_headers.json](/Users/stephen/Projects/bamana/spec/examples/consume.failure.incompatible_headers.json)

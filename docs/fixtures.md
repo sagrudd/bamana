@@ -61,6 +61,23 @@ Its fixture plan must cover:
 These fixtures should be used to prove discovery order, classification, and
 policy behavior before larger normalization or transform workflows are tested.
 
+### CRAM Consume Fixtures
+
+CRAM is handled more conservatively than BAM or SAM because its decode path may
+depend on explicit reference material. The fixture plan therefore stays small
+and purpose-built:
+
+* one explicit-reference success fixture
+* one strict missing-reference failure scenario
+* one compatibility group for CRAM + BAM/SAM reference-dictionary checks
+
+This small companion set is preferable to a large unmanaged CRAM corpus because
+it keeps provenance, reference-policy assumptions, and expected `consume`
+contract outcomes reviewable. Missing-reference behavior must be tested as its
+own contract, not inferred from a generic parse failure, and any future
+no-external-reference fixture must remain clearly marked as planned or deferred
+rather than assumed to exist.
+
 ## Review Expectations
 
 Fixture changes should be reviewed as governed assets.

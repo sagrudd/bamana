@@ -21,12 +21,15 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |
 | `tiny.valid.sam` | Alignment-mode SAM ingest | Identify/format coverage | `consume`, `identify` | success |
-| `tiny.valid.cram_with_reference` | Alignment-mode CRAM ingest with explicit FASTA | Reference-policy success coverage | `consume`, `identify` | success |
-| `tiny.valid.cram_embedded` | Alignment-mode CRAM ingest without explicit FASTA | Conservative embedded/no-external-reference coverage | `consume`, `identify` | success or skip if fixture unavailable |
+| `tiny.valid.cram.explicit_ref` | Alignment-mode CRAM ingest with explicit FASTA | Canonical strict-policy CRAM success coverage | `consume`, `identify` | success |
+| `tiny.valid.cram.reference_required` | Strict-policy CRAM request without a reference | Required-reference failure coverage | `consume` | failure |
+| `tiny.valid.cram.compatible_refdict` | CRAM alignment input with a shared reference dictionary | CRAM + BAM/SAM compatibility coverage | `consume`, `identify` | success |
+| `tiny.valid.bam.compatible_refdict` | BAM companion with the same reference dictionary as the compatible CRAM | Mixed alignment-bearing consume success coverage | `consume`, `identify` | success |
+| `tiny.valid.bam.incompatible_refdict` | BAM companion with a conflicting reference dictionary | Conservative header-incompatibility failure coverage | `consume`, `identify` | failure |
+| `tiny.valid.cram.no_external_ref` | Optional conservative no-external-reference CRAM | Future `allow-embedded` or `auto-conservative` coverage | `consume`, `identify` | deferred or skip if fixture unavailable |
 | `tiny.valid.fastq` | Unmapped FASTQ ingest | Identify/format coverage | `consume`, `identify` | success |
 | `tiny.valid.fastq_gz` | Unmapped FASTQ.GZ ingest | Identify/format coverage | `consume`, `identify` | success |
 | `tiny.consume.mixed_alignment_raw` | Strict mixed-format rejection | Policy failure coverage | `consume` | failure |
-| `tiny.consume.cram_reference_required` | Strict CRAM missing-reference failure | Reference-policy failure coverage | `consume` | failure |
 | `tiny.consume.directory_tree` | Deterministic directory traversal | Recursive/non-recursive discovery coverage | `consume` | success + mixed discovery semantics |
 
 ## Duplication And Forensics Matrix
@@ -50,3 +53,6 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 * Reuse baseline fixtures before adding a new one.
 * If a fixture supports a command only indirectly, mark that as secondary in the
   manifest rather than inflating the matrix.
+* Treat CRAM success, CRAM missing-reference failure, and CRAM header
+  incompatibility as separate contracts even when they reuse the same tiny CRAM
+  payload.

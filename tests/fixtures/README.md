@@ -66,6 +66,29 @@ Those fixtures should separate:
 The first consume fixtures should remain tiny and should prove discovery and
 policy semantics before they try to exercise larger normalization workflows.
 
+### CRAM Consume Companion Set
+
+The CRAM companion set stays intentionally small and exists specifically to
+test `consume` semantics that are risky in regulated workflows:
+
+* explicit-reference success under a strict policy
+* strict missing-reference failure for a CRAM that otherwise decodes
+* header-compatibility behavior when CRAM is combined with BAM/SAM inputs
+
+The preferred CRAM plan is:
+
+* `tiny.valid.cram.explicit_ref` as the primary CRAM success fixture
+* `tiny.valid.cram.reference_required` as the strict-policy failure scenario,
+  reusing the explicit-reference CRAM where practical
+* `tiny.valid.cram.compatible_refdict` plus BAM/SAM companions for
+  compatibility checks
+* `tiny.valid.cram.no_external_ref` only if it can be generated
+  deterministically and reviewed honestly
+
+CRAM fixtures must remain explicit about whether they require a reference and
+which reference source they are intended to use. The fixture plan must never
+blur missing-reference failures into generic decode failures.
+
 ## Adding A Fixture
 
 When adding or changing a fixture:

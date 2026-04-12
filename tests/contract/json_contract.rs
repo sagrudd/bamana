@@ -112,6 +112,7 @@ fn contract_docs_exist() {
             .join("indexing")
             .join("README.md"),
         fixtures_dir().join("duplication").join("README.md"),
+        fixtures_dir().join("cram").join("README.md"),
         fixtures_dir().join("consume").join("README.md"),
         fixtures_dir().join("forensics").join("README.md"),
         fixtures_dir().join("expected").join("README.md"),
@@ -134,6 +135,7 @@ fn contract_docs_exist() {
         fixtures_dir().join("plans").join("fixture-matrix.md"),
         fixtures_dir().join("plans").join("generation-strategy.md"),
         fixtures_dir().join("plans").join("coverage-map.md"),
+        fixtures_dir().join("plans").join("cram-fixtures.md"),
         fixtures_dir()
             .join("plans")
             .join("duplication-forensics.md"),
@@ -194,8 +196,12 @@ fn fixture_manifest_includes_consume_fixture_plan() {
 
     for required_id in [
         "tiny.valid.sam",
-        "tiny.valid.cram_with_reference",
-        "tiny.consume.cram_reference_required",
+        "tiny.ref.primary",
+        "tiny.valid.cram.explicit_ref",
+        "tiny.valid.cram.reference_required",
+        "tiny.valid.cram.compatible_refdict",
+        "tiny.valid.bam.compatible_refdict",
+        "tiny.valid.bam.incompatible_refdict",
         "tiny.valid.fastq",
         "tiny.valid.fastq_gz",
         "tiny.consume.mixed_alignment_raw",

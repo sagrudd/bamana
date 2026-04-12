@@ -114,17 +114,13 @@ Recommended roots:
 
 * `tiny.valid.coordinate.bam` for alignment-bearing BAM ingest
 * `tiny.valid.sam` for alignment-bearing SAM ingest
-* `tiny.valid.cram_with_reference` for explicit-reference CRAM ingest
-* `tiny.valid.cram_embedded` only if a truly conservative no-external-reference
-  CRAM can be documented reproducibly
+* `tiny.valid.cram.explicit_ref` for explicit-reference CRAM ingest
 * `tiny.valid.fastq` and `tiny.valid.fastq_gz` for unmapped ingest
 
 Recommended derived fixtures:
 
 * `tiny.consume.mixed_alignment_raw` created by composing one alignment-bearing
   source with one raw-read source in a single request
-* `tiny.consume.cram_reference_required` created by running a strict-policy CRAM
-  request without `--reference`
 * `tiny.consume.directory_tree` created by arranging supported files,
   unsupported files, and nested directories in a deterministic lexical layout
 
@@ -136,6 +132,40 @@ The first consume fixtures should prove:
 * strict CRAM required-reference behavior
 * explicit-reference CRAM success reporting
 * dry-run planning semantics
+
+#### CRAM consume fixtures
+
+CRAM fixtures need a more explicit provenance story than BAM/SAM fixtures.
+
+Preferred process:
+
+1. start from a tiny canonical SAM or BAM root with a stable reference
+   dictionary
+2. version the corresponding tiny reference FASTA in the repository as
+   `tiny.ref.primary.fasta`
+3. derive `tiny.valid.cram.explicit_ref.cram` deterministically using that
+   exact FASTA and a documented one-time toolchain
+4. reuse that same CRAM for the `tiny.valid.cram.reference_required` failure
+   scenario by omitting `--reference` under `--reference-policy strict`
+5. derive `tiny.valid.cram.compatible_refdict.cram` and
+   `tiny.valid.bam.compatible_refdict.bam` from the same root or reference
+   dictionary group
+6. derive `tiny.valid.bam.incompatible_refdict.bam` by changing reference
+   dictionary content in a controlled, documented way
+
+Additional guidance:
+
+* If Bamana itself cannot yet write CRAM, an external one-time generation path
+  is acceptable, but the exact commands, tool versions, and source fixtures
+  must be recorded.
+* Do not download arbitrary CRAM files from the internet for contract tests.
+* Keep `.crai` generation optional until a concrete consume/index interaction
+  requires it.
+* Only plan `tiny.valid.cram.no_external_ref` if a deterministic,
+  reviewable no-external-reference CRAM can be generated and shown to decode
+  conservatively. Otherwise leave it deferred.
+* Later malformed or unsupported CRAM scenarios should be added by controlled
+  mutation with explicit provenance, not by opaque third-party samples.
 
 ## What Should Be Checked In
 

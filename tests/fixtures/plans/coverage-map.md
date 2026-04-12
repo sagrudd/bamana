@@ -86,16 +86,46 @@ Target fixture coverage:
 
 * `tiny.valid.coordinate`: alignment-mode BAM ingest
 * `tiny.valid.sam`: alignment-mode SAM ingest
-* `tiny.valid.cram_with_reference`: alignment-mode CRAM ingest with explicit
-  indexed FASTA
-* `tiny.valid.cram_embedded`: conservative CRAM decode without explicit FASTA,
-  if a suitable tiny fixture is available
+* `tiny.valid.cram.explicit_ref`: alignment-mode CRAM ingest with explicit
+  FASTA under `--reference-policy strict`
+* `tiny.valid.cram.reference_required`: strict-policy CRAM missing-reference
+  failure using the same tiny CRAM semantics as the explicit-reference success
+  case when practical
+* `tiny.valid.cram.compatible_refdict` +
+  `tiny.valid.bam.compatible_refdict`: mixed alignment-bearing consume success
+  with identical reference dictionaries
+* `tiny.valid.cram.compatible_refdict` +
+  `tiny.valid.bam.incompatible_refdict`: `incompatible_headers` failure
+* `tiny.valid.cram.no_external_ref`: conservative no-external-reference CRAM,
+  only if a deterministic fixture is actually available
 * `tiny.valid.fastq`: unmapped FASTQ ingest
 * `tiny.valid.fastq_gz`: unmapped FASTQ.GZ ingest
 * `tiny.consume.mixed_alignment_raw`: mixed-format rejection
-* `tiny.consume.cram_reference_required`: strict CRAM missing-reference failure
 * `tiny.consume.directory_tree`: lexical discovery, recursive traversal, and
   unsupported-entry reporting
+
+Each CRAM-oriented consume fixture should support:
+
+* JSON schema validation against `consume.schema.json`
+* golden-output testing for stable `reference.policy`, `reference.source_used`,
+  and error-code fields
+* CLI smoke coverage for representative invocations
+* future interop expansion once real CRAM binaries are committed
+
+Representative CRAM consume contract scenarios:
+
+* explicit-reference success:
+  `bamana consume --mode alignment --input tiny.valid.cram.explicit_ref.cram --reference tiny.ref.primary.fasta --reference-policy strict --out out.bam`
+  Expected outcome: success, `reference.source_used = explicit_fasta`.
+* strict missing-reference failure:
+  `bamana consume --mode alignment --input tiny.valid.cram.explicit_ref.cram --reference-policy strict --out out.bam`
+  Expected outcome: failure, `error.code = reference_required`.
+* compatible header success:
+  `bamana consume --mode alignment --input tiny.valid.cram.compatible_refdict.cram tiny.valid.bam.compatible_refdict.bam --reference tiny.ref.primary.fasta --reference-policy strict --out out.bam`
+  Expected outcome: success, `header.reference_compatibility = compatible`.
+* incompatible header failure:
+  `bamana consume --mode alignment --input tiny.valid.cram.compatible_refdict.cram tiny.valid.bam.incompatible_refdict.bam --reference tiny.ref.primary.fasta --reference-policy strict --out out.bam`
+  Expected outcome: failure, `error.code = incompatible_headers`.
 
 ## Duplication And Forensics Trio
 
