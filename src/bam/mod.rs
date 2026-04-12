@@ -1,3 +1,4 @@
+pub mod checksum;
 pub mod header;
 pub mod index;
 pub mod reader;

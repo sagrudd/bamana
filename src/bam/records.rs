@@ -38,11 +38,15 @@ pub struct RecordLayout {
     pub pos: i32,
     pub next_ref_id: i32,
     pub next_pos: i32,
+    pub tlen: i32,
     pub flags: u16,
     pub mapping_quality: u8,
     pub n_cigar_op: usize,
     pub l_seq: usize,
     pub read_name: String,
+    pub cigar_bytes: Vec<u8>,
+    pub sequence_bytes: Vec<u8>,
+    pub quality_bytes: Vec<u8>,
     pub aux_bytes: Vec<u8>,
 }
 
@@ -74,7 +78,7 @@ pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLa
     let l_seq = reader.read_i32_le()?;
     let next_ref_id = reader.read_i32_le()?;
     let next_pos = reader.read_i32_le()?;
-    let _tlen = reader.read_i32_le()?;
+    let tlen = reader.read_i32_le()?;
 
     if l_seq < 0 {
         return Err(AppError::InvalidRecord {
@@ -140,9 +144,9 @@ pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLa
         }
     })?;
 
-    reader.skip_exact(cigar_bytes)?;
-    reader.skip_exact(sequence_bytes)?;
-    reader.skip_exact(quality_bytes)?;
+    let cigar_bytes = reader.read_exact_vec(cigar_bytes)?;
+    let sequence_bytes = reader.read_exact_vec(sequence_bytes)?;
+    let quality_bytes = reader.read_exact_vec(quality_bytes)?;
     let aux_bytes = reader.read_exact_vec(remaining - consumed_after_core)?;
 
     Ok(Some(RecordLayout {
@@ -151,11 +155,15 @@ pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLa
         pos,
         next_ref_id,
         next_pos,
+        tlen,
         flags,
         mapping_quality,
         n_cigar_op,
         l_seq,
         read_name,
+        cigar_bytes,
+        sequence_bytes,
+        quality_bytes,
         aux_bytes,
     }))
 }

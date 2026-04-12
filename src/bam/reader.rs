@@ -75,16 +75,6 @@ impl BamReader {
         Ok(buffer)
     }
 
-    pub fn skip_exact(&mut self, mut len: usize) -> Result<(), AppError> {
-        let mut buffer = [0_u8; 8192];
-        while len > 0 {
-            let chunk = len.min(buffer.len());
-            self.read_exact_into(&mut buffer[..chunk])?;
-            len -= chunk;
-        }
-        Ok(())
-    }
-
     fn read_exact_into(&mut self, buffer: &mut [u8]) -> Result<(), AppError> {
         self.decoder.read_exact(buffer).map_err(|error| {
             if error.kind() == std::io::ErrorKind::UnexpectedEof {

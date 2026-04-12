@@ -15,6 +15,7 @@ use commands::{
     check_map::{CheckMapPayload, CheckMapRequest},
     check_sort::{CheckSortPayload, CheckSortRequest},
     check_tag::CheckTagRequest,
+    checksum::ChecksumRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
@@ -33,6 +34,19 @@ fn main() -> ExitCode {
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
             let response: CommandResponse<IdentifyResponse> =
                 CommandResponse::from_result("identify", Some(path.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Checksum(args) => {
+            let bam = args.bam;
+            let response = commands::checksum::run(ChecksumRequest {
+                bam: bam.clone(),
+                mode: args.mode,
+                algorithm: args.algorithm,
+                include_header: args.include_header,
+                exclude_tags: args.exclude_tags,
+                only_primary: args.only_primary,
+                mapped_only: args.mapped_only,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::Verify(args) => {

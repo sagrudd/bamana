@@ -148,6 +148,22 @@ pub fn traverse_aux_fields(
     Ok(())
 }
 
+pub fn serialize_filtered_aux(
+    aux_bytes: &[u8],
+    excluded_tags: &std::collections::HashSet<[u8; 2]>,
+) -> Result<Vec<u8>, String> {
+    let mut serialized = Vec::new();
+    traverse_aux_fields(aux_bytes, |field| {
+        if !excluded_tags.contains(&field.tag) {
+            serialized.extend_from_slice(&field.tag);
+            serialized.push(field.type_code);
+            serialized.extend_from_slice(field.payload);
+        }
+        Ok(())
+    })?;
+    Ok(serialized)
+}
+
 fn payload_len(aux_bytes: &[u8], offset: usize, type_code: u8) -> Result<usize, String> {
     match type_code {
         b'A' | b'c' | b'C' => require_remaining(aux_bytes, offset, 1),

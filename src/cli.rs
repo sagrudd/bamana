@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
+use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
+
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
     /// Emit pretty-printed JSON.
@@ -28,6 +30,8 @@ pub struct Cli {
 pub enum Commands {
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
+    /// Compute machine-verifiable BAM checksums over explicit checksum domains.
+    Checksum(ChecksumArgs),
     /// Perform shallow BAM verification only.
     Verify(BamPathArgs),
     /// Check for the canonical BGZF EOF marker only.
@@ -59,6 +63,31 @@ pub enum Commands {
 pub struct IdentifyArgs {
     /// Path to inspect.
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct ChecksumArgs {
+    /// BAM file to checksum.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Checksum mode to compute.
+    #[arg(long = "mode", value_enum, default_value_t = ChecksumMode::All)]
+    pub mode: ChecksumMode,
+    /// Checksum algorithm.
+    #[arg(long = "algorithm", value_enum, default_value_t = ChecksumAlgorithm::Sha256)]
+    pub algorithm: ChecksumAlgorithm,
+    /// Include the deterministic header serialization in payload mode.
+    #[arg(long = "include-header")]
+    pub include_header: bool,
+    /// Exclude specified auxiliary tags from canonical payload hashing.
+    #[arg(long = "exclude-tags", value_delimiter = ',')]
+    pub exclude_tags: Vec<String>,
+    /// Hash only primary alignments.
+    #[arg(long = "only-primary")]
+    pub only_primary: bool,
+    /// Hash only mapped alignments.
+    #[arg(long = "mapped-only")]
+    pub mapped_only: bool,
 }
 
 #[derive(Debug, Args)]

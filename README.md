@@ -16,6 +16,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana summary --bam <bamfile>`
 * `bamana check_tag --tag <TAG> --bam <bamfile>`
 * `bamana validate --bam <bamfile>`
+* `bamana checksum --bam <bamfile>`
 
 All command output is JSON.
 
@@ -32,6 +33,7 @@ The current semantics are intentionally narrow:
 * `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
+* `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
@@ -42,6 +44,7 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `summary` does not imply full BAM validity, valid EOF state, or validation of every optional field, tag, or record invariant.
 `check_tag` does not imply full BAM validity, valid EOF state, or semantic correctness of tag values beyond the auxiliary-field traversal actually performed.
 `validate` does not imply biological correctness, external reference concordance, or correctness of every optional-field semantic beyond the checks actually implemented.
+`checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 
 ## Example Invocations
 
@@ -67,6 +70,10 @@ cargo run -- check_tag --tag SA --bam example.bam --full-scan
 cargo run -- validate --bam example.bam
 cargo run -- validate --bam example.bam --header-only
 cargo run -- validate --bam example.bam --records 100000 --include-warnings
+cargo run -- checksum --bam example.bam --mode raw-record-order
+cargo run -- checksum --bam example.bam --mode canonical-record-order --only-primary --mapped-only
+cargo run -- checksum --bam example.bam --mode payload --include-header --exclude-tags NM,MD,AS
+cargo run -- checksum --bam example.bam --mode all
 ```
 
 `header` uses the binary BAM reference section as authoritative for reference
@@ -109,6 +116,24 @@ file/header structure, streams through records, validates record layout and aux
 traversal, and reports findings as `error`, `warning`, or `info`. Header-only
 and bounded-record modes are supported, and finding-bearing invalid BAMs still
 return structured validation payloads instead of collapsing to an opaque error.
+
+`checksum` exposes a small number of explicit checksum domains instead of one
+overloaded digest. `raw-record-order` hashes the deterministic per-record
+serialization in encounter order, so it is suitable for order-sensitive stream
+preservation checks. `canonical-record-order` hashes per-record canonical
+serializations, sorts the per-record digests, and hashes the sorted digest list,
+so it is intended for comparing BAM content across reordering operations such as
+sorting. `header` hashes raw header text plus the binary reference dictionary in
+order. `payload` hashes the deterministic record payload stream and can prefix
+the header serialization when `--include-header` is requested.
+
+Filters and exclusions are part of the checksum definition. `--only-primary`,
+`--mapped-only`, `--include-header`, and `--exclude-tags` must match when
+comparing digests. Auxiliary-tag exclusions apply to the deterministic
+record-content serialization used by the record-based checksum modes in this
+slice. The current order-insensitive canonical mode collects per-record digests
+in memory before sorting them, which is correct and explicit but may need a
+chunked or external-sort strategy for very large BAMs later.
 
 ## Development
 

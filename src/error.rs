@@ -49,6 +49,8 @@ pub enum AppError {
     InvalidTagType { path: PathBuf, tag_type: String },
     #[error("mapping state could not be determined reliably: {path}")]
     ParseUncertainty { path: PathBuf, detail: String },
+    #[error("bam checksum could not be computed reliably: {path}")]
+    ChecksumUncertainty { path: PathBuf, detail: String },
     #[error("bam auxiliary fields could not be parsed reliably: {path}")]
     TagParseUncertainty { path: PathBuf, detail: String },
     #[error("bam summary could not be generated reliably: {path}")]
@@ -105,6 +107,7 @@ impl AppError {
             Self::InvalidTag { .. } => "invalid_tag",
             Self::InvalidTagType { .. } => "invalid_tag_type",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
+            Self::ChecksumUncertainty { .. } => "parse_uncertainty",
             Self::TagParseUncertainty { .. } => "parse_uncertainty",
             Self::SummaryUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
@@ -143,6 +146,9 @@ impl AppError {
                 "Mapping state could not be determined reliably from the available evidence."
                     .to_string()
             }
+            Self::ChecksumUncertainty { .. } => {
+                "BAM checksum could not be computed reliably.".to_string()
+            }
             Self::TagParseUncertainty { .. } => {
                 "BAM auxiliary fields could not be parsed reliably.".to_string()
             }
@@ -174,6 +180,7 @@ impl AppError {
             Self::InvalidTag { tag, .. } => Some(format!("Requested tag: {tag}.")),
             Self::InvalidTagType { tag_type, .. } => Some(format!("Requested type: {tag_type}.")),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
+            Self::ChecksumUncertainty { detail, .. } => Some(detail.clone()),
             Self::TagParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::SummaryUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
@@ -242,6 +249,9 @@ impl AppError {
             ),
             Self::ParseUncertainty { .. } => Some(
                 "Run bamana verify and, when available, bamana validate.".to_string(),
+            ),
+            Self::ChecksumUncertainty { .. } => Some(
+                "Run bamana validate to determine whether the BAM is structurally invalid.".to_string(),
             ),
             Self::TagParseUncertainty { .. } => Some(
                 "Run bamana verify and, when available, bamana validate.".to_string(),
