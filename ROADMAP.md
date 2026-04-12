@@ -13,3 +13,8 @@ Current roadmap theme:
 Current milestone:
 
 * [docs/roadmap/current_milestone.md](/Users/stephen/Projects/bamana/docs/roadmap/current_milestone.md)
+
+Immediate benchmark-execution readiness is tracked separately in:
+
+* [benchmarks/benchmark_readiness_checklist.md](/Users/stephen/Projects/bamana/benchmarks/benchmark_readiness_checklist.md)
+* [benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)

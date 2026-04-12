@@ -74,6 +74,11 @@ Before starting a large change, check that file and the canonical roadmap:
 * [ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
 * [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
 
+If the work touches benchmark infrastructure, also check:
+
+* [benchmarks/benchmark_readiness_checklist.md](/Users/stephen/Projects/bamana/benchmarks/benchmark_readiness_checklist.md)
+* [benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)
+
 ## What “Done” Means For A Milestone
 
 A milestone is not done just because code landed. At minimum, it should have:

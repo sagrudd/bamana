@@ -16,6 +16,12 @@ publication-ready reporting. It is intended to answer:
 The framework is not designed to manufacture a favorable result. It is designed
 to surface trustworthy evidence.
 
+The current repository state should be read as benchmark-ready scaffolding for
+tomorrow's smoke-test run, not as a claim that every comparator path is already
+feature-complete. The wrapper layer, raw result schema, tidy contract, support
+matrix, and minimal Nextflow execution slice are intended to make tomorrow's
+exercise interpretable even when some Bamana or comparator paths remain partial.
+
 ## 2. Scenario Definitions
 
 ### Scenario A: `mapped_bam_pipeline`
@@ -173,6 +179,21 @@ The audited per-tool workflow definitions now live in:
 
 Those files are the source of truth for supported versus unsupported tool and
 scenario pairings, exact `workflow_variant` ids, and wrapper entrypoints.
+
+## 5.1 Current Benchmark-Ready Bamana Surface
+
+For the immediate benchmark exercise:
+
+* `subsample` is the strongest benchmark-ready Bamana command and is suitable
+  for BAM and FASTQ.GZ comparison work
+* `consume --mode unmapped` is the benchmark-ready FASTQ ingestion path
+* `sort` is usable for first-slice benchmarking
+* `index` remains an honest contract stub rather than a fully working BAM
+  index writer
+
+That means `mapped_bam_pipeline` currently uses
+`bamana_subsample_sort_partial_index` as the benchmarkable Bamana path rather
+than pretending full sort-plus-index parity already exists.
 
 ## 6. Input Expectations
 

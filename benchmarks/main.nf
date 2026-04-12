@@ -42,11 +42,12 @@ def canonicalScenarioName(String scenario) {
 def manifestInputType(String category) {
     switch (category) {
         case 'mapped_bam':
+        case 'unmapped_bam':
             return 'BAM'
         case 'fastq_gz':
             return 'FASTQ_GZ'
         default:
-            error "Minimal benchmark slice supports mapped_bam and fastq_gz inputs only. Received '${category}'."
+            error "Minimal benchmark slice supports mapped_bam, unmapped_bam, and fastq_gz inputs only. Received '${category}'."
     }
 }
 
@@ -57,6 +58,8 @@ def manifestMappingState(String category, String declaredState) {
     switch (category) {
         case 'mapped_bam':
             return 'mapped'
+        case 'unmapped_bam':
+            return 'unmapped'
         case 'fastq_gz':
             return 'unknown'
         default:
@@ -67,6 +70,9 @@ def manifestMappingState(String category, String declaredState) {
 def defaultAllowedScenarios(String inputType, String mappingState) {
     if (inputType == 'BAM' && mappingState == 'mapped') {
         return ['mapped_bam_pipeline', 'subsample_only']
+    }
+    if (inputType == 'BAM' && mappingState == 'unmapped') {
+        return ['unmapped_bam_pipeline', 'subsample_only']
     }
     if (inputType == 'FASTQ_GZ') {
         return ['fastq_consume_pipeline', 'subsample_only']
@@ -88,6 +94,8 @@ def defaultExpectedSortOrder(String category) {
     switch (category) {
         case 'mapped_bam':
             return 'coordinate'
+        case 'unmapped_bam':
+            return 'unsorted'
         case 'fastq_gz':
             return 'not_applicable'
         default:
@@ -107,9 +115,9 @@ def inputTuples(List paths, String inputType, String mappingState) {
                 source_input_id           : inputId,
                 source_input_path         : inputFile.toString(),
                 source_input_type         : inputType,
-                source_category           : inputType == 'FASTQ_GZ' ? 'fastq_gz' : 'mapped_bam',
+                source_category           : inputType == 'FASTQ_GZ' ? 'fastq_gz' : (mappingState == 'unmapped' ? 'unmapped_bam' : 'mapped_bam'),
                 description               : '',
-                expected_sort_order       : inputType == 'FASTQ_GZ' ? 'not_applicable' : 'coordinate',
+                expected_sort_order       : inputType == 'FASTQ_GZ' ? 'not_applicable' : (mappingState == 'unmapped' ? 'unsorted' : 'coordinate'),
                 has_index                 : false,
                 reference_context         : 'unspecified',
                 source_owner              : 'user_supplied',
@@ -206,16 +214,19 @@ def workflowVariantFor(String tool, String scenario) {
     def mapping = [
         bamana  : [
             mapped_bam_pipeline   : 'bamana_subsample_sort_partial_index',
+            unmapped_bam_pipeline : 'bamana_subsample_only',
             fastq_consume_pipeline: 'bamana_consume_unmapped_bam',
             subsample_only        : 'bamana_subsample_only'
         ],
         samtools: [
             mapped_bam_pipeline   : 'samtools_view_sort_index',
+            unmapped_bam_pipeline : 'samtools_view_subsample_only',
             fastq_consume_pipeline: 'unsupported',
             subsample_only        : 'samtools_view_subsample_only'
         ],
         fastcat : [
             mapped_bam_pipeline   : 'unsupported',
+            unmapped_bam_pipeline : 'unsupported',
             fastq_consume_pipeline: 'fastcat_concat_gzip',
             subsample_only        : 'unsupported'
         ]
@@ -233,6 +244,9 @@ def applicableScenarios(Map meta, List scenarios) {
         }
         if (scenario == 'mapped_bam_pipeline') {
             return meta.input_type == 'BAM' && meta.mapping_state == 'mapped'
+        }
+        if (scenario == 'unmapped_bam_pipeline') {
+            return meta.input_type == 'BAM' && meta.mapping_state == 'unmapped'
         }
         if (scenario == 'fastq_consume_pipeline') {
             return meta.input_type == 'FASTQ_GZ'
@@ -254,6 +268,10 @@ def shouldIncludeToolScenario(String tool, Map inputMeta, String scenario, boole
     }
 
     if (scenario == 'mapped_bam_pipeline') {
+        return tool in ['bamana', 'samtools']
+    }
+
+    if (scenario == 'unmapped_bam_pipeline') {
         return tool in ['bamana', 'samtools']
     }
 
@@ -349,6 +367,7 @@ workflow {
     def allInputs = []
     allInputs.addAll(manifestTuples(params.input_manifest))
     allInputs.addAll(inputTuples(normalizeList(params.mapped_bams), 'BAM', 'mapped'))
+    allInputs.addAll(inputTuples(normalizeList(params.unmapped_bams), 'BAM', 'unmapped'))
     allInputs.addAll(inputTuples(normalizeList(params.fastq_gzs), 'FASTQ_GZ', 'unknown'))
 
     if (!requestedDatasetIds.isEmpty()) {

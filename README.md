@@ -52,6 +52,7 @@ See:
 * [docs/performance-core.md](/Users/stephen/Projects/bamana/docs/performance-core.md)
 * [ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
 * [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+* [benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)
 
 The current semantics are intentionally narrow:
 
@@ -76,6 +77,11 @@ The current semantics are intentionally narrow:
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
 * `sort` rewrites a BAM into an explicitly requested order using a deterministic in-memory first-slice engine with optional canonical checksum verification
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
+
+The repository also now contains a minimal but real benchmark execution and
+analysis path under [benchmarks/](/Users/stephen/Projects/bamana/benchmarks).
+That layer is intended to make tomorrow's first benchmark runs interpretable,
+not to claim full comparator or command parity already exists.
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `inspect_duplication` does not perform Picard/GATK-style duplicate marking, does not treat BAM duplicate flags as primary evidence, and does not make biological claims about PCR or molecular duplication.

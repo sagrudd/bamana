@@ -52,6 +52,34 @@ and FASTQ.GZ inputs. Remaining current gaps are:
 This is deliberate. The benchmark layer records partial or unsupported
 comparisons explicitly instead of pretending the tools are directly equivalent.
 
+## Readiness For Tomorrow
+
+The benchmark stack is ready for a small, real smoke-test tomorrow, not a
+full publication run.
+
+Use these two documents before starting:
+
+* [benchmark_readiness_checklist.md](/Users/stephen/Projects/bamana/benchmarks/benchmark_readiness_checklist.md)
+* [status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)
+
+Recommended first run tomorrow:
+
+* one mapped BAM dataset
+* one FASTQ.GZ dataset
+* `replicates = 1`
+* `warmup_runs = 0`
+* scenarios:
+  * `mapped_bam_pipeline`
+  * `fastq_consume_pipeline`
+* tools:
+  * `bamana`
+  * `samtools` for BAM
+  * `fastcat` for FASTQ ingestion space
+
+The goal of the first run is to confirm wrapper planning, raw result emission,
+and raw-to-tidy aggregation. It is not to maximize comparator coverage on day
+one.
+
 ## Directory Layout
 
 * [main.nf](/Users/stephen/Projects/bamana/benchmarks/main.nf): DSL2 workflow entry point
@@ -93,7 +121,7 @@ The current `main.nf` is intentionally a minimal end-to-end execution slice.
 It does these things:
 
 1. loads benchmark params and the input manifest
-2. resolves mapped BAM and FASTQ.GZ datasets
+2. resolves mapped BAM, unmapped BAM, and FASTQ.GZ datasets
 3. expands a matrix across dataset, scenario, tool, and replicate
 4. calls the benchmark wrapper scripts
 5. captures one raw benchmark result JSON per attempted run
@@ -104,10 +132,28 @@ Those later stages remain available as separate utilities.
 
 This first executable slice intentionally supports a narrow but real subset:
 
-* inputs: mapped BAM and FASTQ.GZ
+* inputs: mapped BAM, unmapped BAM, and FASTQ.GZ
 * tools: `bamana`, `samtools`, and `fastcat`
 * scenarios: `mapped_bam_pipeline`, `fastq_consume_pipeline`, and
-  `subsample_only`
+  `subsample_only`, with `unmapped_bam_pipeline` available for BAM-only
+  subsampling runs
+
+## Bamana Command Readiness Notes
+
+Tomorrow's benchmark exercise should treat the current Bamana command surface
+like this:
+
+* `subsample`: implemented and benchmark-usable for BAM, FASTQ, and FASTQ.GZ
+* `consume`: implemented and benchmark-usable for the current `consume --mode unmapped`
+  FASTQ.GZ path, with some ingest features still intentionally deferred
+* `sort`: implemented for the current in-memory first slice and suitable for
+  small initial benchmark smoke tests
+* `index`: CLI contract exists, but BAM index writing remains deferred in the
+  current slice and wrappers must fail honestly if full index parity is
+  requested
+
+Wrapper planning and benchmark interpretation must follow these facts rather
+than assuming full BAM toolkit parity.
 
 ## Benchmark Inputs
 
@@ -292,10 +338,18 @@ Minimal first-slice recommendation:
 
 * keep `replicates = 1`
 * keep `warmup_runs = 0`
-* start with one mapped BAM dataset or one FASTQ.GZ dataset
+* start with one mapped BAM dataset and one FASTQ.GZ dataset
 * inspect `${output_dir}/raw` before attempting aggregation
 * inspect `${output_dir}/metadata/raw_result_inventory.tsv` to confirm which
   attempts were emitted
+
+Do not do first tomorrow:
+
+* do not start with many datasets
+* do not start with many replicates
+* do not start with every comparator or every scenario
+* do not start with final publication plots
+* do not interpret unsupported combinations as failures
 
 After the run completes, build the first analysis outputs:
 

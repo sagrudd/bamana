@@ -28,6 +28,16 @@ Each wrapper:
 * writes a command provenance log
 * writes a small wrapper metadata JSON file
 
+For Bamana specifically, wrappers must remain honest about partial command
+support. In the current slice:
+
+* `subsample` and `consume --mode unmapped` are benchmark-usable
+* `sort` is benchmark-usable for first-slice smoke tests
+* `index` remains deferred as a real BAM index writer
+
+The Bamana wrapper therefore supports a partial mapped-BAM benchmark variant
+and a planned full index variant that will fail honestly if invoked too early.
+
 The outer benchmark layer still measures runtime via
 [run_benchmark.sh](/Users/stephen/Projects/bamana/benchmarks/bin/run_benchmark.sh).
 
@@ -56,6 +66,13 @@ When a wrapper receives an unsupported scenario or workflow variant, it:
   rather than a fake process failure
 
 This is deliberate. Unsupported is not failure.
+
+Wrapper planning failure is also distinct from benchmark execution failure:
+
+* unsupported: wrapper emits an unsupported plan and exits `0`
+* failed planning: wrapper exits non-zero before a valid plan exists
+* failed execution: the outer timing wrapper captures a raw benchmark result
+  with `status = failed`
 
 ## Version and Command Provenance
 

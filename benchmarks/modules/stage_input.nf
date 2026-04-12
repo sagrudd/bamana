@@ -60,7 +60,11 @@ process STAGE_INPUT {
         ;;
     esac
 
-    input_bytes=\$(stat -c %s "${input_file}")
+    if input_bytes=\$(stat -c %s "${input_file}" 2>/dev/null); then
+      :
+    else
+      input_bytes=\$(stat -f %z "${input_file}")
+    fi
 
     if [[ "${inputType}" == "BAM" ]]; then
       records_processed=\$(samtools view -c "${input_file}")

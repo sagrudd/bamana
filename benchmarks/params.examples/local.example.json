@@ -7,8 +7,7 @@
   "tools": ["bamana", "samtools", "fastcat"],
   "scenarios": [
     "mapped_bam_pipeline",
-    "fastq_consume_pipeline",
-    "subsample_only"
+    "fastq_consume_pipeline"
   ],
   "replicates": 1,
   "warmup_runs": 0,

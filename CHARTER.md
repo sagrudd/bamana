@@ -43,6 +43,12 @@ The repository also now includes a reproducible benchmark framework under
 explicit comparator treatment for `samtools` as the canonical BAM baseline and
 `fastcat` as the ingestion-oriented ONT comparator.
 
+The current benchmark-readiness operating summary for the next execution pass
+is tracked in:
+
+* [benchmarks/benchmark_readiness_checklist.md](/Users/stephen/Projects/bamana/benchmarks/benchmark_readiness_checklist.md)
+* [benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)
+
 The project charter remains explicit that:
 
 * performance-critical BAM, BGZF, and FASTQ execution paths must be owned by

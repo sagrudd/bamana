@@ -27,3 +27,6 @@ Roadmap backbone:
 3. native BAM record scanner
 4. native FASTQ / FASTQ.GZ parser
 5. command migration beginning with `verify`, `header`, and `subsample`
+
+Benchmark-readiness status for the current repository snapshot is summarized in
+[benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md).

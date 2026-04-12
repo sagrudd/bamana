@@ -62,7 +62,12 @@ process BENCHMARK_WRAPPER_RUN {
 
     "${wrapper_cmd[@]}"
 
-    support_status="$(jq -r '.support_status' "${wrapper_result}")"
+    wrapper_support_status="$(jq -r '.support_status' "${wrapper_result}")"
+    case "${wrapper_support_status}" in
+      supported) support_status="completed" ;;
+      unsupported) support_status="unsupported" ;;
+      *) support_status="${wrapper_support_status}" ;;
+    esac
     semantic_equivalence="$(jq -r '.semantic_equivalence' "${wrapper_result}")"
     output_target="$(jq -r '.output_paths.primary // ""' "${wrapper_result}")"
     version_cmd="$(jq -r '.tool_version_command' "${wrapper_result}")"
