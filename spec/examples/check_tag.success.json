@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "check_tag",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "tag": "NM",
+    "required_type": null,
+    "mode": "bounded_scan",
+    "result": "observed_present",
+    "tag_found": true,
+    "records_examined": 73,
+    "records_with_tag": 1,
+    "full_file_scanned": false,
+    "confidence": "high",
+    "semantic_note": "The requested tag was observed in the examined records. This establishes presence but does not quantify prevalence across the full file."
+  },
+  "error": null
+}

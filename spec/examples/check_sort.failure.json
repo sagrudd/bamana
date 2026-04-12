@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "check_sort",
+  "path": "broken.bam",
+  "data": null,
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "Mapping state could not be determined reliably from the available evidence.",
+    "detail": "Alignment stream was truncated while assessing sort order.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

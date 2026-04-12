@@ -1,0 +1,25 @@
+{
+  "ok": false,
+  "command": "index",
+  "path": "sample.bam",
+  "data": {
+    "format": "BAM",
+    "requested_index_kind": "CSI",
+    "output_index": {
+      "path": "sample.bam.csi",
+      "kind": "CSI",
+      "created": false,
+      "overwritten": false
+    },
+    "notes": [
+      "Index command validated the BAM header and resolved the output path.",
+      "Actual BAM index writing is not implemented in this slice; this command currently establishes the index-creation contract and output selection path."
+    ]
+  },
+  "error": {
+    "code": "unimplemented",
+    "message": "This functionality is not implemented in this slice.",
+    "detail": "CSI index creation is not implemented in this slice.",
+    "hint": "Use an implemented index format for this BAM or extend the current index writer."
+  }
+}

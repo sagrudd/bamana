@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/validate.schema.json",
+  "title": "Bamana Validate Response",
+  "description": "Contract for bamana validate JSON output.",
+  "x-bamana-command": "validate",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["header_valid", "records_examined", "full_file_examined", "errors", "warnings", "infos"],
+      "properties": {
+        "header_valid": { "type": "boolean" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "full_file_examined": { "type": "boolean" },
+        "errors": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "infos": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["severity", "scope", "code", "message", "record_index", "reference_name"],
+      "properties": {
+        "severity": { "$ref": "./common/defs.schema.json#/$defs/validationSeverity" },
+        "scope": { "$ref": "./common/defs.schema.json#/$defs/validationScope" },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "record_index": { "type": ["integer", "null"], "minimum": 0 },
+        "reference_name": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "mode", "valid", "summary", "findings"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "mode": {
+          "type": "string",
+          "enum": ["header_only", "bounded_records", "full"]
+        },
+        "valid": { "type": "boolean" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "semantic_note": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "validate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "validate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

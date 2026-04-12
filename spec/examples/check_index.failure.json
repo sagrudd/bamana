@@ -1,0 +1,28 @@
+{
+  "ok": false,
+  "command": "check_index",
+  "path": "sample.bam",
+  "data": {
+    "format": "BAM",
+    "index": {
+      "present": false,
+      "selected_path": null,
+      "kind": null,
+      "usable": false,
+      "syntactically_valid": null,
+      "stale": null,
+      "bam_newer_than_index": null,
+      "compatibility": "absent"
+    },
+    "candidates": [],
+    "notes": [
+      "No BAM index was found next to the BAM file."
+    ]
+  },
+  "error": {
+    "code": "missing_index",
+    "message": "No usable BAM index was found.",
+    "detail": null,
+    "hint": "Run bamana index --bam <file> or place a usable companion index next to the BAM."
+  }
+}

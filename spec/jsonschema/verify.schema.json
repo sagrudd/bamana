@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/verify.schema.json",
+  "title": "Bamana Verify Response",
+  "description": "Contract for bamana verify JSON output.",
+  "x-bamana-command": "verify",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "detected_format",
+        "container",
+        "is_bam",
+        "shallow_verified",
+        "deep_validated"
+      ],
+      "properties": {
+        "detected_format": { "const": "BAM" },
+        "container": { "const": "BGZF" },
+        "is_bam": { "type": "boolean" },
+        "shallow_verified": { "type": "boolean" },
+        "deep_validated": { "const": false },
+        "confidence": {
+          "$ref": "./common/defs.schema.json#/$defs/confidenceLevel"
+        },
+        "semantic_note": {
+          "$ref": "./common/defs.schema.json#/$defs/nullableString"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "verify" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "verify" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

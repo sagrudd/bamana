@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "index",
+  "path": "sample.bam",
+  "data": {
+    "format": "BAM",
+    "requested_index_kind": "BAI",
+    "output_index": {
+      "path": "sample.bam.bai",
+      "kind": "BAI",
+      "created": true,
+      "overwritten": false
+    },
+    "notes": [
+      "BAI index created successfully."
+    ]
+  },
+  "error": null
+}

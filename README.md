@@ -182,3 +182,36 @@ JSON contracts, structured error handling, fast file probing, and real BGZF EOF
 inspection. Full BAM validation and broader BAM operations will be implemented
 incrementally under the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
+
+## Specification Layer
+
+The repository now carries a dedicated `spec/` tree for governed external
+contracts. It exists so the CLI surface, JSON outputs, examples, and
+interoperability expectations can be reviewed and versioned as public
+interfaces.
+
+Key paths:
+
+* `spec/jsonschema/` contains machine-readable schemas for command outputs
+* `spec/examples/` contains canonical success and failure JSON examples
+* `spec/cli/` contains command, option, and exit-code contracts
+* `spec/contracts/` documents versioning, compatibility, and naming rules
+* `tests/contract/` contains contract-test scaffolding
+
+When a pull request changes Bamana’s external contract, it should update:
+
+* the relevant schema file
+* the canonical examples
+* the CLI/docs contract pages
+* the contract tests or fixtures when applicable
+
+Run the contract scaffolding with:
+
+```bash
+cargo test --test contract
+```
+
+Golden/example updates should be intentional and reviewable. Treat schema field
+renames, enum-literal changes, nullability changes, and meaning changes as
+breaking until explicitly reviewed under the contract versioning rules in
+`spec/contracts/versioning.md`.

@@ -1,0 +1,32 @@
+{
+  "ok": false,
+  "command": "summary",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "indeterminate",
+    "evidence": {
+      "header_used": true,
+      "index_used": false,
+      "records_scanned": 247,
+      "full_file_scanned": false
+    },
+    "header": {
+      "references_defined": 25,
+      "sort_order": "coordinate",
+      "sub_sort_order": null,
+      "group_order": null
+    },
+    "counts": {},
+    "mapping": {},
+    "anomalies": {},
+    "confidence": "low",
+    "semantic_note": "Summary generation stopped before a stable result could be completed."
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "BAM summary could not be generated reliably.",
+    "detail": "Alignment stream was truncated before a stable summary could be completed.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

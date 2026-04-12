@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/header.schema.json",
+  "title": "Bamana Header Response",
+  "description": "Contract for bamana header JSON output.",
+  "x-bamana-command": "header",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "hd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "sort_order", "sub_sort_order", "group_order"],
+      "properties": {
+        "version": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "sub_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "group_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "length", "index", "header_fields"],
+      "properties": {
+        "name": { "type": "string" },
+        "length": { "type": "integer", "minimum": 0 },
+        "index": { "type": "integer", "minimum": 0 },
+        "header_fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["M5", "UR", "AS", "SP", "TP"],
+          "properties": {
+            "M5": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "UR": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "AS": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "SP": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "TP": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+          }
+        },
+        "text_header_length": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "readGroup": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ID", "SM", "LB", "PL", "PU", "CN", "DS", "DT"],
+      "properties": {
+        "ID": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "SM": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "LB": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "PL": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "PU": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "CN": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "DS": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "DT": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "program": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ID", "PN", "VN", "CL", "PP", "DS"],
+      "properties": {
+        "ID": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "PN": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "VN": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "CL": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "PP": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "DS": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "otherRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_type", "raw_line"],
+      "properties": {
+        "record_type": { "type": "string" },
+        "raw_line": { "type": "string" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "header"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "header": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "raw_header_text",
+            "hd",
+            "references",
+            "read_groups",
+            "programs",
+            "comments",
+            "other_header_records"
+          ],
+          "properties": {
+            "raw_header_text": { "type": "string" },
+            "hd": { "$ref": "#/$defs/hd" },
+            "references": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/reference" }
+            },
+            "read_groups": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/readGroup" }
+            },
+            "programs": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/program" }
+            },
+            "comments": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "other_header_records": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/otherRecord" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "header" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "header" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

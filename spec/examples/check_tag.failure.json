@@ -1,0 +1,24 @@
+{
+  "ok": false,
+  "command": "check_tag",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "tag": "NM",
+    "required_type": null,
+    "mode": "bounded_scan",
+    "result": "indeterminate",
+    "tag_found": false,
+    "records_examined": 247,
+    "records_with_tag": 0,
+    "full_file_scanned": false,
+    "confidence": "low",
+    "semantic_note": "Auxiliary-field traversal stopped before a stable conclusion was reached."
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "BAM auxiliary fields could not be parsed reliably.",
+    "detail": "Encountered a truncated auxiliary field before a stable conclusion was reached.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

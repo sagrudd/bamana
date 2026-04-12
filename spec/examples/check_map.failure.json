@@ -1,0 +1,29 @@
+{
+  "ok": false,
+  "command": "check_map",
+  "path": "odd.bam",
+  "data": {
+    "format": "BAM",
+    "mapping_status": "indeterminate",
+    "has_mapped_reads": false,
+    "evidence_source": "scan",
+    "index": {
+      "present": false,
+      "kind": null,
+      "used": false
+    },
+    "references": [],
+    "summary": {
+      "records_examined": 247
+    },
+    "status": "verify",
+    "confidence": "low",
+    "semantic_note": "Observed mapping fields were contradictory before a reliable conclusion could be reached."
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "Mapping state could not be determined reliably from the available evidence.",
+    "detail": "Alignment stream contained contradictory mapping fields before a confident conclusion was reached.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

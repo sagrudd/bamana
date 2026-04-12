@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "command": "explode",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "input": {
+      "path": "input.bam"
+    },
+    "explode": {
+      "strategy": "reference_shards",
+      "planned": true
+    },
+    "outputs": [
+      {
+        "path": "parts/chr1.bam",
+        "records_written": 2100
+      },
+      {
+        "path": "parts/chr2.bam",
+        "records_written": 1800
+      }
+    ],
+    "index": {
+      "requested": true,
+      "created": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": true,
+      "performed": false,
+      "mode": "canonical-record-order",
+      "match": null
+    },
+    "notes": [
+      "Planned contract example for a future explode implementation."
+    ]
+  },
+  "error": null
+}

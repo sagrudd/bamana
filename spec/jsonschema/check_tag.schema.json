@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/check_tag.schema.json",
+  "title": "Bamana Check Tag Response",
+  "description": "Contract for bamana check_tag JSON output.",
+  "x-bamana-command": "check_tag",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "tag",
+        "required_type",
+        "mode",
+        "result",
+        "tag_found",
+        "records_examined",
+        "records_with_tag",
+        "full_file_scanned",
+        "confidence"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "tag": { "type": "string", "pattern": "^[!-~]{2}$" },
+        "required_type": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "mode": {
+          "type": "string",
+          "enum": ["bounded_scan", "full_scan"]
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "observed_present",
+            "not_found_in_examined_records",
+            "absent_in_full_scan",
+            "indeterminate"
+          ]
+        },
+        "tag_found": { "type": "boolean" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "records_with_tag": { "type": "integer", "minimum": 0 },
+        "full_file_scanned": { "type": "boolean" },
+        "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
+        "semantic_note": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "check_tag" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "check_tag" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

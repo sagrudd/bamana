@@ -1,0 +1,41 @@
+{
+  "ok": false,
+  "command": "sort",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "output": {
+      "path": "sorted.bam",
+      "written": false,
+      "overwritten": null
+    },
+    "sort": {
+      "requested_order": "coordinate",
+      "requested_sub_order": null,
+      "produced_order": null,
+      "produced_sub_order": null
+    },
+    "records": {
+      "records_read": null,
+      "records_written": null
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": []
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "Mapping state could not be determined reliably from the available evidence.",
+    "detail": "Encountered a malformed alignment record while building sort keys.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

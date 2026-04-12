@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "identify",
+  "path": "mystery.dat",
+  "data": null,
+  "error": {
+    "code": "unknown_format",
+    "message": "Unable to determine file format.",
+    "detail": null,
+    "hint": "Inspect the file manually or provide a supported input."
+  }
+}

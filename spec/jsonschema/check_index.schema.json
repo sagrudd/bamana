@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/check_index.schema.json",
+  "title": "Bamana Check Index Response",
+  "description": "Contract for bamana check_index JSON output.",
+  "x-bamana-command": "check_index",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "indexInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "present",
+        "selected_path",
+        "kind",
+        "usable",
+        "syntactically_valid",
+        "stale",
+        "bam_newer_than_index",
+        "compatibility"
+      ],
+      "properties": {
+        "present": { "type": "boolean" },
+        "selected_path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "usable": { "type": "boolean" },
+        "syntactically_valid": { "type": ["boolean", "null"] },
+        "stale": { "type": ["boolean", "null"] },
+        "bam_newer_than_index": { "type": ["boolean", "null"] },
+        "compatibility": {
+          "type": "string",
+          "enum": [
+            "plausible",
+            "absent",
+            "stale",
+            "mismatched_or_invalid",
+            "detected_but_not_supported"
+          ]
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "exists"],
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "exists": { "type": "boolean" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "index", "candidates", "notes"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "index": { "$ref": "#/$defs/indexInspection" },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/candidate" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "check_index" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "check_index" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

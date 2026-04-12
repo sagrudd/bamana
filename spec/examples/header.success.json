@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "command": "header",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "header": {
+      "raw_header_text": "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:248956422\n",
+      "hd": {
+        "version": "1.6",
+        "sort_order": "coordinate",
+        "sub_sort_order": null,
+        "group_order": null
+      },
+      "references": [
+        {
+          "name": "chr1",
+          "length": 248956422,
+          "index": 0,
+          "header_fields": {
+            "M5": null,
+            "UR": null,
+            "AS": null,
+            "SP": null,
+            "TP": null
+          },
+          "text_header_length": 248956422
+        }
+      ],
+      "read_groups": [],
+      "programs": [],
+      "comments": [],
+      "other_header_records": []
+    }
+  },
+  "error": null
+}

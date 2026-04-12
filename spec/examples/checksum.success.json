@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "command": "checksum",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "algorithm": "sha256",
+    "results": [
+      {
+        "mode": "canonical-record-order",
+        "digest": "1f08cf9d4bd2d740d1f630db99c6214d85f1124cb3b8db2f5f4fbb1d0e8e289a",
+        "records_hashed": 42180321,
+        "order_sensitive": false,
+        "header_included": false,
+        "filters": {
+          "only_primary": false,
+          "mapped_only": false
+        },
+        "excluded_tags": []
+      }
+    ],
+    "semantic_note": "This checksum is intended for content comparison across BAM files whose alignment record order may differ."
+  },
+  "error": null
+}

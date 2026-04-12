@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/identify.schema.json",
+  "title": "Bamana Identify Response",
+  "description": "Contract for bamana identify JSON output.",
+  "x-bamana-command": "identify",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detected_format", "container", "confidence"],
+      "properties": {
+        "detected_format": {
+          "type": "string",
+          "enum": ["BAM", "SAM", "CRAM", "FASTQ", "FASTQ.GZ", "FASTA", "BED", "GFF", "UNKNOWN"]
+        },
+        "container": {
+          "type": ["string", "null"],
+          "enum": ["BGZF", "GZIP", "PLAIN_TEXT", "BINARY", "UNKNOWN", null]
+        },
+        "confidence": {
+          "$ref": "./common/defs.schema.json#/$defs/confidenceLevel"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "identify" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "identify" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

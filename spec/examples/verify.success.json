@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "command": "verify",
+  "path": "example.bam",
+  "data": {
+    "detected_format": "BAM",
+    "container": "BGZF",
+    "is_bam": true,
+    "shallow_verified": true,
+    "deep_validated": false,
+    "confidence": "high",
+    "semantic_note": "Verification is shallow and does not imply full BAM validation."
+  },
+  "error": null
+}

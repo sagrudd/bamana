@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "command": "sort",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "output": {
+      "path": "sorted.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "sort": {
+      "requested_order": "coordinate",
+      "requested_sub_order": null,
+      "produced_order": "coordinate",
+      "produced_sub_order": null
+    },
+    "records": {
+      "records_read": 42180321,
+      "records_written": 42180321
+    },
+    "index": {
+      "requested": true,
+      "created": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": true,
+      "performed": true,
+      "mode": "canonical-record-order",
+      "input_digest": "1f08cf9d4bd2d740d1f630db99c6214d85f1124cb3b8db2f5f4fbb1d0e8e289a",
+      "output_digest": "1f08cf9d4bd2d740d1f630db99c6214d85f1124cb3b8db2f5f4fbb1d0e8e289a",
+      "match": true
+    },
+    "notes": [
+      "Initial implementation uses an in-memory sort strategy.",
+      "Index creation was requested, but BAI writing is not implemented in this slice."
+    ]
+  },
+  "error": null
+}

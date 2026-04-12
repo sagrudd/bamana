@@ -1,0 +1,43 @@
+{
+  "ok": false,
+  "command": "merge",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "inputs": [
+      {
+        "path": "a.bam",
+        "records_read": null
+      },
+      {
+        "path": "b.bam",
+        "records_read": null
+      }
+    ],
+    "merge": {
+      "requested_mode": "input",
+      "requested_sub_order": null,
+      "produced_mode": null,
+      "produced_sub_order": null,
+      "header_compatibility": "incompatible"
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": []
+  },
+  "error": {
+    "code": "incompatible_headers",
+    "message": "Input BAM headers are not compatible for merge.",
+    "detail": "Reference dictionary mismatch at index 3: chr4 length differs between inputs.",
+    "hint": "Ensure all BAM inputs use the same reference dictionary before merging."
+  }
+}

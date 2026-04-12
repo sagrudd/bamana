@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "command": "summary",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "bounded_scan",
+    "evidence": {
+      "header_used": true,
+      "index_used": false,
+      "records_scanned": 100000,
+      "full_file_scanned": false
+    },
+    "header": {
+      "references_defined": 25,
+      "sort_order": "coordinate",
+      "sub_sort_order": null,
+      "group_order": null
+    },
+    "counts": {
+      "records_examined": 100000,
+      "records_total_known": null,
+      "mapped_records": 99812,
+      "unmapped_records": 188
+    },
+    "fractions_observed": {
+      "fraction_mapped": 0.99812
+    },
+    "mapq": {
+      "min": 0,
+      "max": 60,
+      "mean": 57.4,
+      "zero_count": 188
+    },
+    "mapping": {
+      "status": "mapped",
+      "references_with_mapped_reads_observed": 24
+    },
+    "anomalies": {
+      "contradictory_mapping_state_records": 0
+    },
+    "confidence": "medium",
+    "semantic_note": "Summary metrics are derived from a bounded scan of alignment records and may not represent full-file totals."
+  },
+  "error": null
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/common/json_error.schema.json",
+  "title": "Bamana JSON Error",
+  "description": "Reusable Bamana machine-readable error payload.",
+  "x-bamana-contract-version": "0.1.0",
+  "allOf": [
+    {
+      "$ref": "./defs.schema.json#/$defs/jsonError"
+    }
+  ]
+}

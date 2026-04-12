@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "command": "merge",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "inputs": [
+      {
+        "path": "a.bam",
+        "records_read": 1000
+      },
+      {
+        "path": "b.bam",
+        "records_read": 1200
+      }
+    ],
+    "output": {
+      "path": "merged.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "merge": {
+      "requested_mode": "input",
+      "requested_sub_order": null,
+      "produced_mode": "input",
+      "produced_sub_order": null,
+      "header_compatibility": "compatible"
+    },
+    "records": {
+      "records_read": 2200,
+      "records_written": 2200
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "Initial implementation uses an in-memory merge strategy.",
+      "Output preserves input-file concatenation order."
+    ]
+  },
+  "error": null
+}

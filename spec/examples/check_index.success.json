@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "command": "check_index",
+  "path": "sample.bam",
+  "data": {
+    "format": "BAM",
+    "index": {
+      "present": true,
+      "selected_path": "sample.bam.bai",
+      "kind": "BAI",
+      "usable": true,
+      "syntactically_valid": true,
+      "stale": false,
+      "bam_newer_than_index": false,
+      "compatibility": "plausible"
+    },
+    "candidates": [
+      {
+        "path": "sample.bam.bai",
+        "kind": "BAI",
+        "exists": true
+      }
+    ],
+    "notes": [
+      "Index presence and shallow structure checks passed."
+    ]
+  },
+  "error": null
+}

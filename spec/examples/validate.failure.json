@@ -1,0 +1,35 @@
+{
+  "ok": false,
+  "command": "validate",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "full",
+    "valid": false,
+    "summary": {
+      "header_valid": true,
+      "records_examined": 247,
+      "full_file_examined": false,
+      "errors": 1,
+      "warnings": 0,
+      "infos": 0
+    },
+    "findings": [
+      {
+        "severity": "error",
+        "scope": "record",
+        "code": "truncated_record",
+        "message": "Alignment record payload could not be read fully.",
+        "record_index": 247,
+        "reference_name": null
+      }
+    ],
+    "semantic_note": "Validation covers BAM structure and selected internal consistency checks. It does not imply biological correctness or external reference concordance."
+  },
+  "error": {
+    "code": "invalid_bam",
+    "message": "BAM validation failed.",
+    "detail": "Structural validation encountered one or more error-level findings.",
+    "hint": "Run bamana verify and bamana check_eof to distinguish shallow truncation from deeper record corruption."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "verify",
+  "path": "example.sam",
+  "data": null,
+  "error": {
+    "code": "not_bam",
+    "message": "Input is not a BAM file.",
+    "detail": "Detected format: SAM.",
+    "hint": "Run bamana identify on the input or provide a BGZF-compressed BAM file."
+  }
+}

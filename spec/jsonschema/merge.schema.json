@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/merge.schema.json",
+  "title": "Bamana Merge Response",
+  "description": "Contract for bamana merge JSON output.",
+  "x-bamana-command": "merge",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "records_read"],
+      "properties": {
+        "path": { "type": "string" },
+        "records_read": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "mergeInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_mode", "requested_sub_order", "produced_mode", "produced_sub_order", "header_compatibility"],
+      "properties": {
+        "requested_mode": { "$ref": "./common/defs.schema.json#/$defs/mergeMode" },
+        "requested_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
+        "produced_mode": { "$ref": "./common/defs.schema.json#/$defs/mergeMode" },
+        "produced_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
+        "header_compatibility": { "$ref": "./common/defs.schema.json#/$defs/headerCompatibility" }
+      }
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records_read", "records_written"],
+      "properties": {
+        "records_read": { "type": "integer", "minimum": 0 },
+        "records_written": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "inputs", "output", "merge", "records", "index", "checksum_verification", "notes"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/input" }
+        },
+        "output": { "$ref": "./common/defs.schema.json#/$defs/outputInfo" },
+        "merge": { "$ref": "#/$defs/mergeInfo" },
+        "records": { "$ref": "#/$defs/records" },
+        "index": { "$ref": "./common/defs.schema.json#/$defs/indexInfo" },
+        "checksum_verification": { "$ref": "./common/defs.schema.json#/$defs/checksumVerification" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "merge" },
+        "path": { "type": "null" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "merge" },
+        "path": { "type": "null" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "object" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

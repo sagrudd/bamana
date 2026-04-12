@@ -1,0 +1,36 @@
+{
+  "ok": false,
+  "command": "explode",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "input": {
+      "path": "input.bam"
+    },
+    "explode": {
+      "strategy": "reference_shards",
+      "planned": true
+    },
+    "outputs": [],
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "Explode is specified but not implemented in the current CLI slice."
+    ]
+  },
+  "error": {
+    "code": "unimplemented",
+    "message": "This functionality is not implemented in this slice.",
+    "detail": "Explode remains a planned command in the current repository baseline.",
+    "hint": "Use the spec layer as the contract baseline and add runtime implementation later."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "command": "validate",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "full",
+    "valid": true,
+    "summary": {
+      "header_valid": true,
+      "records_examined": 42180321,
+      "full_file_examined": true,
+      "errors": 0,
+      "warnings": 2,
+      "infos": 1
+    },
+    "findings": [
+      {
+        "severity": "warning",
+        "scope": "header",
+        "code": "duplicate_program_id",
+        "message": "Header contains duplicate @PG ID values.",
+        "record_index": null,
+        "reference_name": null
+      }
+    ],
+    "semantic_note": "Validation covers BAM structure and selected internal consistency checks. It does not imply biological correctness or external reference concordance."
+  },
+  "error": null
+}

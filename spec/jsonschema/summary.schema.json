@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/summary.schema.json",
+  "title": "Bamana Summary Response",
+  "description": "Contract for bamana summary JSON output.",
+  "x-bamana-command": "summary",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["header_used", "index_used", "records_scanned", "full_file_scanned"],
+      "properties": {
+        "header_used": { "type": "boolean" },
+        "index_used": { "type": "boolean" },
+        "records_scanned": { "type": "integer", "minimum": 0 },
+        "full_file_scanned": { "type": "boolean" }
+      }
+    },
+    "headerSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["references_defined", "sort_order", "sub_sort_order", "group_order"],
+      "properties": {
+        "references_defined": { "type": "integer", "minimum": 0 },
+        "sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "sub_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "group_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "mapq": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["min", "max", "mean", "zero_count"],
+      "properties": {
+        "min": { "type": "integer", "minimum": 0 },
+        "max": { "type": "integer", "minimum": 0 },
+        "mean": { "type": "number", "minimum": 0 },
+        "zero_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "format",
+        "mode",
+        "evidence",
+        "header",
+        "counts",
+        "mapping",
+        "anomalies",
+        "confidence",
+        "semantic_note"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "mode": {
+          "type": "string",
+          "enum": ["bounded_scan", "full_scan", "indeterminate"]
+        },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "header": { "$ref": "#/$defs/headerSummary" },
+        "counts": { "type": "object" },
+        "fractions": { "type": "object" },
+        "fractions_observed": { "type": "object" },
+        "mapq": { "$ref": "#/$defs/mapq" },
+        "mapping": { "type": "object" },
+        "anomalies": { "type": "object" },
+        "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
+        "semantic_note": { "type": "string" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "summary" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "summary" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

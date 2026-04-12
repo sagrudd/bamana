@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/index.schema.json",
+  "title": "Bamana Index Response",
+  "description": "Contract for bamana index JSON output.",
+  "x-bamana-command": "index",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "outputIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "created", "overwritten"],
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "created": { "type": "boolean" },
+        "overwritten": { "type": "boolean" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "requested_index_kind", "output_index", "notes"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "requested_index_kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "output_index": { "$ref": "#/$defs/outputIndex" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "index" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "index" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

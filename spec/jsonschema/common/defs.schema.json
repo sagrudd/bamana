@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/common/defs.schema.json",
+  "title": "Bamana Common JSON Schema Definitions",
+  "description": "Shared definitions for Bamana command-response contracts.",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "pathOrNull": {
+      "type": ["string", "null"]
+    },
+    "jsonErrorCode": {
+      "type": "string",
+      "enum": [
+        "file_not_found",
+        "permission_denied",
+        "io_error",
+        "unknown_format",
+        "not_bam",
+        "invalid_bam",
+        "invalid_header",
+        "invalid_record",
+        "invalid_index",
+        "unsupported_index",
+        "missing_index",
+        "stale_index",
+        "parse_error",
+        "parse_uncertainty",
+        "unimplemented",
+        "invalid_tag",
+        "invalid_tag_type",
+        "invalid_checksum_mode",
+        "invalid_checksum_algorithm",
+        "invalid_sort_order",
+        "invalid_merge_mode",
+        "incompatible_headers",
+        "checksum_mismatch",
+        "output_exists",
+        "write_error",
+        "validation_failed",
+        "truncated_file",
+        "unsupported_format",
+        "internal_error"
+      ]
+    },
+    "jsonError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "detail", "hint"],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/jsonErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "detail": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "hint": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "confidenceLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "evidenceStrength": {
+      "type": "string",
+      "enum": ["limited", "moderate", "strong"]
+    },
+    "indexKind": {
+      "type": ["string", "null"],
+      "enum": ["BAI", "CSI", "UNKNOWN", null]
+    },
+    "checksumMode": {
+      "type": ["string", "null"],
+      "enum": [
+        "raw-record-order",
+        "canonical-record-order",
+        "header",
+        "payload",
+        "all",
+        null
+      ]
+    },
+    "checksumAlgorithm": {
+      "type": ["string", "null"],
+      "enum": ["sha256", null]
+    },
+    "sortOrder": {
+      "type": ["string", "null"],
+      "enum": ["coordinate", "queryname", null]
+    },
+    "querynameSubOrder": {
+      "type": ["string", "null"],
+      "enum": ["natural", "lexicographical", null]
+    },
+    "mergeMode": {
+      "type": ["string", "null"],
+      "enum": ["input", "coordinate", "queryname", null]
+    },
+    "validationSeverity": {
+      "type": "string",
+      "enum": ["error", "warning", "info"]
+    },
+    "validationScope": {
+      "type": "string",
+      "enum": ["file", "header", "record", "aux"]
+    },
+    "headerCompatibility": {
+      "type": "string",
+      "enum": ["compatible", "incompatible"]
+    },
+    "checksumFilters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["only_primary", "mapped_only"],
+      "properties": {
+        "only_primary": {
+          "type": "boolean"
+        },
+        "mapped_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "outputInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "written"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "written": {
+          "type": "boolean"
+        },
+        "overwritten": {
+          "type": ["boolean", "null"]
+        }
+      }
+    },
+    "checksumVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "performed", "mode", "match"],
+      "properties": {
+        "requested": {
+          "type": "boolean"
+        },
+        "performed": {
+          "type": "boolean"
+        },
+        "mode": {
+          "$ref": "#/$defs/checksumMode"
+        },
+        "input_digest": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "output_digest": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "match": {
+          "type": ["boolean", "null"]
+        }
+      }
+    },
+    "indexInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "created", "kind"],
+      "properties": {
+        "requested": {
+          "type": "boolean"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/indexKind"
+        }
+      }
+    }
+  }
+}

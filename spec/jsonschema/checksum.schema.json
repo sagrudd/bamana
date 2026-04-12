@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/checksum.schema.json",
+  "title": "Bamana Checksum Response",
+  "description": "Contract for bamana checksum JSON output.",
+  "x-bamana-command": "checksum",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "digest",
+        "records_hashed",
+        "order_sensitive",
+        "header_included",
+        "filters",
+        "excluded_tags"
+      ],
+      "properties": {
+        "mode": { "$ref": "./common/defs.schema.json#/$defs/checksumMode" },
+        "digest": { "type": "string", "pattern": "^[0-9a-f]+$" },
+        "records_hashed": { "type": "integer", "minimum": 0 },
+        "order_sensitive": { "type": "boolean" },
+        "header_included": { "type": "boolean" },
+        "filters": { "$ref": "./common/defs.schema.json#/$defs/checksumFilters" },
+        "excluded_tags": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[!-~]{2}$" }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "algorithm", "results", "semantic_note"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "algorithm": { "$ref": "./common/defs.schema.json#/$defs/checksumAlgorithm" },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/result" }
+        },
+        "semantic_note": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "checksum" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "checksum" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "object" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

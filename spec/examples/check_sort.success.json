@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "command": "check_sort",
+  "path": "sorted.bam",
+  "data": {
+    "format": "BAM",
+    "declared_sort": {
+      "so": "coordinate",
+      "ss": null,
+      "go": null
+    },
+    "observed_sort": {
+      "order": "coordinate",
+      "sub_order": null,
+      "appears_sorted": true,
+      "records_examined": 10000,
+      "first_violation": null,
+      "evidence_strength": "strong"
+    },
+    "agreement": {
+      "header_matches_observation": true
+    },
+    "confidence": "high",
+    "semantic_note": "Assessment is based on BAM header metadata plus a bounded scan of alignment records; it is not a full validation of every record in the file."
+  },
+  "error": null
+}

@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "command": "identify",
+  "path": "example.bam",
+  "data": {
+    "detected_format": "BAM",
+    "container": "BGZF",
+    "confidence": "high"
+  },
+  "error": null
+}

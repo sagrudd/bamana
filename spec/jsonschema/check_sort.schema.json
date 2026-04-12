@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/check_sort.schema.json",
+  "title": "Bamana Check Sort Response",
+  "description": "Contract for bamana check_sort JSON output.",
+  "x-bamana-command": "check_sort",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "declaredSort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["so", "ss", "go"],
+      "properties": {
+        "so": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "ss": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "go": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "firstViolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_index", "reason"],
+      "properties": {
+        "record_index": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string" }
+      }
+    },
+    "observedSort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "sub_order", "appears_sorted", "records_examined", "evidence_strength"],
+      "properties": {
+        "order": {
+          "type": "string",
+          "enum": ["coordinate", "queryname", "unsorted", "indeterminate"]
+        },
+        "sub_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "appears_sorted": { "type": ["boolean", "null"] },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "first_violation": {
+          "oneOf": [
+            { "$ref": "#/$defs/firstViolation" },
+            { "type": "null" }
+          ]
+        },
+        "evidence_strength": { "$ref": "./common/defs.schema.json#/$defs/evidenceStrength" }
+      }
+    },
+    "agreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["header_matches_observation"],
+      "properties": {
+        "header_matches_observation": { "type": ["boolean", "null"] }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "declared_sort", "observed_sort", "agreement", "confidence", "semantic_note"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "declared_sort": { "$ref": "#/$defs/declaredSort" },
+        "observed_sort": { "$ref": "#/$defs/observedSort" },
+        "agreement": { "$ref": "#/$defs/agreement" },
+        "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
+        "semantic_note": { "type": "string" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "check_sort" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "check_sort" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

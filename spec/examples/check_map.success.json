@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "command": "check_map",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "mapping_status": "mapped",
+    "has_mapped_reads": true,
+    "evidence_source": "index",
+    "index": {
+      "present": true,
+      "kind": "BAI",
+      "used": true
+    },
+    "references": [
+      {
+        "name": "chr1",
+        "length": 248956422,
+        "mapped_reads": 1543210,
+        "unmapped_reads": 10234,
+        "observed": null
+      }
+    ],
+    "summary": {
+      "references_defined": 25,
+      "references_with_mapped_reads": 24,
+      "total_mapped_reads": 42100321,
+      "total_unmapped_reads": 180223
+    },
+    "confidence": "high",
+    "semantic_note": "Mapping summary is derived from the BAM index and header; full validation of all alignment records was not performed."
+  },
+  "error": null
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/check_eof.schema.json",
+  "title": "Bamana Check EOF Response",
+  "description": "Contract for bamana check_eof JSON output.",
+  "x-bamana-command": "check_eof",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detected_format", "bgzf_eof_present", "complete", "semantic_note"],
+      "properties": {
+        "detected_format": { "const": "BAM" },
+        "bgzf_eof_present": { "type": "boolean" },
+        "complete": { "type": "boolean" },
+        "semantic_note": { "type": "string" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "check_eof" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "check_eof" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

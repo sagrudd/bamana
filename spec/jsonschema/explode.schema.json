@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/explode.schema.json",
+  "title": "Bamana Explode Response",
+  "description": "Planned contract for bamana explode JSON output.",
+  "x-bamana-command": "explode",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "records_written"],
+      "properties": {
+        "path": { "type": "string" },
+        "records_written": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "input", "explode", "outputs", "index", "checksum_verification", "notes"],
+      "properties": {
+        "format": { "const": "BAM" },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path"],
+          "properties": {
+            "path": { "type": "string" }
+          }
+        },
+        "explode": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/output" }
+        },
+        "index": { "$ref": "./common/defs.schema.json#/$defs/indexInfo" },
+        "checksum_verification": { "$ref": "./common/defs.schema.json#/$defs/checksumVerification" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "explode" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "explode" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "object" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

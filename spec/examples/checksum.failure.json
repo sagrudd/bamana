@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "command": "checksum",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "algorithm": null,
+    "results": null,
+    "semantic_note": null
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "BAM checksum could not be computed reliably.",
+    "detail": "Encountered a truncated alignment record before checksum computation completed.",
+    "hint": "Run bamana validate to determine whether the BAM is structurally invalid."
+  }
+}

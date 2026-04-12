@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/common/command_response.schema.json",
+  "title": "Bamana Command Response Envelope",
+  "description": "Common top-level response envelope used by Bamana commands. Command-specific schemas narrow the command literal and data payload.",
+  "x-bamana-contract-version": "0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "command", "path", "data", "error"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "command": {
+      "type": "string"
+    },
+    "path": {
+      "$ref": "./defs.schema.json#/$defs/pathOrNull"
+    },
+    "data": {},
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "./json_error.schema.json"
+        }
+      ]
+    }
+  }
+}

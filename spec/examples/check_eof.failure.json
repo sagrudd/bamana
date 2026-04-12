@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "command": "check_eof",
+  "path": "broken.bam",
+  "data": {
+    "detected_format": "BAM",
+    "bgzf_eof_present": false,
+    "complete": false,
+    "semantic_note": "EOF marker presence indicates tail completeness only and does not imply full BAM validity."
+  },
+  "error": {
+    "code": "truncated_file",
+    "message": "File is truncated or incomplete.",
+    "detail": "Expected BGZF EOF marker was not found.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}
