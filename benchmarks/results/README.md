@@ -7,7 +7,9 @@ Expected subdirectories:
 
 * `input_metadata/`: per-input size and record-count metadata
 * `derived_inputs/`: reusable subsampled or otherwise materialized scenario inputs when retention is enabled
-* `per_run/`: one TSV, one JSON, and command logs per tool/scenario/replicate
+* `raw/`: one TSV and one JSON per tool/scenario/replicate attempt
+* `logs/`: wrapper and runtime command logs
+* `metadata/`: wrapper planning JSON and raw result inventory files
 * `summary/`: aggregated run tables and support matrices
 * `figures/`: publication-ready PDF and PNG plots
 

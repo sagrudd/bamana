@@ -272,6 +272,30 @@ Per-run rows record at least:
 * success flag
 * notes
 
+## 8.0 Minimal Execution Slice
+
+The current benchmark pipeline intentionally prioritizes raw execution capture
+over final reporting.
+
+The first executable slice performs:
+
+* manifest resolution
+* scenario and tool matrix expansion
+* wrapper invocation
+* raw result JSON and TSV emission
+* raw result inventory generation
+
+Aggregation, plotting, and publication reporting remain downstream consumers of
+those raw result artifacts rather than mandatory steps in the first execution
+path.
+
+The first executable slice is intentionally limited to:
+
+* mapped BAM inputs
+* FASTQ.GZ inputs
+* `bamana`, `samtools`, and `fastcat`
+* `mapped_bam_pipeline`, `fastq_consume_pipeline`, and `subsample_only`
+
 ### 8.1 Why Workflow Variants Matter
 
 Benchmarking is only interpretable if the framework records not just which

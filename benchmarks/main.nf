@@ -4,14 +4,8 @@ import groovy.json.JsonSlurper
 nextflow.enable.dsl = 2
 
 include { STAGE_INPUT } from './modules/stage_input'
-include { RUN_BAMANA_BENCHMARK } from './modules/run_bamana'
-include { RUN_SAMTOOLS_BENCHMARK } from './modules/run_samtools'
-include { RUN_SAMBAMBA_BENCHMARK } from './modules/run_sambamba'
-include { RUN_SEQTK_BENCHMARK } from './modules/run_seqtk'
-include { RUN_RASUSA_BENCHMARK } from './modules/run_rasusa'
-include { RUN_FASTCAT_BENCHMARK } from './modules/run_fastcat'
-include { AGGREGATE_RESULTS } from './modules/aggregate_results'
-include { PLOT_RESULTS } from './modules/plot_results'
+include { RUN_BENCHMARK_MATRIX } from './subworkflows/run_benchmark_matrix'
+include { COLLECT_RESULTS } from './subworkflows/collect_results'
 
 def normalizeList(value) {
     if (value == null) {
@@ -38,8 +32,6 @@ def canonicalScenarioName(String scenario) {
     switch (scenario) {
         case 'mapped_bam_chain':
             return 'mapped_bam_pipeline'
-        case 'unmapped_bam_chain':
-            return 'unmapped_bam_pipeline'
         case 'fastq_ingest_chain':
             return 'fastq_consume_pipeline'
         default:
@@ -50,12 +42,11 @@ def canonicalScenarioName(String scenario) {
 def manifestInputType(String category) {
     switch (category) {
         case 'mapped_bam':
-        case 'unmapped_bam':
             return 'BAM'
         case 'fastq_gz':
             return 'FASTQ_GZ'
         default:
-            error "Unsupported benchmark input type '${category}' in manifest. Expected mapped_bam, unmapped_bam, or fastq_gz."
+            error "Minimal benchmark slice supports mapped_bam and fastq_gz inputs only. Received '${category}'."
     }
 }
 
@@ -66,33 +57,8 @@ def manifestMappingState(String category, String declaredState) {
     switch (category) {
         case 'mapped_bam':
             return 'mapped'
-        case 'unmapped_bam':
-            return 'unmapped'
         case 'fastq_gz':
             return 'unknown'
-        default:
-            return 'unspecified'
-    }
-}
-
-def defaultScenarioMaterialization(String inputType) {
-    if (inputType == 'BAM') {
-        return 'source_or_subsampled_bam'
-    }
-    if (inputType == 'FASTQ_GZ') {
-        return 'source_or_subsampled_fastq_gz'
-    }
-    'source'
-}
-
-def defaultExpectedSortOrder(String category) {
-    switch (category) {
-        case 'mapped_bam':
-            return 'coordinate'
-        case 'unmapped_bam':
-            return 'unsorted'
-        case 'fastq_gz':
-            return 'not_applicable'
         default:
             return 'unspecified'
     }
@@ -102,13 +68,31 @@ def defaultAllowedScenarios(String inputType, String mappingState) {
     if (inputType == 'BAM' && mappingState == 'mapped') {
         return ['mapped_bam_pipeline', 'subsample_only']
     }
-    if (inputType == 'BAM' && mappingState == 'unmapped') {
-        return ['unmapped_bam_pipeline', 'subsample_only']
-    }
     if (inputType == 'FASTQ_GZ') {
         return ['fastq_consume_pipeline', 'subsample_only']
     }
     return []
+}
+
+def defaultScenarioMaterialization(String inputType) {
+    if (inputType == 'BAM') {
+        return 'source_or_subsampled_bam'
+    }
+    if (inputType == 'FASTQ_GZ') {
+        return 'source_or_subsampled_fastq_gz'
+    }
+    return 'source'
+}
+
+def defaultExpectedSortOrder(String category) {
+    switch (category) {
+        case 'mapped_bam':
+            return 'coordinate'
+        case 'fastq_gz':
+            return 'not_applicable'
+        default:
+            return 'unspecified'
+    }
 }
 
 def inputTuples(List paths, String inputType, String mappingState) {
@@ -123,9 +107,9 @@ def inputTuples(List paths, String inputType, String mappingState) {
                 source_input_id           : inputId,
                 source_input_path         : inputFile.toString(),
                 source_input_type         : inputType,
-                source_category           : inputType == 'FASTQ_GZ' ? 'fastq_gz' : "${mappingState}_bam",
+                source_category           : inputType == 'FASTQ_GZ' ? 'fastq_gz' : 'mapped_bam',
                 description               : '',
-                expected_sort_order       : inputType == 'FASTQ_GZ' ? 'not_applicable' : (mappingState == 'mapped' ? 'coordinate' : 'unsorted'),
+                expected_sort_order       : inputType == 'FASTQ_GZ' ? 'not_applicable' : 'coordinate',
                 has_index                 : false,
                 reference_context         : 'unspecified',
                 source_owner              : 'user_supplied',
@@ -150,9 +134,7 @@ def manifestTuples(def manifestPath) {
 
     def manifestFile = file(manifestPath.toString(), checkIfExists: true)
     def manifest = new JsonSlurper().parseText(manifestFile.text)
-    def entries = manifest.inputs instanceof Collection
-        ? manifest.inputs
-        : (manifest.entries instanceof Collection ? manifest.entries : [])
+    def entries = manifest.inputs instanceof Collection ? manifest.inputs : []
 
     entries.collect { entry ->
         def category = entry.type.toString()
@@ -195,41 +177,45 @@ def manifestTuples(def manifestPath) {
     }
 }
 
+def wrapperSpecFor(String tool) {
+    switch (tool) {
+        case 'bamana':
+            return [
+                wrapper_path       : "${projectDir}/benchmarks/tools/wrappers/bamana.sh",
+                wrapper_binary_flag: '--bamana-bin',
+                wrapper_binary_path: params.bamana_bin.toString()
+            ]
+        case 'samtools':
+            return [
+                wrapper_path       : "${projectDir}/benchmarks/tools/wrappers/samtools.sh",
+                wrapper_binary_flag: '--samtools-bin',
+                wrapper_binary_path: params.samtools_bin.toString()
+            ]
+        case 'fastcat':
+            return [
+                wrapper_path       : "${projectDir}/benchmarks/tools/wrappers/fastcat.sh",
+                wrapper_binary_flag: '--fastcat-bin',
+                wrapper_binary_path: params.fastcat_bin.toString()
+            ]
+        default:
+            error "Minimal benchmark slice supports bamana, samtools, and fastcat only. Received '${tool}'."
+    }
+}
+
 def workflowVariantFor(String tool, String scenario) {
     def mapping = [
         bamana  : [
             mapped_bam_pipeline   : 'bamana_subsample_sort_partial_index',
-            unmapped_bam_pipeline : 'bamana_subsample_only',
             fastq_consume_pipeline: 'bamana_consume_unmapped_bam',
             subsample_only        : 'bamana_subsample_only'
         ],
         samtools: [
             mapped_bam_pipeline   : 'samtools_view_sort_index',
-            unmapped_bam_pipeline : 'samtools_view_subsample_only',
             fastq_consume_pipeline: 'unsupported',
             subsample_only        : 'samtools_view_subsample_only'
         ],
-        sambamba: [
-            mapped_bam_pipeline   : 'sambamba_view_sort_index',
-            unmapped_bam_pipeline : 'sambamba_view_subsample_only',
-            fastq_consume_pipeline: 'unsupported',
-            subsample_only        : 'sambamba_view_subsample_only'
-        ],
-        seqtk   : [
-            mapped_bam_pipeline   : 'unsupported',
-            unmapped_bam_pipeline : 'unsupported',
-            fastq_consume_pipeline: 'seqtk_sample_gzip',
-            subsample_only        : 'seqtk_sample_gzip'
-        ],
-        rasusa  : [
-            mapped_bam_pipeline   : 'rasusa_strategy_required',
-            unmapped_bam_pipeline : 'rasusa_strategy_required',
-            fastq_consume_pipeline: 'rasusa_strategy_required',
-            subsample_only        : 'rasusa_strategy_required'
-        ],
         fastcat : [
             mapped_bam_pipeline   : 'unsupported',
-            unmapped_bam_pipeline : 'unsupported',
             fastq_consume_pipeline: 'fastcat_concat_gzip',
             subsample_only        : 'unsupported'
         ]
@@ -247,9 +233,6 @@ def applicableScenarios(Map meta, List scenarios) {
         }
         if (scenario == 'mapped_bam_pipeline') {
             return meta.input_type == 'BAM' && meta.mapping_state == 'mapped'
-        }
-        if (scenario == 'unmapped_bam_pipeline') {
-            return meta.input_type == 'BAM' && meta.mapping_state == 'unmapped'
         }
         if (scenario == 'fastq_consume_pipeline') {
             return meta.input_type == 'FASTQ_GZ'
@@ -270,24 +253,24 @@ def shouldIncludeToolScenario(String tool, Map inputMeta, String scenario, boole
         return true
     }
 
-    if (tool == 'rasusa') {
-        return false
+    if (scenario == 'mapped_bam_pipeline') {
+        return tool in ['bamana', 'samtools']
     }
 
     if (scenario == 'fastq_consume_pipeline') {
-        return tool in ['bamana', 'seqtk', 'fastcat']
+        return tool in ['bamana', 'fastcat']
     }
 
     if (scenario == 'subsample_only') {
         if (inputMeta.input_type == 'BAM') {
-            return tool in ['bamana', 'samtools', 'sambamba']
+            return tool in ['bamana', 'samtools']
         }
         if (inputMeta.input_type == 'FASTQ_GZ') {
-            return tool in ['bamana', 'seqtk']
+            return tool == 'bamana'
         }
     }
 
-    return tool in ['bamana', 'samtools', 'sambamba']
+    return false
 }
 
 def runPlansForInput(Map inputMeta, List tools, List scenarios, int replicateCount, int warmupRuns) {
@@ -296,40 +279,53 @@ def runPlansForInput(Map inputMeta, List tools, List scenarios, int replicateCou
     applicableScenarios(inputMeta, scenarios).each { scenario ->
         tools.each { tool ->
             if (shouldIncludeToolScenario(tool, inputMeta, scenario, includeUnsupportedRows)) {
+                def workflowVariant = workflowVariantFor(tool, scenario)
+                def wrapperSpec = wrapperSpecFor(tool)
+                def sortOrder = scenario == 'mapped_bam_pipeline' ? 'coordinate' : 'none'
+                def createIndex = (tool == 'samtools' && scenario == 'mapped_bam_pipeline')
+
                 (1..warmupRuns).each { warmup ->
                     plans << [
-                        run_id            : "${tool}.${scenario}.${inputMeta.input_id}.warmup${warmup}",
-                        tool              : tool,
-                        scenario          : scenario,
-                        workflow_variant  : workflowVariantFor(tool, scenario),
-                        replicate         : warmup,
-                        warmup_run        : true,
-                        input_id          : inputMeta.input_id,
-                        input_type        : inputMeta.input_type,
-                        mapping_state     : inputMeta.mapping_state,
-                        subsample_fraction: params.subsample_fraction,
-                        subsample_seed    : params.subsample_seed,
-                        subsample_mode    : params.subsample_mode,
-                        threads           : params.threads,
-                        bamana_bin        : params.bamana_bin
+                        run_id             : "${inputMeta.input_id}.${scenario}.${tool}.${workflowVariant}.warmup${warmup}",
+                        tool               : tool,
+                        scenario           : scenario,
+                        workflow_variant   : workflowVariant,
+                        replicate          : warmup,
+                        warmup_run         : true,
+                        input_id           : inputMeta.input_id,
+                        input_type         : inputMeta.input_type,
+                        mapping_state      : inputMeta.mapping_state,
+                        subsample_fraction : params.subsample_fraction,
+                        subsample_seed     : params.subsample_seed,
+                        subsample_mode     : params.subsample_mode,
+                        threads            : params.threads,
+                        sort_order         : sortOrder,
+                        create_index       : createIndex,
+                        wrapper_path       : wrapperSpec.wrapper_path,
+                        wrapper_binary_flag: wrapperSpec.wrapper_binary_flag,
+                        wrapper_binary_path: wrapperSpec.wrapper_binary_path
                     ]
                 }
                 (1..replicateCount).each { replicate ->
                     plans << [
-                        run_id            : "${tool}.${scenario}.${inputMeta.input_id}.rep${replicate}",
-                        tool              : tool,
-                        scenario          : scenario,
-                        workflow_variant  : workflowVariantFor(tool, scenario),
-                        replicate         : replicate,
-                        warmup_run        : false,
-                        input_id          : inputMeta.input_id,
-                        input_type        : inputMeta.input_type,
-                        mapping_state     : inputMeta.mapping_state,
-                        subsample_fraction: params.subsample_fraction,
-                        subsample_seed    : params.subsample_seed,
-                        subsample_mode    : params.subsample_mode,
-                        threads           : params.threads,
-                        bamana_bin        : params.bamana_bin
+                        run_id             : "${inputMeta.input_id}.${scenario}.${tool}.${workflowVariant}.rep${replicate}",
+                        tool               : tool,
+                        scenario           : scenario,
+                        workflow_variant   : workflowVariant,
+                        replicate          : replicate,
+                        warmup_run         : false,
+                        input_id           : inputMeta.input_id,
+                        input_type         : inputMeta.input_type,
+                        mapping_state      : inputMeta.mapping_state,
+                        subsample_fraction : params.subsample_fraction,
+                        subsample_seed     : params.subsample_seed,
+                        subsample_mode     : params.subsample_mode,
+                        threads            : params.threads,
+                        sort_order         : sortOrder,
+                        create_index       : createIndex,
+                        wrapper_path       : wrapperSpec.wrapper_path,
+                        wrapper_binary_flag: wrapperSpec.wrapper_binary_flag,
+                        wrapper_binary_path: wrapperSpec.wrapper_binary_path
                     ]
                 }
             }
@@ -339,10 +335,8 @@ def runPlansForInput(Map inputMeta, List tools, List scenarios, int replicateCou
 }
 
 workflow {
+    main:
     def tools = normalizeList(params.tools)
-    if (!(params.fastcat_enabled as boolean)) {
-        tools = tools.findAll { it != 'fastcat' }
-    }
     def scenarios = normalizeList(params.scenarios).collect { canonicalScenarioName(it) }
     def requestedDatasetIds = normalizeList(params.dataset_ids)
     def replicateCount = (params.replicates ?: params.replicate_count) as int
@@ -355,7 +349,6 @@ workflow {
     def allInputs = []
     allInputs.addAll(manifestTuples(params.input_manifest))
     allInputs.addAll(inputTuples(normalizeList(params.mapped_bams), 'BAM', 'mapped'))
-    allInputs.addAll(inputTuples(normalizeList(params.unmapped_bams), 'BAM', 'unmapped'))
     allInputs.addAll(inputTuples(normalizeList(params.fastq_gzs), 'FASTQ_GZ', 'unknown'))
 
     if (!requestedDatasetIds.isEmpty()) {
@@ -368,46 +361,33 @@ workflow {
     }
 
     if (allInputs.isEmpty()) {
-        error "No benchmark inputs were provided. Supply input_manifest, mapped_bams, unmapped_bams, and/or fastq_gzs."
+        error "No benchmark inputs were provided. Supply input_manifest, mapped_bams, and/or fastq_gzs."
     }
 
     raw_inputs = Channel.fromList(allInputs)
     staged_inputs = STAGE_INPUT(raw_inputs)
 
-    run_matrix = staged_inputs.flatMap { meta, input_file, input_metrics_json, input_metrics_tsv ->
+    benchmark_attempts = staged_inputs.flatMap { meta, input_file, input_metrics_json, input_metrics_tsv ->
         runPlansForInput(meta, tools, scenarios, replicateCount, warmupRuns).collect { runMeta ->
             tuple(runMeta, input_file, input_metrics_json, input_metrics_tsv)
         }
     }
 
-    bamana_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'bamana' }
-    samtools_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'samtools' }
-    sambamba_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'sambamba' }
-    seqtk_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'seqtk' }
-    rasusa_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'rasusa' }
-    fastcat_runs = run_matrix.filter { meta, _, _, _ -> meta.tool == 'fastcat' }
+    matrix_results = RUN_BENCHMARK_MATRIX(benchmark_attempts)
+    collected = COLLECT_RESULTS(
+        matrix_results.raw_json,
+        matrix_results.raw_tsv,
+        matrix_results.wrapper_json,
+        matrix_results.command_file,
+        matrix_results.command_log
+    )
 
-    bamana_results = RUN_BAMANA_BENCHMARK(bamana_runs)
-    samtools_results = RUN_SAMTOOLS_BENCHMARK(samtools_runs)
-    sambamba_results = RUN_SAMBAMBA_BENCHMARK(sambamba_runs)
-    seqtk_results = RUN_SEQTK_BENCHMARK(seqtk_runs)
-    rasusa_results = RUN_RASUSA_BENCHMARK(rasusa_runs)
-    fastcat_results = RUN_FASTCAT_BENCHMARK(fastcat_runs)
-
-    result_tsvs = bamana_results.result_tsv
-        .mix(samtools_results.result_tsv)
-        .mix(sambamba_results.result_tsv)
-        .mix(seqtk_results.result_tsv)
-        .mix(rasusa_results.result_tsv)
-        .mix(fastcat_results.result_tsv)
-
-    aggregated = AGGREGATE_RESULTS(result_tsvs.collect())
-
-    if ((params.enable_plots ?: params.enable_plotting) as boolean) {
-        PLOT_RESULTS(
-            aggregated.runs_tsv,
-            aggregated.summary_tsv,
-            aggregated.support_tsv
-        )
-    }
+    emit:
+    raw_json = collected.raw_json
+    raw_tsv = collected.raw_tsv
+    wrapper_json = collected.wrapper_json
+    command_file = collected.command_file
+    command_log = collected.command_log
+    inventory_tsv = collected.inventory_tsv
+    inventory_json = collected.inventory_json
 }

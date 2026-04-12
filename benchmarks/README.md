@@ -57,7 +57,8 @@ comparisons explicitly instead of pretending the tools are directly equivalent.
 * [main.nf](/Users/stephen/Projects/bamana/benchmarks/main.nf): DSL2 workflow entry point
 * [nextflow.config](/Users/stephen/Projects/bamana/benchmarks/nextflow.config): default parameters and profiles
 * [conf/](/Users/stephen/Projects/bamana/benchmarks/conf): local and Docker execution profiles
-* [modules/](/Users/stephen/Projects/bamana/benchmarks/modules): staging, per-tool benchmark execution, aggregation, plotting
+* [modules/](/Users/stephen/Projects/bamana/benchmarks/modules): staging, wrapper execution, and result indexing
+* [subworkflows/](/Users/stephen/Projects/bamana/benchmarks/subworkflows): matrix execution and raw-result collection
 * [bin/](/Users/stephen/Projects/bamana/benchmarks/bin): timing and tool-version helpers
 * [R/](/Users/stephen/Projects/bamana/benchmarks/R): aggregation and plotting scripts
 * [results/](/Users/stephen/Projects/bamana/benchmarks/results): result schema and output layout notes
@@ -84,6 +85,29 @@ The user-facing configuration layer now exposes these stable scenario ids:
   index
 
 Replication is built in via `replicates` and `warmup_runs`.
+
+## Minimal Executable Slice
+
+The current `main.nf` is intentionally a minimal end-to-end execution slice.
+
+It does these things:
+
+1. loads benchmark params and the input manifest
+2. resolves mapped BAM and FASTQ.GZ datasets
+3. expands a matrix across dataset, scenario, tool, and replicate
+4. calls the benchmark wrapper scripts
+5. captures one raw benchmark result JSON per attempted run
+6. writes those raw result files into a stable output tree
+
+It does not currently require final aggregation or plotting to complete.
+Those later stages remain available as separate utilities.
+
+This first executable slice intentionally supports a narrow but real subset:
+
+* inputs: mapped BAM and FASTQ.GZ
+* tools: `bamana`, `samtools`, and `fastcat`
+* scenarios: `mapped_bam_pipeline`, `fastq_consume_pipeline`, and
+  `subsample_only`
 
 ## Benchmark Inputs
 
@@ -187,6 +211,12 @@ Aggregated outputs include:
 * `support_matrix.csv`
 * `support_summary.csv`
 
+The minimal execution slice always writes raw execution artifacts first:
+
+* `${output_dir}/raw/`: one `*.result.json` and one `*.result.tsv` per attempt
+* `${output_dir}/logs/`: command logs and runtime stderr/stdout logs when produced
+* `${output_dir}/metadata/`: wrapper planning JSON and raw-result inventory files
+
 Publication-ready figures include:
 
 * wall time by tool and scenario
@@ -247,6 +277,23 @@ nextflow run benchmarks/main.nf \
   -params-file "/abs/path/to/benchmark-run.json"
 ```
 
+For the minimal first slice, a representative local command is:
+
+```bash
+nextflow run benchmarks/main.nf \
+  -profile local \
+  -params-file benchmarks/params.examples/mapped_bam.example.json
+```
+
+Minimal first-slice recommendation:
+
+* keep `replicates = 1`
+* keep `warmup_runs = 0`
+* start with one mapped BAM dataset or one FASTQ.GZ dataset
+* inspect `${output_dir}/raw` before attempting aggregation
+* inspect `${output_dir}/metadata/raw_result_inventory.tsv` to confirm which
+  attempts were emitted
+
 Direct path parameters remain available for ad hoc runs:
 
 * `--mapped_bams`
@@ -271,6 +318,22 @@ The benchmark workflow resolves inputs in this order:
 Unsupported tool or tool-scenario combinations are recorded explicitly in the
 results when `include_unsupported_matrix_rows` is `true`; they are not treated
 as benchmark failures.
+
+## Raw Result Collection
+
+The first executable slice is primarily about producing raw benchmark result
+JSON correctly.
+
+Per attempted run, the pipeline records:
+
+* wrapper planning JSON
+* command provenance
+* raw benchmark result JSON
+* raw benchmark result TSV
+
+The raw result inventory is written under `${output_dir}/metadata` so later
+aggregation and support-matrix tooling can discover the run set without
+guessing filenames.
 
 ## Installed Toolchain
 

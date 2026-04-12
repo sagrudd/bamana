@@ -2,25 +2,24 @@
   "input_manifest": "benchmarks/inputs/example_manifest.json",
   "dataset_ids": [
     "hg38_wgs_mapped",
-    "hg38_wgs_unmapped",
     "ont_reads_fastq_gz"
   ],
-  "tools": ["bamana", "samtools", "sambamba", "seqtk", "fastcat"],
+  "tools": ["bamana", "samtools", "fastcat"],
   "scenarios": [
     "mapped_bam_pipeline",
-    "unmapped_bam_pipeline",
-    "fastq_consume_pipeline"
+    "fastq_consume_pipeline",
+    "subsample_only"
   ],
-  "replicates": 2,
-  "warmup_runs": 1,
+  "replicates": 1,
+  "warmup_runs": 0,
   "subsample_fraction": 0.1,
   "subsample_seed": 104729,
   "subsample_mode": "deterministic",
   "threads": 4,
   "output_dir": "/workspace/benchmarks/results/local-example",
   "derived_input_dir": "/workspace/benchmarks/results/local-example/derived_inputs",
-  "enable_plots": true,
-  "enable_reports": true,
+  "enable_plots": false,
+  "enable_reports": false,
   "container_engine": "docker",
   "staging_override": null,
   "include_unsupported_matrix_rows": true,
