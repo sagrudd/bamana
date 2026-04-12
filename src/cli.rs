@@ -45,6 +45,8 @@ pub enum Commands {
     Index(IndexArgs),
     /// Produce a fast operational summary of BAM characteristics.
     Summary(SummaryArgs),
+    /// Perform deeper BAM structural and internal-consistency validation.
+    Validate(ValidateArgs),
     /// Detect presence or absence of a BAM auxiliary tag.
     #[command(name = "check_tag")]
     CheckTag(CheckTagArgs),
@@ -172,4 +174,29 @@ pub struct CheckTagArgs {
     /// Count how many records in the actual scan scope contain the requested tag.
     #[arg(long = "count-hits")]
     pub count_hits: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ValidateArgs {
+    /// BAM file to validate.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Stop collecting detailed error findings after this many errors.
+    #[arg(long = "max-errors", default_value_t = 100)]
+    pub max_errors: usize,
+    /// Bound detailed warning finding collection.
+    #[arg(long = "max-warnings", default_value_t = 100)]
+    pub max_warnings: usize,
+    /// Validate header-level structure only.
+    #[arg(long = "header-only")]
+    pub header_only: bool,
+    /// Validate only the first N alignment records.
+    #[arg(long = "records")]
+    pub records: Option<u64>,
+    /// Stop at the first error-level finding.
+    #[arg(long = "fail-fast")]
+    pub fail_fast: bool,
+    /// Include warning-level findings in the output.
+    #[arg(long = "include-warnings")]
+    pub include_warnings: bool,
 }

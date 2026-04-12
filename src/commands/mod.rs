@@ -7,4 +7,5 @@ pub mod header;
 pub mod identify;
 pub mod index;
 pub mod summary;
+pub mod validate;
 pub mod verify;

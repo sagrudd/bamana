@@ -41,6 +41,8 @@ pub enum AppError {
     OutputExists { path: PathBuf },
     #[error("functionality is not implemented for this input: {path}")]
     Unimplemented { path: PathBuf, detail: String },
+    #[error("bam validation failed: {path}")]
+    ValidationFailed { path: PathBuf, detail: String },
     #[error("requested bam tag is invalid: {path}")]
     InvalidTag { path: PathBuf, tag: String },
     #[error("requested bam aux type is invalid: {path}")]
@@ -99,6 +101,7 @@ impl AppError {
             Self::MissingIndex { .. } => "missing_index",
             Self::OutputExists { .. } => "output_exists",
             Self::Unimplemented { .. } => "unimplemented",
+            Self::ValidationFailed { .. } => "invalid_bam",
             Self::InvalidTag { .. } => "invalid_tag",
             Self::InvalidTagType { .. } => "invalid_tag_type",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
@@ -133,6 +136,7 @@ impl AppError {
             Self::Unimplemented { .. } => {
                 "This functionality is not implemented in this slice.".to_string()
             }
+            Self::ValidationFailed { .. } => "BAM validation failed.".to_string(),
             Self::InvalidTag { .. } => "Requested BAM tag is invalid.".to_string(),
             Self::InvalidTagType { .. } => "Requested BAM auxiliary type is invalid.".to_string(),
             Self::ParseUncertainty { .. } => {
@@ -166,6 +170,7 @@ impl AppError {
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
+            Self::ValidationFailed { detail, .. } => Some(detail.clone()),
             Self::InvalidTag { tag, .. } => Some(format!("Requested tag: {tag}.")),
             Self::InvalidTagType { tag_type, .. } => Some(format!("Requested type: {tag_type}.")),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
@@ -221,6 +226,10 @@ impl AppError {
             }
             Self::Unimplemented { .. } => Some(
                 "Use an implemented index format for this BAM or extend the current index writer."
+                    .to_string(),
+            ),
+            Self::ValidationFailed { .. } => Some(
+                "Run bamana verify and bamana check_eof to distinguish shallow truncation from deeper record corruption."
                     .to_string(),
             ),
             Self::InvalidTag { .. } => Some(

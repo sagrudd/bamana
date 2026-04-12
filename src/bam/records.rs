@@ -31,9 +31,28 @@ pub struct LightAlignmentRecord {
     pub is_read2: bool,
 }
 
+#[derive(Clone, Debug)]
+pub struct RecordLayout {
+    pub block_size: usize,
+    pub ref_id: i32,
+    pub pos: i32,
+    pub next_ref_id: i32,
+    pub next_pos: i32,
+    pub flags: u16,
+    pub mapping_quality: u8,
+    pub n_cigar_op: usize,
+    pub l_seq: usize,
+    pub read_name: String,
+    pub aux_bytes: Vec<u8>,
+}
+
 pub fn read_next_light_record(
     reader: &mut BamReader,
 ) -> Result<Option<LightAlignmentRecord>, AppError> {
+    read_next_record_layout(reader).map(|layout| layout.map(light_from_layout))
+}
+
+pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLayout>, AppError> {
     let Some(block_size) = reader.read_optional_i32_le()? else {
         return Ok(None);
     };
@@ -53,8 +72,8 @@ pub fn read_next_light_record(
     let bin_mq_nl = reader.read_u32_le()?;
     let flag_nc = reader.read_u32_le()?;
     let l_seq = reader.read_i32_le()?;
-    let _next_ref_id = reader.read_i32_le()?;
-    let _next_pos = reader.read_i32_le()?;
+    let next_ref_id = reader.read_i32_le()?;
+    let next_pos = reader.read_i32_le()?;
     let _tlen = reader.read_i32_le()?;
 
     if l_seq < 0 {
@@ -124,14 +143,31 @@ pub fn read_next_light_record(
     reader.skip_exact(cigar_bytes)?;
     reader.skip_exact(sequence_bytes)?;
     reader.skip_exact(quality_bytes)?;
-    reader.skip_exact(remaining - consumed_after_core)?;
+    let aux_bytes = reader.read_exact_vec(remaining - consumed_after_core)?;
 
-    Ok(Some(LightAlignmentRecord {
+    Ok(Some(RecordLayout {
+        block_size,
         ref_id,
         pos,
+        next_ref_id,
+        next_pos,
         flags,
         mapping_quality,
+        n_cigar_op,
+        l_seq,
         read_name,
+        aux_bytes,
+    }))
+}
+
+fn light_from_layout(layout: RecordLayout) -> LightAlignmentRecord {
+    let flags = layout.flags;
+    LightAlignmentRecord {
+        ref_id: layout.ref_id,
+        pos: layout.pos,
+        flags,
+        mapping_quality: layout.mapping_quality,
+        read_name: layout.read_name,
         is_unmapped: flags & BAM_FUNMAP != 0,
         is_paired: flags & BAM_FPAIRED != 0,
         is_proper_pair: flags & BAM_FPROPER_PAIR != 0,
@@ -142,5 +178,5 @@ pub fn read_next_light_record(
         is_duplicate: flags & BAM_FDUP != 0,
         is_read1: flags & BAM_FREAD1 != 0,
         is_read2: flags & BAM_FREAD2 != 0,
-    }))
+    }
 }

@@ -1,6 +1,7 @@
-use crate::{bam::reader::BamReader, error::AppError};
-
-const BAM_CORE_SIZE: usize = 32;
+use crate::{
+    bam::{reader::BamReader, records::read_next_record_layout},
+    error::AppError,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuxTypeCode {
@@ -63,6 +64,13 @@ pub struct TagScanRecordResult {
     pub matched: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AuxField<'a> {
+    pub tag: [u8; 2],
+    pub type_code: u8,
+    pub payload: &'a [u8],
+}
+
 pub fn validate_tag(tag: &str) -> Option<[u8; 2]> {
     let bytes = tag.as_bytes();
     if bytes.len() != 2 || !bytes.iter().all(|byte| byte.is_ascii_graphic()) {
@@ -76,100 +84,38 @@ pub fn read_next_record_for_tag(
     reader: &mut BamReader,
     query: TagQuery,
 ) -> Result<Option<TagScanRecordResult>, AppError> {
-    let Some(block_size) = reader.read_optional_i32_le()? else {
+    let Some(layout) = read_next_record_layout(reader)? else {
         return Ok(None);
     };
-
-    if block_size < BAM_CORE_SIZE as i32 {
-        return Err(AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: format!(
-                "BAM record block size {block_size} is smaller than the 32-byte core alignment section."
-            ),
-        });
-    }
-
-    let block_size = block_size as usize;
-    let _ref_id = reader.read_i32_le()?;
-    let _pos = reader.read_i32_le()?;
-    let bin_mq_nl = reader.read_u32_le()?;
-    let flag_nc = reader.read_u32_le()?;
-    let l_seq = reader.read_i32_le()?;
-    let _next_ref_id = reader.read_i32_le()?;
-    let _next_pos = reader.read_i32_le()?;
-    let _tlen = reader.read_i32_le()?;
-
-    if l_seq < 0 {
-        return Err(AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: "BAM record sequence length was negative.".to_string(),
-        });
-    }
-
-    let remaining = block_size - BAM_CORE_SIZE;
-    let l_read_name = (bin_mq_nl & 0xff) as usize;
-    let n_cigar_op = (flag_nc & 0xffff) as usize;
-
-    if l_read_name == 0 {
-        return Err(AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: "BAM record read name length was zero.".to_string(),
-        });
-    }
-
-    let cigar_bytes = n_cigar_op
-        .checked_mul(4)
-        .ok_or_else(|| AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: "BAM record CIGAR byte count overflowed usize.".to_string(),
-        })?;
-    let l_seq = l_seq as usize;
-    let sequence_bytes = l_seq.div_ceil(2);
-    let quality_bytes = l_seq;
-
-    let consumed_after_core = l_read_name
-        .checked_add(cigar_bytes)
-        .and_then(|value| value.checked_add(sequence_bytes))
-        .and_then(|value| value.checked_add(quality_bytes))
-        .ok_or_else(|| AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: "BAM record variable-length section overflowed usize.".to_string(),
-        })?;
-
-    if consumed_after_core > remaining {
-        return Err(AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: format!(
-                "BAM record declared block size {block_size} but needs at least {} bytes after the core section.",
-                consumed_after_core
-            ),
-        });
-    }
-
-    let read_name_bytes = reader.read_exact_vec(l_read_name)?;
-    if read_name_bytes.last().copied() != Some(0) {
-        return Err(AppError::InvalidRecord {
-            path: reader.path().to_path_buf(),
-            detail: "BAM record read name was not NUL-terminated.".to_string(),
-        });
-    }
-
-    reader.skip_exact(cigar_bytes)?;
-    reader.skip_exact(sequence_bytes)?;
-    reader.skip_exact(quality_bytes)?;
-
-    let aux_len = remaining - consumed_after_core;
-    let aux_bytes = reader.read_exact_vec(aux_len)?;
-    let matched =
-        aux_region_contains_tag(&aux_bytes, query).map_err(|detail| AppError::InvalidRecord {
+    let matched = aux_region_contains_tag(&layout.aux_bytes, query).map_err(|detail| {
+        AppError::InvalidRecord {
             path: reader.path().to_path_buf(),
             detail,
-        })?;
+        }
+    })?;
 
     Ok(Some(TagScanRecordResult { matched }))
 }
 
 pub fn aux_region_contains_tag(aux_bytes: &[u8], query: TagQuery) -> Result<bool, String> {
+    let mut matched = false;
+    traverse_aux_fields(aux_bytes, |field| {
+        let matches_type = query
+            .required_type
+            .is_none_or(|required| aux_type_matches(field.type_code, required));
+        if field.tag == query.tag && matches_type {
+            matched = true;
+        }
+        Ok(())
+    })?;
+
+    Ok(matched)
+}
+
+pub fn traverse_aux_fields(
+    aux_bytes: &[u8],
+    mut visitor: impl FnMut(AuxField<'_>) -> Result<(), String>,
+) -> Result<(), String> {
     let mut offset = 0_usize;
 
     while offset < aux_bytes.len() {
@@ -185,20 +131,21 @@ pub fn aux_region_contains_tag(aux_bytes: &[u8], query: TagQuery) -> Result<bool
         offset += 3;
 
         let payload_len = payload_len(aux_bytes, offset, type_code)?;
-        let matches_type = query
-            .required_type
-            .is_none_or(|required| aux_type_matches(type_code, required));
-
-        if tag == query.tag && matches_type {
-            return Ok(true);
-        }
-
-        offset = offset.checked_add(payload_len).ok_or_else(|| {
+        let payload_end = offset.checked_add(payload_len).ok_or_else(|| {
             "Auxiliary field payload length overflowed usize during traversal.".to_string()
         })?;
+        let payload = &aux_bytes[offset..payload_end];
+
+        visitor(AuxField {
+            tag,
+            type_code,
+            payload,
+        })?;
+
+        offset = payload_end;
     }
 
-    Ok(false)
+    Ok(())
 }
 
 fn payload_len(aux_bytes: &[u8], offset: usize, type_code: u8) -> Result<usize, String> {

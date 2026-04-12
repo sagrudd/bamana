@@ -19,6 +19,7 @@ use commands::{
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
     summary::SummaryRequest,
+    validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
 use json::{CommandResponse, emit_response};
@@ -95,6 +96,19 @@ fn main() -> ExitCode {
                 prefer_index: args.prefer_index,
                 include_mapq_hist: args.include_mapq_hist,
                 include_flags: args.include_flags,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Validate(args) => {
+            let bam = args.bam;
+            let response = commands::validate::run(ValidateRequest {
+                bam: bam.clone(),
+                max_errors: args.max_errors,
+                max_warnings: args.max_warnings,
+                header_only: args.header_only,
+                records: args.records,
+                fail_fast: args.fail_fast,
+                include_warnings: args.include_warnings,
             });
             emit_response(&response, cli.global.json_pretty)
         }
