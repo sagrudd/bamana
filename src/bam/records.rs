@@ -36,6 +36,7 @@ pub struct RecordLayout {
     pub block_size: usize,
     pub ref_id: i32,
     pub pos: i32,
+    pub bin: u16,
     pub next_ref_id: i32,
     pub next_pos: i32,
     pub tlen: i32,
@@ -90,6 +91,7 @@ pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLa
     let remaining = block_size - BAM_CORE_SIZE;
     let l_read_name = (bin_mq_nl & 0xff) as usize;
     let mapping_quality = ((bin_mq_nl >> 8) & 0xff) as u8;
+    let bin = (bin_mq_nl >> 16) as u16;
     let n_cigar_op = (flag_nc & 0xffff) as usize;
     let flags = (flag_nc >> 16) as u16;
 
@@ -153,6 +155,7 @@ pub fn read_next_record_layout(reader: &mut BamReader) -> Result<Option<RecordLa
         block_size,
         ref_id,
         pos,
+        bin,
         next_ref_id,
         next_pos,
         tlen,

@@ -19,6 +19,7 @@ use commands::{
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
+    sort::SortRequest,
     summary::SummaryRequest,
     validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
@@ -46,6 +47,21 @@ fn main() -> ExitCode {
                 exclude_tags: args.exclude_tags,
                 only_primary: args.only_primary,
                 mapped_only: args.mapped_only,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Sort(args) => {
+            let bam = args.bam;
+            let response = commands::sort::run(SortRequest {
+                bam: bam.clone(),
+                out: args.out,
+                order: args.order,
+                queryname_suborder: args.queryname_suborder,
+                threads: args.threads,
+                memory_limit: args.memory_limit,
+                create_index: args.create_index,
+                verify_checksum: args.verify_checksum,
+                force: args.force,
             });
             emit_response(&response, cli.global.json_pretty)
         }

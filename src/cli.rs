@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
+use crate::bam::sort::{QuerynameSubOrder, SortOrder};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -32,6 +33,8 @@ pub enum Commands {
     Identify(IdentifyArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
     Checksum(ChecksumArgs),
+    /// Sort a BAM file into a requested output ordering.
+    Sort(SortArgs),
     /// Perform shallow BAM verification only.
     Verify(BamPathArgs),
     /// Check for the canonical BGZF EOF marker only.
@@ -88,6 +91,37 @@ pub struct ChecksumArgs {
     /// Hash only mapped alignments.
     #[arg(long = "mapped-only")]
     pub mapped_only: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct SortArgs {
+    /// Input BAM file to sort.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output BAM path.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Requested sort order.
+    #[arg(long = "order", value_enum, default_value_t = SortOrder::Coordinate)]
+    pub order: SortOrder,
+    /// Queryname sub-order, only meaningful when --order queryname is selected.
+    #[arg(long = "queryname-suborder", value_enum)]
+    pub queryname_suborder: Option<QuerynameSubOrder>,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Target memory budget for future external-sort support.
+    #[arg(long = "memory-limit")]
+    pub memory_limit: Option<u64>,
+    /// Attempt to create an index when coordinate output is produced.
+    #[arg(long = "create-index")]
+    pub create_index: bool,
+    /// Compute canonical checksums for input and output after sorting.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Overwrite an existing output file.
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

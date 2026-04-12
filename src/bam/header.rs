@@ -246,6 +246,52 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
     })
 }
 
+pub fn rewrite_header_for_sort(
+    raw_header_text: &str,
+    sort_order: &str,
+    sub_sort_order: Option<&str>,
+) -> String {
+    let mut lines = Vec::new();
+    let mut updated_hd = false;
+
+    for line in raw_header_text.lines() {
+        if line.starts_with("@HD") && !updated_hd {
+            lines.push(rewrite_hd_line(line, sort_order, sub_sort_order));
+            updated_hd = true;
+        } else if !line.is_empty() {
+            lines.push(line.to_string());
+        }
+    }
+
+    if !updated_hd {
+        lines.insert(0, build_hd_line(Vec::new(), sort_order, sub_sort_order));
+    }
+
+    if lines.is_empty() {
+        String::new()
+    } else {
+        format!("{}\n", lines.join("\n"))
+    }
+}
+
+pub fn serialize_bam_header_payload(header_text: &str, references: &[ReferenceRecord]) -> Vec<u8> {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(BAM_MAGIC);
+    payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+    payload.extend_from_slice(header_text.as_bytes());
+    payload.extend_from_slice(&(references.len() as i32).to_le_bytes());
+
+    for reference in references {
+        let mut name = reference.name.as_bytes().to_vec();
+        name.push(0);
+        payload.extend_from_slice(&(name.len() as i32).to_le_bytes());
+        payload.extend_from_slice(&name);
+        payload.extend_from_slice(&(reference.length as i32).to_le_bytes());
+    }
+
+    payload
+}
+
 fn parse_sam_header_text(raw_header_text: &str) -> ParsedSamHeader {
     let mut parsed = ParsedSamHeader::default();
 
@@ -340,6 +386,44 @@ fn parse_sam_header_text(raw_header_text: &str) -> ParsedSamHeader {
     }
 
     parsed
+}
+
+fn rewrite_hd_line(line: &str, sort_order: &str, sub_sort_order: Option<&str>) -> String {
+    let mut preserved_fields = Vec::new();
+
+    for field in line.split('\t').skip(1) {
+        let Some((key, value)) = field.split_once(':') else {
+            continue;
+        };
+        if matches!(key, "SO" | "SS" | "GO") {
+            continue;
+        }
+        preserved_fields.push((key.to_string(), value.to_string()));
+    }
+
+    build_hd_line(preserved_fields, sort_order, sub_sort_order)
+}
+
+fn build_hd_line(
+    mut preserved_fields: Vec<(String, String)>,
+    sort_order: &str,
+    sub_sort_order: Option<&str>,
+) -> String {
+    let mut line = String::from("@HD");
+    preserved_fields.retain(|(key, _)| !matches!(key.as_str(), "SO" | "SS" | "GO"));
+    for (key, value) in preserved_fields {
+        line.push('\t');
+        line.push_str(&key);
+        line.push(':');
+        line.push_str(&value);
+    }
+    line.push_str("\tSO:");
+    line.push_str(sort_order);
+    if let Some(sub_sort_order) = sub_sort_order {
+        line.push_str("\tSS:");
+        line.push_str(sub_sort_order);
+    }
+    line
 }
 
 fn parse_tag_fields<'a>(fields: impl Iterator<Item = &'a str>) -> Vec<(String, String)> {

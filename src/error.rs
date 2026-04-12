@@ -39,6 +39,8 @@ pub enum AppError {
     },
     #[error("refusing to overwrite existing output: {path}")]
     OutputExists { path: PathBuf },
+    #[error("failed to write output: {path}")]
+    WriteError { path: PathBuf, message: String },
     #[error("functionality is not implemented for this input: {path}")]
     Unimplemented { path: PathBuf, detail: String },
     #[error("bam validation failed: {path}")]
@@ -51,6 +53,8 @@ pub enum AppError {
     ParseUncertainty { path: PathBuf, detail: String },
     #[error("bam checksum could not be computed reliably: {path}")]
     ChecksumUncertainty { path: PathBuf, detail: String },
+    #[error("checksum verification failed: {path}")]
+    ChecksumMismatch { path: PathBuf, detail: String },
     #[error("bam auxiliary fields could not be parsed reliably: {path}")]
     TagParseUncertainty { path: PathBuf, detail: String },
     #[error("bam summary could not be generated reliably: {path}")]
@@ -102,12 +106,14 @@ impl AppError {
             Self::UnsupportedIndex { .. } => "unsupported_index",
             Self::MissingIndex { .. } => "missing_index",
             Self::OutputExists { .. } => "output_exists",
+            Self::WriteError { .. } => "write_error",
             Self::Unimplemented { .. } => "unimplemented",
             Self::ValidationFailed { .. } => "invalid_bam",
             Self::InvalidTag { .. } => "invalid_tag",
             Self::InvalidTagType { .. } => "invalid_tag_type",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
             Self::ChecksumUncertainty { .. } => "parse_uncertainty",
+            Self::ChecksumMismatch { .. } => "checksum_mismatch",
             Self::TagParseUncertainty { .. } => "parse_uncertainty",
             Self::SummaryUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
@@ -134,8 +140,9 @@ impl AppError {
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
             Self::MissingIndex { .. } => "No usable BAM index was found.".to_string(),
             Self::OutputExists { .. } => {
-                "Output index already exists and overwrite was not requested.".to_string()
+                "Output path already exists and overwrite was not requested.".to_string()
             }
+            Self::WriteError { .. } => "Failed to write BAM output.".to_string(),
             Self::Unimplemented { .. } => {
                 "This functionality is not implemented in this slice.".to_string()
             }
@@ -148,6 +155,9 @@ impl AppError {
             }
             Self::ChecksumUncertainty { .. } => {
                 "BAM checksum could not be computed reliably.".to_string()
+            }
+            Self::ChecksumMismatch { .. } => {
+                "Checksum verification failed after BAM sort.".to_string()
             }
             Self::TagParseUncertainty { .. } => {
                 "BAM auxiliary fields could not be parsed reliably.".to_string()
@@ -175,12 +185,14 @@ impl AppError {
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
             Self::MissingIndex { detail, .. } => detail.clone(),
+            Self::WriteError { message, .. } => Some(message.clone()),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ValidationFailed { detail, .. } => Some(detail.clone()),
             Self::InvalidTag { tag, .. } => Some(format!("Requested tag: {tag}.")),
             Self::InvalidTagType { tag_type, .. } => Some(format!("Requested type: {tag_type}.")),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::ChecksumUncertainty { detail, .. } => Some(detail.clone()),
+            Self::ChecksumMismatch { detail, .. } => Some(detail.clone()),
             Self::TagParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::SummaryUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
@@ -231,6 +243,10 @@ impl AppError {
             Self::OutputExists { .. } => {
                 Some("Rerun with --force to overwrite the existing index output.".to_string())
             }
+            Self::WriteError { .. } => Some(
+                "Check the output path, available disk space, and filesystem permissions, then retry the sort."
+                    .to_string(),
+            ),
             Self::Unimplemented { .. } => Some(
                 "Use an implemented index format for this BAM or extend the current index writer."
                     .to_string(),
@@ -252,6 +268,10 @@ impl AppError {
             ),
             Self::ChecksumUncertainty { .. } => Some(
                 "Run bamana validate to determine whether the BAM is structurally invalid.".to_string(),
+            ),
+            Self::ChecksumMismatch { .. } => Some(
+                "Inspect the input and output with bamana checksum and bamana validate before relying on the transformed BAM."
+                    .to_string(),
             ),
             Self::TagParseUncertainty { .. } => Some(
                 "Run bamana verify and, when available, bamana validate.".to_string(),
