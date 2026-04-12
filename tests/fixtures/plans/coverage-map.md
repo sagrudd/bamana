@@ -127,6 +127,20 @@ Representative CRAM consume contract scenarios:
   `bamana consume --mode alignment --input tiny.valid.cram.compatible_refdict.cram tiny.valid.bam.incompatible_refdict.bam --reference tiny.ref.primary.fasta --reference-policy strict --out out.bam`
   Expected outcome: failure, `error.code = incompatible_headers`.
 
+Provenance root for the first explicit-reference CRAM package:
+
+* `tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam`
+* `tests/fixtures/source/tiny.ref.primary.fasta`
+
+Those source files should support:
+
+* explicit-reference success by pairing the derived CRAM with the committed
+  FASTA
+* strict missing-reference failure by withholding the same FASTA under the same
+  CRAM input
+* future compatibility coverage by pairing the derived CRAM with a BAM derived
+  from the same source SAM
+
 ## Duplication And Forensics Trio
 
 The fixture plan also reserves a focused build-out path for:

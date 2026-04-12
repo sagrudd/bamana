@@ -13,8 +13,8 @@ Examples to reserve:
 
 * `consume.tiny.valid.coordinate.dry_run.success.json`
 * `consume.tiny.valid.sam.dry_run.success.json`
-* `consume.cram.explicit_ref.success.json`
-* `consume.cram.reference_required.failure.json`
+* `consume.tiny.valid.cram.explicit_ref.success.json`
+* `consume.tiny.valid.cram.explicit_ref.reference_required.failure.json`
 * `consume.cram_bam.compatible.success.json`
 * `consume.cram_bam.incompatible.failure.json`
 * `consume.cram.no_external_ref.success.json` only if the corresponding fixture
@@ -30,3 +30,7 @@ spec examples:
 * [consume.success.alignment.json](/Users/stephen/Projects/bamana/spec/examples/consume.success.alignment.json)
 * [consume.failure.reference_required.json](/Users/stephen/Projects/bamana/spec/examples/consume.failure.reference_required.json)
 * [consume.failure.incompatible_headers.json](/Users/stephen/Projects/bamana/spec/examples/consume.failure.incompatible_headers.json)
+
+For the first provenance package, the CRAM success and strict missing-reference
+failure cases should be anchored by the same derived CRAM plus the committed
+source FASTA from `tests/fixtures/source/`.

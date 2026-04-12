@@ -16,6 +16,7 @@ interop tests against a very small number of deliberate sample files.
 
 * `manifest.json`: machine-readable fixture inventory and coverage metadata
 * `bam/`: planned BAM and index files grouped by intent
+* `source/`: human-auditable provenance roots such as tiny SAM and FASTA files
 * `expected/`: expected JSON outputs grouped by command
 * `plans/`: fixture taxonomy, generation strategy, and coverage planning
 * `scripts/`: regeneration and mutation entrypoints
@@ -88,6 +89,17 @@ The preferred CRAM plan is:
 CRAM fixtures must remain explicit about whether they require a reference and
 which reference source they are intended to use. The fixture plan must never
 blur missing-reference failures into generic decode failures.
+
+### Source Provenance Package
+
+The first real CRAM consume package should be rooted in plain-text source files:
+
+* `tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam`
+* `tests/fixtures/source/tiny.ref.primary.fasta`
+
+Those files are the auditable source of truth. Derived BAM and CRAM artifacts
+should be reviewed as governed outputs derived from that source package, not as
+opaque standalone binaries.
 
 ## Adding A Fixture
 

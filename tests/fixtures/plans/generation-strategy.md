@@ -167,6 +167,30 @@ Additional guidance:
 * Later malformed or unsupported CRAM scenarios should be added by controlled
   mutation with explicit provenance, not by opaque third-party samples.
 
+#### First provenance package
+
+The first real CRAM package should be anchored by committed source files:
+
+* `tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam`
+* `tests/fixtures/source/tiny.ref.primary.fasta`
+
+Recommended deterministic derivation:
+
+1. validate that the SAM `@SQ` dictionary matches the FASTA exactly
+2. derive `tests/fixtures/bam/valid/tiny.valid.cram.explicit_ref.source.bam`
+   from the source SAM
+3. derive `tests/fixtures/cram/valid/tiny.valid.cram.explicit_ref.cram` from
+   the same SAM or BAM with the explicit FASTA
+4. verify that the CRAM decodes successfully when the explicit FASTA is
+   supplied
+5. verify that the same CRAM is expected to fail under `consume
+   --reference-policy strict` when no `--reference` is supplied
+
+If exact byte-for-byte CRAM reproducibility varies by tool version, document
+that explicitly. In that case the governed provenance root remains the source
+SAM plus source FASTA, and regenerated binary artifacts should be reviewed with
+that limitation in mind.
+
 ## What Should Be Checked In
 
 Preferred first step:

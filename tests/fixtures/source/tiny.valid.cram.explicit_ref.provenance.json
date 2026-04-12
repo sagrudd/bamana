@@ -1,0 +1,22 @@
+{
+  "fixture_id": "tiny.valid.cram.explicit_ref",
+  "source_sam": "tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam",
+  "reference_fasta": "tests/fixtures/source/tiny.ref.primary.fasta",
+  "derived_bam": "tests/fixtures/bam/valid/tiny.valid.cram.explicit_ref.source.bam",
+  "derived_cram": "tests/fixtures/cram/valid/tiny.valid.cram.explicit_ref.cram",
+  "purpose": [
+    "explicit-reference consume success",
+    "strict missing-reference consume failure",
+    "future compatible BAM or SAM alignment-mode consume coverage"
+  ],
+  "generation_notes": [
+    "The SAM and FASTA are the provenance root.",
+    "The CRAM is expected to require the explicit FASTA under strict reference policy.",
+    "The same CRAM should be used for both explicit-reference success and missing-reference failure scenarios."
+  ],
+  "requires_reference": true,
+  "review_notes": [
+    "Review the SAM header against the FASTA reference dictionary first.",
+    "Treat regenerated BAM and CRAM artifacts as derived outputs whose drift may reflect toolchain changes."
+  ]
+}

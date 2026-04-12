@@ -97,6 +97,17 @@ fn contract_docs_exist() {
         fixtures_dir().join("README.md"),
         fixtures_dir().join("manifest.json"),
         fixtures_dir().join("manifest.schema.json"),
+        fixtures_dir().join("source").join("README.md"),
+        fixtures_dir()
+            .join("source")
+            .join("tiny.valid.cram.explicit_ref.source.sam"),
+        fixtures_dir().join("source").join("tiny.ref.primary.fasta"),
+        fixtures_dir()
+            .join("source")
+            .join("tiny.valid.cram.explicit_ref.provenance.json"),
+        fixtures_dir()
+            .join("source")
+            .join("generate_tiny_cram_fixture.sh"),
         fixtures_dir().join("bam").join("README.md"),
         fixtures_dir().join("bam").join("valid").join("README.md"),
         fixtures_dir().join("bam").join("invalid").join("README.md"),
@@ -113,6 +124,7 @@ fn contract_docs_exist() {
             .join("README.md"),
         fixtures_dir().join("duplication").join("README.md"),
         fixtures_dir().join("cram").join("README.md"),
+        fixtures_dir().join("cram").join("valid").join("README.md"),
         fixtures_dir().join("consume").join("README.md"),
         fixtures_dir().join("forensics").join("README.md"),
         fixtures_dir().join("expected").join("README.md"),
@@ -196,6 +208,8 @@ fn fixture_manifest_includes_consume_fixture_plan() {
 
     for required_id in [
         "tiny.valid.sam",
+        "tiny.valid.cram.explicit_ref.source_sam",
+        "tiny.valid.cram.explicit_ref.source_bam",
         "tiny.ref.primary",
         "tiny.valid.cram.explicit_ref",
         "tiny.valid.cram.reference_required",

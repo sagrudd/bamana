@@ -20,6 +20,9 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.transforms.source` | Transform source BAM | Checksum baseline | `sort`, `explode`, `checksum` | success |
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |
+| `tiny.valid.cram.explicit_ref.source_sam` | Human-auditable provenance root for the first CRAM package | Future BAM and CRAM derivation review | `consume` | support artifact |
+| `tiny.ref.primary` | Explicit FASTA for strict-policy CRAM ingest | Reference-policy reporting and review | `consume` | support artifact |
+| `tiny.valid.cram.explicit_ref.source_bam` | Derived BAM companion from the CRAM provenance root | Future compatible BAM/CRAM ingest tests | `consume`, `identify`, `checksum` | planned success |
 | `tiny.valid.sam` | Alignment-mode SAM ingest | Identify/format coverage | `consume`, `identify` | success |
 | `tiny.valid.cram.explicit_ref` | Alignment-mode CRAM ingest with explicit FASTA | Canonical strict-policy CRAM success coverage | `consume`, `identify` | success |
 | `tiny.valid.cram.reference_required` | Strict-policy CRAM request without a reference | Required-reference failure coverage | `consume` | failure |

@@ -99,6 +99,15 @@ The preferred model is:
 * documented mutation scripts for invalid derivatives
 * expected JSON outputs captured from stable command runs
 
+For the first CRAM consume package, reviewers should check:
+
+* the plain-text source SAM before considering the derived CRAM
+* the plain-text synthetic FASTA that the CRAM is expected to require
+* the provenance metadata that links source SAM, FASTA, derived BAM, and
+  derived CRAM
+* whether any regenerated binary artifact changed because the source content
+  changed or because the external CRAM toolchain changed
+
 See:
 
 * [tests/fixtures/README.md](/Users/stephen/Projects/bamana/tests/fixtures/README.md)
