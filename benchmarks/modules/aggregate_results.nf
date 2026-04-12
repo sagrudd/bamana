@@ -2,24 +2,20 @@ nextflow.enable.dsl = 2
 
 process AGGREGATE_RESULTS {
     tag "aggregate-results"
-    publishDir "${params.output_dir}/summary", mode: 'copy'
+    publishDir "${params.output_dir}/aggregated", mode: 'copy'
 
     input:
-    path(result_tsvs)
+    path(result_jsons)
 
     output:
-    path("aggregated/benchmark_runs.tsv"), emit: runs_tsv
-    path("aggregated/benchmark_runs.json"), emit: runs_json
-    path("aggregated/benchmark_summary.tsv"), emit: summary_tsv
-    path("aggregated/benchmark_summary.json"), emit: summary_json
-    path("aggregated/benchmark_support_matrix.tsv"), emit: support_tsv
-    path("aggregated/benchmark_support_matrix.json"), emit: support_json
-    path("aggregated/benchmark_failures.tsv"), emit: failures_tsv
+    path("aggregated/tidy_results.csv"), emit: tidy_csv
+    path("aggregated/tidy_summary.csv"), emit: summary_csv
 
     script:
     """
     set -euo pipefail
     mkdir -p aggregated
-    Rscript "${projectDir}/R/aggregate_results.R" --input-dir . --outdir aggregated
+    cp ${result_jsons} .
+    Rscript "${projectDir}/R/aggregate_results.R" --input-dir . --output-dir aggregated
     """
 }

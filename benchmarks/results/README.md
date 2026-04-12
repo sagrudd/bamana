@@ -7,11 +7,11 @@ Expected subdirectories:
 
 * `input_metadata/`: per-input size and record-count metadata
 * `derived_inputs/`: reusable subsampled or otherwise materialized scenario inputs when retention is enabled
-* `raw/`: one TSV and one JSON per tool/scenario/replicate attempt
+* `raw/`: one structured JSON result per tool/scenario/replicate attempt, plus any wrapper-side compatibility artifacts
 * `logs/`: wrapper and runtime command logs
 * `metadata/`: wrapper planning JSON and raw result inventory files
-* `summary/`: aggregated run tables and support matrices
-* `figures/`: publication-ready PDF and PNG plots
+* `aggregated/`: tidy per-run CSV, grouped summaries, and support matrices
+* `plots/`: benchmark figures such as the first wall-time comparison
 
 Per-run rows should preserve both source and staged provenance, including:
 
@@ -47,6 +47,17 @@ Design rule:
 * failed rows are not unsupported
 * successful rows alone drive performance summaries
 * unsupported and failed rows remain visible for support and reliability analysis
+
+First analysis slice:
+
+* [../R/aggregate_results.R](/Users/stephen/Projects/bamana/benchmarks/R/aggregate_results.R)
+  reads `raw/*.result.json` and writes:
+  * `aggregated/tidy_results.csv`
+  * `aggregated/tidy_summary.csv`
+* [../R/plot_benchmarks.R](/Users/stephen/Projects/bamana/benchmarks/R/plot_benchmarks.R)
+  reads the aggregated CSVs and writes:
+  * `plots/wall_time_by_tool.png`
+  * `plots/wall_time_by_tool.pdf`
 
 This directory is tracked for documentation and schema only. Large generated
 benchmark outputs should not be committed.

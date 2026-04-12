@@ -195,36 +195,31 @@ The benchmark result layer has two levels:
 * raw structured per-run JSON records
 * tidy flat per-run rows and grouped summaries for aggregation and plotting
 
-Per-run outputs include:
+Per-run execution outputs include:
 
-* `*.result.tsv`
 * `*.result.json`
 
-Aggregated outputs include:
+The first aggregation slice writes:
 
-* `benchmark_runs.tsv`
-* `benchmark_runs.json`
-* `benchmark_summary.tsv`
-* `benchmark_summary.json`
-* `benchmark_support_matrix.tsv`
-* `benchmark_failures.tsv`
-* `support_matrix.csv`
-* `support_summary.csv`
+* `aggregated/tidy_results.csv`
+* `aggregated/tidy_summary.csv`
+* `aggregated/support_matrix.csv`
+* `aggregated/support_summary.csv`
 
 The minimal execution slice always writes raw execution artifacts first:
 
-* `${output_dir}/raw/`: one `*.result.json` and one `*.result.tsv` per attempt
+* `${output_dir}/raw/`: one `*.result.json` per attempt
 * `${output_dir}/logs/`: command logs and runtime stderr/stdout logs when produced
 * `${output_dir}/metadata/`: wrapper planning JSON and raw-result inventory files
+* `${output_dir}/aggregated/`: tidy per-run CSV and grouped summary CSV
+* `${output_dir}/plots/`: benchmark figures such as `wall_time_by_tool.png`
 
-Publication-ready figures include:
+The first plotting slice intentionally focuses on one honest figure:
 
-* wall time by tool and scenario
-* throughput by tool and scenario
-* memory by tool and scenario
-* replicate variability plots
-* support-status heatmaps
-* support-matrix capability tables
+* wall time by tool and scenario, using successful measured runs only
+
+Later layers can extend this with throughput, memory, variability, and richer
+publication reporting once the raw-result-first path is stable.
 
 Build the capability-aware support layer with:
 
@@ -253,12 +248,20 @@ The `tool`, `tool_version`, and `workflow_variant` fields are governed by the
 tool registry and wrapper contract so that publication figures can be traced
 back to an explicit comparator path rather than an implicit Nextflow branch.
 
+The first aggregation and plotting slice is governed by:
+
+* [R/aggregate_results.R](/Users/stephen/Projects/bamana/benchmarks/R/aggregate_results.R)
+* [R/plot_benchmarks.R](/Users/stephen/Projects/bamana/benchmarks/R/plot_benchmarks.R)
+* [results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md)
+
 ## Quick Start With Your Own BAM or FASTQ.GZ Inputs
 
 1. Copy [inputs/example_manifest.json](/Users/stephen/Projects/bamana/benchmarks/inputs/example_manifest.json) and edit the dataset paths, ids, index paths, and reference context for your environment.
 2. Copy one of the files under [params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples) and edit `input_manifest`, `dataset_ids`, `output_dir`, and any tool or scenario selection.
 3. Validate the manifest locally with `python bin/validate_inputs.py --manifest /abs/path/to/your-manifest.json`.
 4. Run Nextflow with `-params-file /abs/path/to/your-params.json`.
+5. Aggregate the raw result JSON into tidy CSV outputs.
+6. Plot the first wall-time figure from successful measured runs.
 
 ## Running Locally
 
@@ -293,6 +296,25 @@ Minimal first-slice recommendation:
 * inspect `${output_dir}/raw` before attempting aggregation
 * inspect `${output_dir}/metadata/raw_result_inventory.tsv` to confirm which
   attempts were emitted
+
+After the run completes, build the first analysis outputs:
+
+```bash
+Rscript benchmarks/R/aggregate_results.R \
+  --input-dir /abs/path/to/results/raw \
+  --output-dir /abs/path/to/results/aggregated
+
+Rscript benchmarks/R/plot_benchmarks.R \
+  --tidy-csv /abs/path/to/results/aggregated/tidy_results.csv \
+  --summary-csv /abs/path/to/results/aggregated/tidy_summary.csv \
+  --output-dir /abs/path/to/results/plots
+```
+
+Then inspect:
+
+* `/abs/path/to/results/aggregated/tidy_results.csv`
+* `/abs/path/to/results/aggregated/tidy_summary.csv`
+* `/abs/path/to/results/plots/wall_time_by_tool.png`
 
 Direct path parameters remain available for ad hoc runs:
 
@@ -329,7 +351,6 @@ Per attempted run, the pipeline records:
 * wrapper planning JSON
 * command provenance
 * raw benchmark result JSON
-* raw benchmark result TSV
 
 The raw result inventory is written under `${output_dir}/metadata` so later
 aggregation and support-matrix tooling can discover the run set without

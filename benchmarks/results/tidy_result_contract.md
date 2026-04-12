@@ -2,13 +2,16 @@
 
 ## Purpose
 
-This document defines the flat, aggregation-ready row contract used between the
-benchmark wrapper layer and the R aggregation layer.
+This document defines the flat, aggregation-ready row contract used between:
+
+* raw benchmark result JSON emitted by the wrapper layer
+* the R aggregation layer
+* later plotting and support-matrix reporting
 
 One raw benchmark attempt maps to one tidy result row.
 
-The tidy row is currently emitted as one `*.result.tsv` file per run and is
-validated conceptually by
+The tidy row is derived during aggregation from
+`results/raw/*.result.json` and is validated conceptually by
 [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json).
 
 ## Raw Versus Tidy
@@ -20,16 +23,28 @@ There are two benchmark result levels:
 * tidy flat rows: governed by this document and
   [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json)
 
-The raw JSON preserves nested execution context.
-
-The tidy row flattens that context into plotting-friendly columns.
+The raw JSON preserves nested execution context. The tidy row flattens that
+context into plotting-friendly columns.
 
 The canonical source for `tool`, `tool_version`, and `workflow_variant`
-semantics is now the benchmark tool-wrapper layer:
+semantics is the benchmark tool-wrapper layer:
 
-* [benchmarks/tools/tool_wrapper_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/tool_wrapper_contract.md)
-* [benchmarks/tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
-* [benchmarks/tools/workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md)
+* [../tools/tool_wrapper_contract.md](/Users/stephen/Projects/bamana/benchmarks/tools/tool_wrapper_contract.md)
+* [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json)
+* [../tools/workflow_variant_matrix.md](/Users/stephen/Projects/bamana/benchmarks/tools/workflow_variant_matrix.md)
+
+## Aggregation Flow
+
+The first analysis slice follows this path:
+
+1. wrappers emit one raw `*.result.json` file per attempted run
+2. [../R/aggregate_results.R](/Users/stephen/Projects/bamana/benchmarks/R/aggregate_results.R)
+   reads those raw JSON records
+3. each raw record becomes one tidy row in `tidy_results.csv`
+4. successful measured rows contribute to grouped performance summaries in
+   `tidy_summary.csv`
+5. [../R/plot_benchmarks.R](/Users/stephen/Projects/bamana/benchmarks/R/plot_benchmarks.R)
+   uses the tidy outputs to generate the first wall-time figure
 
 ## Required Columns
 
@@ -48,7 +63,6 @@ Required tidy columns:
 * `staged_input_id`
 * `replicate`
 * `warmup`
-* `subsample_enabled`
 * `subsample_mode`
 * `subsample_fraction`
 * `subsample_seed`
@@ -73,11 +87,23 @@ Required tidy columns:
 Additional retained columns are allowed when they remain stable and useful for
 interpretation, for example:
 
+* `source_input_path`
+* `source_category`
+* `staged_input_path`
+* `input_type`
+* `mapping_state`
+* `input_basename`
+* `expected_sort_order`
+* `has_index`
+* `reference_context`
+* `subsample_enabled`
 * `semantic_equivalence`
 * `support_status`
-* `mapping_state`
-* `expected_sort_order`
+* `staging_realization`
+* `scenario_materialization`
 * `storage_context`
+* `container_image`
+* `command_line`
 
 ## Column Semantics
 
@@ -99,9 +125,9 @@ interpretation, for example:
 
 * `replicate`: replicate index
 * `warmup`: `true` for warmup runs, `false` for measured runs
-* `subsample_enabled`: whether subsampling semantics are part of the scenario
-* `subsample_mode`: `deterministic` or `random`
-* `subsample_fraction`: requested fraction
+* `subsample_mode`: `deterministic` or `random` when subsampling is part of
+  the scenario
+* `subsample_fraction`: requested fraction when relevant
 * `subsample_seed`: seed used when relevant
 
 ### Staging
@@ -156,21 +182,7 @@ Failed rows remain in the tidy dataset with:
 Successful rows should populate the main performance fields unless the metric is
 genuinely unavailable.
 
-## Aggregation Rules
-
-### One Raw Result to One Tidy Row
-
-Each raw result JSON should map to one tidy row.
-
-### Throughput
-
-Throughput may be computed by the wrapper or by the R aggregation layer. The
-contract requires the tidy dataset consumed by plotting to expose:
-
-* `throughput_records_per_sec`
-* `throughput_bytes_per_sec`
-
-### Summary Tables
+## Summary Rules
 
 Grouped summaries are expected to aggregate by combinations such as:
 

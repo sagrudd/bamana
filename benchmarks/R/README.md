@@ -1,97 +1,127 @@
 # Benchmark R Layer
 
-This directory contains the aggregation and plotting layer for benchmark
-results.
+This directory contains the first analysis layer for the Bamana benchmark
+framework. The current slice is intentionally simple:
+
+1. aggregate raw per-run result JSON into tidy CSV outputs
+2. plot a first wall-time comparison figure from successful measured runs
+3. keep unsupported and failed runs visible in the tidy data
 
 ## Input Expectations
 
-The R scripts currently consume the tidy flat per-run TSV outputs emitted by
-the benchmark wrapper layer.
+The analysis layer is now raw-result-first.
 
 Primary contract files:
 
-* [../results/result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json): structured raw per-run JSON contract
-* [../results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy row contract
-* [../results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): column-level semantics and aggregation rules
-* [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical tool and workflow variant ids used in tidy rows
+* [../results/result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json): structured raw per-run JSON contract emitted by the execution layer
+* [../results/benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy row contract produced during aggregation
+* [../results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): column-level semantics and grouping rules
+* [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical tool and workflow variant ids used by support reporting
 
-## What `aggregate_results.R` Reads
+## What `aggregate_results.R` Does
 
 `aggregate_results.R` reads:
 
-* one `*.result.tsv` file per attempted benchmark run
+* one `*.result.json` file per attempted benchmark run, typically from
+  `results/raw/`
 
-Each TSV row represents one attempted run and includes:
+For each raw result JSON it:
 
-* identity fields such as `run_id`, `scenario`, `tool`, and `workflow_variant`
-* input provenance fields such as `source_input_id` and `staged_input_id`
-* status fields such as `status`, `success`, `unsupported`, and `failed`
-* timing and memory fields where available
-* throughput fields or enough information to derive them
+* parses the nested execution record
+* flattens it into one tidy row
+* preserves `success`, `unsupported`, and `failed` status semantics
+* derives throughput fields when they are not already present but sufficient
+  inputs exist
 
-`build_support_matrix.R` reads:
+It writes:
 
-* aggregated per-run tidy results such as `benchmark_runs.tsv`
-* the benchmark tool registry
+* `results/aggregated/tidy_results.csv`
+* `results/aggregated/tidy_summary.csv`
 
-It then writes:
+The tidy dataset keeps all attempted runs visible. The grouped summary keeps
+all run counts, but performance metrics such as median wall time are computed
+from successful measured runs only.
 
-* `support_matrix.csv`
-* `support_summary.csv`
-* optional `support_matrix.png` and `support_matrix.pdf`
+## What `plot_benchmarks.R` Does
+
+`plot_benchmarks.R` reads:
+
+* `results/aggregated/tidy_results.csv`
+* `results/aggregated/tidy_summary.csv`
+
+It writes:
+
+* `results/plots/wall_time_by_tool.png`
+* `results/plots/wall_time_by_tool.pdf`
+
+The first figure is intentionally narrow:
+
+* x-axis: tool
+* y-axis: wall time in seconds
+* facets: scenario
+* points: successful measured replicates
+* black diamonds: grouped median wall time
+
+This figure does not attempt to show unsupported or failed runs as timing
+results. Those remain visible in the tidy data and support summaries.
 
 ## Unsupported and Failed Runs
 
-The R layer must preserve the difference between:
+Hard rules:
 
-* `status = success`
-* `status = unsupported`
-* `status = failed`
+* unsupported rows remain in `tidy_results.csv`
+* failed rows remain in `tidy_results.csv`
+* only successful measured runs contribute to wall-time medians and the first
+  wall-time figure
 
-Rules:
+Use the support matrix layer for capability interpretation:
 
-* unsupported rows remain in the tidy dataset for support matrices
-* failed rows remain in the tidy dataset for reliability analysis
-* only successful measured runs should contribute to median runtime and
-  throughput summaries
+* [build_support_matrix.R](/Users/stephen/Projects/bamana/benchmarks/R/build_support_matrix.R)
+* [../results/support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md)
 
-## Aggregated Outputs
+## Quick Start
 
-The aggregation script writes:
+Assuming the minimal Nextflow benchmark slice has already produced raw result
+JSON under `results/raw/`:
 
-* `benchmark_runs.tsv` and `benchmark_runs.json`
-* `benchmark_summary.tsv` and `benchmark_summary.json`
-* `benchmark_support_matrix.tsv` and `benchmark_support_matrix.json`
-* `benchmark_failures.tsv`
+1. Aggregate raw results:
 
-The support-matrix script writes a capability-aware layer that keeps intended
-support and observed benchmark outcome separate:
+```bash
+Rscript /Users/stephen/Projects/bamana/benchmarks/R/aggregate_results.R \
+  --input-dir /path/to/results/raw \
+  --output-dir /path/to/results/aggregated
+```
 
-* `support_matrix.csv`
-* `support_summary.csv`
-* optional rendered support-matrix figures
+2. Plot the first wall-time figure:
 
-`benchmark_summary.*` should aggregate successful measured runs only for
-performance metrics, while still reporting:
+```bash
+Rscript /Users/stephen/Projects/bamana/benchmarks/R/plot_benchmarks.R \
+  --tidy-csv /path/to/results/aggregated/tidy_results.csv \
+  --summary-csv /path/to/results/aggregated/tidy_summary.csv \
+  --output-dir /path/to/results/plots
+```
 
-* `n_runs`
-* `n_success`
-* `n_failed`
-* `n_unsupported`
-* `n_skipped`
+3. Build the capability-aware support matrix if needed:
 
-## Plotting Expectations
+```bash
+Rscript /Users/stephen/Projects/bamana/benchmarks/R/build_support_matrix.R \
+  --runs-csv /path/to/results/aggregated/tidy_results.csv \
+  --outdir /path/to/results/aggregated
+```
 
-`plot_benchmarks.R` assumes:
+4. Inspect:
 
-* success-only rows drive wall-time and performance plots
-* support matrices include unsupported and failed rows
-* column names stay stable and snake_case
+* `results/aggregated/tidy_results.csv`
+* `results/aggregated/tidy_summary.csv`
+* `results/plots/wall_time_by_tool.png`
+* `results/aggregated/support_matrix.csv`
 
-If the tidy result contract changes, review:
+## Review Rule
 
-* `aggregate_results.R`
-* `build_support_matrix.R`
-* `plot_benchmarks.R`
+If the tidy column contract changes, review these files together:
+
+* [aggregate_results.R](/Users/stephen/Projects/bamana/benchmarks/R/aggregate_results.R)
+* [plot_benchmarks.R](/Users/stephen/Projects/bamana/benchmarks/R/plot_benchmarks.R)
+* [build_support_matrix.R](/Users/stephen/Projects/bamana/benchmarks/R/build_support_matrix.R)
 * [../results/tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md)
 * [../results/support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md)

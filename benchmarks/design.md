@@ -335,22 +335,29 @@ Contract rule:
 * contract changes should update the wrapper, aggregation script, plotting
   script, and example result artifacts together
 
-## 9. Publication Outputs
+## 9. Aggregation and Plotting Outputs
 
 The R layer generates:
 
-* per-run tidy TSV and JSON
-* aggregated summary TSV and JSON
-* support-matrix TSV and JSON
-* publication-ready PDF and PNG figures
+* `aggregated/tidy_results.csv` derived from raw `*.result.json`
+* `aggregated/tidy_summary.csv` grouped from successful measured runs
+* support-matrix CSV outputs
+* benchmark figures under `plots/`
 
-The initial figures include:
+The first analysis slice is intentionally narrow. It currently produces:
 
-* wall time by tool and scenario
-* throughput by tool and scenario
-* memory by tool and scenario
-* replicate variability
-* support-status heatmap
+* one wall-time-by-tool figure faceted by scenario
+* successful measured replicate points
+* grouped median markers
+
+Interpretation rules:
+
+* raw JSON remains the source of truth for one attempted run
+* tidy rows keep successful, unsupported, and failed runs visible
+* success-only performance summaries must not silently erase failed or
+  unsupported attempts from the underlying dataset
+* the first wall-time figure excludes unsupported and failed rows from timing
+  display, but those rows remain visible in tidy data and support summaries
 
 ## 9.1 Why The Support Matrix Exists
 

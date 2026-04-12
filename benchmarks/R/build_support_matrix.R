@@ -35,7 +35,7 @@ default_registry <- normalizePath(
   mustWork = FALSE
 )
 
-runs_path <- arg_value("--runs-tsv", "aggregated/benchmark_runs.tsv")
+runs_path <- arg_value("--runs-csv", arg_value("--runs-tsv", "aggregated/tidy_results.csv"))
 tool_registry_path <- arg_value("--tool-registry", default_registry)
 outdir <- arg_value("--outdir", "aggregated")
 render_plot <- arg_value("--render-plot", "true")

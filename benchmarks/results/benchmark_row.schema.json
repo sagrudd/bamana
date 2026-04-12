@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/benchmarks/results/benchmark_row.schema.json",
   "title": "Bamana Benchmark Tidy Result Row",
-  "description": "Flat, aggregation-ready tidy row contract emitted per benchmark attempt and consumed by the R aggregation layer.",
+  "description": "Flat, aggregation-ready tidy row contract derived from raw per-run benchmark JSON and consumed by the R aggregation and plotting layer.",
   "x-bamana-benchmark-contract-version": "1.0.0",
   "type": "object",
   "additionalProperties": false,
