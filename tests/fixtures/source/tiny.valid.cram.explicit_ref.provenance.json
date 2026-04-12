@@ -2,21 +2,32 @@
   "fixture_id": "tiny.valid.cram.explicit_ref",
   "source_sam": "tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam",
   "reference_fasta": "tests/fixtures/source/tiny.ref.primary.fasta",
-  "derived_bam": "tests/fixtures/bam/valid/tiny.valid.cram.explicit_ref.source.bam",
-  "derived_cram": "tests/fixtures/cram/valid/tiny.valid.cram.explicit_ref.cram",
+  "planned_derived_bam": "tests/fixtures/bam/valid/tiny.valid.cram.explicit_ref.source.bam",
+  "planned_derived_cram": "tests/fixtures/cram/valid/tiny.valid.cram.explicit_ref.cram",
   "purpose": [
     "explicit-reference consume success",
     "strict missing-reference consume failure",
     "future compatible BAM or SAM alignment-mode consume coverage"
   ],
+  "supports_commands": [
+    "consume"
+  ],
   "generation_notes": [
     "The SAM and FASTA are the provenance root.",
-    "The CRAM is expected to require the explicit FASTA under strict reference policy.",
-    "The same CRAM should be used for both explicit-reference success and missing-reference failure scenarios."
+    "The source package contains three mapped single-end reads and one unmapped read against two synthetic references.",
+    "The planned CRAM is expected to require the explicit FASTA under strict reference policy.",
+    "The same planned CRAM should be used for both explicit-reference success and missing-reference failure scenarios."
   ],
   "requires_reference": true,
+  "reference_policy_notes": [
+    "Strict consume tests should provide tests/fixtures/source/tiny.ref.primary.fasta explicitly.",
+    "Missing-reference failure is tested by withholding the FASTA, not by altering the CRAM fixture."
+  ],
+  "generation_status": "source_present_derived_planned",
   "review_notes": [
+    "Review the synthetic FASTA lengths and names against the SAM @SQ lines first.",
     "Review the SAM header against the FASTA reference dictionary first.",
+    "Confirm that mapped read sequences match the intended reference spans and CIGAR lengths.",
     "Treat regenerated BAM and CRAM artifacts as derived outputs whose drift may reflect toolchain changes."
   ]
 }

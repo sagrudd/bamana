@@ -34,3 +34,8 @@ spec examples:
 For the first provenance package, the CRAM success and strict missing-reference
 failure cases should be anchored by the same derived CRAM plus the committed
 source FASTA from `tests/fixtures/source/`.
+
+Concrete placeholder files now reserved for that package:
+
+* [consume.tiny.valid.cram.explicit_ref.success.json](/Users/stephen/Projects/bamana/tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.success.json)
+* [consume.tiny.valid.cram.explicit_ref.reference_required.failure.json](/Users/stephen/Projects/bamana/tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.reference_required.failure.json)

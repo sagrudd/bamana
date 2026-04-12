@@ -1,8 +1,8 @@
 @HD	VN:1.6	SO:coordinate
-@SQ	SN:refA	LN:32
-@SQ	SN:refB	LN:24
+@SQ	SN:refA	LN:96
+@SQ	SN:refB	LN:72
 @PG	ID:fixture_source	PN:bamana_fixture	VN:0.1.0	CL:synthetic_cram_provenance_package
-read001	0	refA	1	60	8M	*	0	0	ACGTACGT	FFFFFFFF
-read002	0	refA	9	50	8M	*	0	0	TGCATGCA	HHHHHHHH
-read003	0	refB	5	40	6M	*	0	0	GATTAC	IIIIII
-read004	4	*	0	0	*	*	0	0	NNNNN	!!!!!
+read001	0	refA	1	60	12M	*	0	0	ACGTACGTGGCA	FFFFFFFFFFFF
+read002	0	refA	13	50	12M	*	0	0	TTAACCGGTTAA	HHHHHHHHHHHH
+read003	0	refB	13	45	12M	*	0	0	GCCAATTCGGAA	IIIIIIIIIIII
+read004	4	*	0	0	*	*	0	0	CCAATTGG	!!!!!!!!

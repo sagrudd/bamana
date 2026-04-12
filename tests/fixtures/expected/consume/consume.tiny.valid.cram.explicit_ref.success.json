@@ -1,0 +1,7 @@
+{
+  "_status": "placeholder",
+  "_fixture_id": "tiny.valid.cram.explicit_ref",
+  "_scenario": "explicit_reference_success",
+  "_command": "consume",
+  "_note": "Reserved golden output for the future executable consume success case using the derived CRAM and tests/fixtures/source/tiny.ref.primary.fasta under --reference-policy strict."
+}

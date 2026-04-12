@@ -1,0 +1,8 @@
+{
+  "_status": "placeholder",
+  "_fixture_id": "tiny.valid.cram.explicit_ref",
+  "_scenario": "strict_missing_reference_failure",
+  "_command": "consume",
+  "_expected_error_code": "reference_required",
+  "_note": "Reserved golden output for the future executable consume failure case when the same derived CRAM is used without --reference under --reference-policy strict."
+}

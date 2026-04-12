@@ -174,6 +174,9 @@ The first real CRAM package should be anchored by committed source files:
 * `tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam`
 * `tests/fixtures/source/tiny.ref.primary.fasta`
 
+These files are now concrete repository content and form the authoritative
+provenance root for the first explicit-reference CRAM fixture package.
+
 Recommended deterministic derivation:
 
 1. validate that the SAM `@SQ` dictionary matches the FASTA exactly
@@ -190,6 +193,12 @@ If exact byte-for-byte CRAM reproducibility varies by tool version, document
 that explicitly. In that case the governed provenance root remains the source
 SAM plus source FASTA, and regenerated binary artifacts should be reviewed with
 that limitation in mind.
+
+The current source package is intentionally simple:
+
+* `refA` and `refB` are synthetic, repository-local references
+* the SAM contains three mapped reads and one unmapped read
+* mapped reads use simple `12M` CIGARs and are easy to verify against the FASTA
 
 ## What Should Be Checked In
 

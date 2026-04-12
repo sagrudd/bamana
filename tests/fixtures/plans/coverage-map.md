@@ -141,6 +141,11 @@ Those source files should support:
 * future compatibility coverage by pairing the derived CRAM with a BAM derived
   from the same source SAM
 
+Reserved future consume golden outputs for this package:
+
+* `tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.success.json`
+* `tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.reference_required.failure.json`
+
 ## Duplication And Forensics Trio
 
 The fixture plan also reserves a focused build-out path for:

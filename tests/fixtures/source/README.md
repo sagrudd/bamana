@@ -18,12 +18,20 @@ The source-of-truth files are:
 
 * [tiny.valid.cram.explicit_ref.source.sam](/Users/stephen/Projects/bamana/tests/fixtures/source/tiny.valid.cram.explicit_ref.source.sam)
 * [tiny.ref.primary.fasta](/Users/stephen/Projects/bamana/tests/fixtures/source/tiny.ref.primary.fasta)
+* [tiny.valid.cram.explicit_ref.provenance.json](/Users/stephen/Projects/bamana/tests/fixtures/source/tiny.valid.cram.explicit_ref.provenance.json)
 
 These files are intentionally tiny, synthetic, and repository-local.
 
 They were created specifically for deterministic contract testing. The SAM and
 FASTA are the auditable provenance root. Reviewers should read these files
-before reviewing any regenerated BAM or CRAM artifact.
+before reviewing any regenerated BAM or CRAM artifact, and use the provenance
+JSON as the machine-readable summary of how the package is intended to evolve.
+
+The current concrete source package contains:
+
+* two synthetic references, `refA` (96 bases) and `refB` (72 bases)
+* three mapped single-end reads with simple `12M` CIGARs
+* one unmapped read with straightforward unmapped SAM semantics
 
 ## Derived Artifacts
 
@@ -52,6 +60,8 @@ policy, not by changing the fixture itself.
 When this package changes, reviewers should check:
 
 * whether the SAM header still matches the FASTA reference dictionary exactly
+* whether the reference lengths and read placements are still easy to verify by
+  eye
 * whether the aligned records are still tiny, deterministic, and easy to audit
 * whether the derived BAM/CRAM paths and manifest relationships are still
   accurate
