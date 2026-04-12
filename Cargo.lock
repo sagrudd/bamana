@@ -62,17 +62,7 @@ dependencies = [
 name = "bamana"
 version = "0.1.0"
 dependencies = [
- "bamana-core",
  "clap",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "bamana-core"
-version = "0.1.0"
-dependencies = [
  "flate2",
  "serde",
  "serde_json",
