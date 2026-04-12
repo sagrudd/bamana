@@ -11,6 +11,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use commands::{
     check_eof::{CheckEofRequest, CheckEofResponse},
+    check_sort::{CheckSortPayload, CheckSortRequest},
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     verify::{VerifyRequest, VerifyResponse},
@@ -47,6 +48,17 @@ fn main() -> ExitCode {
             let result = commands::header::run(HeaderRequest { bam: bam.clone() });
             let response: CommandResponse<HeaderResponse> =
                 CommandResponse::from_result("header", Some(bam.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::CheckSort(args) => {
+            let bam = args.bam;
+            let result = commands::check_sort::run(CheckSortRequest {
+                bam: bam.clone(),
+                sample_records: args.sample_records,
+                strict: args.strict,
+            });
+            let response: CommandResponse<CheckSortPayload> =
+                CommandResponse::from_result("check_sort", Some(bam.as_path()), result);
             emit_response(&response, cli.global.json_pretty)
         }
     }

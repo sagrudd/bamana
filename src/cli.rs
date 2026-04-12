@@ -35,6 +35,9 @@ pub enum Commands {
     CheckEof(BamPathArgs),
     /// Parse the BAM header only.
     Header(BamPathArgs),
+    /// Assess declared and observed BAM sort characteristics.
+    #[command(name = "check_sort")]
+    CheckSort(CheckSortArgs),
 }
 
 #[derive(Debug, Args)]
@@ -48,4 +51,17 @@ pub struct BamPathArgs {
     /// BAM file to inspect.
     #[arg(long = "bam")]
     pub bam: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct CheckSortArgs {
+    /// BAM file to inspect.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Maximum number of alignment records to inspect in non-strict mode.
+    #[arg(long = "sample-records", default_value_t = 10_000)]
+    pub sample_records: usize,
+    /// Continue scanning beyond the sample window until EOF or a stronger conclusion is reached.
+    #[arg(long)]
+    pub strict: bool,
 }

@@ -128,10 +128,14 @@ struct SamSqRecord {
 
 pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppError> {
     let mut reader = BamReader::open(path)?;
+    parse_bam_header_from_reader(&mut reader)
+}
+
+pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayload, AppError> {
     let magic = reader.read_magic()?;
     if &magic != BAM_MAGIC {
         return Err(AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: "Missing BAM magic in decompressed stream.".to_string(),
         });
     }
@@ -139,14 +143,14 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
     let l_text = reader.read_i32_le()?;
     if l_text < 0 {
         return Err(AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: "BAM header text length was negative.".to_string(),
         });
     }
     let l_text = l_text as usize;
     if l_text > MAX_HEADER_TEXT_BYTES {
         return Err(AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: format!(
                 "BAM header text length {l_text} exceeds the current safety limit of {MAX_HEADER_TEXT_BYTES} bytes."
             ),
@@ -155,7 +159,7 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
 
     let raw_header_text = String::from_utf8(reader.read_exact_vec(l_text)?).map_err(|error| {
         AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: format!("BAM header text is not valid UTF-8: {error}"),
         }
     })?;
@@ -163,14 +167,14 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
     let n_ref = reader.read_i32_le()?;
     if n_ref < 0 {
         return Err(AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: "BAM reference count was negative.".to_string(),
         });
     }
     let n_ref = n_ref as usize;
     if n_ref > MAX_REFERENCE_COUNT {
         return Err(AppError::InvalidHeader {
-            path: path.to_path_buf(),
+            path: reader.path().to_path_buf(),
             detail: format!(
                 "BAM reference count {n_ref} exceeds the current safety limit of {MAX_REFERENCE_COUNT}."
             ),
@@ -182,14 +186,14 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
         let l_name = reader.read_i32_le()?;
         if l_name <= 0 {
             return Err(AppError::InvalidHeader {
-                path: path.to_path_buf(),
+                path: reader.path().to_path_buf(),
                 detail: "BAM reference name length was not positive.".to_string(),
             });
         }
         let l_name = l_name as usize;
         if l_name > MAX_REFERENCE_NAME_BYTES {
             return Err(AppError::InvalidHeader {
-                path: path.to_path_buf(),
+                path: reader.path().to_path_buf(),
                 detail: format!(
                     "BAM reference name length {l_name} exceeds the current safety limit of {MAX_REFERENCE_NAME_BYTES} bytes."
                 ),
@@ -199,14 +203,14 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
         let name_bytes = reader.read_exact_vec(l_name)?;
         let Some((&0, name_without_nul)) = name_bytes.split_last() else {
             return Err(AppError::InvalidHeader {
-                path: path.to_path_buf(),
+                path: reader.path().to_path_buf(),
                 detail: "BAM reference name was not NUL-terminated.".to_string(),
             });
         };
 
         let name = String::from_utf8(name_without_nul.to_vec()).map_err(|error| {
             AppError::InvalidHeader {
-                path: path.to_path_buf(),
+                path: reader.path().to_path_buf(),
                 detail: format!("BAM reference name is not valid UTF-8: {error}"),
             }
         })?;
@@ -214,7 +218,7 @@ pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppErro
         let l_ref = reader.read_i32_le()?;
         if l_ref < 0 {
             return Err(AppError::InvalidHeader {
-                path: path.to_path_buf(),
+                path: reader.path().to_path_buf(),
                 detail: "BAM reference length was negative.".to_string(),
             });
         }

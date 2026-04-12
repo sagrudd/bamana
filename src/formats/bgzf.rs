@@ -180,6 +180,14 @@ pub mod test_support {
     }
 
     pub fn build_bam_file_with_header(header_text: &str, references: &[(&str, u32)]) -> Vec<u8> {
+        build_bam_file_with_header_and_records(header_text, references, &[])
+    }
+
+    pub fn build_bam_file_with_header_and_records(
+        header_text: &str,
+        references: &[(&str, u32)],
+        records: &[Vec<u8>],
+    ) -> Vec<u8> {
         let mut payload = Vec::new();
         payload.extend_from_slice(b"BAM\x01");
         payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
@@ -194,9 +202,37 @@ pub mod test_support {
             payload.extend_from_slice(&(*length as i32).to_le_bytes());
         }
 
+        for record in records {
+            payload.extend_from_slice(record);
+        }
+
         let mut bytes = build_bgzf_member(&payload);
         bytes.extend_from_slice(&BGZF_EOF_MARKER);
         bytes
+    }
+
+    pub fn build_light_record(ref_id: i32, pos: i32, read_name: &str, flags: u16) -> Vec<u8> {
+        let mut variable = Vec::new();
+        variable.extend_from_slice(read_name.as_bytes());
+        variable.push(0);
+
+        let l_read_name = variable.len() as u32;
+        let block_size = 32 + variable.len();
+        let bin_mq_nl = l_read_name;
+        let flag_nc = (flags as u32) << 16;
+
+        let mut record = Vec::with_capacity(4 + block_size);
+        record.extend_from_slice(&(block_size as i32).to_le_bytes());
+        record.extend_from_slice(&ref_id.to_le_bytes());
+        record.extend_from_slice(&pos.to_le_bytes());
+        record.extend_from_slice(&bin_mq_nl.to_le_bytes());
+        record.extend_from_slice(&flag_nc.to_le_bytes());
+        record.extend_from_slice(&0_i32.to_le_bytes());
+        record.extend_from_slice(&(-1_i32).to_le_bytes());
+        record.extend_from_slice(&(-1_i32).to_le_bytes());
+        record.extend_from_slice(&0_i32.to_le_bytes());
+        record.extend_from_slice(&variable);
+        record
     }
 
     pub fn write_temp_file(name: &str, suffix: &str, bytes: &[u8]) -> PathBuf {
