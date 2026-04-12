@@ -1,28 +1,29 @@
 {
-  "manifest_version": "0.1.0",
-  "entries": [
+  "manifest_version": "1.0.0",
+  "inputs": [
     {
-      "id": "human_wgs_mapped_grch38",
-      "path": "/data/benchmarks/human_wgs_mapped_grch38.bam",
+      "id": "hg38_wgs_mapped",
+      "path": "/data/benchmarks/hg38_wgs.mapped.bam",
       "type": "mapped_bam",
-      "description": "Large coordinate-sorted mapped whole-genome BAM for mapped BAM chain benchmarking.",
+      "description": "Large mapped whole-genome BAM suitable for mapped BAM pipeline benchmarking.",
       "mapped_state": "mapped",
-      "expected_sort_order": "coordinate",
+      "compression": "bgzf",
       "has_index": true,
+      "index_path": "/data/benchmarks/hg38_wgs.mapped.bam.bai",
+      "expected_sort_order": "coordinate",
+      "reference_context": {
+        "build_label": "GRCh38 primary assembly",
+        "fasta_path": "/references/GRCh38/GRCh38.primary.fa",
+        "required_for_interpretation": true
+      },
+      "platform": "Illumina",
       "estimated_bytes": 128000000000,
       "estimated_records": 860000000,
-      "reference_context": "GRCh38 primary assembly",
       "source_owner": "benchmarking_team",
       "sensitivity_level": "controlled",
-      "human_genome_equivalent": true,
-      "platform": "Illumina",
-      "compression": "bgzf_bam",
-      "read_layout": "paired_end",
       "storage_context": "local_ssd",
-      "requires_local_storage": true,
-      "allow_copy": true,
-      "allow_symlink": true,
-      "allow_hardlink": true,
+      "human_genome_equivalent": true,
+      "read_layout": "paired_end",
       "scenario_materialization": "source_or_subsampled_bam",
       "reuse_materialized_inputs": true,
       "include_staging_in_timing": false,
@@ -31,31 +32,35 @@
         "prefer_local_scratch": true,
         "measure_staging_as_workflow": false
       },
-      "allowed_benchmark_scenarios": ["mapped_bam_chain"],
-      "notes": "Source data is read-only and should be staged before timing."
+      "allowed_benchmark_scenarios": [
+        "mapped_bam_pipeline",
+        "subsample_only"
+      ],
+      "notes": "Read-only source BAM. Use for mapped BAM pipeline or BAM-only subsample benchmarks."
     },
     {
-      "id": "human_wgs_unmapped",
-      "path": "/data/benchmarks/human_wgs_unmapped.bam",
+      "id": "hg38_wgs_unmapped",
+      "path": "/data/benchmarks/unmapped_reads.bam",
       "type": "unmapped_bam",
-      "description": "Large unmapped BAM for subsample-only benchmarking.",
+      "description": "Large unmapped BAM suitable for subsample-only or unmapped BAM pipeline benchmarking.",
       "mapped_state": "unmapped",
-      "expected_sort_order": "unspecified",
+      "compression": "bgzf",
       "has_index": false,
+      "index_path": null,
+      "expected_sort_order": "unsorted",
+      "reference_context": {
+        "build_label": "not_applicable",
+        "fasta_path": null,
+        "required_for_interpretation": false
+      },
+      "platform": "Illumina",
       "estimated_bytes": 92000000000,
       "estimated_records": 740000000,
-      "reference_context": "not_applicable",
       "source_owner": "benchmarking_team",
       "sensitivity_level": "controlled",
-      "human_genome_equivalent": true,
-      "platform": "Illumina",
-      "compression": "bgzf_bam",
-      "read_layout": "paired_end",
       "storage_context": "shared_filesystem",
-      "requires_local_storage": false,
-      "allow_copy": true,
-      "allow_symlink": true,
-      "allow_hardlink": false,
+      "human_genome_equivalent": true,
+      "read_layout": "paired_end",
       "scenario_materialization": "source_or_subsampled_bam",
       "reuse_materialized_inputs": true,
       "include_staging_in_timing": false,
@@ -64,31 +69,35 @@
         "prefer_local_scratch": false,
         "measure_staging_as_workflow": false
       },
-      "allowed_benchmark_scenarios": ["unmapped_bam_chain"],
-      "notes": "Use for reproducible subsample benchmarks without sort or index."
+      "allowed_benchmark_scenarios": [
+        "unmapped_bam_pipeline",
+        "subsample_only"
+      ],
+      "notes": "Read-only source BAM for unmapped benchmarking and reproducible subsampling runs."
     },
     {
-      "id": "human_ont_fastq_gz",
-      "path": "/data/benchmarks/human_ont.fastq.gz",
+      "id": "ont_reads_fastq_gz",
+      "path": "/data/benchmarks/reads.fastq.gz",
       "type": "fastq_gz",
-      "description": "Large gzipped FASTQ collection for ingestion, concatenation, and subsampling benchmarks.",
-      "mapped_state": "not_applicable",
-      "expected_sort_order": "not_applicable",
+      "description": "Large gzipped FASTQ collection suitable for consume, concatenation, and FASTQ subsampling comparisons.",
+      "mapped_state": "unknown",
+      "compression": "gzip",
       "has_index": false,
+      "index_path": null,
+      "expected_sort_order": "not_applicable",
+      "reference_context": {
+        "build_label": "not_applicable",
+        "fasta_path": null,
+        "required_for_interpretation": false
+      },
+      "platform": "ONT",
       "estimated_bytes": 64000000000,
       "estimated_records": 58000000,
-      "reference_context": "not_applicable",
       "source_owner": "benchmarking_team",
       "sensitivity_level": "controlled",
-      "human_genome_equivalent": true,
-      "platform": "ONT",
-      "compression": "gzip",
-      "read_layout": "single_end",
       "storage_context": "local_ssd",
-      "requires_local_storage": true,
-      "allow_copy": true,
-      "allow_symlink": true,
-      "allow_hardlink": true,
+      "human_genome_equivalent": true,
+      "read_layout": "single_end",
       "scenario_materialization": "source_or_subsampled_fastq_gz",
       "reuse_materialized_inputs": true,
       "include_staging_in_timing": false,
@@ -97,8 +106,11 @@
         "prefer_local_scratch": true,
         "measure_staging_as_workflow": false
       },
-      "allowed_benchmark_scenarios": ["fastq_ingest_chain"],
-      "notes": "Fastq source remains external; derived subsamples should be named deterministically by source id, fraction, seed, and mode."
+      "allowed_benchmark_scenarios": [
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ],
+      "notes": "Read-only FASTQ.GZ source. Derived subsamples should encode source id, fraction, seed, and mode in the filename."
     }
   ]
 }

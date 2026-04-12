@@ -8,7 +8,13 @@ framework.
 
 The repository does not commit whole-genome BAM or large FASTQ.GZ benchmark
 inputs. Instead, benchmark users supply those files locally and describe them
-through a manifest or direct Nextflow parameters.
+through a dataset-centric manifest plus a run-centric Nextflow params file.
+
+Manifest versus params:
+
+* manifest: what datasets exist and how they should be interpreted
+* params: which dataset ids, tools, scenarios, and execution settings apply to
+  one benchmark run
 
 ## Core Policy
 
@@ -69,7 +75,7 @@ Future categories are documented but not yet primary:
 Preferred benchmark practice is to supply a manifest file via:
 
 ```bash
-nextflow run main.nf --input_manifest /abs/path/to/benchmark-inputs.json
+nextflow run benchmarks/main.nf -params-file /abs/path/to/benchmark-run.json
 ```
 
 The manifest is the governed source of truth for:
@@ -85,8 +91,23 @@ The manifest is the governed source of truth for:
 * allowed benchmark scenarios
 * staging policy hints
 
+The params file is the governed source of truth for:
+
+* `dataset_ids`
+* `tools`
+* `scenarios`
+* `replicates`
+* `warmup_runs`
+* `subsample_fraction`
+* `subsample_seed`
+* `subsample_mode`
+* `output_dir`
+
 The schema is defined in
 [inputs/manifest.schema.json](/Users/stephen/Projects/bamana/benchmarks/inputs/manifest.schema.json).
+
+The run-parameter schema is defined in
+[params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json).
 
 ## Read-Only Source Rule
 

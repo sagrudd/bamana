@@ -16,6 +16,10 @@ The primary benchmark interpretation is:
 Staging is therefore excluded from the primary timing path unless a scenario
 explicitly opts into end-to-end operational timing.
 
+The params layer may override a manifest staging policy through
+`staging_override`, but the override should be used conservatively and recorded
+in run metadata.
+
 ## Supported Staging Modes
 
 The benchmark layer recognizes the following staging modes.
@@ -169,3 +173,12 @@ It is responsible for:
 Downstream timed tool processes consume the staged path and the staging
 metadata, and the benchmark result rows preserve both the source and staged
 identities.
+
+Dataset resolution flow:
+
+1. load `input_manifest`
+2. load `dataset_ids` from the params file
+3. filter the manifest to the selected dataset ids
+4. validate scenario compatibility through `allowed_benchmark_scenarios`
+5. apply manifest staging policy or `staging_override`
+6. emit staged input metadata for downstream timed processes

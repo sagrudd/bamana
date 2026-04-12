@@ -18,7 +18,7 @@ process RUN_SAMBAMBA_BENCHMARK {
     def notes = ''
     def command = 'true'
 
-    if (meta.scenario == 'mapped_bam_chain') {
+    if (meta.scenario == 'mapped_bam_pipeline') {
         outputTarget = "${meta.run_id}.sorted.bam"
         command = """\
 set -euo pipefail
@@ -27,17 +27,19 @@ sambamba sort -t ${meta.threads} -o "${outputTarget}" "${meta.run_id}.subsampled
 sambamba index -t ${meta.threads} "${outputTarget}"
 """
         notes = 'sambamba is included as an additional BAM-oriented comparator with a broadly comparable mapped BAM workflow.'
-    } else if (meta.scenario == 'unmapped_bam_chain') {
+    } else if (meta.scenario == 'unmapped_bam_pipeline' || meta.scenario == 'subsample_only') {
         outputTarget = "${meta.run_id}.subsampled.bam"
         command = """\
 set -euo pipefail
 sambamba view -t ${meta.threads} --subsampling-seed=${meta.subsample_seed} -s ${meta.subsample_fraction} -f bam -o "${outputTarget}" "${input_file}"
 """
-        notes = 'Unmapped BAM scenario is benchmarked as subsample only for sambamba as well.'
+        notes = meta.scenario == 'subsample_only'
+            ? 'sambamba subsample-only benchmarking uses the direct BAM subsampling path without sort or index.'
+            : 'Unmapped BAM scenario is benchmarked as subsample only for sambamba as well.'
     } else {
         supportStatus = 'unsupported'
         semanticEquivalence = 'unsupported'
-        notes = 'sambamba is not benchmarked for raw FASTQ.GZ ingestion in this first benchmark contract.'
+        notes = 'sambamba is not benchmarked for raw FASTQ.GZ consume workflows in this first benchmark contract.'
     }
 
     """

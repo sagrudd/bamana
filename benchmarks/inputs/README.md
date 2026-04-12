@@ -23,14 +23,14 @@ Untracked items:
 1. Place large benchmark source inputs outside the repository.
 2. Create a manifest describing them.
 3. Validate the manifest locally.
-4. Run Nextflow using `--input_manifest`.
+4. Create or copy a params JSON file for the run.
+5. Run Nextflow using `-params-file`.
 
 Example:
 
 ```bash
 python benchmarks/bin/validate_inputs.py --manifest benchmarks/inputs/example_manifest.json --skip-file-checks
-cd benchmarks
-nextflow run main.nf -profile local_ssd --input_manifest /abs/path/to/benchmark-inputs.json
+nextflow run benchmarks/main.nf -profile local_ssd -params-file /abs/path/to/benchmark-run.json
 ```
 
 ## Input Categories
@@ -53,6 +53,8 @@ Each manifest entry should provide:
 * an absolute `path`
 * a benchmark `type`
 * mapped-state context
+* compression
+* index path when present
 * expected sort order
 * index availability
 * staging policy hints
@@ -61,6 +63,17 @@ Each manifest entry should provide:
 
 The governing schema is
 [manifest.schema.json](/Users/stephen/Projects/bamana/benchmarks/inputs/manifest.schema.json).
+
+Ready-to-edit params examples live in
+[../params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples).
+
+Typical workflow:
+
+1. edit the manifest so `inputs` contains your datasets
+2. copy one of the example params JSON files
+3. point `input_manifest` at your edited manifest
+4. set `dataset_ids` to the datasets you want in this run
+5. set `scenarios`, `tools`, `replicates`, and `output_dir`
 
 ## Read-Only Rule
 

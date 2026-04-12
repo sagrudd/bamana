@@ -18,13 +18,15 @@ process RUN_SEQTK_BENCHMARK {
     def notes = ''
     def command = 'true'
 
-    if (meta.scenario == 'fastq_ingest_chain') {
+    if (meta.scenario == 'fastq_consume_pipeline' || meta.scenario == 'subsample_only') {
         outputTarget = "${meta.run_id}.sampled.fastq.gz"
         command = """\
 set -euo pipefail
 seqtk sample -s${meta.subsample_seed} "${input_file}" ${meta.subsample_fraction} | gzip -c > "${outputTarget}"
 """
-        notes = 'seqtk is included as a FASTQ subsampling baseline only; it does not normalize into BAM in this scenario.'
+        notes = meta.scenario == 'subsample_only'
+            ? 'seqtk is included as a FASTQ-only subsample baseline for the explicit subsample-only scenario.'
+            : 'seqtk is included as a FASTQ subsampling baseline only; it does not normalize into BAM in this scenario.'
     } else {
         supportStatus = 'unsupported'
         semanticEquivalence = 'unsupported'

@@ -21,7 +21,7 @@ process RUN_SAMTOOLS_BENCHMARK {
     def notes = ''
     def command = 'true'
 
-    if (meta.scenario == 'mapped_bam_chain') {
+    if (meta.scenario == 'mapped_bam_pipeline') {
         outputTarget = "${meta.run_id}.sorted.bam"
         command = """\
 set -euo pipefail
@@ -30,17 +30,19 @@ samtools sort -@ ${meta.threads} -o "${outputTarget}" "${meta.run_id}.subsampled
 samtools index -@ ${meta.threads} "${outputTarget}"
 """
         notes = 'samtools is the canonical BAM baseline and uses the natural subsample then sort then index order here.'
-    } else if (meta.scenario == 'unmapped_bam_chain') {
+    } else if (meta.scenario == 'unmapped_bam_pipeline' || meta.scenario == 'subsample_only') {
         outputTarget = "${meta.run_id}.subsampled.bam"
         command = """\
 set -euo pipefail
 samtools view -@ ${meta.threads} -s ${sampleArg} -b "${input_file}" -o "${outputTarget}"
 """
-        notes = 'Unmapped BAM scenario is benchmarked as subsample only because sort and index are not required for the first comparison.'
+        notes = meta.scenario == 'subsample_only'
+            ? 'samtools subsample-only benchmarking runs the direct BAM subsampling path without sort or index.'
+            : 'Unmapped BAM scenario is benchmarked as subsample only because sort and index are not required for the first comparison.'
     } else {
         supportStatus = 'unsupported'
         semanticEquivalence = 'unsupported'
-        notes = 'samtools is not benchmarked for raw FASTQ.GZ to BAM normalization in this first benchmark contract.'
+        notes = 'samtools is not benchmarked for raw FASTQ.GZ consume workflows in this first benchmark contract.'
     }
 
     """

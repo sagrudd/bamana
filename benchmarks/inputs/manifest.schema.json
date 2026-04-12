@@ -2,30 +2,76 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/benchmarks/inputs/manifest.schema.json",
   "title": "Bamana Benchmark Input Manifest",
+  "description": "Dataset-centric manifest describing large external benchmark inputs available to the Bamana benchmark workflow.",
+  "x-benchmark-schema-version": "1.0.0",
   "type": "object",
   "additionalProperties": false,
-  "required": ["manifest_version", "entries"],
+  "required": ["manifest_version", "inputs"],
   "properties": {
     "manifest_version": {
       "type": "string",
-      "const": "0.1.0"
+      "const": "1.0.0"
     },
-    "entries": {
+    "inputs": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/entry" }
+      "items": {
+        "$ref": "#/$defs/input"
+      }
     }
   },
   "$defs": {
     "scenario": {
       "type": "string",
-      "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
+      "enum": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ]
     },
     "stagingMode": {
       "type": "string",
-      "enum": ["direct", "copy", "hardlink", "symlink", "stream", "scratch_copy"]
+      "enum": ["direct", "copy", "hardlink", "symlink", "scratch_copy"]
     },
-    "entry": {
+    "compression": {
+      "type": "string",
+      "enum": ["bgzf", "gzip", "plain", "unknown"]
+    },
+    "mappedState": {
+      "type": "string",
+      "enum": ["mapped", "unmapped", "unknown"]
+    },
+    "sortOrder": {
+      "type": "string",
+      "enum": ["coordinate", "queryname", "unsorted", "unknown", "not_applicable"]
+    },
+    "referenceContext": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["build_label", "fasta_path", "required_for_interpretation"],
+          "properties": {
+            "build_label": { "type": "string" },
+            "fasta_path": { "type": ["string", "null"] },
+            "required_for_interpretation": { "type": "boolean" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "stagingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "$ref": "#/$defs/stagingMode" },
+        "prefer_local_scratch": { "type": ["boolean", "null"] },
+        "measure_staging_as_workflow": { "type": ["boolean", "null"] }
+      }
+    },
+    "input": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -34,15 +80,16 @@
         "type",
         "description",
         "mapped_state",
-        "expected_sort_order",
+        "compression",
         "has_index",
+        "index_path",
+        "expected_sort_order",
+        "reference_context",
+        "platform",
         "estimated_bytes",
         "estimated_records",
-        "reference_context",
-        "source_owner",
-        "sensitivity_level",
-        "staging_policy",
         "allowed_benchmark_scenarios",
+        "staging_policy",
         "notes"
       ],
       "properties": {
@@ -52,43 +99,25 @@
           "type": "string",
           "enum": ["mapped_bam", "unmapped_bam", "fastq_gz"]
         },
-        "description": { "type": "string" },
-        "mapped_state": {
-          "type": "string",
-          "enum": ["mapped", "unmapped", "not_applicable"]
-        },
-        "expected_sort_order": {
-          "type": "string",
-          "enum": ["coordinate", "queryname", "unspecified", "not_applicable"]
-        },
+        "description": { "type": "string", "minLength": 1 },
+        "mapped_state": { "$ref": "#/$defs/mappedState" },
+        "compression": { "$ref": "#/$defs/compression" },
         "has_index": { "type": "boolean" },
+        "index_path": { "type": ["string", "null"] },
+        "expected_sort_order": { "$ref": "#/$defs/sortOrder" },
+        "reference_context": { "$ref": "#/$defs/referenceContext" },
+        "platform": { "type": ["string", "null"] },
         "estimated_bytes": { "type": "integer", "minimum": 0 },
         "estimated_records": { "type": "integer", "minimum": 0 },
-        "reference_context": { "type": "string" },
-        "source_owner": { "type": "string" },
-        "sensitivity_level": { "type": "string" },
-        "human_genome_equivalent": { "type": ["boolean", "null"] },
-        "platform": { "type": ["string", "null"] },
-        "compression": { "type": ["string", "null"] },
-        "read_layout": { "type": ["string", "null"] },
+        "source_owner": { "type": ["string", "null"] },
+        "sensitivity_level": { "type": ["string", "null"] },
         "storage_context": { "type": ["string", "null"] },
-        "requires_local_storage": { "type": ["boolean", "null"] },
-        "allow_copy": { "type": ["boolean", "null"] },
-        "allow_symlink": { "type": ["boolean", "null"] },
-        "allow_hardlink": { "type": ["boolean", "null"] },
+        "human_genome_equivalent": { "type": ["boolean", "null"] },
+        "read_layout": { "type": ["string", "null"] },
         "scenario_materialization": { "type": ["string", "null"] },
         "reuse_materialized_inputs": { "type": ["boolean", "null"] },
         "include_staging_in_timing": { "type": ["boolean", "null"] },
-        "staging_policy": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["mode"],
-          "properties": {
-            "mode": { "$ref": "#/$defs/stagingMode" },
-            "prefer_local_scratch": { "type": ["boolean", "null"] },
-            "measure_staging_as_workflow": { "type": ["boolean", "null"] }
-          }
-        },
+        "staging_policy": { "$ref": "#/$defs/stagingPolicy" },
         "allowed_benchmark_scenarios": {
           "type": "array",
           "minItems": 1,

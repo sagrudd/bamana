@@ -11,8 +11,13 @@ from pathlib import Path
 
 
 ALLOWED_TYPES = {"mapped_bam", "unmapped_bam", "fastq_gz"}
-ALLOWED_SCENARIOS = {"mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"}
-ALLOWED_STAGING_MODES = {"direct", "copy", "hardlink", "symlink", "stream", "scratch_copy"}
+ALLOWED_SCENARIOS = {
+    "mapped_bam_pipeline",
+    "unmapped_bam_pipeline",
+    "fastq_consume_pipeline",
+    "subsample_only",
+}
+ALLOWED_STAGING_MODES = {"direct", "copy", "hardlink", "symlink", "scratch_copy"}
 
 
 def main() -> int:
@@ -35,9 +40,9 @@ def main() -> int:
         print(f"manifest is not valid JSON: {exc}", file=sys.stderr)
         return 2
 
-    entries = manifest.get("entries")
+    entries = manifest.get("inputs", manifest.get("entries"))
     if not isinstance(entries, list) or not entries:
-        print("manifest must contain a non-empty 'entries' array", file=sys.stderr)
+        print("manifest must contain a non-empty 'inputs' array", file=sys.stderr)
         return 2
 
     seen_ids: set[str] = set()
@@ -57,6 +62,18 @@ def main() -> int:
         if entry_type not in ALLOWED_TYPES:
             failures.append(f"{entry_id}: unsupported type '{entry_type}'")
 
+        compression = entry.get("compression")
+        if compression not in {"bgzf", "gzip", "plain", "unknown"}:
+            failures.append(f"{entry_id}: unsupported compression '{compression}'")
+
+        mapped_state = entry.get("mapped_state")
+        if mapped_state not in {"mapped", "unmapped", "unknown"}:
+            failures.append(f"{entry_id}: unsupported mapped_state '{mapped_state}'")
+
+        expected_sort_order = entry.get("expected_sort_order")
+        if expected_sort_order not in {"coordinate", "queryname", "unsorted", "unknown", "not_applicable"}:
+            failures.append(f"{entry_id}: unsupported expected_sort_order '{expected_sort_order}'")
+
         path = entry.get("path")
         if not isinstance(path, str) or not path.strip():
             failures.append(f"{entry_id}: missing path")
@@ -69,6 +86,11 @@ def main() -> int:
             elif not os.access(source, os.R_OK):
                 failures.append(f"{entry_id}: source path is not readable: {source}")
 
+        has_index = entry.get("has_index")
+        index_path = entry.get("index_path")
+        if has_index is True and (not isinstance(index_path, str) or not index_path.strip()):
+            failures.append(f"{entry_id}: has_index=true requires a non-empty index_path")
+
         scenarios = entry.get("allowed_benchmark_scenarios")
         if not isinstance(scenarios, list) or not scenarios:
             failures.append(f"{entry_id}: allowed_benchmark_scenarios must be a non-empty array")
@@ -76,6 +98,10 @@ def main() -> int:
             unsupported = [scenario for scenario in scenarios if scenario not in ALLOWED_SCENARIOS]
             if unsupported:
                 failures.append(f"{entry_id}: unsupported scenarios: {', '.join(unsupported)}")
+
+        reference_context = entry.get("reference_context")
+        if reference_context is not None and not isinstance(reference_context, dict):
+            failures.append(f"{entry_id}: reference_context must be an object or null")
 
         staging_policy = entry.get("staging_policy")
         if not isinstance(staging_policy, dict):
@@ -93,7 +119,7 @@ def main() -> int:
 
     summary = {
         "manifest": str(manifest_path),
-        "entries": len(entries),
+        "inputs": len(entries),
         "ids": [entry["id"] for entry in entries],
     }
     print(json.dumps(summary, indent=2))

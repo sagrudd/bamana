@@ -36,7 +36,12 @@
     "benchmark_id": { "type": "string" },
     "scenario": {
       "type": "string",
-      "enum": ["mapped_bam_chain", "unmapped_bam_chain", "fastq_ingest_chain"]
+      "enum": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ]
     },
     "source_input_id": { "type": "string" },
     "source_input_path": { "type": "string" },

@@ -18,7 +18,7 @@ process RUN_FASTCAT_BENCHMARK {
     def notes = ''
     def command = 'true'
 
-    if (meta.scenario == 'fastq_ingest_chain') {
+    if (meta.scenario == 'fastq_consume_pipeline') {
         outputTarget = "${meta.run_id}.fastcat.fastq.gz"
         command = """\
 set -euo pipefail

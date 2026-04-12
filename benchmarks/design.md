@@ -18,7 +18,7 @@ to surface trustworthy evidence.
 
 ## 2. Scenario Definitions
 
-### Scenario A: `mapped_bam_chain`
+### Scenario A: `mapped_bam_pipeline`
 
 Input:
 
@@ -36,7 +36,7 @@ Notes:
   chosen order is documented
 * this scenario is the canonical BAM throughput baseline
 
-### Scenario B: `unmapped_bam_chain`
+### Scenario B: `unmapped_bam_pipeline`
 
 Input:
 
@@ -52,7 +52,7 @@ Notes:
 
 * the first framework treats this as a subsample-only comparison
 
-### Scenario C: `fastq_ingest_chain`
+### Scenario C: `fastq_consume_pipeline`
 
 Input:
 
@@ -157,7 +157,7 @@ Failures are data.
 
 ## 5. Supported and Unsupported Matrix
 
-| Tool | `mapped_bam_chain` | `unmapped_bam_chain` | `fastq_ingest_chain` |
+| Tool | `mapped_bam_pipeline` | `unmapped_bam_pipeline` | `fastq_consume_pipeline` |
 | --- | --- | --- | --- |
 | `bamana` | partial: `subsample` plus `sort`, with index still deferred | supported | supported via `consume --mode unmapped` |
 | `samtools` | supported | supported | unsupported |
@@ -189,6 +189,21 @@ lists. The manifest records:
 * staging policy
 * allowed scenarios
 
+The preferred run declaration mechanism is a params JSON file validated against
+[params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json).
+That params layer records:
+
+* `input_manifest`
+* `dataset_ids`
+* `tools`
+* `scenarios`
+* `replicates`
+* `warmup_runs`
+* `subsample_fraction`
+* `subsample_seed`
+* `subsample_mode`
+* `output_dir`
+
 The pipeline computes input size and exact record counts once per input so the
 benchmark layer can report throughput rather than timing only.
 
@@ -204,14 +219,14 @@ in:
 The first framework includes:
 
 * `warmup_runs`
-* `replicate_count`
+* `replicates`
 * seeded subsampling
 * explicit `subsample_mode`
 
 Recommended first pass:
 
 * `warmup_runs = 1`
-* `replicate_count = 3` or `5`
+* `replicates = 3` or `5`
 * fixed seed for deterministic mode
 
 Deterministic mode reduces workload variance. Repeated runs still capture
@@ -303,3 +318,20 @@ The first benchmark slice is intentionally honest about current limits:
 
 These are acceptable first-iteration limitations so long as they remain
 documented.
+### Scenario D: `subsample_only`
+
+Input:
+
+* mapped BAM
+* unmapped BAM
+* FASTQ.GZ where the comparator actually supports direct read subsampling
+
+Primary operation chain:
+
+1. subsample only
+
+Notes:
+
+* this scenario is intended for explicit subsampling comparisons without sort,
+  index, or consume stages
+* unsupported combinations are recorded explicitly rather than forced

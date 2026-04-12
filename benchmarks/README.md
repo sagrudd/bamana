@@ -67,19 +67,22 @@ comparisons explicitly instead of pretending the tools are directly equivalent.
 * [cleanup.md](/Users/stephen/Projects/bamana/benchmarks/cleanup.md): cleanup and retention rules
 * [inputs/](/Users/stephen/Projects/bamana/benchmarks/inputs): manifest schema, example manifest, and operator guidance
 * [params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json): benchmark parameter schema
+* [params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples): ready-to-edit example Nextflow params files
 * [Dockerfile](/Users/stephen/Projects/bamana/benchmarks/Dockerfile): reproducible benchmark environment
 
 ## Benchmark Scenarios
 
-The first framework defines three core scenarios:
+The user-facing configuration layer now exposes these stable scenario ids:
 
-* `mapped_bam_chain`: mapped BAM subsample then sort then index where sensible
-* `unmapped_bam_chain`: unmapped BAM subsample with sort and index omitted when
-  not meaningful
-* `fastq_ingest_chain`: FASTQ.GZ ingestion or concatenation workflows,
+* `mapped_bam_pipeline`: mapped BAM subsample then sort then index where sensible
+* `unmapped_bam_pipeline`: unmapped BAM subsample with sort and index omitted
+  when not meaningful
+* `fastq_consume_pipeline`: FASTQ.GZ ingestion or concatenation workflows,
   including Bamana `consume` and `fastcat`
+* `subsample_only`: explicit subsample benchmarking without downstream sort or
+  index
 
-Replication is built in via `replicate_count` and `warmup_runs`.
+Replication is built in via `replicates` and `warmup_runs`.
 
 ## Benchmark Inputs
 
@@ -98,6 +101,20 @@ The first-slice manifest scaffold lives at:
 * [inputs/manifest.schema.json](/Users/stephen/Projects/bamana/benchmarks/inputs/manifest.schema.json)
 * [inputs/example_manifest.json](/Users/stephen/Projects/bamana/benchmarks/inputs/example_manifest.json)
 * [inputs/README.md](/Users/stephen/Projects/bamana/benchmarks/inputs/README.md)
+
+The run-centric Nextflow params layer lives at:
+
+* [params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json)
+* [params.examples/local.example.json](/Users/stephen/Projects/bamana/benchmarks/params.examples/local.example.json)
+* [params.examples/mapped_bam.example.json](/Users/stephen/Projects/bamana/benchmarks/params.examples/mapped_bam.example.json)
+* [params.examples/fastq_gz.example.json](/Users/stephen/Projects/bamana/benchmarks/params.examples/fastq_gz.example.json)
+
+Manifest versus params:
+
+* manifest: stable dataset metadata such as path, type, index, reference, and
+  allowed scenarios
+* params file: one benchmark run definition such as dataset selection,
+  tools, scenarios, replicate count, seed, and output directory
 
 ## Staging and Reuse Policy
 
@@ -156,6 +173,13 @@ Publication-ready figures include:
 * replicate variability plots
 * support-status heatmaps
 
+## Quick Start With Your Own BAM or FASTQ.GZ Inputs
+
+1. Copy [inputs/example_manifest.json](/Users/stephen/Projects/bamana/benchmarks/inputs/example_manifest.json) and edit the dataset paths, ids, index paths, and reference context for your environment.
+2. Copy one of the files under [params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples) and edit `input_manifest`, `dataset_ids`, `output_dir`, and any tool or scenario selection.
+3. Validate the manifest locally with `python bin/validate_inputs.py --manifest /abs/path/to/your-manifest.json`.
+4. Run Nextflow with `-params-file /abs/path/to/your-params.json`.
+
 ## Running Locally
 
 Build the benchmark container:
@@ -167,16 +191,10 @@ docker build -f benchmarks/Dockerfile -t bamana-bench:latest .
 Run the workflow with Docker:
 
 ```bash
-cd benchmarks
-python bin/validate_inputs.py --manifest /abs/path/to/benchmark-inputs.json
-nextflow run main.nf \
+python benchmarks/bin/validate_inputs.py --manifest /abs/path/to/benchmark-inputs.json
+nextflow run benchmarks/main.nf \
   -profile docker \
-  --input_manifest "/abs/path/to/benchmark-inputs.json" \
-  --replicate_count 5 \
-  --warmup_runs 1 \
-  --subsample_fraction 0.1 \
-  --subsample_seed 104729 \
-  --output_dir "/workspace/benchmarks/results/latest"
+  -params-file "/abs/path/to/benchmark-run.json"
 ```
 
 Direct path parameters remain available for ad hoc runs:
@@ -188,6 +206,21 @@ Direct path parameters remain available for ad hoc runs:
 Manifest-driven runs are preferred for audited or publication-oriented
 benchmarks because they preserve source-input ids, staging policy, storage
 context, and allowed scenario declarations.
+
+## Dataset Resolution Flow
+
+The benchmark workflow resolves inputs in this order:
+
+1. load Nextflow params
+2. load the input manifest from `input_manifest`
+3. filter manifest datasets by `dataset_ids`
+4. validate requested scenarios against each dataset's `allowed_benchmark_scenarios`
+5. stage the selected datasets according to manifest or params staging policy
+6. execute tool-specific workflows and record unsupported combinations
+
+Unsupported tool or tool-scenario combinations are recorded explicitly in the
+results when `include_unsupported_matrix_rows` is `true`; they are not treated
+as benchmark failures.
 
 ## Installed Toolchain
 
