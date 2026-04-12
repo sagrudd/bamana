@@ -687,13 +687,18 @@
       "generated": false,
       "source_fixture_ids": ["tiny.ref.primary"],
       "regeneration_strategy": "hand_authored_synthetic_alignment_source",
+      "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",
       "expected_artifacts": [],
       "size_class": "tiny",
       "has_index": false,
       "requires_reference": false,
       "reference_fixture_id": "tiny.ref.primary",
       "reference_policy_notes": "The SAM references the tiny synthetic FASTA and serves as the provenance root for the derived BAM and CRAM artifacts.",
-      "header_compatibility_group": "primary_refdict"
+      "header_compatibility_group": "primary_refdict",
+      "review_notes": [
+        "Review the SAM text directly before reviewing any regenerated binary artifact.",
+        "Confirm that the @SQ dictionary still matches the source FASTA exactly."
+      ]
     },
     {
       "id": "tiny.ref.primary",
@@ -709,13 +714,18 @@
       "generated": false,
       "source_fixture_ids": [],
       "regeneration_strategy": "hand_authored_synthetic_reference_fasta",
+      "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",
       "expected_artifacts": [],
       "size_class": "tiny",
       "has_index": false,
       "requires_reference": false,
       "reference_fixture_id": null,
       "reference_policy_notes": "Used as the explicit FASTA for strict-policy CRAM consume success tests.",
-      "header_compatibility_group": "primary_refdict"
+      "header_compatibility_group": "primary_refdict",
+      "review_notes": [
+        "Review the FASTA names and lengths against the source SAM first.",
+        "Treat FASTA changes as provenance-root changes rather than binary-fixture refreshes."
+      ]
     },
     {
       "id": "tiny.valid.cram.explicit_ref.source_bam",
@@ -731,13 +741,18 @@
       "generated": true,
       "source_fixture_ids": ["tiny.valid.cram.explicit_ref.source_sam", "tiny.ref.primary"],
       "regeneration_strategy": "derive_bam_from_explicit_ref_source_sam",
+      "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",
       "expected_artifacts": [],
       "size_class": "tiny",
       "has_index": false,
       "requires_reference": false,
       "reference_fixture_id": "tiny.ref.primary",
       "reference_policy_notes": "Reserved for review of BAM normalization and future BAM/CRAM compatibility consume tests derived from the same source SAM.",
-      "header_compatibility_group": "primary_refdict"
+      "header_compatibility_group": "primary_refdict",
+      "review_notes": [
+        "This BAM is derived, not authoritative.",
+        "Review binary changes in the context of the committed source SAM and FASTA."
+      ]
     },
     {
       "id": "tiny.valid.cram.explicit_ref",
@@ -753,6 +768,7 @@
       "generated": true,
       "source_fixture_ids": ["tiny.valid.cram.explicit_ref.source_sam", "tiny.ref.primary"],
       "regeneration_strategy": "derive_cram_from_explicit_ref_source_sam_with_explicit_reference",
+      "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",
       "expected_artifacts": [
         "expected/consume/consume.tiny.valid.cram.explicit_ref.success.json"
       ],
@@ -761,7 +777,11 @@
       "requires_reference": true,
       "reference_fixture_id": "tiny.ref.primary",
       "reference_policy_notes": "Expected to succeed under --reference-policy strict when --reference tiny.ref.primary.fasta is supplied.",
-      "header_compatibility_group": "primary_refdict"
+      "header_compatibility_group": "primary_refdict",
+      "review_notes": [
+        "This CRAM is derived from the committed source SAM plus explicit FASTA.",
+        "Byte-for-byte CRAM changes may reflect external toolchain drift and should be reviewed accordingly."
+      ]
     },
     {
       "id": "tiny.valid.cram.reference_required",
@@ -777,6 +797,7 @@
       "generated": true,
       "source_fixture_ids": ["tiny.valid.cram.explicit_ref", "tiny.ref.primary"],
       "regeneration_strategy": "invoke_strict_cram_consume_without_reference_argument",
+      "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",
       "expected_artifacts": [
         "expected/consume/consume.tiny.valid.cram.explicit_ref.reference_required.failure.json"
       ],
@@ -785,7 +806,11 @@
       "requires_reference": true,
       "reference_fixture_id": "tiny.ref.primary",
       "reference_policy_notes": "Uses the same CRAM semantics as tiny.valid.cram.explicit_ref but must fail with reference_required when no explicit FASTA is supplied under strict policy.",
-      "header_compatibility_group": "primary_refdict"
+      "header_compatibility_group": "primary_refdict",
+      "review_notes": [
+        "This scenario reuses the same derived CRAM as the explicit-reference success case.",
+        "Missing-reference failure is exercised by withholding the FASTA, not by changing the fixture bytes."
+      ]
     },
     {
       "id": "tiny.valid.cram.compatible_refdict",

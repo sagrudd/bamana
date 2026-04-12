@@ -108,6 +108,15 @@ For the first CRAM consume package, reviewers should check:
 * whether any regenerated binary artifact changed because the source content
   changed or because the external CRAM toolchain changed
 
+Binary fixture derivation should therefore be governed explicitly:
+
+* source SAM and FASTA are the provenance root
+* derived BAM and CRAM are maintainer-generated artifacts
+* the derivation recipe and script should be reviewed alongside any binary
+  refresh
+* maintainers should not assume byte-for-byte CRAM stability across toolchain
+  changes even when semantic provenance is unchanged
+
 See:
 
 * [tests/fixtures/README.md](/Users/stephen/Projects/bamana/tests/fixtures/README.md)

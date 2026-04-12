@@ -200,6 +200,17 @@ The current source package is intentionally simple:
 * the SAM contains three mapped reads and one unmapped read
 * mapped reads use simple `12M` CIGARs and are easy to verify against the FASTA
 
+Maintainer-facing derivation assets now live at:
+
+* `tests/fixtures/source/generate_tiny_cram_fixture.sh`
+* `tests/fixtures/source/generate_tiny_cram_fixture.md`
+
+Those files must remain explicit about:
+
+* the use of external tooling such as `samtools`
+* the fact that source SAM + FASTA remain authoritative
+* the difference between semantic reproducibility and byte-for-byte stability
+
 ## What Should Be Checked In
 
 Preferred first step:

@@ -42,6 +42,15 @@ Derived artifacts planned from this package are:
 
 The derived BAM and CRAM are governed outputs, not the provenance root.
 
+### Derived Means
+
+For this package, "derived" means:
+
+* created from the committed source SAM and source FASTA
+* produced by a documented maintainer workflow
+* reviewable in the context of the authoritative text provenance
+* potentially sensitive to external tool versions at the byte-layout level
+
 ## Contract Semantics
 
 This package is designed so that:
@@ -73,6 +82,7 @@ When this package changes, reviewers should check:
 Use the documented recipe in:
 
 * [generate_tiny_cram_fixture.sh](/Users/stephen/Projects/bamana/tests/fixtures/source/generate_tiny_cram_fixture.sh)
+* [generate_tiny_cram_fixture.md](/Users/stephen/Projects/bamana/tests/fixtures/source/generate_tiny_cram_fixture.md)
 * [tests/fixtures/plans/generation-strategy.md](/Users/stephen/Projects/bamana/tests/fixtures/plans/generation-strategy.md)
 
 Important:
@@ -80,3 +90,7 @@ Important:
 * exact byte-for-byte CRAM reproducibility may depend on the external CRAM
   toolchain version
 * the provenance root remains the committed SAM and FASTA regardless
+
+The script is maintainer-facing and may rely on an external CRAM-capable
+toolchain such as `samtools`. The repository does not treat this derivation as
+Bamana-native.

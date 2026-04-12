@@ -108,6 +108,12 @@ fn contract_docs_exist() {
         fixtures_dir()
             .join("source")
             .join("generate_tiny_cram_fixture.sh"),
+        fixtures_dir()
+            .join("source")
+            .join("generate_tiny_cram_fixture.md"),
+        fixtures_dir()
+            .join("source")
+            .join("generate_tiny_cram_fixture.env.example"),
         fixtures_dir().join("bam").join("README.md"),
         fixtures_dir().join("bam").join("valid").join("README.md"),
         fixtures_dir().join("bam").join("invalid").join("README.md"),

@@ -55,6 +55,11 @@
             "type": ["string", "null"]
           },
           "reference_policy_notes": { "type": "string" },
+          "generation_script": { "type": "string" },
+          "review_notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "header_compatibility_group": {
             "type": ["string", "null"]
           },
