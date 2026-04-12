@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/consume.schema.json",
+  "title": "Bamana Consume Response",
+  "description": "Contract for bamana consume JSON output.",
+  "x-bamana-command": "consume",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "consumeMode": {
+      "type": "string",
+      "enum": ["alignment", "unmapped", "mixed-allow"]
+    },
+    "consumeSortOrder": {
+      "type": "string",
+      "enum": ["none", "coordinate", "queryname"]
+    },
+    "fileInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "detected_format", "consumed", "reason"],
+      "properties": {
+        "path": { "type": "string" },
+        "detected_format": { "type": "string" },
+        "consumed": { "type": "boolean" },
+        "reason": { "type": ["string", "null"] }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "mode",
+        "dry_run",
+        "inputs",
+        "discovery",
+        "output",
+        "header",
+        "index",
+        "checksum_verification",
+        "notes"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "mode": { "$ref": "#/$defs/consumeMode" },
+        "dry_run": { "type": "boolean" },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requested_paths",
+            "directories_scanned",
+            "files_discovered",
+            "files_consumed",
+            "files_skipped",
+            "files_rejected"
+          ],
+          "properties": {
+            "requested_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "directories_scanned": { "type": "integer", "minimum": 0 },
+            "files_discovered": { "type": "integer", "minimum": 0 },
+            "files_consumed": { "type": "integer", "minimum": 0 },
+            "files_skipped": { "type": "integer", "minimum": 0 },
+            "files_rejected": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "discovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["recursive", "formats_detected"],
+          "properties": {
+            "recursive": { "type": "boolean" },
+            "formats_detected": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 0 }
+            },
+            "consumed_files": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/fileInfo" }
+            },
+            "skipped_files": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/fileInfo" }
+            },
+            "rejected_files": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/fileInfo" }
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "written", "sort_order", "mapped_state"],
+          "properties": {
+            "path": { "type": "string" },
+            "written": { "type": "boolean" },
+            "records_written": { "type": ["integer", "null"], "minimum": 0 },
+            "sort_order": { "$ref": "#/$defs/consumeSortOrder" },
+            "mapped_state": { "type": "string" }
+          }
+        },
+        "header": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "reference_compatibility"],
+          "properties": {
+            "strategy": { "type": "string" },
+            "reference_compatibility": { "type": ["string", "null"] },
+            "sample": { "type": ["string", "null"] },
+            "read_group": { "type": ["string", "null"] },
+            "platform": { "type": ["string", "null"] }
+          }
+        },
+        "index": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requested", "created", "kind"],
+          "properties": {
+            "requested": { "type": "boolean" },
+            "created": { "type": "boolean" },
+            "kind": { "type": ["string", "null"] }
+          }
+        },
+        "checksum_verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requested", "performed", "mode", "match"],
+          "properties": {
+            "requested": { "type": "boolean" },
+            "performed": { "type": "boolean" },
+            "mode": { "type": ["string", "null"] },
+            "match": { "type": ["boolean", "null"] }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "consume" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "consume" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

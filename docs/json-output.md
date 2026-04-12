@@ -39,3 +39,21 @@ See:
 
 * [spec/contracts/versioning.md](/Users/stephen/Projects/bamana/spec/contracts/versioning.md)
 * [spec/contracts/compatibility.md](/Users/stephen/Projects/bamana/spec/contracts/compatibility.md)
+
+## `consume`
+
+The `consume` payload introduces an ingestion-oriented contract layer in
+addition to Bamana’s inspection and transformation outputs.
+
+Key concepts:
+
+* requested paths versus discovered files
+* deterministic directory traversal reporting
+* consumed, skipped, and rejected file lists
+* explicit ingest mode (`alignment`, `unmapped`, `mixed-allow`)
+* output sort/index/checksum intent
+* notes that separate implemented behavior from staged behavior
+
+The contract is designed so automation can reason about dry-run discovery
+results, mixed-format rejection, and staged normalization behavior without
+needing to infer semantics from ad hoc log text.

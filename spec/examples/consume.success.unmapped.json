@@ -1,0 +1,89 @@
+{
+  "ok": true,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "unmapped",
+    "dry_run": true,
+    "inputs": {
+      "requested_paths": [
+        "run_folder",
+        "sample2.fastq.gz"
+      ],
+      "directories_scanned": 2,
+      "files_discovered": 4,
+      "files_consumed": 3,
+      "files_skipped": 1,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": true,
+      "formats_detected": {
+        "FASTQ": 1,
+        "FASTQ.GZ": 2,
+        "UNKNOWN": 1
+      },
+      "consumed_files": [
+        {
+          "path": "run_folder/barcode01/readset1.fastq.gz",
+          "detected_format": "FASTQ.GZ",
+          "consumed": true,
+          "reason": null
+        },
+        {
+          "path": "run_folder/barcode02/readset2.fastq",
+          "detected_format": "FASTQ",
+          "consumed": true,
+          "reason": null
+        },
+        {
+          "path": "sample2.fastq.gz",
+          "detected_format": "FASTQ.GZ",
+          "consumed": true,
+          "reason": null
+        }
+      ],
+      "skipped_files": [
+        {
+          "path": "run_folder/report.txt",
+          "detected_format": "UNKNOWN",
+          "consumed": false,
+          "reason": "unsupported_input_format"
+        }
+      ],
+      "rejected_files": []
+    },
+    "output": {
+      "path": "combined.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "none",
+      "mapped_state": "unmapped"
+    },
+    "header": {
+      "strategy": "synthetic_unmapped_header",
+      "reference_compatibility": null,
+      "sample": "sampleA",
+      "read_group": "rgA",
+      "platform": "ONT"
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "FASTQ-like inputs are normalized into unmapped BAM records with no implied alignment.",
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+    ]
+  },
+  "error": null
+}

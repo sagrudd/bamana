@@ -44,6 +44,7 @@ In regulated and controlled environments, there is a recurring need for tooling 
 * detect truncation and EOF completeness
 * summarise alignment characteristics in structured form
 * transform, partition, merge, and sort BAM files efficiently
+* ingest BAM-, SAM-, and FASTQ-like upstream inputs into disciplined BAM normalization workflows
 * integrate cleanly with workflow engines, audit pipelines, and machine-based validation gates
 
 Bamana exists to address this need with a deliberately narrow and disciplined design under the sponsorship of **Mnemosyne Biosciences Ltd**.
@@ -76,6 +77,7 @@ The initial scope of Bamana includes development of a Rust-based command-line to
 * BAM splitting / explosion for distributed workflows
 * BAM merge
 * BAM sort
+* upstream file and directory ingestion into normalized BAM
 * index-aware operations
 * header and reference inspection
 * validation and integrity-related utilities
@@ -85,6 +87,7 @@ Representative initial commands may include:
 
 * `bamana identify`
 * `bamana verify`
+* `bamana consume`
 * `bamana check_eof`
 * `bamana check_map`
 * `bamana check_sort`
@@ -124,6 +127,10 @@ Future releases may extend support to adjacent formats such as:
 * GFF
 
 Such expansion should occur only where it does not weaken the project’s core identity: **small surface area, explicit semantics, and superior performance on critical workflows**.
+
+Where adjacent formats are supported, the preferred operational model is
+explicit normalization into BAM through governed ingest semantics rather than
+an uncontrolled widening of the public data model.
 
 ## 8. Objectives
 

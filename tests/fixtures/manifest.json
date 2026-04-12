@@ -654,6 +654,96 @@
       "supports_output_fixture": false,
       "header_anomaly_type": null,
       "read_name_regime_type": null
+    },
+    {
+      "id": "tiny.valid.sam",
+      "path": "consume/tiny.valid.sam.sam",
+      "format": "SAM",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Tiny SAM input reserved for alignment-mode consume coverage.",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": [],
+      "regeneration_strategy": "hand_authored_sam_source",
+      "expected_artifacts": [
+        "expected/consume/consume.tiny.valid.sam.dry_run.success.json"
+      ],
+      "size_class": "tiny"
+    },
+    {
+      "id": "tiny.valid.fastq",
+      "path": "consume/tiny.valid.fastq",
+      "format": "FASTQ",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Tiny FASTQ input reserved for unmapped-mode consume coverage.",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": [],
+      "regeneration_strategy": "hand_authored_fastq_source",
+      "expected_artifacts": [
+        "expected/consume/consume.tiny.valid.fastq.dry_run.success.json"
+      ],
+      "size_class": "tiny"
+    },
+    {
+      "id": "tiny.valid.fastq_gz",
+      "path": "consume/tiny.valid.fastq.gz",
+      "format": "FASTQ.GZ",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Tiny FASTQ.GZ input reserved for unmapped-mode consume coverage.",
+      "primary_commands": ["consume"],
+      "secondary_commands": ["identify"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.fastq"],
+      "regeneration_strategy": "gzip_wrap_tiny_fastq",
+      "expected_artifacts": [
+        "expected/consume/consume.tiny.valid.fastq_gz.dry_run.success.json"
+      ],
+      "size_class": "tiny"
+    },
+    {
+      "id": "tiny.consume.mixed_alignment_raw",
+      "path": "consume/tiny.consume.mixed_alignment_raw",
+      "format": "MIXED",
+      "category": "consume",
+      "validity": "policy_failure",
+      "status": "planned",
+      "description": "Mixed BAM-or-SAM plus FASTQ request reserved for consume mixed-format rejection tests.",
+      "primary_commands": ["consume"],
+      "secondary_commands": [],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate", "tiny.valid.fastq_gz"],
+      "regeneration_strategy": "compose_alignment_and_raw_inputs_in_one_request",
+      "expected_artifacts": [
+        "expected/consume/consume.tiny.consume.mixed_alignment_raw.failure.json"
+      ],
+      "size_class": "tiny"
+    },
+    {
+      "id": "tiny.consume.directory_tree",
+      "path": "consume/tiny.consume.directory_tree",
+      "format": "DIRECTORY",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Directory tree containing supported, unsupported, and nested entries for deterministic consume discovery tests.",
+      "primary_commands": ["consume"],
+      "secondary_commands": [],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.sam", "tiny.valid.fastq_gz"],
+      "regeneration_strategy": "compose_deterministic_directory_tree",
+      "expected_artifacts": [
+        "expected/consume/consume.tiny.consume.directory_tree.dry_run.success.json"
+      ],
+      "size_class": "tiny"
     }
   ]
 }

@@ -1,0 +1,78 @@
+{
+  "ok": false,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "alignment",
+    "dry_run": false,
+    "inputs": {
+      "requested_paths": [
+        "lane_a.bam",
+        "lane_b.sam"
+      ],
+      "directories_scanned": 0,
+      "files_discovered": 2,
+      "files_consumed": 2,
+      "files_skipped": 0,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {
+        "BAM": 1,
+        "SAM": 1
+      },
+      "consumed_files": [
+        {
+          "path": "lane_a.bam",
+          "detected_format": "BAM",
+          "consumed": true,
+          "reason": null
+        },
+        {
+          "path": "lane_b.sam",
+          "detected_format": "SAM",
+          "consumed": true,
+          "reason": null
+        }
+      ],
+      "skipped_files": [],
+      "rejected_files": []
+    },
+    "output": {
+      "path": "combined.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "coordinate",
+      "mapped_state": "mapped_or_mixed"
+    },
+    "header": {
+      "strategy": "first_compatible_alignment_header",
+      "reference_compatibility": "incompatible",
+      "sample": null,
+      "read_group": null,
+      "platform": null
+    },
+    "index": {
+      "requested": true,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "Alignment-bearing inputs were discovered, but reference dictionaries were not compatible."
+    ]
+  },
+  "error": {
+    "code": "incompatible_headers",
+    "message": "Input BAM headers are not compatible for merge.",
+    "detail": "Reference dictionaries would need to match exactly before alignment-mode consume can normalize these inputs together.",
+    "hint": "Ensure all BAM/SAM inputs share the same reference dictionary before consuming in alignment mode."
+  }
+}

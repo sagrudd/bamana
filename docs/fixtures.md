@@ -45,6 +45,21 @@ That distinction matters. Operator-error duplication is not the same as
 molecular duplicate biology, and suspicious provenance hallmarks are not the
 same as structural corruption.
 
+## Consume Fixtures
+
+`consume` needs a separate fixture layer because it is the repository’s
+ingestion gateway rather than a BAM-only downstream operation.
+
+Its fixture plan must cover:
+
+* alignment-bearing ingest (`BAM`, `SAM`)
+* raw-read ingest (`FASTQ`, `FASTQ.GZ`)
+* mixed-format rejection across those boundaries
+* deterministic directory traversal, including unsupported and nested entries
+
+These fixtures should be used to prove discovery order, classification, and
+policy behavior before larger normalization or transform workflows are tested.
+
 ## Review Expectations
 
 Fixture changes should be reviewed as governed assets.

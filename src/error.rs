@@ -41,6 +41,16 @@ pub enum AppError {
     IncompatibleHeaders { path: PathBuf, detail: String },
     #[error("invalid merge request: {path}")]
     InvalidMergeRequest { path: PathBuf, detail: String },
+    #[error("invalid consume request: {path}")]
+    InvalidConsumeRequest { path: PathBuf, detail: String },
+    #[error("mixed input modes are not allowed: {path}")]
+    MixedInputModesNotAllowed { path: PathBuf, detail: String },
+    #[error("input format is not supported for consume: {path}")]
+    UnsupportedInputFormat { path: PathBuf, format: String },
+    #[error("directory entry is not supported for consume: {path}")]
+    UnsupportedDirectoryEntry { path: PathBuf, detail: String },
+    #[error("reference material is required for this consume mode: {path}")]
+    ReferenceRequired { path: PathBuf, detail: String },
     #[error("refusing to overwrite existing output: {path}")]
     OutputExists { path: PathBuf },
     #[error("failed to write output: {path}")]
@@ -111,6 +121,11 @@ impl AppError {
             Self::MissingIndex { .. } => "missing_index",
             Self::IncompatibleHeaders { .. } => "incompatible_headers",
             Self::InvalidMergeRequest { .. } => "invalid_merge_mode",
+            Self::InvalidConsumeRequest { .. } => "invalid_consume_mode",
+            Self::MixedInputModesNotAllowed { .. } => "mixed_input_modes_not_allowed",
+            Self::UnsupportedInputFormat { .. } => "unsupported_input_format",
+            Self::UnsupportedDirectoryEntry { .. } => "unsupported_directory_entry",
+            Self::ReferenceRequired { .. } => "reference_required",
             Self::OutputExists { .. } => "output_exists",
             Self::WriteError { .. } => "write_error",
             Self::Unimplemented { .. } => "unimplemented",
@@ -149,6 +164,19 @@ impl AppError {
                 "Input BAM headers are not compatible for merge.".to_string()
             }
             Self::InvalidMergeRequest { .. } => "Invalid BAM merge options.".to_string(),
+            Self::InvalidConsumeRequest { .. } => "Invalid consume options.".to_string(),
+            Self::MixedInputModesNotAllowed { .. } => {
+                "Mixed raw-read and alignment-bearing inputs are not allowed in the selected consume mode.".to_string()
+            }
+            Self::UnsupportedInputFormat { .. } => {
+                "Input format is not supported for consume.".to_string()
+            }
+            Self::UnsupportedDirectoryEntry { .. } => {
+                "Directory entry is not supported for consume.".to_string()
+            }
+            Self::ReferenceRequired { .. } => {
+                "Reference material is required for this consume mode.".to_string()
+            }
             Self::OutputExists { .. } => {
                 "Output path already exists and overwrite was not requested.".to_string()
             }
@@ -197,6 +225,11 @@ impl AppError {
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::IncompatibleHeaders { detail, .. } => Some(detail.clone()),
             Self::InvalidMergeRequest { detail, .. } => Some(detail.clone()),
+            Self::InvalidConsumeRequest { detail, .. } => Some(detail.clone()),
+            Self::MixedInputModesNotAllowed { detail, .. } => Some(detail.clone()),
+            Self::UnsupportedInputFormat { format, .. } => Some(format.clone()),
+            Self::UnsupportedDirectoryEntry { detail, .. } => Some(detail.clone()),
+            Self::ReferenceRequired { detail, .. } => Some(detail.clone()),
             Self::WriteError { message, .. } => Some(message.clone()),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ValidationFailed { detail, .. } => Some(detail.clone()),
@@ -260,15 +293,35 @@ impl AppError {
                 "Use --sort as shorthand for --order coordinate, and only specify --queryname-suborder with --order queryname."
                     .to_string(),
             ),
+            Self::InvalidConsumeRequest { .. } => Some(
+                "Use --mode alignment for BAM/SAM, --mode unmapped for FASTQ/FASTQ.GZ, and --dry-run to inspect mixed or directory-heavy requests first."
+                    .to_string(),
+            ),
+            Self::MixedInputModesNotAllowed { .. } => Some(
+                "Run separate consume operations or use an explicitly supported mixed-ingestion mode."
+                    .to_string(),
+            ),
+            Self::UnsupportedInputFormat { .. } => Some(
+                "Restrict the request to BAM, SAM, FASTQ, or FASTQ.GZ inputs in the supported consume mode."
+                    .to_string(),
+            ),
+            Self::UnsupportedDirectoryEntry { .. } => Some(
+                "Restrict directory inputs to regular files or rerun with a layout that excludes unsupported entries."
+                    .to_string(),
+            ),
+            Self::ReferenceRequired { .. } => Some(
+                "Provide the required reference material or choose a consume mode that does not require reference-backed decoding."
+                    .to_string(),
+            ),
             Self::OutputExists { .. } => {
-                Some("Rerun with --force to overwrite the existing index output.".to_string())
+                Some("Rerun with --force to overwrite the existing output path.".to_string())
             }
             Self::WriteError { .. } => Some(
-                "Check the output path, available disk space, and filesystem permissions, then retry the sort."
+                "Check the output path, available disk space, and filesystem permissions, then retry the operation."
                     .to_string(),
             ),
             Self::Unimplemented { .. } => Some(
-                "Use an implemented index format for this BAM or extend the current index writer."
+                "Use --dry-run to inspect the request now, or extend the current slice with the deferred functionality."
                     .to_string(),
             ),
             Self::ValidationFailed { .. } => Some(

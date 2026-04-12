@@ -20,6 +20,11 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.transforms.source` | Transform source BAM | Checksum baseline | `sort`, `explode`, `checksum` | success |
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |
+| `tiny.valid.sam` | Alignment-mode SAM ingest | Identify/format coverage | `consume`, `identify` | success |
+| `tiny.valid.fastq` | Unmapped FASTQ ingest | Identify/format coverage | `consume`, `identify` | success |
+| `tiny.valid.fastq_gz` | Unmapped FASTQ.GZ ingest | Identify/format coverage | `consume`, `identify` | success |
+| `tiny.consume.mixed_alignment_raw` | Strict mixed-format rejection | Policy failure coverage | `consume` | failure |
+| `tiny.consume.directory_tree` | Deterministic directory traversal | Recursive/non-recursive discovery coverage | `consume` | success + mixed discovery semantics |
 
 ## Duplication And Forensics Matrix
 

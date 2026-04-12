@@ -47,6 +47,17 @@ These commands depend on the transform fixture family:
 * `explode`
 * canonical `checksum` preservation checks
 
+### Consume coverage
+
+These commands depend on a small consume-specific fixture family:
+
+* `tiny.valid.coordinate` for alignment-mode BAM ingest
+* `tiny.valid.sam` for alignment-mode SAM ingest
+* `tiny.valid.fastq` for unmapped FASTQ ingest
+* `tiny.valid.fastq_gz` for unmapped FASTQ.GZ ingest
+* `tiny.consume.mixed_alignment_raw` for strict mixed-format rejection
+* `tiny.consume.directory_tree` for deterministic directory traversal
+
 ## Commands Still Primarily Backed By Spec Artifacts
 
 Until real fixtures land, the following remain mostly schema/example-backed:
@@ -54,6 +65,7 @@ Until real fixtures land, the following remain mostly schema/example-backed:
 * `index` creation success paths
 * `explode` runtime behavior
 * merge/explode round-trip preservation
+* full non-dry-run `consume` normalization
 
 That is acceptable, but the manifest now makes the missing executable assets
 explicit.
@@ -68,6 +80,18 @@ explicit.
 6. transform family
 
 This order gives the highest executable contract value with the fewest files.
+
+## `consume`
+
+Target fixture coverage:
+
+* `tiny.valid.coordinate`: alignment-mode BAM ingest
+* `tiny.valid.sam`: alignment-mode SAM ingest
+* `tiny.valid.fastq`: unmapped FASTQ ingest
+* `tiny.valid.fastq_gz`: unmapped FASTQ.GZ ingest
+* `tiny.consume.mixed_alignment_raw`: mixed-format rejection
+* `tiny.consume.directory_tree`: lexical discovery, recursive traversal, and
+  unsupported-entry reporting
 
 ## Duplication And Forensics Trio
 

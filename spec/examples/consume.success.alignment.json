@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "alignment",
+    "dry_run": true,
+    "inputs": {
+      "requested_paths": [
+        "a.sam",
+        "b.bam"
+      ],
+      "directories_scanned": 0,
+      "files_discovered": 2,
+      "files_consumed": 2,
+      "files_skipped": 0,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {
+        "BAM": 1,
+        "SAM": 1
+      },
+      "consumed_files": [
+        {
+          "path": "a.sam",
+          "detected_format": "SAM",
+          "consumed": true,
+          "reason": null
+        },
+        {
+          "path": "b.bam",
+          "detected_format": "BAM",
+          "consumed": true,
+          "reason": null
+        }
+      ],
+      "skipped_files": [],
+      "rejected_files": []
+    },
+    "output": {
+      "path": "combined.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "coordinate",
+      "mapped_state": "mapped_or_mixed"
+    },
+    "header": {
+      "strategy": "first_compatible_alignment_header",
+      "reference_compatibility": "planned_strict_match",
+      "sample": null,
+      "read_group": null,
+      "platform": null
+    },
+    "index": {
+      "requested": true,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": true,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "Alignment mode consumes BAM and SAM inputs and preserves alignments where present.",
+      "Requested post-ingest sorting is recorded in the contract, but consume does not yet execute sort reuse in this slice.",
+      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+    ]
+  },
+  "error": null
+}

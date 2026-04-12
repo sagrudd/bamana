@@ -31,6 +31,48 @@ Deep content validity or full semantic correctness.
 Key output concepts:
 `detected_format`, `container`, `confidence`.
 
+## `consume`
+
+Synopsis:
+`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped|mixed-allow> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
+
+Semantics:
+Acts as Bamana’s input normalization gateway. It discovers files and
+directories deterministically, classifies supported inputs, enforces a
+conservative mixed-format policy, and normalizes them into BAM according to an
+explicit ingest mode.
+
+Mixed-format policy:
+
+* `alignment` accepts alignment-bearing inputs only (`BAM`, `SAM`; later CRAM)
+* `unmapped` accepts raw-read inputs only (`FASTQ`, `FASTQ.GZ`)
+* `mixed-allow` is reserved for explicitly supported future mixed-ingestion
+  behavior and is currently not implemented
+* by default, alignment-bearing and raw-read inputs are not allowed in the same
+  request
+
+Directory traversal rules:
+
+* file paths are considered directly
+* directory paths are scanned top-level only unless `--recursive` is supplied
+* discovered paths are ordered lexically by normalized path string
+* symlinks are not followed in the current slice
+* unsupported or skipped entries are reported explicitly in JSON
+
+Does prove:
+Deterministic discovery, input classification, mixed-format policy enforcement,
+and staged ingest planning. In dry-run mode it proves what would be consumed
+without writing a BAM.
+
+Does not prove:
+Successful BAM normalization unless the response explicitly reports a written
+output. It does not imply alignment for raw-read inputs, and it does not imply
+that future mixed-ingestion or CRAM policies are already implemented.
+
+Key output concepts:
+`mode`, `inputs`, `discovery`, `output`, `header`, `index`,
+`checksum_verification`, `notes`.
+
 ## `verify`
 
 Synopsis:

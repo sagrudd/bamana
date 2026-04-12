@@ -51,6 +51,20 @@ This split matters because:
 * `forensic_inspect` is about provenance and coercion hallmarks, which may be
   present without simple duplication
 
+## Consume Fixtures
+
+The fixture suite also reserves a focused planning layer for `consume`.
+
+Those fixtures should separate:
+
+* alignment-mode BAM/SAM ingest
+* unmapped FASTQ / FASTQ.GZ ingest
+* mixed-format rejection
+* directory traversal behavior
+
+The first consume fixtures should remain tiny and should prove discovery and
+policy semantics before they try to exercise larger normalization workflows.
+
 ## Adding A Fixture
 
 When adding or changing a fixture:

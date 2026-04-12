@@ -3,6 +3,7 @@ mod cli;
 mod commands;
 mod error;
 mod formats;
+mod ingest;
 mod json;
 
 use std::process::ExitCode;
@@ -16,6 +17,7 @@ use commands::{
     check_sort::{CheckSortPayload, CheckSortRequest},
     check_tag::CheckTagRequest,
     checksum::ChecksumRequest,
+    consume::ConsumeRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
@@ -36,6 +38,26 @@ fn main() -> ExitCode {
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
             let response: CommandResponse<IdentifyResponse> =
                 CommandResponse::from_result("identify", Some(path.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Consume(args) => {
+            let response = commands::consume::run(ConsumeRequest {
+                input: args.input,
+                out: args.out,
+                mode: args.mode,
+                recursive: args.recursive,
+                threads: args.threads,
+                force: args.force,
+                sort: args.sort,
+                create_index: args.create_index,
+                verify_checksum: args.verify_checksum,
+                dry_run: args.dry_run,
+                sample: args.sample,
+                read_group: args.read_group,
+                platform: args.platform,
+                include_glob: args.include_glob,
+                exclude_glob: args.exclude_glob,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::Checksum(args) => {

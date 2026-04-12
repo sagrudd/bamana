@@ -5,6 +5,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
 use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
+use crate::ingest::consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -32,6 +33,8 @@ pub struct Cli {
 pub enum Commands {
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
+    /// Consume files and directories into a normalized BAM with explicit ingest semantics.
+    Consume(ConsumeArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
     Checksum(ChecksumArgs),
     /// Merge multiple BAM inputs into a single BAM output.
@@ -69,6 +72,55 @@ pub enum Commands {
 pub struct IdentifyArgs {
     /// Path to inspect.
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct ConsumeArgs {
+    /// One or more files and/or directories to ingest.
+    #[arg(long = "input", alias = "in", required = true, num_args = 1..)]
+    pub input: Vec<PathBuf>,
+    /// Output BAM path.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Ingestion mode. Mixed alignment-bearing and raw-read inputs are rejected by default.
+    #[arg(long = "mode", value_enum)]
+    pub mode: ConsumeMode,
+    /// Descend into input directories recursively.
+    #[arg(long)]
+    pub recursive: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output file.
+    #[arg(long)]
+    pub force: bool,
+    /// Output sort policy after ingestion.
+    #[arg(long = "sort", value_enum, default_value_t = ConsumeSortOrder::None)]
+    pub sort: ConsumeSortOrder,
+    /// Attempt to create an index when the output order is suitable.
+    #[arg(long = "create-index")]
+    pub create_index: bool,
+    /// Verify checksum preservation after ingestion when semantically meaningful.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Discover, classify, and plan ingestion without writing a BAM.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Optional sample name for synthetic unmapped BAM headers.
+    #[arg(long = "sample")]
+    pub sample: Option<String>,
+    /// Optional read-group identifier for synthetic unmapped BAM headers.
+    #[arg(long = "read-group")]
+    pub read_group: Option<String>,
+    /// Optional sequencing platform for synthetic unmapped BAM headers.
+    #[arg(long = "platform", value_enum)]
+    pub platform: Option<ConsumePlatform>,
+    /// Future include filter applied to discovered paths.
+    #[arg(long = "include-glob")]
+    pub include_glob: Vec<String>,
+    /// Future exclude filter applied to discovered paths.
+    #[arg(long = "exclude-glob")]
+    pub exclude_glob: Vec<String>,
 }
 
 #[derive(Debug, Args)]

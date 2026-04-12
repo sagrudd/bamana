@@ -1,0 +1,76 @@
+{
+  "ok": false,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "alignment",
+    "dry_run": true,
+    "inputs": {
+      "requested_paths": [
+        "reads.fastq.gz",
+        "aligned.bam"
+      ],
+      "directories_scanned": 0,
+      "files_discovered": 2,
+      "files_consumed": 0,
+      "files_skipped": 0,
+      "files_rejected": 2
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {
+        "BAM": 1,
+        "FASTQ.GZ": 1
+      },
+      "consumed_files": [],
+      "skipped_files": [],
+      "rejected_files": [
+        {
+          "path": "aligned.bam",
+          "detected_format": "BAM",
+          "consumed": false,
+          "reason": "mixed_input_modes_not_allowed"
+        },
+        {
+          "path": "reads.fastq.gz",
+          "detected_format": "FASTQ.GZ",
+          "consumed": false,
+          "reason": "mixed_input_modes_not_allowed"
+        }
+      ]
+    },
+    "output": {
+      "path": "combined.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "none",
+      "mapped_state": "mapped_or_mixed"
+    },
+    "header": {
+      "strategy": "first_compatible_alignment_header",
+      "reference_compatibility": null,
+      "sample": null,
+      "read_group": null,
+      "platform": null
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": []
+  },
+  "error": {
+    "code": "mixed_input_modes_not_allowed",
+    "message": "Mixed raw-read and alignment-bearing inputs are not allowed in the selected consume mode.",
+    "detail": "Detected 1 alignment-bearing input(s) and 1 raw-read input(s) in the same request.",
+    "hint": "Run separate consume operations or use an explicitly supported mixed-ingestion mode."
+  }
+}

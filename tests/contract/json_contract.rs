@@ -112,8 +112,13 @@ fn contract_docs_exist() {
             .join("indexing")
             .join("README.md"),
         fixtures_dir().join("duplication").join("README.md"),
+        fixtures_dir().join("consume").join("README.md"),
         fixtures_dir().join("forensics").join("README.md"),
         fixtures_dir().join("expected").join("README.md"),
+        fixtures_dir()
+            .join("expected")
+            .join("consume")
+            .join("README.md"),
         fixtures_dir()
             .join("expected")
             .join("inspect_duplication")
@@ -174,6 +179,29 @@ fn fixture_manifest_includes_duplication_and_forensics_trio() {
         assert!(
             ids.contains(required_id),
             "fixture manifest is missing required trio fixture {required_id}"
+        );
+    }
+}
+
+#[test]
+fn fixture_manifest_includes_consume_fixture_plan() {
+    let manifest = load_fixture_manifest();
+    let ids: BTreeSet<String> = manifest
+        .fixtures
+        .into_iter()
+        .map(|fixture| fixture.id)
+        .collect();
+
+    for required_id in [
+        "tiny.valid.sam",
+        "tiny.valid.fastq",
+        "tiny.valid.fastq_gz",
+        "tiny.consume.mixed_alignment_raw",
+        "tiny.consume.directory_tree",
+    ] {
+        assert!(
+            ids.contains(required_id),
+            "fixture manifest is missing planned consume fixture {required_id}"
         );
     }
 }

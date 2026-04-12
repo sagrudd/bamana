@@ -27,3 +27,8 @@ The spec layer covers both:
 
 This separation is deliberate: repository-facing contract design should not wait
 for every implementation detail to be finished.
+
+`consume` is the ingestion gateway into Bamana. It is the command that accepts
+files and directories containing supported upstream formats and normalizes them
+into a single BAM according to an explicit ingest mode. Its detailed contract
+is documented in [spec/cli/commands.md](/Users/stephen/Projects/bamana/spec/cli/commands.md).

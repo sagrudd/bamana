@@ -6,6 +6,7 @@ inspection, and transformation of BAM files and related bioinformatics formats.
 The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
+* `bamana consume --input <path...> --out <result.bam>`
 * `bamana verify --bam <bamfile>`
 * `bamana check_eof --bam <bamfile>`
 * `bamana header --bam <bamfile>`
@@ -25,6 +26,7 @@ All command output is JSON.
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
+* `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only, including the binary reference dictionary and textual SAM-style header records
@@ -40,6 +42,7 @@ The current semantics are intentionally narrow:
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
+`consume` does not imply that heterogeneous upstream inputs were normalized unless the response explicitly reports a written BAM output, and it does not silently combine alignment-bearing and raw-read inputs across the alignment/unmapped boundary.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
 `check_map` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
@@ -56,6 +59,8 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 
 ```bash
 cargo run -- identify example.bam
+cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
+cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment --dry-run --sort coordinate
 cargo run -- verify --bam example.bam
 cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
@@ -91,6 +96,14 @@ cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order quer
 `header` uses the binary BAM reference section as authoritative for reference
 names and lengths, and joins optional fields from textual `@SQ` records into the
 structured JSON view when present.
+
+`consume` is the front-door normalization command for Bamana. In alignment mode
+it is intended to preserve alignments from BAM/SAM-like inputs while
+normalizing them into BAM. In unmapped mode it is intended to convert FASTQ and
+FASTQ.GZ inputs into unmapped BAM without implying alignment. The current slice
+implements deterministic discovery, mode enforcement, and dry-run planning;
+actual BAM writing is staged and reported honestly as deferred when execution
+is requested.
 
 `check_map` prefers index-derived mapping summaries when a usable BAI is present.
 Without a usable index it falls back to scan-based evidence. Bounded scan mode is

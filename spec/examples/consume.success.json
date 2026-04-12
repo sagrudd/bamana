@@ -1,0 +1,66 @@
+{
+  "ok": true,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "unmapped",
+    "dry_run": true,
+    "inputs": {
+      "requested_paths": [
+        "reads.fastq.gz"
+      ],
+      "directories_scanned": 0,
+      "files_discovered": 1,
+      "files_consumed": 1,
+      "files_skipped": 0,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {
+        "FASTQ.GZ": 1
+      },
+      "consumed_files": [
+        {
+          "path": "reads.fastq.gz",
+          "detected_format": "FASTQ.GZ",
+          "consumed": true,
+          "reason": null
+        }
+      ],
+      "skipped_files": [],
+      "rejected_files": []
+    },
+    "output": {
+      "path": "reads.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "none",
+      "mapped_state": "unmapped"
+    },
+    "header": {
+      "strategy": "synthetic_unmapped_header",
+      "reference_compatibility": null,
+      "sample": "demo",
+      "read_group": "rg0",
+      "platform": "ONT"
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "FASTQ-like inputs are normalized into unmapped BAM records with no implied alignment.",
+      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+    ]
+  },
+  "error": null
+}

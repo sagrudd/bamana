@@ -105,6 +105,31 @@ Preferred process:
 
 Invalid fixtures should not be used as substitutes for forensic fixtures.
 
+### 5. Consume fixtures
+
+The `consume` fixture family should stay small and should focus on discovery and
+policy semantics first.
+
+Recommended roots:
+
+* `tiny.valid.coordinate.bam` for alignment-bearing BAM ingest
+* `tiny.valid.sam` for alignment-bearing SAM ingest
+* `tiny.valid.fastq` and `tiny.valid.fastq_gz` for unmapped ingest
+
+Recommended derived fixtures:
+
+* `tiny.consume.mixed_alignment_raw` created by composing one alignment-bearing
+  source with one raw-read source in a single request
+* `tiny.consume.directory_tree` created by arranging supported files,
+  unsupported files, and nested directories in a deterministic lexical layout
+
+The first consume fixtures should prove:
+
+* deterministic lexical discovery
+* recursive versus non-recursive directory behavior
+* mixed-format rejection across alignment/raw-read boundaries
+* dry-run planning semantics
+
 ## What Should Be Checked In
 
 Preferred first step:
