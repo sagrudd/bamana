@@ -52,6 +52,65 @@ This split matters because:
 * `forensic_inspect` is about provenance and coercion hallmarks, which may be
   present without simple duplication
 
+### Trio Taxonomy
+
+The trio plan is intentionally small and uses four explicit semantic classes:
+
+* `clean`: parseable baselines with no suspicious duplicate block or provenance
+  anomaly
+* `duplicate`: parseable operator-error duplication cases such as whole-file
+  append or local repeated block
+* `forensic`: parseable but suspicious provenance/coercion cases that should
+  not be confused with malformed inputs
+* `invalid`: controlled parse-failure cases for negative-path contract testing
+
+The current reserved trio fixtures are:
+
+* `tiny.clean.fastq`
+* `tiny.clean.bam`
+* `tiny.duplicate.fastq.whole_append`
+* `tiny.duplicate.fastq.local_block`
+* `tiny.duplicate.bam.local_block`
+* `tiny.forensic.bam.rg_pg_inconsistent`
+* `tiny.forensic.bam.readname_shift`
+* `tiny.forensic.bam.concatenated_signature`
+* `tiny.invalid.fastq.truncated`
+* `tiny.invalid.bam.truncated_record`
+
+An aux-corruption variant such as `tiny.invalid.bam.bad_aux` remains optional
+and outside the first tiny core set to keep the trio executable plan small.
+
+### Expected Output Naming
+
+Expected JSON outputs for the trio are reserved under:
+
+* `expected/inspect_duplication/`
+* `expected/deduplicate/`
+* `expected/forensic_inspect/`
+
+Naming conventions:
+
+* `inspect_duplication.<fixture-id>.success.json`
+* `inspect_duplication.<fixture-id>.failure.json`
+* `deduplicate.<fixture-id>.dry_run.success.json`
+* `deduplicate.<fixture-id>.applied.success.json`
+* `deduplicate.<fixture-id>.noop.success.json`
+* `deduplicate.<fixture-id>.failure.json`
+* `forensic_inspect.<fixture-id>.success.json`
+* `forensic_inspect.<fixture-id>.failure.json`
+
+### Test Integration
+
+The trio fixtures are planned to plug into the contract layer as follows:
+
+* `json_contract.rs`: ensure every trio command has schema-backed success and
+  failure examples and that the manifest keeps the clean/duplicate/forensic
+  split explicit
+* `golden_outputs.rs`: compare real command output against golden JSON for
+  clean, duplicated, suspicious, and invalid cases
+* `cli_contract.rs`: remain largely fixture-independent, with representative
+  trio fixture ids available for smoke-style invocation examples when needed
+
 ## Consume Fixtures
 
 The fixture suite also reserves a focused planning layer for `consume`.

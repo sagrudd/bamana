@@ -194,7 +194,7 @@ fn fixture_manifest_includes_duplication_and_forensics_trio() {
         "tiny.forensic.bam.readname_shift",
         "tiny.forensic.bam.concatenated_signature",
         "tiny.invalid.fastq.truncated",
-        "tiny.invalid.bam.truncated_record.duplication",
+        "tiny.invalid.bam.truncated_record",
     ] {
         assert!(
             ids.contains(required_id),

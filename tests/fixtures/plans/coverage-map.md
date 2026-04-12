@@ -234,7 +234,7 @@ Target fixture coverage:
 * `tiny.duplicate.fastq.local_block`: local block detection
 * `tiny.duplicate.bam.local_block`: BAM contiguous block detection
 * `tiny.invalid.fastq.truncated`: parse-failure path
-* `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+* `tiny.invalid.bam.truncated_record`: parse-failure path
 
 Contract assertions to reserve explicitly:
 
@@ -258,7 +258,7 @@ Target fixture coverage:
 * `tiny.duplicate.bam.local_block`: BAM contiguous-block removal coverage with
   header preservation and index invalidation reporting
 * `tiny.invalid.fastq.truncated`: parse-failure path
-* `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+* `tiny.invalid.bam.truncated_record`: parse-failure path
 
 Contract assertions to reserve explicitly:
 
@@ -282,7 +282,7 @@ Target fixture coverage:
   findings
 * `tiny.forensic.bam.readname_shift`: read-name regime-shift and optional
   tag-schema-shift findings
-* `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+* `tiny.invalid.bam.truncated_record`: parse-failure path
 
 Contract assertions to reserve explicitly:
 
@@ -293,3 +293,15 @@ Contract assertions to reserve explicitly:
 * the command remains explicit that it reports provenance anomalies and
   coercion hallmarks, not structural validity, duplicate marking, or fraud
   attribution
+
+## Trio Contract Integration
+
+The trio fixture layer is intended to support three distinct contract-testing
+behaviors:
+
+* `json_contract.rs`: verify that every trio semantic class has a manifest
+  entry and a reserved golden-output naming path
+* `golden_outputs.rs`: compare real command output with reserved JSON for clean,
+  duplicate, forensic, and invalid semantics without collapsing those classes
+* `cli_contract.rs`: keep representative fixture ids stable enough for smoke
+  invocations and help-text examples

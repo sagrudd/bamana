@@ -23,3 +23,11 @@ Examples to reserve:
 * `deduplicate.tiny.duplicate.bam.local_block.applied.success.json`
 * `deduplicate.tiny.invalid.fastq.truncated.failure.json`
 * `deduplicate.tiny.invalid.bam.truncated_record.failure.json`
+
+Semantic intent:
+
+* clean fixtures reserve stable no-op outputs
+* duplicate fixtures reserve paired dry-run and applied outputs so removal
+  planning and remediation can be tested separately
+* invalid fixtures reserve failure outputs so parse uncertainty cannot be
+  mistaken for no-op success

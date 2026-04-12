@@ -45,6 +45,56 @@ That distinction matters. Operator-error duplication is not the same as
 molecular duplicate biology, and suspicious provenance hallmarks are not the
 same as structural corruption.
 
+### Why The Trio Needs Separate Fixture Classes
+
+The trio is intentionally split so tests can ask different questions against
+different assets:
+
+* clean fixtures answer whether the command stays quiet on an ordinary
+  collection
+* duplicate fixtures answer whether operator-error duplication is detected or
+  remediated deterministically
+* forensic fixtures answer whether parseable but suspicious provenance
+  hallmarks are surfaced without collapsing into generic parse failure
+* invalid fixtures answer whether the command exits honestly when stable
+  evidence cannot be established
+
+This prevents two unsafe shortcuts:
+
+* treating operator-error duplication as if it were molecular duplicate biology
+* treating suspicious-but-parseable provenance anomalies as if they were merely
+  malformed files
+
+### Trio Fixture Set
+
+The current tiny fixture plan for this layer is:
+
+* `tiny.clean.fastq`
+* `tiny.clean.bam`
+* `tiny.duplicate.fastq.whole_append`
+* `tiny.duplicate.fastq.local_block`
+* `tiny.duplicate.bam.local_block`
+* `tiny.forensic.bam.rg_pg_inconsistent`
+* `tiny.forensic.bam.readname_shift`
+* `tiny.forensic.bam.concatenated_signature`
+* `tiny.invalid.fastq.truncated`
+* `tiny.invalid.bam.truncated_record`
+
+The BAM aux-corruption path remains optional and may be layered in later if the
+forensic/tag-inspection surface needs a dedicated malformed-aux negative case.
+
+### Contract-Test Use
+
+The fixture-planning layer is intended to support:
+
+* `json_contract.rs`: machine-readable manifest and example/schema stability
+  checks for clean, duplicate, forensic, and invalid semantics
+* `golden_outputs.rs`: stable golden JSON for representative success, no-op,
+  dry-run, applied-remediation, suspicious, and failure paths
+* future executable smoke coverage that runs `inspect_duplication`,
+  `deduplicate`, and `forensic_inspect` against the tiny fixture trio without
+  requiring a large corpus
+
 ## Consume Fixtures
 
 `consume` needs a separate fixture layer because it is the repository’s

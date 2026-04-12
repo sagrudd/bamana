@@ -3,7 +3,7 @@
   "suite_id": "bamana-tiny-fixtures",
   "version": "0.1.0",
   "status": "planning",
-  "description": "Tiny deterministic BAM, BAI, FASTQ, and expected-output fixtures planned for Bamana contract and interoperability tests, including duplication and forensic-inspection scenarios.",
+  "description": "Tiny deterministic BAM, BAI, FASTQ, and expected-output fixtures planned for Bamana contract and interoperability tests, including governed clean, duplicate, forensic, and invalid scenarios for inspect_duplication, deduplicate, and forensic_inspect.",
   "fixtures": [
     {
       "id": "tiny.valid.coordinate",
@@ -394,7 +394,7 @@
     },
     {
       "id": "tiny.clean.fastq",
-      "path": "duplication/tiny.clean.fastq",
+      "path": "duplication/tiny.clean.fastq.fastq",
       "format": "FASTQ",
       "category": "clean",
       "validity": "valid",
@@ -414,13 +414,22 @@
       "duplication_signature": "none",
       "forensic_hallmarks": [],
       "supports_dry_run": true,
-      "supports_output_fixture": false,
+      "supports_output_fixture": true,
       "header_anomaly_type": null,
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "inspect_duplication reports no suspicious duplicate finding",
+        "deduplicate reports deterministic no-op planning or no-op applied output",
+        "fixture remains the clean FASTQ baseline for operator-error duplication tests"
+      ],
+      "golden_profile": "clean_baseline",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.clean.bam",
-      "path": "duplication/tiny.clean.bam",
+      "path": "duplication/tiny.clean.bam.bam",
       "format": "BAM",
       "category": "clean",
       "validity": "valid",
@@ -441,9 +450,18 @@
       "duplication_signature": "none",
       "forensic_hallmarks": [],
       "supports_dry_run": true,
-      "supports_output_fixture": false,
+      "supports_output_fixture": true,
       "header_anomaly_type": null,
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "inspect_duplication reports no suspicious duplicate finding",
+        "deduplicate reports deterministic no-op behavior",
+        "forensic_inspect reports a clean BAM with no suspicious provenance findings"
+      ],
+      "golden_profile": "clean_baseline",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.duplicate.fastq.whole_append",
@@ -470,7 +488,16 @@
       "supports_dry_run": true,
       "supports_output_fixture": true,
       "header_anomaly_type": null,
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "inspect_duplication reports a strong whole-file append or equivalent contiguous-duplicate finding",
+        "deduplicate dry-run removes the second half deterministically",
+        "deduplicate applied output matches the first-half clean collection only"
+      ],
+      "golden_profile": "whole_append_duplicate",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.duplicate.fastq.local_block",
@@ -497,7 +524,16 @@
       "supports_dry_run": true,
       "supports_output_fixture": true,
       "header_anomaly_type": null,
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "inspect_duplication reports a local contiguous-block duplicate rather than a whole-file append",
+        "deduplicate dry-run reports deterministic local keep/remove ranges",
+        "deduplicate applied output preserves surrounding clean records"
+      ],
+      "golden_profile": "local_block_duplicate",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.duplicate.bam.local_block",
@@ -524,7 +560,16 @@
       "supports_dry_run": true,
       "supports_output_fixture": true,
       "header_anomaly_type": null,
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "inspect_duplication reports BAM-local contiguous duplicate block evidence",
+        "deduplicate reports deterministic BAM dry-run and applied-removal summaries",
+        "forensic_inspect may surface a duplicate-block hallmark without broader provenance anomalies"
+      ],
+      "golden_profile": "local_block_duplicate",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.forensic.bam.rg_pg_inconsistent",
@@ -549,7 +594,16 @@
       "supports_dry_run": false,
       "supports_output_fixture": false,
       "header_anomaly_type": "rg_pg_inconsistent",
-      "read_name_regime_type": "stable"
+      "read_name_regime_type": "stable",
+      "contract_assertions": [
+        "forensic_inspect reports header_inconsistency, read_group_inconsistency, and program_chain_anomaly findings without parse failure",
+        "fixture remains parseable and should not be treated as a malformed BAM",
+        "provenance anomalies are deliberate and auditable rather than incidental corruption"
+      ],
+      "golden_profile": "forensic_header_provenance",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.forensic.bam.readname_shift",
@@ -574,7 +628,16 @@
       "supports_dry_run": false,
       "supports_output_fixture": false,
       "header_anomaly_type": null,
-      "read_name_regime_type": "abrupt_shift"
+      "read_name_regime_type": "abrupt_shift",
+      "contract_assertions": [
+        "forensic_inspect reports read_name_regime_shift and may report mixed_run_signature",
+        "the file remains parseable and operationally suspicious rather than malformed",
+        "bounded and full scans can be distinguished in evidence scope and assessment"
+      ],
+      "golden_profile": "forensic_readname_shift",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.forensic.bam.concatenated_signature",
@@ -600,7 +663,16 @@
       "supports_dry_run": false,
       "supports_output_fixture": false,
       "header_anomaly_type": "concatenated_signature",
-      "read_name_regime_type": "abrupt_shift"
+      "read_name_regime_type": "abrupt_shift",
+      "contract_assertions": [
+        "forensic_inspect reports the strongest suspicious concatenation/coercion assessment in the tiny trio set",
+        "inspect_duplication may overlap on duplicate-block evidence without collapsing the provenance semantics",
+        "fixture intentionally layers duplicate and provenance hallmarks while remaining parseable"
+      ],
+      "golden_profile": "forensic_concatenated_signature",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.invalid.fastq.truncated",
@@ -626,10 +698,18 @@
       "supports_dry_run": false,
       "supports_output_fixture": false,
       "header_anomaly_type": null,
-      "read_name_regime_type": null
+      "read_name_regime_type": null,
+      "contract_assertions": [
+        "inspect_duplication fails with parse uncertainty or equivalent invalid-input semantics",
+        "deduplicate refuses remediation because a stable duplicate-removal plan cannot be constructed"
+      ],
+      "golden_profile": "invalid_parse_failure",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
-      "id": "tiny.invalid.bam.truncated_record.duplication",
+      "id": "tiny.invalid.bam.truncated_record",
       "path": "duplication/tiny.invalid.bam.truncated_record.bam",
       "format": "BAM",
       "category": "invalid",
@@ -653,7 +733,16 @@
       "supports_dry_run": false,
       "supports_output_fixture": false,
       "header_anomaly_type": null,
-      "read_name_regime_type": null
+      "read_name_regime_type": null,
+      "contract_assertions": [
+        "inspect_duplication fails with parse uncertainty or equivalent invalid-input semantics",
+        "deduplicate fails because no stable removal plan can be constructed",
+        "forensic_inspect fails early or reports partial header-only evidence without a stable provenance assessment"
+      ],
+      "golden_profile": "invalid_parse_failure",
+      "supports_json_contract": true,
+      "supports_golden_outputs": true,
+      "supports_cli_smoke": true
     },
     {
       "id": "tiny.valid.sam",

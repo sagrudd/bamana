@@ -72,6 +72,13 @@ Preferred process:
 * preserve deterministic record/read order
 * avoid accidental repeated blocks, header anomalies, or regime shifts
 
+Reserved clean roots for the trio:
+
+* `tiny.clean.fastq` should come from a hand-authored tiny FASTQ with stable
+  names, stable qualities, and no repeated halves or repeated local blocks
+* `tiny.clean.bam` should come from a hand-authored tiny SAM/BAM with a normal
+  `@RG`/`@PG` story and no deliberate read-name or tag-schema transition
+
 #### Duplicate fixtures
 
 Preferred process:
@@ -82,6 +89,19 @@ Preferred process:
 
 These fixtures should model operator-error duplication, not molecular duplicate
 biology.
+
+Reserved duplicate derivations for the trio:
+
+* `tiny.duplicate.fastq.whole_append`: append the clean FASTQ body to itself
+  without altering names, sequence, or qualities
+* `tiny.duplicate.fastq.local_block`: splice one known clean contiguous record
+  block back into the middle of the file
+* `tiny.duplicate.bam.local_block`: duplicate a known contiguous BAM record
+  block in file order while leaving the header unchanged
+
+Each duplicate fixture should record which source fixture and which block or
+range was duplicated so `deduplicate` dry-run and applied outputs can be
+reviewed deterministically.
 
 #### Forensic fixtures
 
@@ -95,6 +115,20 @@ Preferred process:
 Forensic fixtures must remain distinct from malformed fixtures. A suspicious
 file should stay technically consumable where possible.
 
+Reserved forensic derivations for the trio:
+
+* `tiny.forensic.bam.rg_pg_inconsistent`: controlled header edits and RG/body
+  mismatch while preserving BAM parseability
+* `tiny.forensic.bam.readname_shift`: compose two read-name regimes in one BAM
+  without truncation or structural corruption
+* `tiny.forensic.bam.concatenated_signature`: layer duplicate-block evidence
+  with suspicious provenance metadata and/or read-name regime transitions
+
+Reviewer rule:
+
+* if a forensic fixture stops parsing, it has become an invalid fixture and
+  no longer serves the forensic contract it was intended to exercise
+
 #### Invalid fixtures
 
 Preferred process:
@@ -104,6 +138,44 @@ Preferred process:
 * document the exact intended parse failure
 
 Invalid fixtures should not be used as substitutes for forensic fixtures.
+
+Reserved invalid derivations for the trio:
+
+* `tiny.invalid.fastq.truncated`: truncate the final FASTQ record
+* `tiny.invalid.bam.truncated_record`: truncate the BAM alignment stream
+* optional later extension: reuse or derive an aux-corruption case only if the
+  forensic/tag-inspection surface needs a dedicated malformed-aux negative path
+
+## Trio Test Integration Guidance
+
+The duplication/forensics trio should plug into the contract layer in three
+different ways:
+
+### `json_contract.rs`
+
+Use the fixture manifest and expected-example inventory to assert:
+
+* every trio semantic class is represented
+* clean, duplicate, forensic, and invalid fixture ids remain stable
+* reserved golden output filenames continue to match the command schemas
+
+### `golden_outputs.rs`
+
+Use the reserved expected-output stems to assert:
+
+* clean fixtures stay quiet or no-op as intended
+* duplicate fixtures keep stable finding taxonomy and stable dry-run/applied
+  removal plans
+* forensic fixtures keep stable category, severity, confidence, and assessment
+  semantics
+* invalid fixtures continue to fail honestly rather than drifting into silent
+  success
+
+### `cli_contract.rs`
+
+This layer remains mostly fixture-independent, but representative trio fixture
+ids should remain stable enough to support smoke-style invocation examples and
+future thin end-to-end CLI checks.
 
 ### 5. Consume fixtures
 

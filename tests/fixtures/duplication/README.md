@@ -19,4 +19,4 @@ Planned fixture IDs include:
 * `tiny.duplicate.fastq.local_block`
 * `tiny.duplicate.bam.local_block`
 * `tiny.invalid.fastq.truncated`
-* `tiny.invalid.bam.truncated_record.duplication`
+* `tiny.invalid.bam.truncated_record`
