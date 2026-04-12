@@ -11,8 +11,8 @@ use crate::{
         tags::extract_string_aux_tag,
     },
     error::AppError,
+    fastq::{open_fastq_reader, read_next_fastq_record},
     formats::probe::DetectedFormat,
-    ingest::fastq::{open_fastq_reader, read_next_fastq_record},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]

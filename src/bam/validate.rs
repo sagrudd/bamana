@@ -9,8 +9,8 @@ use crate::{
         records::{RecordLayout, read_next_record_layout},
         tags::traverse_aux_fields,
     },
+    bgzf,
     error::AppError,
-    formats::bgzf,
 };
 
 #[derive(Debug, Clone, Copy)]

@@ -24,13 +24,13 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
+    fastq::{FastqRecord, open_fastq_reader, read_next_fastq_record, write_fastq_records},
     forensics::duplication::{
         DuplicateRange, DuplicationFindingType, DuplicationIdentityMode,
         build_identity_key as build_duplication_identity_key, detect_adjacent_duplicate_blocks,
         identity_mode_label,
     },
     formats::probe::DetectedFormat,
-    ingest::fastq::{FastqRecord, open_fastq_reader, read_next_fastq_record, write_fastq_records},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]

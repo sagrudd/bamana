@@ -45,6 +45,10 @@ explicit comparator treatment for `samtools` as the canonical BAM baseline and
 
 The project charter remains explicit that:
 
+* performance-critical BAM, BGZF, and FASTQ execution paths must be owned by
+  Bamana-native modules rather than by general-purpose external format crates
+* `noodles` and similar crates are demoted to compatibility, oracle, fixture,
+  or transitional roles rather than the primary execution engine
 * CRAM support must not silently guess reference behavior
 * ingestion semantics are conservative and automation-facing
 * header-only mutation must remain distinct from record-level alignment-tag

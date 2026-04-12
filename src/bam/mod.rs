@@ -1,3 +1,8 @@
+//! Bamana-native BAM core.
+//!
+//! Production BAM hot paths should be implemented here rather than delegated to
+//! general-purpose external format crates.
+
 pub mod annotate_rg;
 pub mod checksum;
 pub mod header;

@@ -6,7 +6,7 @@ use std::{
 
 use flate2::{Compression, GzBuilder};
 
-use crate::{bam::records::RecordLayout, error::AppError, formats::bgzf::BGZF_EOF_MARKER};
+use crate::{bam::records::RecordLayout, bgzf::BGZF_EOF_MARKER, error::AppError};
 
 const BGZF_MAX_BLOCK_SIZE: usize = 65_536;
 const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 64 * 1024 - 512;

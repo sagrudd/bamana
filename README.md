@@ -29,6 +29,28 @@ The current repository contains the first concrete CLI slice for:
 
 All command output is JSON.
 
+## Native Performance Core
+
+Bamana is being re-anchored around a **Bamana-native performance core** for
+BGZF, BAM, FASTQ, sampling, ingest, and forensic hot paths.
+
+This repository rule is now explicit:
+
+* performance-critical BAM and FASTQ operations must be implemented using
+  Bamana-native parsing, I/O, scanning, serialization, and transformation
+  primitives
+* general-purpose crates such as `noodles` are demoted to compatibility,
+  testing, oracle, or transitional roles
+* the current explicit transitional exception is conservative CRAM ingestion
+  support
+
+See:
+
+* [ARCHITECTURE.md](/Users/stephen/Projects/bamana/ARCHITECTURE.md)
+* [docs/architecture.md](/Users/stephen/Projects/bamana/docs/architecture.md)
+* [docs/dependency-policy.md](/Users/stephen/Projects/bamana/docs/dependency-policy.md)
+* [docs/performance-core.md](/Users/stephen/Projects/bamana/docs/performance-core.md)
+
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics

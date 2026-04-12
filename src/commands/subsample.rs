@@ -15,8 +15,8 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
+    fastq::{FastqRecord, FastqWriter, open_fastq_reader, read_next_fastq_record},
     formats::probe::{DetectedFormat, probe_path},
-    ingest::fastq::{FastqRecord, FastqWriter, open_fastq_reader, read_next_fastq_record},
     json::CommandResponse,
     sampling::{
         DeterministicIdentity, SubsampleMode,

@@ -157,6 +157,10 @@ Bamana shall be governed by the following design principles.
 
 Each command shall pursue the fastest realistic path to a correct result. Full-file scans should not be performed where a shallower but semantically sufficient method exists.
 
+Performance ownership is part of this principle. For BAM, BGZF, and FASTQ hot
+paths, Bamana should own the execution core directly rather than delegating its
+primary engine to general-purpose format crates.
+
 ### 9.2 Limited Surface, Strong Guarantees
 
 Bamana shall remain intentionally narrow in feature scope, preferring a smaller number of robust capabilities over broad but weakly specified functionality.
@@ -176,6 +180,13 @@ Given identical inputs, versions, and execution conditions, Bamana should produc
 ### 9.6 Compliance-Oriented Engineering
 
 The software shall be suitable for environments requiring traceability, reproducibility, and operational controls.
+
+### 9.7 Native-Core Ownership
+
+Performance-critical BAM and FASTQ operations shall be implemented using
+Bamana-native parsing, scanning, serialization, and transformation primitives.
+External crates may be used for tests, fixture tooling, compatibility checks,
+or staged migration support, but should not define the production hot path.
 
 ## 10. Governance
 

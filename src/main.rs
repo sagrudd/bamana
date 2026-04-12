@@ -1,17 +1,11 @@
-mod bam;
-mod cli;
-mod commands;
-mod error;
-mod forensics;
-mod formats;
-mod ingest;
-mod json;
-mod sampling;
-
 use std::process::ExitCode;
 
+use bamana::{
+    cli::{Cli, Commands},
+    commands,
+    json::{CommandResponse, emit_response},
+};
 use clap::Parser;
-use cli::{Cli, Commands};
 use commands::{
     annotate_rg::AnnotateRgRequest,
     check_eof::{CheckEofRequest, CheckEofResponse},
@@ -35,7 +29,6 @@ use commands::{
     validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
-use json::{CommandResponse, emit_response};
 
 fn main() -> ExitCode {
     let cli = Cli::parse();

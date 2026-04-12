@@ -1,3 +1,10 @@
+//! Transitional CRAM compatibility layer.
+//!
+//! Bamana's performance-critical BAM, BGZF, and FASTQ core is intended to be
+//! native. CRAM remains a staged compatibility slice for now and still relies
+//! on noodles during migration. Do not expand noodles-backed logic from here
+//! into BAM/FASTQ hot paths.
+
 use std::{
     collections::hash_map::DefaultHasher,
     fmt, fs,
