@@ -7,10 +7,11 @@ use crate::{
     formats::probe::DetectedFormat,
     ingest::{
         consume::{
-            ConsumeMode, ConsumePlatform, ConsumeSortOrder, InputSemanticClass,
-            classify_input_format, header_strategy_for_mode, mapped_state_for_mode,
+            ConsumeExecutionOptions, ConsumeMode, ConsumePlatform, ConsumeSortOrder,
+            InputSemanticClass, classify_input_format, execute_consume, header_strategy_for_mode,
+            mapped_state_for_mode,
         },
-        discovery::{DiscoveryOptions, discover_requested_paths, format_counts},
+        discovery::{DiscoveredFile, DiscoveryOptions, discover_requested_paths, format_counts},
     },
     json::CommandResponse,
 };
@@ -134,6 +135,18 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
         );
     }
 
+    if !request.include_glob.is_empty() || !request.exclude_glob.is_empty() {
+        return CommandResponse::failure_with_data(
+            "consume",
+            None,
+            Some(base_payload(&request)),
+            AppError::Unimplemented {
+                path: request.out.clone(),
+                detail: "Include/exclude glob filtering is planned for consume but not implemented in this slice.".to_string(),
+            },
+        );
+    }
+
     let discovery = match discover_requested_paths(
         &request.input,
         &DiscoveryOptions {
@@ -170,185 +183,21 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
                 }),
         );
 
-    let mut alignment_files = Vec::new();
-    let mut raw_files = Vec::new();
-    let mut saw_cram = false;
+    let classified = classify_files(&discovery.discovered_files, &mut payload);
+    let saw_cram = classified
+        .unsupported
+        .iter()
+        .any(|file| matches!(file.detected_format, DetectedFormat::Cram));
 
-    for file in discovery.discovered_files {
-        if file.detected_format == DetectedFormat::Cram {
-            saw_cram = true;
+    let active_files = match resolve_mode_files(&request, &mut payload, &classified, saw_cram) {
+        Ok(files) => files,
+        Err(error) => {
+            return CommandResponse::failure_with_data("consume", None, Some(payload), error);
         }
-        let info = ConsumeInputFileInfo {
-            path: file.path.to_string_lossy().into_owned(),
-            detected_format: file.detected_format.to_string(),
-            consumed: false,
-            reason: None,
-        };
-
-        match classify_input_format(file.detected_format) {
-            InputSemanticClass::Alignment => alignment_files.push(info),
-            InputSemanticClass::RawRead => raw_files.push(info),
-            InputSemanticClass::Unsupported => {
-                let mut skipped = info;
-                skipped.reason = Some("unsupported_input_format".to_string());
-                payload.discovery.skipped_files.push(skipped);
-            }
-        }
-    }
-
-    if !request.include_glob.is_empty() || !request.exclude_glob.is_empty() {
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(payload),
-            AppError::Unimplemented {
-                path: request.out.clone(),
-                detail: "Include/exclude glob filtering is planned for consume but not implemented in this slice.".to_string(),
-            },
-        );
-    }
-
-    if matches!(request.mode, ConsumeMode::MixedAllow) {
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(payload),
-            AppError::Unimplemented {
-                path: request.out.clone(),
-                detail: "Mixed alignment-bearing and raw-read ingestion is not implemented in this slice.".to_string(),
-            },
-        );
-    }
-
-    if alignment_files.is_empty() && raw_files.is_empty() {
-        if saw_cram && matches!(request.mode, ConsumeMode::Alignment) {
-            return CommandResponse::failure_with_data(
-                "consume",
-                None,
-                Some(payload),
-                AppError::ReferenceRequired {
-                    path: request.out.clone(),
-                    detail: "CRAM ingestion is staged behind an explicit reference policy and is not implemented in this slice.".to_string(),
-                },
-            );
-        }
-
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(payload),
-            AppError::UnsupportedInputFormat {
-                path: request.out.clone(),
-                format: "No supported BAM, SAM, FASTQ, or FASTQ.GZ inputs were discovered."
-                    .to_string(),
-            },
-        );
-    }
-
-    if !alignment_files.is_empty() && !raw_files.is_empty() {
-        let detail = format!(
-            "Detected {} alignment-bearing input(s) and {} raw-read input(s) in the same request.",
-            alignment_files.len(),
-            raw_files.len()
-        );
-
-        payload
-            .discovery
-            .rejected_files
-            .extend(
-                alignment_files
-                    .into_iter()
-                    .chain(raw_files)
-                    .map(|mut file| {
-                        file.reason = Some("mixed_input_modes_not_allowed".to_string());
-                        file
-                    }),
-            );
-        refresh_counts(&mut payload);
-
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(payload),
-            AppError::MixedInputModesNotAllowed {
-                path: request.out.clone(),
-                detail,
-            },
-        );
-    }
-
-    match request.mode {
-        ConsumeMode::Alignment => {
-            if alignment_files.is_empty() {
-                payload
-                    .discovery
-                    .rejected_files
-                    .extend(raw_files.into_iter().map(|mut file| {
-                        file.reason = Some("unsupported_input_format".to_string());
-                        file
-                    }));
-                refresh_counts(&mut payload);
-                return CommandResponse::failure_with_data(
-                    "consume",
-                    None,
-                    Some(payload),
-                    AppError::UnsupportedInputFormat {
-                        path: request.out.clone(),
-                        format: "Alignment mode supports BAM and SAM inputs only.".to_string(),
-                    },
-                );
-            }
-
-            payload.discovery.consumed_files = alignment_files
-                .into_iter()
-                .map(|mut file| {
-                    file.consumed = true;
-                    file
-                })
-                .collect();
-            payload.header.reference_compatibility = Some("planned_strict_match".to_string());
-            payload
-                .notes
-                .push("Alignment mode consumes BAM and SAM inputs and preserves alignments where present.".to_string());
-        }
-        ConsumeMode::Unmapped => {
-            if raw_files.is_empty() {
-                payload
-                    .discovery
-                    .rejected_files
-                    .extend(alignment_files.into_iter().map(|mut file| {
-                        file.reason = Some("unsupported_input_format".to_string());
-                        file
-                    }));
-                refresh_counts(&mut payload);
-                return CommandResponse::failure_with_data(
-                    "consume",
-                    None,
-                    Some(payload),
-                    AppError::UnsupportedInputFormat {
-                        path: request.out.clone(),
-                        format: "Unmapped mode supports FASTQ and FASTQ.GZ inputs only."
-                            .to_string(),
-                    },
-                );
-            }
-
-            payload.discovery.consumed_files = raw_files
-                .into_iter()
-                .map(|mut file| {
-                    file.consumed = true;
-                    file
-                })
-                .collect();
-            payload
-                .notes
-                .push("FASTQ-like inputs are normalized into unmapped BAM records with no implied alignment.".to_string());
-        }
-        ConsumeMode::MixedAllow => unreachable!(),
-    }
+    };
 
     refresh_counts(&mut payload);
-    push_staged_notes(&request, &mut payload);
+    push_stage1_notes(&request, &mut payload);
 
     if request.dry_run {
         payload.notes.push(
@@ -358,26 +207,205 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
         return CommandResponse::success("consume", None, payload);
     }
 
-    if request.out.exists() && !request.force {
+    if request.create_index {
+        let error = if request.sort != ConsumeSortOrder::Coordinate {
+            AppError::InvalidConsumeRequest {
+                path: request.out.clone(),
+                detail:
+                    "Index creation is only semantically valid for coordinate-sorted consume output."
+                        .to_string(),
+            }
+        } else {
+            AppError::Unimplemented {
+                path: request.out.clone(),
+                detail: "Index creation after consume is not implemented in this slice."
+                    .to_string(),
+            }
+        };
+        return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+    }
+
+    if request.verify_checksum {
         return CommandResponse::failure_with_data(
             "consume",
             None,
             Some(payload),
-            AppError::OutputExists {
+            AppError::Unimplemented {
                 path: request.out.clone(),
+                detail: "Checksum verification after consume is not implemented in this slice."
+                    .to_string(),
             },
         );
     }
 
-    CommandResponse::failure_with_data(
-        "consume",
-        None,
-        Some(payload),
-        AppError::Unimplemented {
+    let execution = match execute_consume(&ConsumeExecutionOptions {
+        mode: request.mode,
+        files: active_files,
+        output_path: request.out.clone(),
+        force: request.force,
+        sort: request.sort,
+        sample: request.sample.clone(),
+        read_group: request.read_group.clone(),
+        platform: request.platform,
+    }) {
+        Ok(execution) => execution,
+        Err(error) => {
+            return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+        }
+    };
+
+    payload.output.written = true;
+    payload.output.records_written = Some(execution.records_written);
+    payload.header.reference_compatibility = execution.reference_compatibility;
+    payload.notes.extend(execution.notes);
+    if execution.overwritten {
+        payload
+            .notes
+            .push("Existing output path was overwritten because --force was supplied.".to_string());
+    }
+
+    CommandResponse::success("consume", None, payload)
+}
+
+struct ClassifiedFiles {
+    alignment: Vec<DiscoveredFile>,
+    raw: Vec<DiscoveredFile>,
+    unsupported: Vec<DiscoveredFile>,
+}
+
+fn classify_files(files: &[DiscoveredFile], payload: &mut ConsumePayload) -> ClassifiedFiles {
+    let mut classified = ClassifiedFiles {
+        alignment: Vec::new(),
+        raw: Vec::new(),
+        unsupported: Vec::new(),
+    };
+
+    for file in files {
+        match classify_input_format(file.detected_format) {
+            InputSemanticClass::Alignment => classified.alignment.push(file.clone()),
+            InputSemanticClass::RawRead => classified.raw.push(file.clone()),
+            InputSemanticClass::Unsupported => {
+                payload.discovery.skipped_files.push(ConsumeInputFileInfo {
+                    path: file.path.to_string_lossy().into_owned(),
+                    detected_format: file.detected_format.to_string(),
+                    consumed: false,
+                    reason: Some("unsupported_input_format".to_string()),
+                });
+                classified.unsupported.push(file.clone());
+            }
+        }
+    }
+
+    classified
+}
+
+fn resolve_mode_files(
+    request: &ConsumeRequest,
+    payload: &mut ConsumePayload,
+    classified: &ClassifiedFiles,
+    saw_cram: bool,
+) -> Result<Vec<DiscoveredFile>, AppError> {
+    if classified.alignment.is_empty() && classified.raw.is_empty() {
+        if saw_cram && matches!(request.mode, ConsumeMode::Alignment) {
+            return Err(AppError::ReferenceRequired {
+                path: request.out.clone(),
+                detail: "CRAM ingestion is staged behind an explicit reference policy and is not implemented in this slice.".to_string(),
+            });
+        }
+
+        return Err(AppError::UnsupportedInputFormat {
             path: request.out.clone(),
-            detail: "Current consume support is limited to deterministic discovery, classification, policy enforcement, and dry-run planning. BAM writing and format normalization are staged but not implemented in this slice.".to_string(),
-        },
-    )
+            format: "No supported BAM, SAM, FASTQ, or FASTQ.GZ inputs were discovered.".to_string(),
+        });
+    }
+
+    if !classified.alignment.is_empty() && !classified.raw.is_empty() {
+        payload.discovery.rejected_files.extend(
+            classified
+                .alignment
+                .iter()
+                .chain(&classified.raw)
+                .map(|file| ConsumeInputFileInfo {
+                    path: file.path.to_string_lossy().into_owned(),
+                    detected_format: file.detected_format.to_string(),
+                    consumed: false,
+                    reason: Some("mixed_input_modes_not_allowed".to_string()),
+                }),
+        );
+        refresh_counts(payload);
+
+        return Err(AppError::MixedInputModesNotAllowed {
+            path: request.out.clone(),
+            detail: format!(
+                "Detected {} alignment-bearing input(s) and {} raw-read input(s) in the same request.",
+                classified.alignment.len(),
+                classified.raw.len()
+            ),
+        });
+    }
+
+    match request.mode {
+        ConsumeMode::Alignment => {
+            if classified.alignment.is_empty() {
+                payload
+                    .discovery
+                    .rejected_files
+                    .extend(classified.raw.iter().map(|file| ConsumeInputFileInfo {
+                        path: file.path.to_string_lossy().into_owned(),
+                        detected_format: file.detected_format.to_string(),
+                        consumed: false,
+                        reason: Some("unsupported_input_format".to_string()),
+                    }));
+                refresh_counts(payload);
+                return Err(AppError::UnsupportedInputFormat {
+                    path: request.out.clone(),
+                    format: "Alignment mode supports BAM and SAM inputs only.".to_string(),
+                });
+            }
+
+            payload.discovery.consumed_files =
+                classified.alignment.iter().map(as_consumed_file).collect();
+            payload.header.reference_compatibility =
+                Some("pending_compatibility_check".to_string());
+            Ok(classified.alignment.clone())
+        }
+        ConsumeMode::Unmapped => {
+            if classified.raw.is_empty() {
+                payload
+                    .discovery
+                    .rejected_files
+                    .extend(
+                        classified
+                            .alignment
+                            .iter()
+                            .map(|file| ConsumeInputFileInfo {
+                                path: file.path.to_string_lossy().into_owned(),
+                                detected_format: file.detected_format.to_string(),
+                                consumed: false,
+                                reason: Some("unsupported_input_format".to_string()),
+                            }),
+                    );
+                refresh_counts(payload);
+                return Err(AppError::UnsupportedInputFormat {
+                    path: request.out.clone(),
+                    format: "Unmapped mode supports FASTQ and FASTQ.GZ inputs only.".to_string(),
+                });
+            }
+
+            payload.discovery.consumed_files =
+                classified.raw.iter().map(as_consumed_file).collect();
+            Ok(classified.raw.clone())
+        }
+    }
+}
+
+fn as_consumed_file(file: &DiscoveredFile) -> ConsumeInputFileInfo {
+    ConsumeInputFileInfo {
+        path: file.path.to_string_lossy().into_owned(),
+        detected_format: file.detected_format.to_string(),
+        consumed: true,
+        reason: None,
+    }
 }
 
 fn base_payload(request: &ConsumeRequest) -> ConsumePayload {
@@ -439,20 +467,23 @@ fn refresh_counts(payload: &mut ConsumePayload) {
     payload.inputs.files_rejected = payload.discovery.rejected_files.len();
 }
 
-fn push_staged_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
+fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
     payload.notes.push(
         "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice."
             .to_string(),
     );
 
-    if request.sort != ConsumeSortOrder::None {
+    if request.mode == ConsumeMode::Alignment
+        && (request.sample.is_some() || request.read_group.is_some() || request.platform.is_some())
+    {
         payload.notes.push(
-            "Requested post-ingest sorting is recorded in the contract, but consume does not yet execute sort reuse in this slice.".to_string(),
+            "Sample/read-group/platform options are used only for synthetic unmapped headers and do not modify preserved alignment headers in alignment mode."
+                .to_string(),
         );
     }
     if request.create_index {
         payload.notes.push(
-            "Index creation is only meaningful for coordinate-sorted BAM output and is deferred for consume in this slice.".to_string(),
+            "Index creation is only meaningful for coordinate-sorted BAM output and remains deferred for consume in this slice.".to_string(),
         );
     }
     if request.verify_checksum {
@@ -461,8 +492,9 @@ fn push_staged_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
         );
     }
     if request.threads > 1 {
-        payload.notes.push(
-            "Thread-count acceptance is part of the consume contract; parallel ingestion is not yet implemented.".to_string(),
-        );
+        payload.notes.push(format!(
+            "Thread count was set to {}, but this slice does not yet parallelize consume execution.",
+            request.threads
+        ));
     }
 }

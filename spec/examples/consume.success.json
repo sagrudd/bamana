@@ -5,7 +5,7 @@
   "data": {
     "format": "BAM",
     "mode": "unmapped",
-    "dry_run": true,
+    "dry_run": false,
     "inputs": {
       "requested_paths": [
         "reads.fastq.gz"
@@ -34,8 +34,8 @@
     },
     "output": {
       "path": "reads.bam",
-      "written": false,
-      "records_written": null,
+      "written": true,
+      "records_written": 1000,
       "sort_order": "none",
       "mapped_state": "unmapped"
     },
@@ -58,8 +58,9 @@
       "match": null
     },
     "notes": [
-      "FASTQ-like inputs are normalized into unmapped BAM records with no implied alignment.",
-      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "FASTQ inputs were converted to unmapped BAM records.",
+      "No alignments were inferred or fabricated during unmapped ingestion."
     ]
   },
   "error": null

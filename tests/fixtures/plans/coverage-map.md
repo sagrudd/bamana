@@ -65,7 +65,6 @@ Until real fixtures land, the following remain mostly schema/example-backed:
 * `index` creation success paths
 * `explode` runtime behavior
 * merge/explode round-trip preservation
-* full non-dry-run `consume` normalization
 
 That is acceptable, but the manifest now makes the missing executable assets
 explicit.

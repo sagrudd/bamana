@@ -50,9 +50,9 @@ Key concepts:
 * requested paths versus discovered files
 * deterministic directory traversal reporting
 * consumed, skipped, and rejected file lists
-* explicit ingest mode (`alignment`, `unmapped`, `mixed-allow`)
+* explicit ingest mode (`alignment`, `unmapped`)
 * output sort/index/checksum intent
-* notes that separate implemented behavior from staged behavior
+* notes that separate implemented Stage 1 behavior from deferred options
 
 The contract is designed so automation can reason about dry-run discovery
 results, mixed-format rejection, and staged normalization behavior without

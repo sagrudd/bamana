@@ -34,7 +34,7 @@ Key output concepts:
 ## `consume`
 
 Synopsis:
-`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped|mixed-allow> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
+`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
 
 Semantics:
 Acts as Bamana’s input normalization gateway. It discovers files and
@@ -46,8 +46,6 @@ Mixed-format policy:
 
 * `alignment` accepts alignment-bearing inputs only (`BAM`, `SAM`; later CRAM)
 * `unmapped` accepts raw-read inputs only (`FASTQ`, `FASTQ.GZ`)
-* `mixed-allow` is reserved for explicitly supported future mixed-ingestion
-  behavior and is currently not implemented
 * by default, alignment-bearing and raw-read inputs are not allowed in the same
   request
 
@@ -61,13 +59,14 @@ Directory traversal rules:
 
 Does prove:
 Deterministic discovery, input classification, mixed-format policy enforcement,
-and staged ingest planning. In dry-run mode it proves what would be consumed
-without writing a BAM.
+and Stage 1 BAM normalization for supported inputs. In dry-run mode it proves
+what would be consumed without writing a BAM.
 
 Does not prove:
 Successful BAM normalization unless the response explicitly reports a written
 output. It does not imply alignment for raw-read inputs, and it does not imply
-that future mixed-ingestion or CRAM policies are already implemented.
+that CRAM, include/exclude glob filtering, checksum verification, or post-ingest
+index creation are already implemented.
 
 Key output concepts:
 `mode`, `inputs`, `discovery`, `output`, `header`, `index`,

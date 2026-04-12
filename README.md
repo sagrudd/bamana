@@ -60,7 +60,8 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 ```bash
 cargo run -- identify example.bam
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
-cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment --dry-run --sort coordinate
+cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
+cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
 cargo run -- verify --bam example.bam
 cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
@@ -100,10 +101,12 @@ structured JSON view when present.
 `consume` is the front-door normalization command for Bamana. In alignment mode
 it is intended to preserve alignments from BAM/SAM-like inputs while
 normalizing them into BAM. In unmapped mode it is intended to convert FASTQ and
-FASTQ.GZ inputs into unmapped BAM without implying alignment. The current slice
-implements deterministic discovery, mode enforcement, and dry-run planning;
-actual BAM writing is staged and reported honestly as deferred when execution
-is requested.
+FASTQ.GZ inputs into unmapped BAM without implying alignment. Stage 1 writes a
+real BAM for alignment-mode BAM/SAM ingestion and unmapped FASTQ/FASTQ.GZ
+ingestion, rejects mixed alignment/raw-read requests, and reports deterministic
+directory discovery in JSON. Include/exclude glob filtering, consume-driven
+index creation, checksum verification, and CRAM ingestion remain explicitly
+deferred.
 
 `check_map` prefers index-derived mapping summaries when a usable BAI is present.
 Without a usable index it falls back to scan-based evidence. Bounded scan mode is

@@ -55,7 +55,7 @@
     },
     "header": {
       "strategy": "first_compatible_alignment_header",
-      "reference_compatibility": "planned_strict_match",
+      "reference_compatibility": "pending_compatibility_check",
       "sample": null,
       "read_group": null,
       "platform": null
@@ -72,7 +72,7 @@
       "match": null
     },
     "notes": [
-      "Alignment mode consumes BAM and SAM inputs and preserves alignments where present.",
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
       "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
     ]
   },

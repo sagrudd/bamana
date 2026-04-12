@@ -5,7 +5,7 @@
   "data": {
     "format": "BAM",
     "mode": "alignment",
-    "dry_run": true,
+    "dry_run": false,
     "inputs": {
       "requested_paths": [
         "a.sam",
@@ -42,33 +42,34 @@
     },
     "output": {
       "path": "combined.bam",
-      "written": false,
-      "records_written": null,
-      "sort_order": "coordinate",
+      "written": true,
+      "records_written": 42180321,
+      "sort_order": "none",
       "mapped_state": "mapped_or_mixed"
     },
     "header": {
       "strategy": "first_compatible_alignment_header",
-      "reference_compatibility": "planned_strict_match",
+      "reference_compatibility": "compatible",
       "sample": null,
       "read_group": null,
       "platform": null
     },
     "index": {
-      "requested": true,
+      "requested": false,
       "created": false,
       "kind": null
     },
     "checksum_verification": {
-      "requested": true,
+      "requested": false,
       "performed": false,
       "mode": null,
       "match": null
     },
     "notes": [
-      "Alignment mode consumes BAM and SAM inputs and preserves alignments where present.",
-      "Requested post-ingest sorting is recorded in the contract, but consume does not yet execute sort reuse in this slice.",
-      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "Alignment-bearing inputs were normalized into BAM.",
+      "Alignment compatibility currently requires identical reference dictionaries across all alignment inputs.",
+      "Multiple alignment inputs were concatenated in deterministic discovery order, so @HD sort metadata was rewritten to unsorted."
     ]
   },
   "error": null

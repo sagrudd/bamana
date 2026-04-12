@@ -44,18 +44,18 @@
       "path": "combined.bam",
       "written": false,
       "records_written": null,
-      "sort_order": "coordinate",
+      "sort_order": "none",
       "mapped_state": "mapped_or_mixed"
     },
     "header": {
       "strategy": "first_compatible_alignment_header",
-      "reference_compatibility": "incompatible",
+      "reference_compatibility": "pending_compatibility_check",
       "sample": null,
       "read_group": null,
       "platform": null
     },
     "index": {
-      "requested": true,
+      "requested": false,
       "created": false,
       "kind": null
     },
@@ -66,13 +66,13 @@
       "match": null
     },
     "notes": [
-      "Alignment-bearing inputs were discovered, but reference dictionaries were not compatible."
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice."
     ]
   },
   "error": {
     "code": "incompatible_headers",
-    "message": "Input BAM headers are not compatible for merge.",
-    "detail": "Reference dictionaries would need to match exactly before alignment-mode consume can normalize these inputs together.",
-    "hint": "Ensure all BAM/SAM inputs share the same reference dictionary before consuming in alignment mode."
+    "message": "Input alignment headers are not compatible for a combined BAM output.",
+    "detail": "Reference dictionary mismatch at index 1.",
+    "hint": "Ensure all BAM/SAM inputs use the same reference dictionary before merging or alignment-mode consume."
   }
 }

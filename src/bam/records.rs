@@ -1,9 +1,9 @@
 use crate::{bam::reader::BamReader, error::AppError};
 
 const BAM_CORE_SIZE: usize = 32;
+pub const BAM_FUNMAP: u16 = 0x4;
 const BAM_FPAIRED: u16 = 0x1;
 const BAM_FPROPER_PAIR: u16 = 0x2;
-const BAM_FUNMAP: u16 = 0x4;
 const BAM_FREVERSE: u16 = 0x10;
 const BAM_FREAD1: u16 = 0x40;
 const BAM_FREAD2: u16 = 0x80;
@@ -49,6 +49,68 @@ pub struct RecordLayout {
     pub sequence_bytes: Vec<u8>,
     pub quality_bytes: Vec<u8>,
     pub aux_bytes: Vec<u8>,
+}
+
+pub fn reg2bin(start: i32, end: i32) -> u16 {
+    if start < 0 || end <= start {
+        return 4680;
+    }
+
+    let start = start as u32;
+    let end = (end - 1) as u32;
+
+    if start >> 14 == end >> 14 {
+        return ((1 << 15) - 1) / 7 + (start >> 14) as u16;
+    }
+    if start >> 17 == end >> 17 {
+        return ((1 << 12) - 1) / 7 + (start >> 17) as u16;
+    }
+    if start >> 20 == end >> 20 {
+        return ((1 << 9) - 1) / 7 + (start >> 20) as u16;
+    }
+    if start >> 23 == end >> 23 {
+        return ((1 << 6) - 1) / 7 + (start >> 23) as u16;
+    }
+    if start >> 26 == end >> 26 {
+        return 1 + (start >> 26) as u16;
+    }
+    0
+}
+
+pub fn encode_bam_sequence(sequence: &str) -> Result<Vec<u8>, String> {
+    let mut encoded = Vec::with_capacity(sequence.len().div_ceil(2));
+    let bytes = sequence.as_bytes();
+
+    for chunk in bytes.chunks(2) {
+        let high = encode_base(chunk[0])?;
+        let low = if chunk.len() == 2 {
+            encode_base(chunk[1])?
+        } else {
+            0
+        };
+        encoded.push((high << 4) | low);
+    }
+
+    Ok(encoded)
+}
+
+pub fn encode_bam_qualities(qualities: &str) -> Result<Vec<u8>, String> {
+    qualities
+        .bytes()
+        .map(|byte| {
+            if byte < 33 {
+                Err(format!(
+                    "FASTQ/SAM quality byte 0x{byte:02x} is below printable Phred+33 range."
+                ))
+            } else {
+                Ok(byte - 33)
+            }
+        })
+        .collect()
+}
+
+pub fn missing_quality_scores(length: usize) -> Vec<u8> {
+    vec![0xff; length]
 }
 
 pub fn read_next_light_record(
@@ -189,5 +251,29 @@ fn light_from_layout(layout: RecordLayout) -> LightAlignmentRecord {
         is_duplicate: flags & BAM_FDUP != 0,
         is_read1: flags & BAM_FREAD1 != 0,
         is_read2: flags & BAM_FREAD2 != 0,
+    }
+}
+
+fn encode_base(base: u8) -> Result<u8, String> {
+    match base.to_ascii_uppercase() {
+        b'=' => Ok(0),
+        b'A' => Ok(1),
+        b'C' => Ok(2),
+        b'M' => Ok(3),
+        b'G' => Ok(4),
+        b'R' => Ok(5),
+        b'S' => Ok(6),
+        b'V' => Ok(7),
+        b'T' => Ok(8),
+        b'W' => Ok(9),
+        b'Y' => Ok(10),
+        b'H' => Ok(11),
+        b'K' => Ok(12),
+        b'D' => Ok(13),
+        b'B' => Ok(14),
+        b'N' => Ok(15),
+        other => Err(format!(
+            "Sequence contains unsupported base byte 0x{other:02x}."
+        )),
     }
 }

@@ -8,7 +8,7 @@
   "$defs": {
     "consumeMode": {
       "type": "string",
-      "enum": ["alignment", "unmapped", "mixed-allow"]
+      "enum": ["alignment", "unmapped"]
     },
     "consumeSortOrder": {
       "type": "string",

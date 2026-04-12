@@ -51,6 +51,8 @@ pub enum AppError {
     UnsupportedDirectoryEntry { path: PathBuf, detail: String },
     #[error("reference material is required for this consume mode: {path}")]
     ReferenceRequired { path: PathBuf, detail: String },
+    #[error("fastq input could not be parsed: {path}")]
+    InvalidFastq { path: PathBuf, detail: String },
     #[error("refusing to overwrite existing output: {path}")]
     OutputExists { path: PathBuf },
     #[error("failed to write output: {path}")]
@@ -126,6 +128,7 @@ impl AppError {
             Self::UnsupportedInputFormat { .. } => "unsupported_input_format",
             Self::UnsupportedDirectoryEntry { .. } => "unsupported_directory_entry",
             Self::ReferenceRequired { .. } => "reference_required",
+            Self::InvalidFastq { .. } => "invalid_fastq",
             Self::OutputExists { .. } => "output_exists",
             Self::WriteError { .. } => "write_error",
             Self::Unimplemented { .. } => "unimplemented",
@@ -161,7 +164,8 @@ impl AppError {
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
             Self::MissingIndex { .. } => "No usable BAM index was found.".to_string(),
             Self::IncompatibleHeaders { .. } => {
-                "Input BAM headers are not compatible for merge.".to_string()
+                "Input alignment headers are not compatible for a combined BAM output."
+                    .to_string()
             }
             Self::InvalidMergeRequest { .. } => "Invalid BAM merge options.".to_string(),
             Self::InvalidConsumeRequest { .. } => "Invalid consume options.".to_string(),
@@ -177,6 +181,7 @@ impl AppError {
             Self::ReferenceRequired { .. } => {
                 "Reference material is required for this consume mode.".to_string()
             }
+            Self::InvalidFastq { .. } => "FASTQ input could not be parsed.".to_string(),
             Self::OutputExists { .. } => {
                 "Output path already exists and overwrite was not requested.".to_string()
             }
@@ -230,6 +235,7 @@ impl AppError {
             Self::UnsupportedInputFormat { format, .. } => Some(format.clone()),
             Self::UnsupportedDirectoryEntry { detail, .. } => Some(detail.clone()),
             Self::ReferenceRequired { detail, .. } => Some(detail.clone()),
+            Self::InvalidFastq { detail, .. } => Some(detail.clone()),
             Self::WriteError { message, .. } => Some(message.clone()),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
             Self::ValidationFailed { detail, .. } => Some(detail.clone()),
@@ -286,7 +292,7 @@ impl AppError {
                 Some("Run bamana index --bam <file> or place a usable companion index next to the BAM.".to_string())
             }
             Self::IncompatibleHeaders { .. } => Some(
-                "Ensure all BAM inputs use the same reference dictionary before merging."
+                "Ensure all BAM/SAM inputs use the same reference dictionary before merging or alignment-mode consume."
                     .to_string(),
             ),
             Self::InvalidMergeRequest { .. } => Some(
@@ -311,6 +317,10 @@ impl AppError {
             ),
             Self::ReferenceRequired { .. } => Some(
                 "Provide the required reference material or choose a consume mode that does not require reference-backed decoding."
+                    .to_string(),
+            ),
+            Self::InvalidFastq { .. } => Some(
+                "Inspect the FASTQ structure and ensure every record has valid header, plus, sequence, and quality lines."
                     .to_string(),
             ),
             Self::OutputExists { .. } => {

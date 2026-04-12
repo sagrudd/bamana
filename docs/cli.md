@@ -30,5 +30,7 @@ for every implementation detail to be finished.
 
 `consume` is the ingestion gateway into Bamana. It is the command that accepts
 files and directories containing supported upstream formats and normalizes them
-into a single BAM according to an explicit ingest mode. Its detailed contract
-is documented in [spec/cli/commands.md](/Users/stephen/Projects/bamana/spec/cli/commands.md).
+into a single BAM according to an explicit ingest mode. Stage 1 supports
+alignment-mode BAM/SAM normalization and unmapped FASTQ/FASTQ.GZ normalization,
+with deterministic directory discovery and dry-run support. Its detailed
+contract is documented in [spec/cli/commands.md](/Users/stephen/Projects/bamana/spec/cli/commands.md).
