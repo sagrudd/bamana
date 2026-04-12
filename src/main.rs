@@ -14,6 +14,7 @@ use commands::{
     check_index::CheckIndexRequest,
     check_map::{CheckMapPayload, CheckMapRequest},
     check_sort::{CheckSortPayload, CheckSortRequest},
+    check_tag::CheckTagRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
@@ -94,6 +95,18 @@ fn main() -> ExitCode {
                 prefer_index: args.prefer_index,
                 include_mapq_hist: args.include_mapq_hist,
                 include_flags: args.include_flags,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::CheckTag(args) => {
+            let bam = args.bam;
+            let response = commands::check_tag::run(CheckTagRequest {
+                bam: bam.clone(),
+                tag: args.tag,
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                require_type: args.require_type,
+                count_hits: args.count_hits,
             });
             emit_response(&response, cli.global.json_pretty)
         }

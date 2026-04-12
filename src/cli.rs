@@ -45,6 +45,9 @@ pub enum Commands {
     Index(IndexArgs),
     /// Produce a fast operational summary of BAM characteristics.
     Summary(SummaryArgs),
+    /// Detect presence or absence of a BAM auxiliary tag.
+    #[command(name = "check_tag")]
+    CheckTag(CheckTagArgs),
     /// Assess declared and observed BAM sort characteristics.
     #[command(name = "check_sort")]
     CheckSort(CheckSortArgs),
@@ -147,4 +150,26 @@ pub struct SummaryArgs {
     /// Include a detailed flag-category section in the output.
     #[arg(long = "include-flags")]
     pub include_flags: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct CheckTagArgs {
+    /// BAM auxiliary tag to inspect, for example NM or RG.
+    #[arg(long = "tag")]
+    pub tag: String,
+    /// BAM file to inspect.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Maximum number of alignment records to inspect in bounded-scan mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan the full alignment stream.
+    #[arg(long)]
+    pub full_scan: bool,
+    /// Require the tag to be present with the specified BAM aux type.
+    #[arg(long = "require-type")]
+    pub require_type: Option<String>,
+    /// Count how many records in the actual scan scope contain the requested tag.
+    #[arg(long = "count-hits")]
+    pub count_hits: bool,
 }

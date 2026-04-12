@@ -41,8 +41,14 @@ pub enum AppError {
     OutputExists { path: PathBuf },
     #[error("functionality is not implemented for this input: {path}")]
     Unimplemented { path: PathBuf, detail: String },
+    #[error("requested bam tag is invalid: {path}")]
+    InvalidTag { path: PathBuf, tag: String },
+    #[error("requested bam aux type is invalid: {path}")]
+    InvalidTagType { path: PathBuf, tag_type: String },
     #[error("mapping state could not be determined reliably: {path}")]
     ParseUncertainty { path: PathBuf, detail: String },
+    #[error("bam auxiliary fields could not be parsed reliably: {path}")]
+    TagParseUncertainty { path: PathBuf, detail: String },
     #[error("bam summary could not be generated reliably: {path}")]
     SummaryUncertainty { path: PathBuf, detail: String },
     #[error("file is truncated or incomplete: {path}")]
@@ -93,7 +99,10 @@ impl AppError {
             Self::MissingIndex { .. } => "missing_index",
             Self::OutputExists { .. } => "output_exists",
             Self::Unimplemented { .. } => "unimplemented",
+            Self::InvalidTag { .. } => "invalid_tag",
+            Self::InvalidTagType { .. } => "invalid_tag_type",
             Self::ParseUncertainty { .. } => "parse_uncertainty",
+            Self::TagParseUncertainty { .. } => "parse_uncertainty",
             Self::SummaryUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
             Self::UnsupportedFormat { .. } => "unsupported_format",
@@ -124,9 +133,14 @@ impl AppError {
             Self::Unimplemented { .. } => {
                 "This functionality is not implemented in this slice.".to_string()
             }
+            Self::InvalidTag { .. } => "Requested BAM tag is invalid.".to_string(),
+            Self::InvalidTagType { .. } => "Requested BAM auxiliary type is invalid.".to_string(),
             Self::ParseUncertainty { .. } => {
                 "Mapping state could not be determined reliably from the available evidence."
                     .to_string()
+            }
+            Self::TagParseUncertainty { .. } => {
+                "BAM auxiliary fields could not be parsed reliably.".to_string()
             }
             Self::SummaryUncertainty { .. } => {
                 "BAM summary could not be generated reliably.".to_string()
@@ -152,7 +166,10 @@ impl AppError {
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
+            Self::InvalidTag { tag, .. } => Some(format!("Requested tag: {tag}.")),
+            Self::InvalidTagType { tag_type, .. } => Some(format!("Requested type: {tag_type}.")),
             Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
+            Self::TagParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::SummaryUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
             Self::UnsupportedFormat { format, .. } => Some(format.clone()),
@@ -206,7 +223,18 @@ impl AppError {
                 "Use an implemented index format for this BAM or extend the current index writer."
                     .to_string(),
             ),
+            Self::InvalidTag { .. } => Some(
+                "Provide exactly two printable ASCII characters, for example NM or RG."
+                    .to_string(),
+            ),
+            Self::InvalidTagType { .. } => Some(
+                "Use one supported BAM aux type code such as A, i, f, Z, H, or B."
+                    .to_string(),
+            ),
             Self::ParseUncertainty { .. } => Some(
+                "Run bamana verify and, when available, bamana validate.".to_string(),
+            ),
+            Self::TagParseUncertainty { .. } => Some(
                 "Run bamana verify and, when available, bamana validate.".to_string(),
             ),
             Self::SummaryUncertainty { .. } => Some(
