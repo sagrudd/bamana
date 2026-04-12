@@ -32,6 +32,8 @@ pub enum AppError {
     InvalidHeaderMutation { path: PathBuf, detail: String },
     #[error("requested RG annotation is invalid: {path}")]
     InvalidRgRequest { path: PathBuf, detail: String },
+    #[error("requested deduplicate mode is invalid: {path}")]
+    InvalidDeduplicateMode { path: PathBuf, detail: String },
     #[error("bam record could not be parsed: {path}")]
     InvalidRecord { path: PathBuf, detail: String },
     #[error("bam index could not be parsed: {path}")]
@@ -148,6 +150,7 @@ impl AppError {
             Self::InvalidHeaderFile { .. } => "invalid_header_file",
             Self::InvalidHeaderMutation { .. } => "invalid_header_mutation",
             Self::InvalidRgRequest { .. } => "invalid_rg_request",
+            Self::InvalidDeduplicateMode { .. } => "invalid_deduplicate_mode",
             Self::InvalidRecord { .. } => "invalid_record",
             Self::InvalidIndex { .. } => "invalid_index",
             Self::UnsupportedIndex { .. } => "unsupported_index",
@@ -210,6 +213,9 @@ impl AppError {
             Self::InvalidRgRequest { .. } => {
                 "Requested BAM read-group annotation options are not valid.".to_string()
             }
+            Self::InvalidDeduplicateMode { .. } => {
+                "Requested deduplicate mode or policy is not valid.".to_string()
+            }
             Self::InvalidRecord { .. } => "BAM record could not be parsed.".to_string(),
             Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
@@ -267,7 +273,7 @@ impl AppError {
             Self::OutputExists { .. } => {
                 "Output path already exists and overwrite was not requested.".to_string()
             }
-            Self::WriteError { .. } => "Failed to write BAM output.".to_string(),
+            Self::WriteError { .. } => "Failed to write output.".to_string(),
             Self::Unimplemented { .. } => {
                 "This functionality is not implemented in this slice.".to_string()
             }
@@ -275,7 +281,7 @@ impl AppError {
             Self::InvalidTag { .. } => "Requested BAM tag is invalid.".to_string(),
             Self::InvalidTagType { .. } => "Requested BAM auxiliary type is invalid.".to_string(),
             Self::ParseUncertainty { .. } => {
-                "Mapping state could not be determined reliably from the available evidence."
+                "The requested assessment could not be completed reliably from the available evidence."
                     .to_string()
             }
             Self::ParseError { .. } => "Input parsing failed.".to_string(),
@@ -308,6 +314,7 @@ impl AppError {
             Self::InvalidHeaderFile { detail, .. } => Some(detail.clone()),
             Self::InvalidHeaderMutation { detail, .. } => Some(detail.clone()),
             Self::InvalidRgRequest { detail, .. } => Some(detail.clone()),
+            Self::InvalidDeduplicateMode { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
@@ -385,6 +392,10 @@ impl AppError {
             ),
             Self::InvalidRgRequest { .. } => Some(
                 "Choose exactly one record-annotation mode, and use explicit header-policy flags when the target @RG may be absent."
+                    .to_string(),
+            ),
+            Self::InvalidDeduplicateMode { .. } => Some(
+                "Use a supported deduplicate mode such as contiguous-block or whole-file-append, and provide a distinct output path for applied remediation."
                     .to_string(),
             ),
             Self::InvalidRecord { .. } => Some(

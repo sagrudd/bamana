@@ -24,6 +24,10 @@ collection-duplication inspection path for BAM, FASTQ, and FASTQ.GZ inputs when
 operators need explicit evidence of unsafe concatenation, repeated appends, or
 provenance mishandling without conflating those signatures with ordinary PCR
 duplicate biology.
+Current scope also includes `bamana deduplicate` as the governed conservative
+remediation path for suspicious contiguous collection-duplication signatures
+when operators need a dry-run-first, auditable way to remove repeated blocks
+without conflating that action with molecular duplicate marking.
 
 The project charter remains explicit that:
 
@@ -35,5 +39,8 @@ The project charter remains explicit that:
   metadata mutation
 * collection-duplication inspection must remain distinct from PCR duplicate
   marking and duplicate-flag interpretation
+* collection-duplication remediation must remain distinct from PCR duplicate
+  marking, duplicate-flag interpretation, and aggressive global duplicate
+  collapse unless a future contract says otherwise explicitly
 * adjacent format support is intended to normalize into BAM rather than widen
   the public data model without discipline

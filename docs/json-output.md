@@ -120,3 +120,25 @@ Key concepts:
 This contract is intentionally not a PCR duplicate-marking contract. It is
 designed for collection inspection, provenance review, and future remediation
 work such as controlled deduplication workflows.
+
+## `deduplicate`
+
+The `deduplicate` payload is remediation-oriented, dry-run-first, and explicitly
+conservative.
+
+Key concepts:
+
+* explicit remediation mode (`contiguous-block` or `whole-file-append` in the
+  current practical slice)
+* explicit identity mode aligned with `inspect_duplication`
+* explicit keep policy (`first` or `last`)
+* execution reporting that separates dry-run planning from applied output
+  writing
+* deterministic 1-based keep/remove record ranges in encounter order
+* output, index-invalidation, and optional checksum-provenance fields
+* notes that keep collection-duplication remediation distinct from PCR
+  duplicate marking
+
+This contract is intentionally not a molecular duplicate-marking contract. It
+describes removal of suspicious collection-duplication blocks under an explicit
+policy, not broad biological duplicate collapse.

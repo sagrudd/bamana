@@ -20,6 +20,7 @@ use commands::{
     check_tag::CheckTagRequest,
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
+    deduplicate::DeduplicateRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
@@ -58,6 +59,26 @@ fn main() -> ExitCode {
                         args.sample_records.max(1) as u64
                     },
                 },
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Deduplicate(args) => {
+            let input = args.input;
+            let response = commands::deduplicate::run(DeduplicateRequest {
+                input: input.clone(),
+                out: args.out,
+                mode: args.mode,
+                identity_mode: args.identity,
+                keep_policy: args.keep,
+                dry_run: args.dry_run,
+                force: args.force,
+                min_block_size: args.min_block_size,
+                verify_checksum: args.verify_checksum,
+                emit_removed_report: args.emit_removed_report,
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                reindex: args.reindex,
+                json_pretty: cli.global.json_pretty,
             });
             emit_response(&response, cli.global.json_pretty)
         }

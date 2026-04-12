@@ -5,6 +5,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
 use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
+use crate::forensics::deduplicate::{DeduplicateKeepPolicy, DeduplicateMode};
 use crate::forensics::duplication::DuplicationIdentityMode;
 use crate::ingest::{
     consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
@@ -40,6 +41,8 @@ pub enum Commands {
     /// Inspect suspicious collection-duplication and operator-error signatures.
     #[command(name = "inspect_duplication")]
     InspectDuplication(InspectDuplicationArgs),
+    /// Remove suspicious collection-duplication blocks conservatively.
+    Deduplicate(DeduplicateArgs),
     /// Insert, replace, or normalize per-record RG:Z tags across BAM alignment records.
     #[command(name = "annotate_rg")]
     AnnotateRg(AnnotateRgArgs),
@@ -110,6 +113,53 @@ pub struct InspectDuplicationArgs {
     /// Bound the number of reported findings.
     #[arg(long = "max-findings", default_value_t = 25)]
     pub max_findings: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct DeduplicateArgs {
+    /// Input BAM, FASTQ, or FASTQ.GZ file to remediate.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Output path for the remediated collection.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Conservative remediation mode.
+    #[arg(long = "mode", value_enum)]
+    pub mode: DeduplicateMode,
+    /// Record identity policy used for duplication planning.
+    #[arg(
+        long = "identity",
+        value_enum,
+        default_value_t = DuplicationIdentityMode::QnameSeqQual
+    )]
+    pub identity: DuplicationIdentityMode,
+    /// Which duplicated copy to retain when a removable block is detected.
+    #[arg(long = "keep", value_enum, default_value_t = DeduplicateKeepPolicy::First)]
+    pub keep: DeduplicateKeepPolicy,
+    /// Plan only; do not write an output file.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Minimum adjacent repeated block size required for remediation.
+    #[arg(long = "min-block-size", default_value_t = 50)]
+    pub min_block_size: usize,
+    /// Compute descriptive checksum provenance when supported.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Emit a machine-readable removed-range report to this path.
+    #[arg(long = "emit-removed-report")]
+    pub emit_removed_report: Option<PathBuf>,
+    /// Maximum records to inspect in bounded dry-run mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan to EOF during dry-run planning.
+    #[arg(long = "full-scan")]
+    pub full_scan: bool,
+    /// Attempt to regenerate a BAM index when output is written.
+    #[arg(long = "reindex")]
+    pub reindex: bool,
+    /// Overwrite existing output or report paths.
+    #[arg(long = "force")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

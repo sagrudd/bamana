@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "command": "deduplicate",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "contiguous-block",
+    "identity_mode": "qname_seq_qual",
+    "keep_policy": "first",
+    "execution": {
+      "dry_run": false,
+      "modified": true
+    },
+    "summary": {
+      "records_examined": 100000,
+      "duplicate_ranges_detected": 1,
+      "records_removed": 200,
+      "records_retained": 99800
+    },
+    "ranges": [
+      {
+        "type": "contiguous_block_duplicate",
+        "keep_range": {
+          "start": 12001,
+          "end": 12200
+        },
+        "remove_range": {
+          "start": 12201,
+          "end": 12400
+        }
+      }
+    ],
+    "output": {
+      "path": "input.deduplicated.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "index": {
+      "present_before": true,
+      "valid_after": false,
+      "reindex_requested": true,
+      "reindexed": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": true,
+      "performed": true,
+      "mode": "canonical-record-order",
+      "input_digest": "0d1e2f3a4b5c",
+      "output_digest": "9a8b7c6d5e4f",
+      "match": null,
+      "notes": [
+        "Checksum comparison in deduplication mode is descriptive and does not imply equality because records may have been intentionally removed."
+      ]
+    },
+    "notes": [
+      "This command remediates collection duplication and operator-error duplication; it is not molecular duplicate marking.",
+      "Contiguous duplicate range removal was applied conservatively according to the selected keep policy."
+    ]
+  },
+  "error": null
+}

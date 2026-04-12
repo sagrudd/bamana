@@ -31,6 +31,13 @@ pub struct DuplicationScanOptions {
     pub record_limit: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AdjacentDuplicateBlock {
+    pub finding_type: DuplicationFindingType,
+    pub first_start: usize,
+    pub block_len: usize,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct InspectDuplicationPayload {
     pub format: DetectedFormat,
@@ -321,7 +328,13 @@ fn observe_record(
         read_group: record.read_group.clone(),
         observed_count: 0,
     };
-    let canonical = canonical_identity(&record, identity_mode);
+    let canonical = build_identity_key(
+        identity_mode,
+        &record.read_name,
+        &record.sequence,
+        record.quality.as_deref(),
+        record.read_group.as_deref(),
+    );
     let identity_id = if let Some(existing) = state.identity_lookup.get(&canonical) {
         *existing
     } else {
@@ -338,26 +351,23 @@ fn observe_record(
     state.records_examined += 1;
 }
 
-fn canonical_identity(
-    record: &InspectableRecord,
+pub(crate) fn build_identity_key(
     identity_mode: DuplicationIdentityMode,
+    read_name: &str,
+    sequence: &str,
+    quality: Option<&str>,
+    read_group: Option<&str>,
 ) -> String {
     match identity_mode {
-        DuplicationIdentityMode::QnameSeq => {
-            format!("{}\u{1f}{}", record.read_name, record.sequence)
-        }
+        DuplicationIdentityMode::QnameSeq => format!("{read_name}\u{1f}{sequence}"),
         DuplicationIdentityMode::QnameSeqQual => format!(
-            "{}\u{1f}{}\u{1f}{}",
-            record.read_name,
-            record.sequence,
-            record.quality.as_deref().unwrap_or("*")
+            "{read_name}\u{1f}{sequence}\u{1f}{}",
+            quality.unwrap_or("*")
         ),
         DuplicationIdentityMode::QnameSeqQualRg => format!(
-            "{}\u{1f}{}\u{1f}{}\u{1f}{}",
-            record.read_name,
-            record.sequence,
-            record.quality.as_deref().unwrap_or("*"),
-            record.read_group.as_deref().unwrap_or("")
+            "{read_name}\u{1f}{sequence}\u{1f}{}\u{1f}{}",
+            quality.unwrap_or("*"),
+            read_group.unwrap_or("")
         ),
     }
 }
@@ -486,46 +496,22 @@ fn detect_adjacent_block_duplicates(
     min_block_size: usize,
     identity_mode: DuplicationIdentityMode,
 ) -> Vec<DuplicationFinding> {
-    let ids = &state.identities;
-    let mut findings = Vec::new();
-
-    if ids.len() < min_block_size.saturating_mul(2) || min_block_size == 0 {
-        return findings;
-    }
-
-    let mut start = 0_usize;
-    while start + min_block_size * 2 <= ids.len() {
-        if ids[start..start + min_block_size]
-            == ids[start + min_block_size..start + min_block_size * 2]
-        {
-            let mut block_len = min_block_size;
-            while start + (block_len + 1) * 2 <= ids.len()
-                && ids[start..start + block_len + 1]
-                    == ids[start + block_len + 1..start + (block_len + 1) * 2]
-            {
-                block_len += 1;
-            }
-
-            let whole_file_append = start == 0 && block_len * 2 == ids.len();
-            let finding_type = if whole_file_append {
-                DuplicationFindingType::WholeFileAppendDuplicate
-            } else {
-                DuplicationFindingType::ContiguousBlockDuplicate
-            };
-
-            findings.push(DuplicationFinding {
-                finding_type,
+    detect_adjacent_duplicate_blocks(&state.identities, min_block_size)
+        .into_iter()
+        .map(|block| {
+            DuplicationFinding {
+                finding_type: block.finding_type,
                 confidence: DuplicationConfidence::High,
                 evidence_strength: DuplicationEvidenceStrength::Strong,
                 record_range_1: Some(DuplicateRange {
-                    start: start as u64 + 1,
-                    end: (start + block_len) as u64,
+                    start: block.first_start as u64 + 1,
+                    end: (block.first_start + block.block_len) as u64,
                 }),
                 record_range_2: Some(DuplicateRange {
-                    start: (start + block_len) as u64 + 1,
-                    end: (start + block_len * 2) as u64,
+                    start: (block.first_start + block.block_len) as u64 + 1,
+                    end: (block.first_start + block.block_len * 2) as u64,
                 }),
-                message: if whole_file_append {
+                message: if block.finding_type == DuplicationFindingType::WholeFileAppendDuplicate {
                     format!(
                         "The second half of the examined records appears to duplicate the first half under {} identity.",
                         identity_mode_label(identity_mode)
@@ -533,20 +519,57 @@ fn detect_adjacent_block_duplicates(
                 } else {
                     format!(
                         "A contiguous block of {} record identities appears twice in immediate succession under {} identity.",
-                        block_len,
+                        block.block_len,
                         identity_mode_label(identity_mode)
                     )
                 },
                 examples: None,
-            });
+            }
+        })
+        .collect()
+}
 
+pub(crate) fn detect_adjacent_duplicate_blocks(
+    identities: &[usize],
+    min_block_size: usize,
+) -> Vec<AdjacentDuplicateBlock> {
+    let mut blocks = Vec::new();
+
+    if identities.len() < min_block_size.saturating_mul(2) || min_block_size == 0 {
+        return blocks;
+    }
+
+    let mut start = 0_usize;
+    while start + min_block_size * 2 <= identities.len() {
+        if identities[start..start + min_block_size]
+            == identities[start + min_block_size..start + min_block_size * 2]
+        {
+            let mut block_len = min_block_size;
+            while start + (block_len + 1) * 2 <= identities.len()
+                && identities[start..start + block_len + 1]
+                    == identities[start + block_len + 1..start + (block_len + 1) * 2]
+            {
+                block_len += 1;
+            }
+
+            let finding_type = if start == 0 && block_len * 2 == identities.len() {
+                DuplicationFindingType::WholeFileAppendDuplicate
+            } else {
+                DuplicationFindingType::ContiguousBlockDuplicate
+            };
+
+            blocks.push(AdjacentDuplicateBlock {
+                finding_type,
+                first_start: start,
+                block_len,
+            });
             start += block_len * 2;
         } else {
             start += 1;
         }
     }
 
-    findings
+    blocks
 }
 
 fn duplicate_examples(state: &ScanState) -> Vec<DuplicateExample> {
@@ -645,7 +668,7 @@ fn failure_with_partial_payload(
     }
 }
 
-fn identity_mode_label(mode: DuplicationIdentityMode) -> &'static str {
+pub(crate) fn identity_mode_label(mode: DuplicationIdentityMode) -> &'static str {
     match mode {
         DuplicationIdentityMode::QnameSeq => "qname_seq",
         DuplicationIdentityMode::QnameSeqQual => "qname_seq_qual",

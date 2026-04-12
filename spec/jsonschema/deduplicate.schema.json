@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/deduplicate.schema.json",
+  "title": "Bamana Deduplicate Response",
+  "description": "Contract for bamana deduplicate JSON output.",
+  "x-bamana-command": "deduplicate",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "format": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ", "FASTQ.GZ", "UNKNOWN"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["contiguous-block", "whole-file-append", "global-exact"]
+    },
+    "identityMode": {
+      "type": "string",
+      "enum": ["qname_seq", "qname_seq_qual", "qname_seq_qual_rg"]
+    },
+    "keepPolicy": {
+      "type": "string",
+      "enum": ["first", "last"]
+    },
+    "duplicateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 1 },
+        "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dry_run", "modified"],
+      "properties": {
+        "dry_run": { "type": "boolean" },
+        "modified": { "type": "boolean" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records_examined", "duplicate_ranges_detected"],
+      "properties": {
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "duplicate_ranges_detected": { "type": "integer", "minimum": 0 },
+        "records_marked_for_removal": { "type": "integer", "minimum": 0 },
+        "records_retained_if_applied": { "type": "integer", "minimum": 0 },
+        "records_removed": { "type": "integer", "minimum": 0 },
+        "records_retained": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "keep_range", "remove_range"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["contiguous_block_duplicate", "whole_file_append_duplicate"]
+        },
+        "keep_range": { "$ref": "#/$defs/duplicateRange" },
+        "remove_range": { "$ref": "#/$defs/duplicateRange" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "written", "overwritten"],
+      "properties": {
+        "path": { "type": "string" },
+        "written": { "type": "boolean" },
+        "overwritten": { "type": "boolean" }
+      }
+    },
+    "index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "present_before",
+        "valid_after",
+        "reindex_requested",
+        "reindexed"
+      ],
+      "properties": {
+        "present_before": { "type": "boolean" },
+        "valid_after": { "type": "boolean" },
+        "reindex_requested": { "type": "boolean" },
+        "reindexed": { "type": "boolean" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" }
+      }
+    },
+    "checksumVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "performed", "notes"],
+      "properties": {
+        "requested": { "type": "boolean" },
+        "performed": { "type": "boolean" },
+        "mode": { "$ref": "./common/defs.schema.json#/$defs/checksumMode" },
+        "input_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "output_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "match": { "type": ["boolean", "null"] },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "successData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "mode",
+        "identity_mode",
+        "keep_policy",
+        "execution",
+        "summary",
+        "ranges",
+        "notes"
+      ],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "identity_mode": { "$ref": "#/$defs/identityMode" },
+        "keep_policy": { "$ref": "#/$defs/keepPolicy" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "ranges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/range" }
+        },
+        "output": { "$ref": "#/$defs/output" },
+        "index": { "$ref": "#/$defs/index" },
+        "checksum_verification": { "$ref": "#/$defs/checksumVerification" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "failureData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "mode", "identity_mode"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "identity_mode": { "$ref": "#/$defs/identityMode" },
+        "keep_policy": { "$ref": "#/$defs/keepPolicy" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "ranges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/range" }
+        },
+        "output": { "$ref": "#/$defs/output" },
+        "index": { "$ref": "#/$defs/index" },
+        "checksum_verification": { "$ref": "#/$defs/checksumVerification" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "deduplicate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/successData" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "deduplicate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

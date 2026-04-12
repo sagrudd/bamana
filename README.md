@@ -7,6 +7,7 @@ The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
 * `bamana inspect_duplication --input <file>`
+* `bamana deduplicate --input <file> --out <cleaned_output>`
 * `bamana consume --input <path...> --out <result.bam>`
 * `bamana annotate_rg --bam <input.bam> --rg-id <id>`
 * `bamana reheader --bam <input.bam>`
@@ -30,6 +31,7 @@ The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
 * `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
+* `deduplicate` removes suspicious duplicated contiguous collection blocks conservatively according to an explicit remediation policy, with first-slice focus on adjacent repeated blocks and whole-file append signatures rather than molecular duplicate biology
 * `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy
 * `annotate_rg` performs record-level `RG:Z:` aux-tag insertion, replacement, or normalization across BAM alignment records, with optional coordinated `@RG` header updates
 * `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
@@ -49,6 +51,7 @@ The current semantics are intentionally narrow:
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `inspect_duplication` does not perform Picard/GATK-style duplicate marking, does not treat BAM duplicate flags as primary evidence, and does not make biological claims about PCR or molecular duplication.
+`deduplicate` is the conservative remediation companion to `inspect_duplication`; it removes duplicated collection blocks according to an explicit keep policy and does not act as Picard/GATK-style duplicate marking, duplicate-flag cleanup, or broad biological duplicate collapse.
 `consume` does not imply that heterogeneous upstream inputs were normalized unless the response explicitly reports a written BAM output, and it does not silently combine alignment-bearing and raw-read inputs across the alignment/unmapped boundary.
 `annotate_rg` is a record-touching transformation and therefore more expensive than `reheader`; it does not silently act as a header-only command.
 `reheader` does not imply any record-level `RG:Z` tagging change, full BAM validation, or true in-place editing unless the response explicitly reports a proven-safe in-place mode in a future slice.
@@ -70,6 +73,8 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 cargo run -- identify example.bam
 cargo run -- inspect_duplication --input input.fastq.gz --full-scan
 cargo run -- inspect_duplication --input input.bam --identity qname_seq_qual_rg --min-block-size 100 --sample-records 250000
+cargo run -- deduplicate --input input.fastq.gz --out input.cleaned.fastq.gz --mode contiguous-block --dry-run
+cargo run -- deduplicate --input input.bam --out input.cleaned.bam --mode whole-file-append --keep first --verify-checksum
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
 cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
 cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
@@ -125,6 +130,17 @@ adjacent repeated blocks of record identities. Direct adjacent repeated blocks,
 especially whole-file append signatures, are treated as strong evidence of
 unsafe concatenation, repeated appends, or coerced monolithic collections.
 Non-contiguous repeated-block detection is reserved for a later slice.
+
+`deduplicate` is the conservative remediation command for the signatures that
+`inspect_duplication` reports. The current slice supports BAM, FASTQ, and
+FASTQ.GZ inputs, requires an explicit remediation mode, and is intentionally
+narrow: it removes adjacent repeated contiguous blocks and whole-file append
+signatures under explicit identity and keep-policy semantics. Dry-run planning
+is a first-class workflow, applied execution writes a new output only, and
+existing BAM indices must be treated as invalid after record removal unless a
+future slice reports successful regeneration explicitly. Global exact duplicate
+collapse, non-contiguous block removal, and any molecular duplicate semantics
+remain deferred.
 
 `consume` is the front-door normalization command for Bamana. In alignment mode
 it preserves alignments from BAM, SAM, and Stage 2 CRAM inputs while

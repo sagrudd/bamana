@@ -1,10 +1,11 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
 };
 
 use flate2::read::MultiGzDecoder;
+use flate2::{Compression, write::GzEncoder};
 
 use crate::{
     bam::records::{
@@ -15,8 +16,10 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FastqRecord {
+    pub raw_header_line: String,
     pub read_name: String,
     pub sequence: String,
+    pub plus_line: String,
     pub quality: String,
 }
 
@@ -97,10 +100,42 @@ pub(crate) fn read_next_fastq_record(
     })?;
 
     Ok(Some(FastqRecord {
+        raw_header_line: header_line,
         read_name,
         sequence: sequence_line,
+        plus_line,
         quality: quality_line,
     }))
+}
+
+pub fn write_fastq_records(path: &Path, records: &[FastqRecord]) -> Result<(), AppError> {
+    let file = File::create(path).map_err(|error| AppError::WriteError {
+        path: path.to_path_buf(),
+        message: error.to_string(),
+    })?;
+
+    if path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("gz"))
+    {
+        let writer = BufWriter::new(file);
+        let mut encoder = GzEncoder::new(writer, Compression::default());
+        write_fastq_records_to_writer(&mut encoder, records, path)?;
+        encoder.finish().map_err(|error| AppError::WriteError {
+            path: path.to_path_buf(),
+            message: error.to_string(),
+        })?;
+    } else {
+        let mut writer = BufWriter::new(file);
+        write_fastq_records_to_writer(&mut writer, records, path)?;
+        writer.flush().map_err(|error| AppError::WriteError {
+            path: path.to_path_buf(),
+            message: error.to_string(),
+        })?;
+    }
+
+    Ok(())
 }
 
 fn read_next_line(reader: &mut dyn BufRead, path: &Path) -> Result<Option<String>, AppError> {
@@ -197,13 +232,41 @@ fn trim_line_endings(mut line: String) -> String {
     line
 }
 
+fn write_fastq_records_to_writer(
+    writer: &mut dyn Write,
+    records: &[FastqRecord],
+    path: &Path,
+) -> Result<(), AppError> {
+    for record in records {
+        for line in [
+            &record.raw_header_line,
+            &record.sequence,
+            &record.plus_line,
+            &record.quality,
+        ] {
+            writer
+                .write_all(line.as_bytes())
+                .and_then(|_| writer.write_all(b"\n"))
+                .map_err(|error| AppError::WriteError {
+                    path: path.to_path_buf(),
+                    message: error.to_string(),
+                })?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs, fs::File, io::Write};
 
     use flate2::{Compression, write::GzEncoder};
 
-    use super::{open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record};
+    use super::{
+        open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record,
+        write_fastq_records,
+    };
 
     #[test]
     fn parses_plain_fastq_into_unmapped_records() {
@@ -256,6 +319,27 @@ mod tests {
 
         assert_eq!(record.read_name, "read3");
         assert_eq!(record.sequence, "ACGT");
+        assert_eq!(record.raw_header_line, "@read3 comment");
+        assert_eq!(record.plus_line, "+");
         assert_eq!(record.quality, "!!!!");
+    }
+
+    #[test]
+    fn writes_fastq_records_with_original_structure() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-fastq-write-{}.fastq", std::process::id()));
+        let records = vec![FastqRecord {
+            raw_header_line: "@read4 comment".to_string(),
+            read_name: "read4".to_string(),
+            sequence: "ACGT".to_string(),
+            plus_line: "+comment".to_string(),
+            quality: "!!!!".to_string(),
+        }];
+
+        write_fastq_records(&path, &records).expect("fastq records should write");
+        let contents = fs::read_to_string(&path).expect("written fastq should be readable");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(contents, "@read4 comment\nACGT\n+comment\n!!!!\n");
     }
 }

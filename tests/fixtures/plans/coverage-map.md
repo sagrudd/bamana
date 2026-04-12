@@ -249,10 +249,27 @@ Contract assertions to reserve explicitly:
 
 Target fixture coverage:
 
-* clean fixtures: no-op success
-* duplicate FASTQ/BAM fixtures: stable dry-run removal plan plus stable applied
-  clean output
-* invalid fixtures: parse-failure path
+* `tiny.clean.fastq`: no-op success
+* `tiny.clean.bam`: no-op success
+* `tiny.duplicate.fastq.whole_append`: stable dry-run whole-file-append plan
+  plus stable applied clean output
+* `tiny.duplicate.fastq.local_block`: adjacent repeated-block dry-run and
+  applied removal coverage
+* `tiny.duplicate.bam.local_block`: BAM contiguous-block removal coverage with
+  header preservation and index invalidation reporting
+* `tiny.invalid.fastq.truncated`: parse-failure path
+* `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+
+Contract assertions to reserve explicitly:
+
+* dry-run planning reports deterministic 1-based keep/remove record ranges
+* applied output preserves encounter order of retained records
+* `keep_policy` remains explicit and auditable
+* BAM duplicate flags are not treated as the primary removal basis
+* existing BAM indices are reported as invalid after record removal unless a
+  future slice reports successful regeneration
+* the command remains explicit that it remediates collection duplication and
+  operator error, not ordinary PCR duplicate semantics
 
 ### `forensic_inspect`
 

@@ -58,3 +58,11 @@ exact repeated records, adjacent repeated blocks, and whole-file append
 patterns. It is not ordinary PCR duplicate marking, does not use BAM duplicate
 flags as primary evidence, and reports findings with explicit confidence and
 evidence-strength fields rather than a flat duplicate count.
+
+`deduplicate` is the conservative remediation companion to
+`inspect_duplication`. It accepts a single BAM, FASTQ, or FASTQ.GZ input plus
+an explicit output path, emits JSON only, and is explicitly scoped to removing
+contiguous duplicated collection blocks under a selected policy. The first slice
+focuses on adjacent repeated blocks and whole-file append signatures, requires
+an explicit remediation mode, and keeps molecular duplicate semantics out of
+scope.

@@ -6,6 +6,7 @@ pub mod check_sort;
 pub mod check_tag;
 pub mod checksum;
 pub mod consume;
+pub mod deduplicate;
 pub mod header;
 pub mod identify;
 pub mod index;

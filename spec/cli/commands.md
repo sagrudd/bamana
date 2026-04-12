@@ -126,6 +126,64 @@ Key output concepts:
 `format`, `identity_mode`, `scan_mode`, `records_examined`, `summary`,
 `findings`, `assessment`, `notes`.
 
+## `deduplicate`
+
+Synopsis:
+`bamana deduplicate --input <file> --out <cleaned_output> --mode <contiguous-block|whole-file-append|global-exact> [--identity <qname_seq|qname_seq_qual|qname_seq_qual_rg>] [--dry-run] [--min-block-size <N>] [--keep <first|last>] [--verify-checksum] [--emit-removed-report <json>] [--sample-records <N>] [--full-scan] [--reindex] [--force]`
+
+Semantics:
+Removes suspicious collection-duplication signatures according to an explicit,
+conservative remediation policy. The current slice supports a single BAM, FASTQ,
+or FASTQ.GZ input and focuses on adjacent repeated contiguous blocks, including
+whole-file append signatures when the second half duplicates the first half
+under the selected identity mode.
+
+Mode semantics:
+
+* `contiguous-block`: detect adjacent repeated blocks and remove one copy
+  according to `--keep`
+* `whole-file-append`: restrict removal to strong whole-file append signatures
+* `global-exact`: reserved for a later, more aggressive slice and currently
+  returns `unimplemented`
+
+Identity semantics:
+
+* `qname_seq`: read name plus sequence
+* `qname_seq_qual`: read name plus sequence plus quality; this is the current
+  default
+* `qname_seq_qual_rg`: BAM-only read name plus sequence plus quality plus read
+  group
+
+Keep-policy semantics:
+
+* `first`: retain the first copy and remove the later adjacent copy
+* `last`: retain the later copy and remove the earlier adjacent copy
+
+Execution semantics:
+
+* `--dry-run` is the recommended first operational step and writes nothing
+* applied execution always writes a distinct output path
+* existing output or removed-report paths are rejected unless `--force` is
+  supplied
+* BAM headers are preserved, but pre-existing BAM indices must be treated as
+  invalid after record removal unless successful regeneration is reported
+
+Does prove:
+Only that the reported contiguous duplicate ranges were planned or removed under
+the explicit mode, identity policy, keep policy, and scan scope that were
+actually used.
+
+Does not prove:
+It is not a Picard/GATK-style duplicate-marking contract. It does not treat BAM
+duplicate flags as primary evidence. It does not imply broad biological
+duplicate removal, non-contiguous duplicate collapse, or pair-aware molecular
+duplicate semantics. In bounded dry-run mode it does not prove that no
+additional removable ranges exist beyond the examined records.
+
+Key output concepts:
+`format`, `mode`, `identity_mode`, `keep_policy`, `execution`, `summary`,
+`ranges`, `output`, `index`, `checksum_verification`, `notes`.
+
 ## `annotate_rg`
 
 Synopsis:
