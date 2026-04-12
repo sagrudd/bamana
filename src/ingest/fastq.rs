@@ -13,6 +13,13 @@ use crate::{
     error::AppError,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FastqRecord {
+    pub read_name: String,
+    pub sequence: String,
+    pub quality: String,
+}
+
 pub fn read_fastq_as_unmapped_records(
     path: &Path,
     read_group: Option<&str>,
@@ -21,19 +28,15 @@ pub fn read_fastq_as_unmapped_records(
     let mut records = Vec::new();
 
     loop {
-        let Some(header_line) = read_next_line(&mut reader, path)? else {
+        let Some(record) = read_next_fastq_record(&mut reader, path)? else {
             break;
         };
-        let sequence_line = required_line(&mut reader, path, "sequence")?;
-        let plus_line = required_line(&mut reader, path, "plus")?;
-        let quality_line = required_line(&mut reader, path, "quality")?;
-
         records.push(build_unmapped_record(
             path,
-            &header_line,
-            &sequence_line,
-            &plus_line,
-            &quality_line,
+            &format!("@{}", record.read_name),
+            &record.sequence,
+            "+",
+            &record.quality,
             read_group,
         )?);
     }
@@ -41,7 +44,7 @@ pub fn read_fastq_as_unmapped_records(
     Ok(records)
 }
 
-fn open_fastq_reader(path: &Path) -> Result<Box<dyn BufRead>, AppError> {
+pub(crate) fn open_fastq_reader(path: &Path) -> Result<Box<dyn BufRead>, AppError> {
     let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     if path
         .extension()
@@ -52,6 +55,52 @@ fn open_fastq_reader(path: &Path) -> Result<Box<dyn BufRead>, AppError> {
     } else {
         Ok(Box::new(BufReader::new(file)))
     }
+}
+
+pub(crate) fn read_next_fastq_record(
+    reader: &mut dyn BufRead,
+    path: &Path,
+) -> Result<Option<FastqRecord>, AppError> {
+    let Some(header_line) = read_next_line(reader, path)? else {
+        return Ok(None);
+    };
+    let sequence_line = required_line(reader, path, "sequence")?;
+    let plus_line = required_line(reader, path, "plus")?;
+    let quality_line = required_line(reader, path, "quality")?;
+
+    if !header_line.starts_with('@') {
+        return Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: "FASTQ record header line did not start with '@'.".to_string(),
+        });
+    }
+    if !plus_line.starts_with('+') {
+        return Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: "FASTQ record plus line did not start with '+'.".to_string(),
+        });
+    }
+    if sequence_line.len() != quality_line.len() {
+        return Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: format!(
+                "FASTQ sequence and quality lengths differed ({} vs {}).",
+                sequence_line.len(),
+                quality_line.len()
+            ),
+        });
+    }
+
+    let read_name = parse_read_name(&header_line).ok_or_else(|| AppError::InvalidFastq {
+        path: path.to_path_buf(),
+        detail: "FASTQ record header did not contain a usable read name.".to_string(),
+    })?;
+
+    Ok(Some(FastqRecord {
+        read_name,
+        sequence: sequence_line,
+        quality: quality_line,
+    }))
 }
 
 fn read_next_line(reader: &mut dyn BufRead, path: &Path) -> Result<Option<String>, AppError> {
@@ -80,29 +129,6 @@ fn build_unmapped_record(
     quality_line: &str,
     read_group: Option<&str>,
 ) -> Result<RecordLayout, AppError> {
-    if !header_line.starts_with('@') {
-        return Err(AppError::InvalidFastq {
-            path: path.to_path_buf(),
-            detail: "FASTQ record header line did not start with '@'.".to_string(),
-        });
-    }
-    if !plus_line.starts_with('+') {
-        return Err(AppError::InvalidFastq {
-            path: path.to_path_buf(),
-            detail: "FASTQ record plus line did not start with '+'.".to_string(),
-        });
-    }
-    if sequence_line.len() != quality_line.len() {
-        return Err(AppError::InvalidFastq {
-            path: path.to_path_buf(),
-            detail: format!(
-                "FASTQ sequence and quality lengths differed ({} vs {}).",
-                sequence_line.len(),
-                quality_line.len()
-            ),
-        });
-    }
-
     let read_name = parse_read_name(header_line).ok_or_else(|| AppError::InvalidFastq {
         path: path.to_path_buf(),
         detail: "FASTQ record header did not contain a usable read name.".to_string(),
@@ -177,7 +203,7 @@ mod tests {
 
     use flate2::{Compression, write::GzEncoder};
 
-    use super::read_fastq_as_unmapped_records;
+    use super::{open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record};
 
     #[test]
     fn parses_plain_fastq_into_unmapped_records() {
@@ -214,5 +240,22 @@ mod tests {
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].read_name, "read2");
         assert_eq!(records[0].l_seq, 2);
+    }
+
+    #[test]
+    fn reads_structured_fastq_records() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-fastq-record-{}.fastq", std::process::id()));
+        fs::write(&path, "@read3 comment\nACGT\n+\n!!!!\n").expect("fastq should write");
+
+        let mut reader = open_fastq_reader(&path).expect("reader should open");
+        let record = read_next_fastq_record(&mut reader, &path)
+            .expect("fastq record should parse")
+            .expect("record should exist");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(record.read_name, "read3");
+        assert_eq!(record.sequence, "ACGT");
+        assert_eq!(record.quality, "!!!!");
     }
 }

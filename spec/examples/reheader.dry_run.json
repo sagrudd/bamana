@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "command": "reheader",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "mutation": {
+      "operations": [
+        {
+          "operation": "replace_header",
+          "source": "new_header.sam",
+          "target_rg": null,
+          "details": null,
+          "comment": null
+        }
+      ]
+    },
+    "planning": {
+      "mode_requested": "in-place",
+      "in_place_feasible": false,
+      "recommended_mode": "rewrite-minimized",
+      "reason": "Replacement header cannot be guaranteed safe for true in-place modification in this slice."
+    },
+    "execution": {
+      "mode_used": null,
+      "modified": false,
+      "dry_run": true
+    },
+    "output": {
+      "path": "input.reheadered.bam",
+      "written": false,
+      "overwritten": null
+    },
+    "index": {
+      "present_before": true,
+      "valid_after": null,
+      "reindex_requested": false,
+      "reindexed": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "header_included": false,
+      "input_digest": null,
+      "output_digest": null,
+      "match": null
+    },
+    "notes": [
+      "Header-only mutation was applied or planned.",
+      "This command modifies only BAM header metadata; it does not add, remove, or replace per-record RG:Z tags in alignment records.",
+      "Dry run only. No file modifications were made."
+    ]
+  },
+  "error": null
+}

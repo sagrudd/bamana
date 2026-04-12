@@ -1,3 +1,4 @@
+pub mod annotate_rg;
 pub mod check_eof;
 pub mod check_index;
 pub mod check_map;
@@ -8,7 +9,9 @@ pub mod consume;
 pub mod header;
 pub mod identify;
 pub mod index;
+pub mod inspect_duplication;
 pub mod merge;
+pub mod reheader;
 pub mod sort;
 pub mod summary;
 pub mod validate;

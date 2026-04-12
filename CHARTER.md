@@ -12,9 +12,28 @@ ingestion surface covers:
 * CRAM in alignment mode under explicit reference-policy handling
 * FASTQ and FASTQ.GZ in unmapped mode
 
+Current scope also includes `bamana reheader` as the governed header-only BAM
+metadata mutation path for workflows that need explicit `@RG`, `@PG`, `@CO`,
+and related header updates without implying record-level tag mutation.
+Current scope further includes `bamana annotate_rg` as the governed
+record-level read-group annotation path for workflows that require explicit
+`RG:Z:` aux tags on BAM alignment records, optionally coordinated with `@RG`
+header lines.
+Current scope also includes `bamana inspect_duplication` as the governed
+collection-duplication inspection path for BAM, FASTQ, and FASTQ.GZ inputs when
+operators need explicit evidence of unsafe concatenation, repeated appends, or
+provenance mishandling without conflating those signatures with ordinary PCR
+duplicate biology.
+
 The project charter remains explicit that:
 
 * CRAM support must not silently guess reference behavior
 * ingestion semantics are conservative and automation-facing
+* header-only mutation must remain distinct from record-level alignment-tag
+  mutation
+* record-level read-group annotation must remain distinct from header-only
+  metadata mutation
+* collection-duplication inspection must remain distinct from PCR duplicate
+  marking and duplicate-flag interpretation
 * adjacent format support is intended to normalize into BAM rather than widen
   the public data model without discipline

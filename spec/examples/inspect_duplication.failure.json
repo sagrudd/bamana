@@ -1,0 +1,15 @@
+{
+  "ok": false,
+  "command": "inspect_duplication",
+  "path": "broken.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ",
+    "identity_mode": "qname_seq_qual"
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "Mapping state could not be determined reliably from the available evidence.",
+    "detail": "FASTQ ended before the quality line of a complete record was available.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

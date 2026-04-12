@@ -22,6 +22,8 @@ do not prove. For example:
 
 * `verify` is shallow only
 * `consume` introduces governed ingestion contracts for files and directories, including explicit CRAM reference-policy reporting
+* `annotate_rg` is record-level and may rewrite every BAM alignment record
+* `reheader` is header-only and does not imply record-level `RG:Z` tag mutation
 * `check_eof` is EOF-marker only
 * `summary` may be bounded or full-scan depending on mode
 * `sort` and `merge` do not imply content preservation unless checksum

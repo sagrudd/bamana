@@ -11,6 +11,7 @@ fn cli_source_declares_stable_global_option_and_commands() {
     for token in [
         "pub json_pretty: bool",
         "Identify(IdentifyArgs)",
+        "InspectDuplication(InspectDuplicationArgs)",
         "Consume(ConsumeArgs)",
         "Checksum(ChecksumArgs)",
         "Merge(MergeArgs)",
@@ -40,6 +41,7 @@ fn cli_source_declares_key_subcommand_flags() {
     for token in [
         "long = \"bam\"",
         "long = \"input\"",
+        "long = \"identity\"",
         "long = \"out\"",
         "long = \"mode\"",
         "long = \"recursive\"",
@@ -52,6 +54,9 @@ fn cli_source_declares_key_subcommand_flags() {
         "long = \"sample\"",
         "long = \"read-group\"",
         "long = \"platform\"",
+        "long = \"min-block-size\"",
+        "long = \"full-scan\"",
+        "long = \"max-findings\"",
         "long = \"include-glob\"",
         "long = \"exclude-glob\"",
         "long = \"prefer-index\"",

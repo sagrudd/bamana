@@ -87,6 +87,130 @@ Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
 `checksum_verification`, `notes`.
 
+## `inspect_duplication`
+
+Synopsis:
+`bamana inspect_duplication --input <file> [--identity <qname_seq|qname_seq_qual|qname_seq_qual_rg>] [--min-block-size <N>] [--sample-records <N>] [--full-scan] [--max-findings <N>]`
+
+Semantics:
+Inspects a single BAM, FASTQ, or FASTQ.GZ input for suspicious
+collection-duplication signatures that are more consistent with operator error,
+unsafe concatenation, repeated appends, or coerced monolithic collections than
+with ordinary duplicate biology.
+
+Identity semantics:
+
+* `qname_seq`: read name plus sequence
+* `qname_seq_qual`: read name plus sequence plus quality; this is the current
+  default
+* `qname_seq_qual_rg`: BAM-only read name plus sequence plus quality plus read
+  group
+
+Current detection layers:
+
+* exact duplicate-record identity statistics
+* adjacent repeated-block detection with deterministic record ranges
+* whole-file append classification when the examined file halves repeat exactly
+
+Does prove:
+Only the duplication evidence reported in the JSON payload, under the explicit
+identity mode and scan scope that were actually used.
+
+Does not prove:
+It is not a Picard/GATK-style duplicate-marking contract. It does not interpret
+BAM duplicate flags as primary evidence. It does not make biological claims
+about PCR or molecular duplication. In bounded mode it does not prove whole-file
+absence of suspicious duplication.
+
+Key output concepts:
+`format`, `identity_mode`, `scan_mode`, `records_examined`, `summary`,
+`findings`, `assessment`, `notes`.
+
+## `annotate_rg`
+
+Synopsis:
+`bamana annotate_rg --bam <input.bam> --rg-id <ID> [--out <output.bam>] [--only-missing | --replace-existing | --fail-on-conflict] [--require-header-rg | --create-header-rg | --add-header-rg <KEY=VALUE,...> | --set-header-rg <KEY=VALUE,...>] [--reindex] [--verify-checksum] [-j, --threads <N>] [--force] [--dry-run]`
+
+Semantics:
+Performs record-level read-group annotation by scanning every BAM alignment
+record, inspecting existing `RG:Z:` aux tags, and inserting, replacing, or
+conflict-checking them according to the selected mode.
+
+Record modes:
+
+* `only_missing`: insert `RG:Z:<ID>` only when a record currently lacks an RG
+  tag
+* `replace_existing`: normalize every record to the requested RG ID
+* `fail_on_conflict`: fail if any record already contains a different RG value;
+  this is the current conservative default when no explicit mode flag is given
+
+Header policy:
+
+* `require_existing` is the current conservative default
+* `create_if_missing` adds a minimal matching `@RG` line when absent
+* `add_header_rg` adds a fully specified new `@RG` line
+* `set_header_rg` updates the existing target `@RG` line
+
+Does prove:
+That the BAM stream was rewritten with the reported record mode and header
+policy, and that the reported output file was written when `written: true`.
+
+Does not prove:
+It does not behave like `reheader`, because it touches alignment records. It
+does not imply broader BAM validation than what was parsed during the rewrite.
+It does not imply record-content preservation unless checksum verification was
+performed with the explicitly reported tag-exclusion policy.
+
+Key output concepts:
+`request`, `execution`, `records`, `header`, `output`, `index`,
+`checksum_verification`, `notes`.
+
+## `reheader`
+
+Synopsis:
+`bamana reheader --bam <input.bam> [--header <new_header.sam>] [--add-rg <KEY=VALUE,...>] [--set-rg <KEY=VALUE,...>] [--remove-rg <ID>] [--set-sample <NAME>] [--set-platform <ont|illumina|pacbio|unknown>] [--target-rg <ID>] [--set-pg <KEY=VALUE,...>] [--add-comment <TEXT>] [--in-place] [--rewrite-minimized] [--safe-rewrite] [--dry-run] [--out <output.bam>] [--force] [--reindex] [--verify-checksum]`
+
+Semantics:
+Performs BAM header-only metadata mutation. It can replace the full BAM header
+from a SAM-style header file or apply targeted header mutations such as adding,
+updating, or removing `@RG` records; updating `SM` or `PL` on a targeted read
+group; adding or updating `@PG`; and appending `@CO` lines.
+
+Execution-mode semantics:
+
+* `--in-place` requests true in-place header patching only if Bamana can prove
+  it is safe
+* if `--in-place` is not feasible, the command fails unless
+  `--rewrite-minimized` is also supplied to permit fallback
+* `--rewrite-minimized` is the practical execution path in the current slice
+* `--safe-rewrite` requests an explicit conservative rewrite path
+* `--dry-run` performs mutation validation and execution planning without
+  writing output
+
+Does prove:
+Only the BAM header mutation described in the response, the planning outcome
+for in-place feasibility, and the execution mode actually used.
+
+Does not prove:
+It does not add, remove, or rewrite per-record `RG:Z` tags in alignment
+records. If downstream tooling requires per-record `RG:Z` tags, the correct
+command is `annotate_rg`, not `reheader`. `reheader` does not imply full BAM
+validation, and it does not imply content preservation unless checksum
+verification was explicitly performed and matched.
+
+Index and checksum behavior:
+
+* existing indices should be treated as invalidated after reheader in the
+  current slice unless a future narrowly proven-safe case says otherwise
+* `--reindex` is accepted and reported, but index writing remains deferred in
+  the current slice
+* `--verify-checksum` uses canonical record-order checksum semantics with the
+  BAM header excluded so the command can demonstrate header-only behavior
+
+Key output concepts:
+`mutation`, `planning`, `execution`, `output`, `index`,
+`checksum_verification`, `notes`.
+
 ## `verify`
 
 Synopsis:

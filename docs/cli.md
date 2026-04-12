@@ -37,3 +37,24 @@ support. CRAM is available only in alignment mode and is governed by an
 explicit `--reference-policy`; Bamana does not silently guess CRAM reference
 behavior. Its detailed contract is documented in
 [spec/cli/commands.md](/Users/stephen/Projects/bamana/spec/cli/commands.md).
+
+`annotate_rg` is the record-level read-group annotation command. It rewrites
+alignment records to insert, replace, or normalize `RG:Z:` aux tags and can
+explicitly require or create a matching `@RG` header line. It is intentionally
+distinct from `reheader`: `annotate_rg` touches records, while `reheader`
+modifies only header metadata.
+
+`reheader` is the header-only BAM metadata mutation command. It updates the BAM
+header and only the BAM header. The current slice supports full header
+replacement from a SAM-style header file plus targeted `@RG`, `@PG`, and `@CO`
+mutations. It plans true in-place feasibility conservatively and executes via a
+rewrite path in this slice. It does not add, remove, or replace per-record
+`RG:Z` tags in alignment records.
+
+`inspect_duplication` is the collection-duplication inspection command. It
+accepts a single BAM, FASTQ, or FASTQ.GZ input via `--input`, emits JSON only,
+and is explicitly scoped to suspicious collection mishandling signatures such as
+exact repeated records, adjacent repeated blocks, and whole-file append
+patterns. It is not ordinary PCR duplicate marking, does not use BAM duplicate
+flags as primary evidence, and reports findings with explicit confidence and
+evidence-strength fields rather than a flat duplicate count.

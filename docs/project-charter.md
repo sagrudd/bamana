@@ -77,6 +77,8 @@ The initial scope of Bamana includes development of a Rust-based command-line to
 * BAM splitting / explosion for distributed workflows
 * BAM merge
 * BAM sort
+* BAM header-only metadata mutation
+* BAM record-level read-group annotation
 * upstream file and directory ingestion into normalized BAM
 * index-aware operations
 * header and reference inspection
@@ -88,6 +90,8 @@ Representative initial commands may include:
 * `bamana identify`
 * `bamana verify`
 * `bamana consume`
+* `bamana annotate_rg`
+* `bamana reheader`
 * `bamana check_eof`
 * `bamana check_map`
 * `bamana check_sort`

@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "command": "inspect_duplication",
+  "path": "input.fastq",
+  "data": {
+    "format": "FASTQ",
+    "identity_mode": "qname_seq_qual",
+    "scan_mode": "full",
+    "records_examined": 50000,
+    "summary": {
+      "unique_identities": 50000,
+      "duplicate_identities": 0,
+      "duplicate_records": 0,
+      "duplicate_instances_beyond_first": 0,
+      "fraction_duplicate_records": 0.0,
+      "fraction_duplicate_instances_beyond_first": 0.0
+    },
+    "findings": [],
+    "assessment": {
+      "duplication_detected": false,
+      "likely_operator_error": false,
+      "recommended_follow_up": null
+    },
+    "notes": [
+      "inspect_duplication detects collection-duplication and operator-error signatures; it is not Picard/GATK-style PCR duplicate marking.",
+      "The scan reached EOF cleanly and did not detect suspicious exact-identity or adjacent repeated-block signatures."
+    ]
+  },
+  "error": null
+}

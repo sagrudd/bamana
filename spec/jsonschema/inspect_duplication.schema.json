@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/inspect_duplication.schema.json",
+  "title": "Bamana Inspect Duplication Response",
+  "description": "Contract for bamana inspect_duplication JSON output.",
+  "x-bamana-command": "inspect_duplication",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "format": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ", "FASTQ.GZ"]
+    },
+    "identityMode": {
+      "type": "string",
+      "enum": ["qname_seq", "qname_seq_qual", "qname_seq_qual_rg"]
+    },
+    "scanMode": {
+      "type": "string",
+      "enum": ["bounded", "full"]
+    },
+    "duplicateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 1 },
+        "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "duplicateExample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_name", "sequence_preview", "observed_count"],
+      "properties": {
+        "read_name": { "type": "string" },
+        "sequence_preview": { "type": "string" },
+        "quality_preview": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "read_group": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "observed_count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unique_identities",
+        "duplicate_identities",
+        "duplicate_records",
+        "duplicate_instances_beyond_first",
+        "fraction_duplicate_records",
+        "fraction_duplicate_instances_beyond_first"
+      ],
+      "properties": {
+        "unique_identities": { "type": "integer", "minimum": 0 },
+        "duplicate_identities": { "type": "integer", "minimum": 0 },
+        "duplicate_records": { "type": "integer", "minimum": 0 },
+        "duplicate_instances_beyond_first": { "type": "integer", "minimum": 0 },
+        "fraction_duplicate_records": { "type": "number", "minimum": 0 },
+        "fraction_duplicate_instances_beyond_first": { "type": "number", "minimum": 0 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "confidence", "evidence_strength", "message"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "exact_record_duplicate",
+            "contiguous_block_duplicate",
+            "noncontiguous_block_duplicate",
+            "whole_file_append_duplicate",
+            "partial_collection_duplicate",
+            "indeterminate_repetition"
+          ]
+        },
+        "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
+        "evidence_strength": { "$ref": "./common/defs.schema.json#/$defs/evidenceStrength" },
+        "record_range_1": {
+          "oneOf": [{ "$ref": "#/$defs/duplicateRange" }, { "type": "null" }]
+        },
+        "record_range_2": {
+          "oneOf": [{ "$ref": "#/$defs/duplicateRange" }, { "type": "null" }]
+        },
+        "message": { "type": "string" },
+        "examples": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/duplicateExample" }
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "duplication_detected",
+        "likely_operator_error",
+        "recommended_follow_up"
+      ],
+      "properties": {
+        "duplication_detected": { "type": "boolean" },
+        "likely_operator_error": { "type": "boolean" },
+        "recommended_follow_up": {
+          "$ref": "./common/defs.schema.json#/$defs/nullableString"
+        }
+      }
+    },
+    "successData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "identity_mode",
+        "scan_mode",
+        "records_examined",
+        "summary",
+        "findings",
+        "assessment",
+        "notes"
+      ],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "identity_mode": { "$ref": "#/$defs/identityMode" },
+        "scan_mode": { "$ref": "#/$defs/scanMode" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "summary": { "$ref": "#/$defs/summary" },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "assessment": { "$ref": "#/$defs/assessment" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "failureData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "identity_mode"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "identity_mode": { "$ref": "#/$defs/identityMode" },
+        "scan_mode": {
+          "oneOf": [{ "$ref": "#/$defs/scanMode" }, { "type": "null" }]
+        },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "summary": { "$ref": "#/$defs/summary" },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "assessment": { "$ref": "#/$defs/assessment" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "inspect_duplication" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/successData" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "inspect_duplication" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

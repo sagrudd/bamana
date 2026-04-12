@@ -6,7 +6,10 @@ inspection, and transformation of BAM files and related bioinformatics formats.
 The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
+* `bamana inspect_duplication --input <file>`
 * `bamana consume --input <path...> --out <result.bam>`
+* `bamana annotate_rg --bam <input.bam> --rg-id <id>`
+* `bamana reheader --bam <input.bam>`
 * `bamana verify --bam <bamfile>`
 * `bamana check_eof --bam <bamfile>`
 * `bamana header --bam <bamfile>`
@@ -26,7 +29,10 @@ All command output is JSON.
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
+* `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
 * `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy
+* `annotate_rg` performs record-level `RG:Z:` aux-tag insertion, replacement, or normalization across BAM alignment records, with optional coordinated `@RG` header updates
+* `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only, including the binary reference dictionary and textual SAM-style header records
@@ -42,7 +48,10 @@ The current semantics are intentionally narrow:
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
+`inspect_duplication` does not perform Picard/GATK-style duplicate marking, does not treat BAM duplicate flags as primary evidence, and does not make biological claims about PCR or molecular duplication.
 `consume` does not imply that heterogeneous upstream inputs were normalized unless the response explicitly reports a written BAM output, and it does not silently combine alignment-bearing and raw-read inputs across the alignment/unmapped boundary.
+`annotate_rg` is a record-touching transformation and therefore more expensive than `reheader`; it does not silently act as a header-only command.
+`reheader` does not imply any record-level `RG:Z` tagging change, full BAM validation, or true in-place editing unless the response explicitly reports a proven-safe in-place mode in a future slice.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
 `check_map` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
@@ -59,11 +68,18 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 
 ```bash
 cargo run -- identify example.bam
+cargo run -- inspect_duplication --input input.fastq.gz --full-scan
+cargo run -- inspect_duplication --input input.bam --identity qname_seq_qual_rg --min-block-size 100 --sample-records 250000
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
 cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
 cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
 cargo run -- consume --input sample.cram --out sample.bam --mode alignment --reference ref.fa --reference-policy strict
 cargo run -- consume --input sample.cram extra.bam --out combined.bam --mode alignment --reference ref.fa
+cargo run -- annotate_rg --bam example.bam --rg-id rg001 --replace-existing --create-header-rg --out example.annotated.bam
+cargo run -- annotate_rg --bam example.bam --rg-id rg001 --only-missing --require-header-rg --verify-checksum --out example.annotated.bam
+cargo run -- reheader --bam example.bam --add-rg ID=rg1,SM=sample1,PL=ONT --out example.reheadered.bam
+cargo run -- reheader --bam example.bam --set-sample sample1 --target-rg rg1 --rewrite-minimized --out example.reheadered.bam
+cargo run -- reheader --bam example.bam --header new_header.sam --dry-run --in-place
 cargo run -- verify --bam example.bam
 cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
@@ -100,6 +116,16 @@ cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order quer
 names and lengths, and joins optional fields from textual `@SQ` records into the
 structured JSON view when present.
 
+`inspect_duplication` is the collection-duplication and operator-error
+inspection command. It is intentionally distinct from ordinary PCR duplicate
+marking semantics. The current slice supports BAM, FASTQ, and FASTQ.GZ inputs,
+uses explicit identity modes (`qname_seq`, `qname_seq_qual`, and BAM-only
+`qname_seq_qual_rg`), reports exact duplicate-identity statistics, and detects
+adjacent repeated blocks of record identities. Direct adjacent repeated blocks,
+especially whole-file append signatures, are treated as strong evidence of
+unsafe concatenation, repeated appends, or coerced monolithic collections.
+Non-contiguous repeated-block detection is reserved for a later slice.
+
 `consume` is the front-door normalization command for Bamana. In alignment mode
 it preserves alignments from BAM, SAM, and Stage 2 CRAM inputs while
 normalizing them into BAM. In unmapped mode it converts FASTQ and FASTQ.GZ
@@ -112,6 +138,24 @@ behavior. The current Rust slice supports explicit indexed FASTA
 reference decode attempts under `allow-embedded` or `auto-conservative`.
 Cache-backed CRAM decoding, include/exclude glob filtering, consume-driven
 index creation, and checksum verification remain explicitly deferred.
+
+`annotate_rg` is the explicit per-record read-group tagging command. It scans
+every BAM alignment record, inspects existing `RG:Z:` aux tags, and either
+inserts, replaces, or conflict-checks them according to the selected mode. It
+can also require or create a matching `@RG` header line explicitly. The current
+slice uses a safe rewrite path and can optionally compare canonical
+record-order checksums with `RG` excluded so automation can confirm that only
+read-group annotation changed within the checksum domain.
+
+`reheader` is a header-only metadata mutation command. It can replace the full
+header from a SAM-style header file or apply targeted mutations such as adding,
+updating, or removing `@RG` records, updating `SM`/`PL` on a targeted read
+group, appending `@CO` lines, and adding or updating `@PG` lines. The current
+slice always plans true in-place editing conservatively and falls back to a
+rewrite path for actual execution. That rewrite path still preserves serialized
+alignment-record layout bytes directly instead of performing semantic
+record-level mutation, but it is not a true in-place patch. `reheader` does not
+add, remove, or rewrite per-record `RG:Z` tags.
 
 `check_map` prefers index-derived mapping summaries when a usable BAI is present.
 Without a usable index it falls back to scan-based evidence. Bounded scan mode is

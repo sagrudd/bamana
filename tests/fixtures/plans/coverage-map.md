@@ -46,6 +46,8 @@ These commands depend on the transform fixture family:
 * `merge`
 * `explode`
 * canonical `checksum` preservation checks
+* future `reheader` header-only mutation checks
+* future `annotate_rg` record-level RG annotation checks
 
 ### Consume coverage
 
@@ -146,6 +148,74 @@ Reserved future consume golden outputs for this package:
 * `tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.success.json`
 * `tests/fixtures/expected/consume/consume.tiny.valid.cram.explicit_ref.reference_required.failure.json`
 
+## `reheader`
+
+Target fixture coverage:
+
+* `tiny.valid.coordinate.bam`: dry-run planning for header replacement, `@RG`
+  add/update/remove, and explicit checksum-with-header-excluded reporting
+* `tiny.valid.coordinate.bam` plus future companion index: index invalidation
+  and reindex-request reporting
+* `tiny.invalid.header_replacement.sam`: invalid replacement-header failure
+* `tiny.valid.coordinate.bam` with missing target `@RG`: `missing_read_group`
+  failure
+
+Representative `reheader` contract scenarios:
+
+* header-only dry-run planning:
+  `bamana reheader --bam tiny.valid.coordinate.bam --add-rg ID=rg1,SM=s1,PL=ONT --dry-run --in-place`
+  Expected outcome: success, `planning.in_place_feasible = false`,
+  `execution.dry_run = true`.
+* rewrite execution:
+  `bamana reheader --bam tiny.valid.coordinate.bam --add-rg ID=rg1,SM=s1,PL=ONT --rewrite-minimized --out out.bam`
+  Expected outcome: success, `execution.mode_used = rewrite-minimized`.
+* missing read-group failure:
+  `bamana reheader --bam tiny.valid.coordinate.bam --set-sample s1 --target-rg rg_missing --rewrite-minimized --out out.bam`
+  Expected outcome: failure, `error.code = missing_read_group`.
+
+Each future `reheader` fixture should support:
+
+* JSON schema validation against `reheader.schema.json`
+* golden-output testing for planning/execution fields and the header-only
+  semantics notes
+* checksum validation that excludes the header when header-only preservation is
+  asserted
+
+## `annotate_rg`
+
+Target fixture coverage:
+
+* `tiny.valid.coordinate.bam`: `only_missing`, `replace_existing`, and
+  `fail_on_conflict` record-policy coverage
+* `tiny.tags.nm_rg.bam`: existing RG-tag normalization and RG-excluded checksum
+  verification
+* `tiny.valid.coordinate.bam` plus future companion index: index invalidation
+  and reindex-request reporting
+* future header variants with and without the target `@RG`: explicit
+  `require_existing` and `create_if_missing` header-policy coverage
+
+Representative `annotate_rg` contract scenarios:
+
+* insert missing RG tags only:
+  `bamana annotate_rg --bam tiny.valid.coordinate.bam --rg-id rg001 --only-missing --create-header-rg --out out.bam`
+  Expected outcome: success, missing records gain `RG:Z:rg001`, existing
+  conflicting records remain unchanged.
+* replace all RG tags:
+  `bamana annotate_rg --bam tiny.tags.nm_rg.bam --rg-id rg001 --replace-existing --require-header-rg --verify-checksum --out out.bam`
+  Expected outcome: success, all records end with `RG:Z:rg001`,
+  `checksum_verification.excluded_tags = [\"RG\"]`.
+* fail on conflict:
+  `bamana annotate_rg --bam tiny.tags.nm_rg.bam --rg-id rg001 --fail-on-conflict --require-header-rg --out out.bam`
+  Expected outcome: failure, `error.code = conflicting_read_group_tags`.
+
+Each future `annotate_rg` fixture should support:
+
+* JSON schema validation against `annotate_rg.schema.json`
+* golden-output testing for request mode, header policy, and record summary
+  fields
+* RG-excluded checksum validation when the command asserts that only RG
+  annotation changed
+
 ## Duplication And Forensics Trio
 
 The fixture plan also reserves a focused build-out path for:
@@ -165,6 +235,15 @@ Target fixture coverage:
 * `tiny.duplicate.bam.local_block`: BAM contiguous block detection
 * `tiny.invalid.fastq.truncated`: parse-failure path
 * `tiny.invalid.bam.truncated_record.duplication`: parse-failure path
+
+Contract assertions to reserve explicitly:
+
+* duplication taxonomy classification stays machine-readable and stable-minded
+* `confidence` and `evidence_strength` remain separate from finding type
+* adjacent repeated-block findings report deterministic 1-based record ranges
+* BAM duplicate flags are not treated as primary duplication evidence
+* the command remains explicit that it targets collection duplication and
+  operator error, not ordinary PCR duplicate semantics
 
 ### `deduplicate`
 
