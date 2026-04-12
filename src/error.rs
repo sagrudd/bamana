@@ -28,6 +28,12 @@ pub enum AppError {
     InvalidHeader { path: PathBuf, detail: String },
     #[error("bam record could not be parsed: {path}")]
     InvalidRecord { path: PathBuf, detail: String },
+    #[error("bam index could not be parsed: {path}")]
+    InvalidIndex { path: PathBuf, detail: String },
+    #[error("index format is not supported: {path}")]
+    UnsupportedIndex { path: PathBuf, detail: String },
+    #[error("mapping state could not be determined reliably: {path}")]
+    ParseUncertainty { path: PathBuf, detail: String },
     #[error("file is truncated or incomplete: {path}")]
     TruncatedFile { path: PathBuf, detail: String },
     #[error("unsupported format for this command: {path}")]
@@ -71,6 +77,9 @@ impl AppError {
             Self::InvalidBam { .. } => "invalid_bam",
             Self::InvalidHeader { .. } => "invalid_header",
             Self::InvalidRecord { .. } => "invalid_record",
+            Self::InvalidIndex { .. } => "invalid_index",
+            Self::UnsupportedIndex { .. } => "unsupported_index",
+            Self::ParseUncertainty { .. } => "parse_uncertainty",
             Self::TruncatedFile { .. } => "truncated_file",
             Self::UnsupportedFormat { .. } => "unsupported_format",
             Self::Internal { .. } => "internal_error",
@@ -91,6 +100,12 @@ impl AppError {
             }
             Self::InvalidHeader { .. } => "BAM header could not be parsed.".to_string(),
             Self::InvalidRecord { .. } => "BAM record could not be parsed.".to_string(),
+            Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
+            Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
+            Self::ParseUncertainty { .. } => {
+                "Mapping state could not be determined reliably from the available evidence."
+                    .to_string()
+            }
             Self::TruncatedFile { .. } => "Expected BGZF EOF marker was not found.".to_string(),
             Self::UnsupportedFormat { .. } => {
                 "Detected format is not supported by this command.".to_string()
@@ -108,6 +123,9 @@ impl AppError {
             Self::InvalidBam { detail, .. } => Some(detail.clone()),
             Self::InvalidHeader { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
+            Self::InvalidIndex { detail, .. } => Some(detail.clone()),
+            Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
+            Self::ParseUncertainty { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
             Self::UnsupportedFormat { format, .. } => Some(format.clone()),
             Self::Internal { message } => Some(message.clone()),
@@ -141,6 +159,17 @@ impl AppError {
             Self::InvalidRecord { .. } => Some(
                 "The BAM stream could not be sampled safely; rerun bamana verify and inspect the file for truncation or corruption."
                     .to_string(),
+            ),
+            Self::InvalidIndex { .. } => Some(
+                "Use scan mode or regenerate the BAM index before retrying this command."
+                    .to_string(),
+            ),
+            Self::UnsupportedIndex { .. } => Some(
+                "Provide a BAI index or rerun the command without relying on index-derived mapping counts."
+                    .to_string(),
+            ),
+            Self::ParseUncertainty { .. } => Some(
+                "Run bamana verify and, when available, bamana validate.".to_string(),
             ),
             Self::TruncatedFile { .. } => {
                 Some("Re-transfer or regenerate the BAM file, then rerun the command.".to_string())

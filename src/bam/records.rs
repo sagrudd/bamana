@@ -1,6 +1,7 @@
 use crate::{bam::reader::BamReader, error::AppError};
 
 const BAM_CORE_SIZE: usize = 32;
+const BAM_FUNMAP: u16 = 0x4;
 const BAM_FREVERSE: u16 = 0x10;
 const BAM_FREAD1: u16 = 0x40;
 const BAM_FREAD2: u16 = 0x80;
@@ -13,6 +14,7 @@ pub struct LightAlignmentRecord {
     pub pos: i32,
     pub flags: u16,
     pub read_name: String,
+    pub is_unmapped: bool,
     pub is_reverse: bool,
     pub is_secondary: bool,
     pub is_supplementary: bool,
@@ -55,6 +57,7 @@ pub fn read_next_light_record(
 
     let remaining = block_size - BAM_CORE_SIZE;
     let l_read_name = (bin_mq_nl & 0xff) as usize;
+    let _mapping_quality = ((bin_mq_nl >> 8) & 0xff) as u8;
     let n_cigar_op = (flag_nc & 0xffff) as usize;
     let flags = (flag_nc >> 16) as u16;
 
@@ -119,6 +122,7 @@ pub fn read_next_light_record(
         pos,
         flags,
         read_name,
+        is_unmapped: flags & BAM_FUNMAP != 0,
         is_reverse: flags & BAM_FREVERSE != 0,
         is_secondary: flags & BAM_FSECONDARY != 0,
         is_supplementary: flags & BAM_FSUPPLEMENTARY != 0,

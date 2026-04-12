@@ -212,6 +212,17 @@ pub mod test_support {
     }
 
     pub fn build_light_record(ref_id: i32, pos: i32, read_name: &str, flags: u16) -> Vec<u8> {
+        build_light_record_with_mate(ref_id, pos, read_name, flags, -1, -1)
+    }
+
+    pub fn build_light_record_with_mate(
+        ref_id: i32,
+        pos: i32,
+        read_name: &str,
+        flags: u16,
+        next_ref_id: i32,
+        next_pos: i32,
+    ) -> Vec<u8> {
         let mut variable = Vec::new();
         variable.extend_from_slice(read_name.as_bytes());
         variable.push(0);
@@ -228,8 +239,8 @@ pub mod test_support {
         record.extend_from_slice(&bin_mq_nl.to_le_bytes());
         record.extend_from_slice(&flag_nc.to_le_bytes());
         record.extend_from_slice(&0_i32.to_le_bytes());
-        record.extend_from_slice(&(-1_i32).to_le_bytes());
-        record.extend_from_slice(&(-1_i32).to_le_bytes());
+        record.extend_from_slice(&next_ref_id.to_le_bytes());
+        record.extend_from_slice(&next_pos.to_le_bytes());
         record.extend_from_slice(&0_i32.to_le_bytes());
         record.extend_from_slice(&variable);
         record
