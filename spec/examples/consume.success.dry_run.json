@@ -8,43 +8,35 @@
     "dry_run": true,
     "inputs": {
       "requested_paths": [
-        "input_dir"
+        "sample.cram"
       ],
-      "directories_scanned": 1,
-      "files_discovered": 2,
-      "files_consumed": 2,
-      "files_skipped": 1,
+      "directories_scanned": 0,
+      "files_discovered": 1,
+      "files_consumed": 1,
+      "files_skipped": 0,
       "files_rejected": 0
     },
     "discovery": {
       "recursive": false,
       "formats_detected": {
-        "BAM": 1,
-        "SAM": 1
+        "CRAM": 1
       },
       "consumed_files": [
         {
-          "path": "input_dir/a.sam",
-          "detected_format": "SAM",
-          "consumed": true,
-          "reason": null
-        },
-        {
-          "path": "input_dir/b.bam",
-          "detected_format": "BAM",
+          "path": "sample.cram",
+          "detected_format": "CRAM",
           "consumed": true,
           "reason": null
         }
       ],
-      "skipped_files": [
-        {
-          "path": "input_dir/nested",
-          "detected_format": "UNSUPPORTED",
-          "consumed": false,
-          "reason": "directory_requires_recursive"
-        }
-      ],
+      "skipped_files": [],
       "rejected_files": []
+    },
+    "reference": {
+      "policy": "auto-conservative",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": true
     },
     "output": {
       "path": "combined.bam",
@@ -72,7 +64,9 @@
       "match": null
     },
     "notes": [
+      "Dry-run validated the auto-conservative policy shape but cannot prove decode success without executing the CRAM reader.",
       "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "CRAM ingestion is governed by the auto-conservative reference policy; Bamana does not silently guess CRAM reference behavior.",
       "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
     ]
   },

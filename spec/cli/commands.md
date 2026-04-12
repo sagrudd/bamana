@@ -34,7 +34,7 @@ Key output concepts:
 ## `consume`
 
 Synopsis:
-`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
+`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--reference <FASTA>] [--reference-cache <PATH>] [--reference-policy <strict|allow-embedded|allow-cache|auto-conservative>] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
 
 Semantics:
 Acts as Bamana’s input normalization gateway. It discovers files and
@@ -44,10 +44,23 @@ explicit ingest mode.
 
 Mixed-format policy:
 
-* `alignment` accepts alignment-bearing inputs only (`BAM`, `SAM`; later CRAM)
+* `alignment` accepts alignment-bearing inputs only (`BAM`, `SAM`, `CRAM`)
 * `unmapped` accepts raw-read inputs only (`FASTQ`, `FASTQ.GZ`)
 * by default, alignment-bearing and raw-read inputs are not allowed in the same
   request
+* `CRAM` is valid only in `alignment` mode
+
+CRAM reference policy:
+
+* `strict` is the safest policy, the current default, and currently requires an explicit indexed
+  FASTA supplied with `--reference`
+* `allow-embedded` permits a conservative decode attempt without external FASTA
+  and reports whether decode completed without one
+* `allow-cache` is reserved for cache-backed CRAM decoding and remains
+  unimplemented in the current slice
+* `auto-conservative` uses an explicit FASTA when provided and otherwise falls
+  back only to conservative no-external-reference decode attempts
+* Bamana does not silently guess CRAM reference behavior
 
 Directory traversal rules:
 
@@ -59,17 +72,19 @@ Directory traversal rules:
 
 Does prove:
 Deterministic discovery, input classification, mixed-format policy enforcement,
-and Stage 1 BAM normalization for supported inputs. In dry-run mode it proves
-what would be consumed without writing a BAM.
+and staged BAM normalization for supported inputs. In dry-run mode it proves
+what would be consumed without writing a BAM and validates CRAM reference-policy
+configuration conservatively.
 
 Does not prove:
 Successful BAM normalization unless the response explicitly reports a written
 output. It does not imply alignment for raw-read inputs, and it does not imply
-that CRAM, include/exclude glob filtering, checksum verification, or post-ingest
-index creation are already implemented.
+reference independence for CRAM unless that is explicitly reported. Cache-backed
+CRAM decoding, include/exclude glob filtering, checksum verification, and
+post-ingest index creation remain deferred in the current slice.
 
 Key output concepts:
-`mode`, `inputs`, `discovery`, `output`, `header`, `index`,
+`mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
 `checksum_verification`, `notes`.
 
 ## `verify`

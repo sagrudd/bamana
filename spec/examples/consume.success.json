@@ -4,11 +4,11 @@
   "path": null,
   "data": {
     "format": "BAM",
-    "mode": "unmapped",
+    "mode": "alignment",
     "dry_run": false,
     "inputs": {
       "requested_paths": [
-        "reads.fastq.gz"
+        "sample.cram"
       ],
       "directories_scanned": 0,
       "files_discovered": 1,
@@ -19,12 +19,12 @@
     "discovery": {
       "recursive": false,
       "formats_detected": {
-        "FASTQ.GZ": 1
+        "CRAM": 1
       },
       "consumed_files": [
         {
-          "path": "reads.fastq.gz",
-          "detected_format": "FASTQ.GZ",
+          "path": "sample.cram",
+          "detected_format": "CRAM",
           "consumed": true,
           "reason": null
         }
@@ -32,19 +32,27 @@
       "skipped_files": [],
       "rejected_files": []
     },
+    "reference": {
+      "policy": "allow-embedded",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": true,
+      "source_used": "embedded_or_not_required",
+      "decode_without_external_reference": true
+    },
     "output": {
-      "path": "reads.bam",
+      "path": "sample.bam",
       "written": true,
-      "records_written": 1000,
+      "records_written": 2100000,
       "sort_order": "none",
-      "mapped_state": "unmapped"
+      "mapped_state": "mapped_or_mixed"
     },
     "header": {
-      "strategy": "synthetic_unmapped_header",
-      "reference_compatibility": null,
-      "sample": "demo",
-      "read_group": "rg0",
-      "platform": "ONT"
+      "strategy": "decoded_cram_header",
+      "reference_compatibility": "compatible",
+      "sample": null,
+      "read_group": null,
+      "platform": null
     },
     "index": {
       "requested": false,
@@ -59,8 +67,10 @@
     },
     "notes": [
       "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
-      "FASTQ inputs were converted to unmapped BAM records.",
-      "No alignments were inferred or fabricated during unmapped ingestion."
+      "CRAM ingestion is governed by the allow-embedded reference policy; Bamana does not silently guess CRAM reference behavior.",
+      "Alignment-bearing inputs were normalized into BAM.",
+      "Alignment compatibility currently requires identical reference dictionaries across all alignment inputs.",
+      "CRAM decoding completed without an explicit external FASTA under the selected conservative policy."
     ]
   },
   "error": null

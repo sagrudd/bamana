@@ -86,9 +86,14 @@ Target fixture coverage:
 
 * `tiny.valid.coordinate`: alignment-mode BAM ingest
 * `tiny.valid.sam`: alignment-mode SAM ingest
+* `tiny.valid.cram_with_reference`: alignment-mode CRAM ingest with explicit
+  indexed FASTA
+* `tiny.valid.cram_embedded`: conservative CRAM decode without explicit FASTA,
+  if a suitable tiny fixture is available
 * `tiny.valid.fastq`: unmapped FASTQ ingest
 * `tiny.valid.fastq_gz`: unmapped FASTQ.GZ ingest
 * `tiny.consume.mixed_alignment_raw`: mixed-format rejection
+* `tiny.consume.cram_reference_required`: strict CRAM missing-reference failure
 * `tiny.consume.directory_tree`: lexical discovery, recursive traversal, and
   unsupported-entry reporting
 

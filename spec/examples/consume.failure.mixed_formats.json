@@ -9,7 +9,7 @@
     "inputs": {
       "requested_paths": [
         "reads.fastq.gz",
-        "aligned.bam"
+        "aligned.cram"
       ],
       "directories_scanned": 0,
       "files_discovered": 2,
@@ -20,15 +20,15 @@
     "discovery": {
       "recursive": false,
       "formats_detected": {
-        "BAM": 1,
+        "CRAM": 1,
         "FASTQ.GZ": 1
       },
       "consumed_files": [],
       "skipped_files": [],
       "rejected_files": [
         {
-          "path": "aligned.bam",
-          "detected_format": "BAM",
+          "path": "aligned.cram",
+          "detected_format": "CRAM",
           "consumed": false,
           "reason": "mixed_input_modes_not_allowed"
         },
@@ -39,6 +39,12 @@
           "reason": "mixed_input_modes_not_allowed"
         }
       ]
+    },
+    "reference": {
+      "policy": "strict",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": true
     },
     "output": {
       "path": "combined.bam",

@@ -114,12 +114,17 @@ Recommended roots:
 
 * `tiny.valid.coordinate.bam` for alignment-bearing BAM ingest
 * `tiny.valid.sam` for alignment-bearing SAM ingest
+* `tiny.valid.cram_with_reference` for explicit-reference CRAM ingest
+* `tiny.valid.cram_embedded` only if a truly conservative no-external-reference
+  CRAM can be documented reproducibly
 * `tiny.valid.fastq` and `tiny.valid.fastq_gz` for unmapped ingest
 
 Recommended derived fixtures:
 
 * `tiny.consume.mixed_alignment_raw` created by composing one alignment-bearing
   source with one raw-read source in a single request
+* `tiny.consume.cram_reference_required` created by running a strict-policy CRAM
+  request without `--reference`
 * `tiny.consume.directory_tree` created by arranging supported files,
   unsupported files, and nested directories in a deterministic lexical layout
 
@@ -128,6 +133,8 @@ The first consume fixtures should prove:
 * deterministic lexical discovery
 * recursive versus non-recursive directory behavior
 * mixed-format rejection across alignment/raw-read boundaries
+* strict CRAM required-reference behavior
+* explicit-reference CRAM success reporting
 * dry-run planning semantics
 
 ## What Should Be Checked In

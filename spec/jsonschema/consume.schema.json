@@ -10,6 +10,14 @@
       "type": "string",
       "enum": ["alignment", "unmapped"]
     },
+    "consumeReferencePolicy": {
+      "type": "string",
+      "enum": ["strict", "allow-embedded", "allow-cache", "auto-conservative"]
+    },
+    "consumeReferenceSourceUsed": {
+      "type": ["string", "null"],
+      "enum": ["explicit_fasta", "embedded_or_not_required", null]
+    },
     "consumeSortOrder": {
       "type": "string",
       "enum": ["none", "coordinate", "queryname"]
@@ -34,6 +42,7 @@
         "dry_run",
         "inputs",
         "discovery",
+        "reference",
         "output",
         "header",
         "index",
@@ -88,6 +97,26 @@
             "rejected_files": {
               "type": "array",
               "items": { "$ref": "#/$defs/fileInfo" }
+            }
+          }
+        },
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policy",
+            "explicit_reference_provided",
+            "reference_cache_provided",
+            "cram_inputs_present"
+          ],
+          "properties": {
+            "policy": { "$ref": "#/$defs/consumeReferencePolicy" },
+            "explicit_reference_provided": { "type": "boolean" },
+            "reference_cache_provided": { "type": "boolean" },
+            "cram_inputs_present": { "type": "boolean" },
+            "source_used": { "$ref": "#/$defs/consumeReferenceSourceUsed" },
+            "decode_without_external_reference": {
+              "type": ["boolean", "null"]
             }
           }
         },

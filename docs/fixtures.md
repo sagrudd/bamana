@@ -52,9 +52,10 @@ ingestion gateway rather than a BAM-only downstream operation.
 
 Its fixture plan must cover:
 
-* alignment-bearing ingest (`BAM`, `SAM`)
+* alignment-bearing ingest (`BAM`, `SAM`, staged `CRAM`)
 * raw-read ingest (`FASTQ`, `FASTQ.GZ`)
 * mixed-format rejection across those boundaries
+* explicit CRAM reference-policy success and failure paths
 * deterministic directory traversal, including unsupported and nested entries
 
 These fixtures should be used to prove discovery order, classification, and

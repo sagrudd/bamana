@@ -194,6 +194,8 @@ fn fixture_manifest_includes_consume_fixture_plan() {
 
     for required_id in [
         "tiny.valid.sam",
+        "tiny.valid.cram_with_reference",
+        "tiny.consume.cram_reference_required",
         "tiny.valid.fastq",
         "tiny.valid.fastq_gz",
         "tiny.consume.mixed_alignment_raw",

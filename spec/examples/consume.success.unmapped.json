@@ -54,6 +54,12 @@
       ],
       "rejected_files": []
     },
+    "reference": {
+      "policy": "strict",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": false
+    },
     "output": {
       "path": "combined.bam",
       "written": true,

@@ -5,7 +5,10 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
 use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
-use crate::ingest::consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder};
+use crate::ingest::{
+    consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
+    cram::ConsumeReferencePolicy,
+};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -106,6 +109,19 @@ pub struct ConsumeArgs {
     /// Discover, classify, and plan ingestion without writing a BAM.
     #[arg(long = "dry-run")]
     pub dry_run: bool,
+    /// Explicit reference FASTA for CRAM decoding. Stage 2 currently expects an indexed FASTA with an adjacent .fai.
+    #[arg(long = "reference")]
+    pub reference: Option<PathBuf>,
+    /// Explicit reference cache path for future CRAM decoding support.
+    #[arg(long = "reference-cache")]
+    pub reference_cache: Option<PathBuf>,
+    /// Conservative CRAM reference-resolution policy.
+    #[arg(
+        long = "reference-policy",
+        value_enum,
+        default_value_t = ConsumeReferencePolicy::Strict
+    )]
+    pub reference_policy: ConsumeReferencePolicy,
     /// Optional sample name for synthetic unmapped BAM headers.
     #[arg(long = "sample")]
     pub sample: Option<String>,

@@ -9,8 +9,9 @@ use crate::{
         consume::{
             ConsumeExecutionOptions, ConsumeMode, ConsumePlatform, ConsumeSortOrder,
             InputSemanticClass, classify_input_format, execute_consume, header_strategy_for_mode,
-            mapped_state_for_mode,
+            mapped_state_for_mode, prepare_cram_context_for_consume,
         },
+        cram::{ConsumeReferencePolicy, ConsumeReferenceSourceUsed},
         discovery::{DiscoveredFile, DiscoveryOptions, discover_requested_paths, format_counts},
     },
     json::CommandResponse,
@@ -28,6 +29,9 @@ pub struct ConsumeRequest {
     pub create_index: bool,
     pub verify_checksum: bool,
     pub dry_run: bool,
+    pub reference: Option<PathBuf>,
+    pub reference_cache: Option<PathBuf>,
+    pub reference_policy: ConsumeReferencePolicy,
     pub sample: Option<String>,
     pub read_group: Option<String>,
     pub platform: Option<ConsumePlatform>,
@@ -42,6 +46,7 @@ pub struct ConsumePayload {
     pub dry_run: bool,
     pub inputs: ConsumeInputRequest,
     pub discovery: ConsumeDiscoverySummary,
+    pub reference: ConsumeReferencePolicyInfo,
     pub output: ConsumeOutputInfo,
     pub header: ConsumeHeaderPolicyInfo,
     pub index: ConsumeIndexInfo,
@@ -89,6 +94,18 @@ pub struct ConsumeOutputInfo {
     pub records_written: Option<u64>,
     pub sort_order: ConsumeSortOrder,
     pub mapped_state: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ConsumeReferencePolicyInfo {
+    pub policy: ConsumeReferencePolicy,
+    pub explicit_reference_provided: bool,
+    pub reference_cache_provided: bool,
+    pub cram_inputs_present: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_used: Option<ConsumeReferenceSourceUsed>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode_without_external_reference: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -168,6 +185,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
     payload.inputs.directories_scanned = discovery.directories_scanned;
     payload.inputs.files_discovered = discovery.candidate_files.len();
     payload.discovery.formats_detected = format_counts(&discovery.discovered_files);
+    payload.reference.cram_inputs_present = discovery
+        .discovered_files
+        .iter()
+        .any(|file| matches!(file.detected_format, DetectedFormat::Cram));
     payload
         .discovery
         .skipped_files
@@ -184,17 +205,38 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
         );
 
     let classified = classify_files(&discovery.discovered_files, &mut payload);
-    let saw_cram = classified
-        .unsupported
-        .iter()
-        .any(|file| matches!(file.detected_format, DetectedFormat::Cram));
 
-    let active_files = match resolve_mode_files(&request, &mut payload, &classified, saw_cram) {
+    let active_files = match resolve_mode_files(&request, &mut payload, &classified) {
         Ok(files) => files,
         Err(error) => {
             return CommandResponse::failure_with_data("consume", None, Some(payload), error);
         }
     };
+
+    if active_files
+        .iter()
+        .any(|file| matches!(file.detected_format, DetectedFormat::Cram))
+    {
+        match prepare_cram_context_for_consume(
+            &request.out,
+            request.reference_policy,
+            request.reference.as_deref(),
+            request.reference_cache.as_deref(),
+            request.dry_run,
+        ) {
+            Ok(context) => {
+                payload.reference.source_used = context.source_used_hint;
+                payload.reference.decode_without_external_reference =
+                    context.decode_without_external_reference_hint;
+                if request.dry_run {
+                    payload.notes.extend(context.notes);
+                }
+            }
+            Err(error) => {
+                return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+            }
+        }
+    }
 
     refresh_counts(&mut payload);
     push_stage1_notes(&request, &mut payload);
@@ -244,6 +286,9 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
         output_path: request.out.clone(),
         force: request.force,
         sort: request.sort,
+        reference: request.reference.clone(),
+        reference_cache: request.reference_cache.clone(),
+        reference_policy: request.reference_policy,
         sample: request.sample.clone(),
         read_group: request.read_group.clone(),
         platform: request.platform,
@@ -256,6 +301,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
 
     payload.output.written = true;
     payload.output.records_written = Some(execution.records_written);
+    payload.reference.source_used = execution.reference_source_used;
+    payload.reference.decode_without_external_reference =
+        execution.decode_without_external_reference;
+    payload.header.strategy = execution.header_strategy;
     payload.header.reference_compatibility = execution.reference_compatibility;
     payload.notes.extend(execution.notes);
     if execution.overwritten {
@@ -303,19 +352,12 @@ fn resolve_mode_files(
     request: &ConsumeRequest,
     payload: &mut ConsumePayload,
     classified: &ClassifiedFiles,
-    saw_cram: bool,
 ) -> Result<Vec<DiscoveredFile>, AppError> {
     if classified.alignment.is_empty() && classified.raw.is_empty() {
-        if saw_cram && matches!(request.mode, ConsumeMode::Alignment) {
-            return Err(AppError::ReferenceRequired {
-                path: request.out.clone(),
-                detail: "CRAM ingestion is staged behind an explicit reference policy and is not implemented in this slice.".to_string(),
-            });
-        }
-
         return Err(AppError::UnsupportedInputFormat {
             path: request.out.clone(),
-            format: "No supported BAM, SAM, FASTQ, or FASTQ.GZ inputs were discovered.".to_string(),
+            format: "No supported BAM, SAM, CRAM, FASTQ, or FASTQ.GZ inputs were discovered."
+                .to_string(),
         });
     }
 
@@ -354,12 +396,12 @@ fn resolve_mode_files(
                         path: file.path.to_string_lossy().into_owned(),
                         detected_format: file.detected_format.to_string(),
                         consumed: false,
-                        reason: Some("unsupported_input_format".to_string()),
+                        reason: Some("unsupported_input_for_mode".to_string()),
                     }));
                 refresh_counts(payload);
-                return Err(AppError::UnsupportedInputFormat {
+                return Err(AppError::UnsupportedInputForMode {
                     path: request.out.clone(),
-                    format: "Alignment mode supports BAM and SAM inputs only.".to_string(),
+                    detail: "Alignment mode supports BAM, SAM, and CRAM inputs only.".to_string(),
                 });
             }
 
@@ -382,13 +424,15 @@ fn resolve_mode_files(
                                 path: file.path.to_string_lossy().into_owned(),
                                 detected_format: file.detected_format.to_string(),
                                 consumed: false,
-                                reason: Some("unsupported_input_format".to_string()),
+                                reason: Some("unsupported_input_for_mode".to_string()),
                             }),
                     );
                 refresh_counts(payload);
-                return Err(AppError::UnsupportedInputFormat {
+                return Err(AppError::UnsupportedInputForMode {
                     path: request.out.clone(),
-                    format: "Unmapped mode supports FASTQ and FASTQ.GZ inputs only.".to_string(),
+                    detail:
+                        "Unmapped mode supports FASTQ and FASTQ.GZ inputs only; BAM, SAM, and CRAM remain alignment-bearing inputs."
+                            .to_string(),
                 });
             }
 
@@ -431,6 +475,14 @@ fn base_payload(request: &ConsumeRequest) -> ConsumePayload {
             consumed_files: Vec::new(),
             skipped_files: Vec::new(),
             rejected_files: Vec::new(),
+        },
+        reference: ConsumeReferencePolicyInfo {
+            policy: request.reference_policy,
+            explicit_reference_provided: request.reference.is_some(),
+            reference_cache_provided: request.reference_cache.is_some(),
+            cram_inputs_present: false,
+            source_used: None,
+            decode_without_external_reference: None,
         },
         output: ConsumeOutputInfo {
             path: request.out.to_string_lossy().into_owned(),
@@ -489,6 +541,17 @@ fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
     if request.verify_checksum {
         payload.notes.push(
             "Checksum verification is planned to reuse Bamana checksum modes after ingest, but it is not yet performed in this slice.".to_string(),
+        );
+    }
+    if payload.reference.cram_inputs_present {
+        payload.notes.push(format!(
+            "CRAM ingestion is governed by the {} reference policy; Bamana does not silently guess CRAM reference behavior.",
+            request.reference_policy
+        ));
+    } else if request.reference.is_some() || request.reference_cache.is_some() {
+        payload.notes.push(
+            "Reference-related consume options were provided, but no CRAM inputs were discovered in this request."
+                .to_string(),
         );
     }
     if request.threads > 1 {

@@ -17,7 +17,13 @@ use crate::{
     error::AppError,
     formats::probe::DetectedFormat,
     ingest::{
-        discovery::DiscoveredFile, fastq::read_fastq_as_unmapped_records, sam::read_sam_file,
+        cram::{
+            ConsumeReferenceContext, ConsumeReferencePolicy, ConsumeReferenceSourceUsed,
+            normalize_cram_to_record_layouts, prepare_reference_context,
+        },
+        discovery::DiscoveredFile,
+        fastq::read_fastq_as_unmapped_records,
+        sam::read_sam_file,
     },
 };
 
@@ -59,6 +65,9 @@ pub struct ConsumeExecutionOptions {
     pub output_path: PathBuf,
     pub force: bool,
     pub sort: ConsumeSortOrder,
+    pub reference: Option<PathBuf>,
+    pub reference_cache: Option<PathBuf>,
+    pub reference_policy: ConsumeReferencePolicy,
     pub sample: Option<String>,
     pub read_group: Option<String>,
     pub platform: Option<ConsumePlatform>,
@@ -68,13 +77,18 @@ pub struct ConsumeExecutionOptions {
 pub struct ConsumeExecution {
     pub records_written: u64,
     pub overwritten: bool,
+    pub header_strategy: String,
     pub reference_compatibility: Option<String>,
+    pub reference_source_used: Option<ConsumeReferenceSourceUsed>,
+    pub decode_without_external_reference: Option<bool>,
     pub notes: Vec<String>,
 }
 
 pub fn classify_input_format(format: DetectedFormat) -> InputSemanticClass {
     match format {
-        DetectedFormat::Bam | DetectedFormat::Sam => InputSemanticClass::Alignment,
+        DetectedFormat::Bam | DetectedFormat::Sam | DetectedFormat::Cram => {
+            InputSemanticClass::Alignment
+        }
         DetectedFormat::Fastq | DetectedFormat::FastqGz => InputSemanticClass::RawRead,
         _ => InputSemanticClass::Unsupported,
     }
@@ -92,6 +106,16 @@ pub fn header_strategy_for_mode(mode: ConsumeMode) -> &'static str {
         ConsumeMode::Alignment => "first_compatible_alignment_header",
         ConsumeMode::Unmapped => "synthetic_unmapped_header",
     }
+}
+
+pub fn prepare_cram_context_for_consume(
+    output_path: &Path,
+    policy: ConsumeReferencePolicy,
+    reference: Option<&Path>,
+    reference_cache: Option<&Path>,
+    dry_run: bool,
+) -> Result<ConsumeReferenceContext, AppError> {
+    prepare_reference_context(output_path, policy, reference, reference_cache, dry_run)
 }
 
 pub fn execute_consume(options: &ConsumeExecutionOptions) -> Result<ConsumeExecution, AppError> {
@@ -115,8 +139,25 @@ pub fn execute_consume(options: &ConsumeExecutionOptions) -> Result<ConsumeExecu
         });
     }
 
+    let cram_context = if matches!(options.mode, ConsumeMode::Alignment)
+        && options
+            .files
+            .iter()
+            .any(|file| matches!(file.detected_format, DetectedFormat::Cram))
+    {
+        Some(prepare_reference_context(
+            &options.output_path,
+            options.reference_policy,
+            options.reference.as_deref(),
+            options.reference_cache.as_deref(),
+            false,
+        )?)
+    } else {
+        None
+    };
+
     match options.mode {
-        ConsumeMode::Alignment => execute_alignment_consume(options),
+        ConsumeMode::Alignment => execute_alignment_consume(options, cram_context.as_ref()),
         ConsumeMode::Unmapped => execute_unmapped_consume(options),
     }
 }
@@ -147,16 +188,20 @@ pub fn synthetic_unmapped_header(
 
 fn execute_alignment_consume(
     options: &ConsumeExecutionOptions,
+    cram_context: Option<&ConsumeReferenceContext>,
 ) -> Result<ConsumeExecution, AppError> {
     let preexisting_output = options.output_path.exists();
     let mut base_header_text = None;
     let mut base_references: Option<Vec<ReferenceRecord>> = None;
+    let mut header_strategy = header_strategy_for_mode(ConsumeMode::Alignment).to_string();
     let mut records = Vec::new();
     let mut notes = vec![
         "Alignment-bearing inputs were normalized into BAM.".to_string(),
         "Alignment compatibility currently requires identical reference dictionaries across all alignment inputs."
             .to_string(),
     ];
+    let mut reference_source_used = None;
+    let mut decode_without_external_reference = None;
 
     for file in &options.files {
         match file.detected_format {
@@ -179,6 +224,30 @@ fn execute_alignment_consume(
                     records.push(layout);
                 }
             }
+            DetectedFormat::Cram => {
+                let context = cram_context.ok_or_else(|| AppError::Internal {
+                    message: "CRAM alignment input reached consume execution without a resolved reference context."
+                        .to_string(),
+                })?;
+                let normalized = normalize_cram_to_record_layouts(&file.path, context)?;
+
+                if let Some(expected) = base_references.as_ref() {
+                    ensure_compatible_reference_dictionary(
+                        expected,
+                        &normalized.references,
+                        &file.path,
+                    )?;
+                } else {
+                    header_strategy = "decoded_cram_header".to_string();
+                    base_header_text = Some(normalized.raw_header_text.clone());
+                    base_references = Some(normalized.references.clone());
+                }
+
+                reference_source_used = Some(normalized.source_used);
+                decode_without_external_reference =
+                    Some(normalized.decode_without_external_reference);
+                records.extend(normalized.records);
+            }
             DetectedFormat::Sam => {
                 let parsed = read_sam_file(&file.path)?;
                 if let Some(expected) = base_references.as_ref() {
@@ -199,6 +268,22 @@ fn execute_alignment_consume(
                     format: format!("Detected unsupported alignment input format {other}."),
                 });
             }
+        }
+    }
+
+    if let Some(context) = cram_context {
+        notes.extend(context.notes.iter().cloned());
+
+        match reference_source_used {
+            Some(ConsumeReferenceSourceUsed::ExplicitFasta) => notes.push(
+                "CRAM input was decoded under an explicit indexed FASTA reference policy."
+                    .to_string(),
+            ),
+            Some(ConsumeReferenceSourceUsed::EmbeddedOrNotRequired) => notes.push(
+                "CRAM decoding completed without an explicit external FASTA under the selected conservative policy."
+                    .to_string(),
+            ),
+            None => {}
         }
     }
 
@@ -252,7 +337,10 @@ fn execute_alignment_consume(
     Ok(ConsumeExecution {
         records_written,
         overwritten: preexisting_output && options.force,
+        header_strategy,
         reference_compatibility: Some("compatible".to_string()),
+        reference_source_used,
+        decode_without_external_reference,
         notes,
     })
 }
@@ -318,7 +406,10 @@ fn execute_unmapped_consume(
     Ok(ConsumeExecution {
         records_written,
         overwritten: preexisting_output && options.force,
+        header_strategy: header_strategy_for_mode(ConsumeMode::Unmapped).to_string(),
         reference_compatibility: None,
+        reference_source_used: None,
+        decode_without_external_reference: None,
         notes,
     })
 }
@@ -505,6 +596,9 @@ mod tests {
             output_path: output.clone(),
             force: true,
             sort: ConsumeSortOrder::None,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
             sample: None,
             read_group: None,
             platform: None,
@@ -541,6 +635,9 @@ mod tests {
             output_path: output.clone(),
             force: true,
             sort: ConsumeSortOrder::Queryname,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
             sample: Some("sample1".to_string()),
             read_group: Some("rg1".to_string()),
             platform: Some(ConsumePlatform::Illumina),

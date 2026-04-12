@@ -9,7 +9,7 @@
     "inputs": {
       "requested_paths": [
         "lane_a.bam",
-        "lane_b.sam"
+        "lane_b.cram"
       ],
       "directories_scanned": 0,
       "files_discovered": 2,
@@ -21,7 +21,7 @@
       "recursive": false,
       "formats_detected": {
         "BAM": 1,
-        "SAM": 1
+        "CRAM": 1
       },
       "consumed_files": [
         {
@@ -31,14 +31,22 @@
           "reason": null
         },
         {
-          "path": "lane_b.sam",
-          "detected_format": "SAM",
+          "path": "lane_b.cram",
+          "detected_format": "CRAM",
           "consumed": true,
           "reason": null
         }
       ],
       "skipped_files": [],
       "rejected_files": []
+    },
+    "reference": {
+      "policy": "strict",
+      "explicit_reference_provided": true,
+      "reference_cache_provided": false,
+      "cram_inputs_present": true,
+      "source_used": "explicit_fasta",
+      "decode_without_external_reference": false
     },
     "output": {
       "path": "combined.bam",
@@ -66,13 +74,14 @@
       "match": null
     },
     "notes": [
-      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice."
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "CRAM ingestion is governed by the strict reference policy; Bamana does not silently guess CRAM reference behavior."
     ]
   },
   "error": {
     "code": "incompatible_headers",
     "message": "Input alignment headers are not compatible for a combined BAM output.",
     "detail": "Reference dictionary mismatch at index 1.",
-    "hint": "Ensure all BAM/SAM inputs use the same reference dictionary before merging or alignment-mode consume."
+    "hint": "Ensure all BAM/SAM/CRAM inputs use the same reference dictionary before merging or alignment-mode consume."
   }
 }

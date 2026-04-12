@@ -13,7 +13,10 @@ Examples to reserve:
 
 * `consume.tiny.valid.coordinate.dry_run.success.json`
 * `consume.tiny.valid.sam.dry_run.success.json`
+* `consume.tiny.valid.cram_with_reference.dry_run.success.json`
+* `consume.tiny.valid.cram_embedded.dry_run.success.json`
 * `consume.tiny.valid.fastq.dry_run.success.json`
 * `consume.tiny.valid.fastq_gz.dry_run.success.json`
 * `consume.tiny.consume.mixed_alignment_raw.failure.json`
+* `consume.tiny.consume.cram_reference_required.failure.json`
 * `consume.tiny.consume.directory_tree.dry_run.success.json`

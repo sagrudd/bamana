@@ -21,9 +21,12 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |
 | `tiny.valid.sam` | Alignment-mode SAM ingest | Identify/format coverage | `consume`, `identify` | success |
+| `tiny.valid.cram_with_reference` | Alignment-mode CRAM ingest with explicit FASTA | Reference-policy success coverage | `consume`, `identify` | success |
+| `tiny.valid.cram_embedded` | Alignment-mode CRAM ingest without explicit FASTA | Conservative embedded/no-external-reference coverage | `consume`, `identify` | success or skip if fixture unavailable |
 | `tiny.valid.fastq` | Unmapped FASTQ ingest | Identify/format coverage | `consume`, `identify` | success |
 | `tiny.valid.fastq_gz` | Unmapped FASTQ.GZ ingest | Identify/format coverage | `consume`, `identify` | success |
 | `tiny.consume.mixed_alignment_raw` | Strict mixed-format rejection | Policy failure coverage | `consume` | failure |
+| `tiny.consume.cram_reference_required` | Strict CRAM missing-reference failure | Reference-policy failure coverage | `consume` | failure |
 | `tiny.consume.directory_tree` | Deterministic directory traversal | Recursive/non-recursive discovery coverage | `consume` | success + mixed discovery semantics |
 
 ## Duplication And Forensics Matrix

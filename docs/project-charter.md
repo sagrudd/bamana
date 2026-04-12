@@ -119,7 +119,7 @@ The following are explicitly out of scope for early project phases unless separa
 Future releases may extend support to adjacent formats such as:
 
 * SAM
-* CRAM
+* CRAM beyond the current explicit consume-stage ingestion slice
 * FASTQ
 * FASTQ.GZ
 * FASTA

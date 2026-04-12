@@ -21,7 +21,7 @@ The spec layer is intentionally explicit about what commands prove and what they
 do not prove. For example:
 
 * `verify` is shallow only
-* `consume` introduces governed ingestion contracts for files and directories
+* `consume` introduces governed ingestion contracts for files and directories, including explicit CRAM reference-policy reporting
 * `check_eof` is EOF-marker only
 * `summary` may be bounded or full-scan depending on mode
 * `sort` and `merge` do not imply content preservation unless checksum

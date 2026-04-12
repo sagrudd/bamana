@@ -57,9 +57,10 @@ The fixture suite also reserves a focused planning layer for `consume`.
 
 Those fixtures should separate:
 
-* alignment-mode BAM/SAM ingest
+* alignment-mode BAM/SAM/CRAM ingest
 * unmapped FASTQ / FASTQ.GZ ingest
 * mixed-format rejection
+* explicit CRAM reference-policy outcomes
 * directory traversal behavior
 
 The first consume fixtures should remain tiny and should prove discovery and

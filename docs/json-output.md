@@ -51,9 +51,10 @@ Key concepts:
 * deterministic directory traversal reporting
 * consumed, skipped, and rejected file lists
 * explicit ingest mode (`alignment`, `unmapped`)
+* explicit CRAM reference policy and reference-resolution reporting
 * output sort/index/checksum intent
-* notes that separate implemented Stage 1 behavior from deferred options
+* notes that separate implemented behavior from deferred options
 
 The contract is designed so automation can reason about dry-run discovery
-results, mixed-format rejection, and staged normalization behavior without
-needing to infer semantics from ad hoc log text.
+results, mixed-format rejection, CRAM reference decisions, and staged
+normalization behavior without needing to infer semantics from ad hoc log text.

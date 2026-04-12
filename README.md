@@ -26,7 +26,7 @@ All command output is JSON.
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
-* `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode
+* `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only, including the binary reference dictionary and textual SAM-style header records
@@ -62,6 +62,8 @@ cargo run -- identify example.bam
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
 cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
 cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
+cargo run -- consume --input sample.cram --out sample.bam --mode alignment --reference ref.fa --reference-policy strict
+cargo run -- consume --input sample.cram extra.bam --out combined.bam --mode alignment --reference ref.fa
 cargo run -- verify --bam example.bam
 cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
@@ -99,14 +101,17 @@ names and lengths, and joins optional fields from textual `@SQ` records into the
 structured JSON view when present.
 
 `consume` is the front-door normalization command for Bamana. In alignment mode
-it is intended to preserve alignments from BAM/SAM-like inputs while
-normalizing them into BAM. In unmapped mode it is intended to convert FASTQ and
-FASTQ.GZ inputs into unmapped BAM without implying alignment. Stage 1 writes a
-real BAM for alignment-mode BAM/SAM ingestion and unmapped FASTQ/FASTQ.GZ
-ingestion, rejects mixed alignment/raw-read requests, and reports deterministic
-directory discovery in JSON. Include/exclude glob filtering, consume-driven
-index creation, checksum verification, and CRAM ingestion remain explicitly
-deferred.
+it preserves alignments from BAM, SAM, and Stage 2 CRAM inputs while
+normalizing them into BAM. In unmapped mode it converts FASTQ and FASTQ.GZ
+inputs into unmapped BAM without implying alignment. Mixed alignment-bearing and
+raw-read ingestion remains rejected by default. CRAM support is conservative:
+it is available only in alignment mode, it is governed by an explicit
+`--reference-policy`, and Bamana does not silently guess CRAM reference
+behavior. The current Rust slice supports explicit indexed FASTA
+(`--reference <fasta>` with adjacent `.fai`) and conservative no-external-
+reference decode attempts under `allow-embedded` or `auto-conservative`.
+Cache-backed CRAM decoding, include/exclude glob filtering, consume-driven
+index creation, and checksum verification remain explicitly deferred.
 
 `check_map` prefers index-derived mapping summaries when a usable BAI is present.
 Without a usable index it falls back to scan-based evidence. Bounded scan mode is

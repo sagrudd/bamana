@@ -51,6 +51,12 @@ pub enum AppError {
     UnsupportedDirectoryEntry { path: PathBuf, detail: String },
     #[error("reference material is required for this consume mode: {path}")]
     ReferenceRequired { path: PathBuf, detail: String },
+    #[error("reference material could not be resolved: {path}")]
+    ReferenceNotFound { path: PathBuf, detail: String },
+    #[error("input is not supported for the selected consume mode: {path}")]
+    UnsupportedInputForMode { path: PathBuf, detail: String },
+    #[error("cram input could not be decoded: {path}")]
+    CramDecodeFailed { path: PathBuf, detail: String },
     #[error("fastq input could not be parsed: {path}")]
     InvalidFastq { path: PathBuf, detail: String },
     #[error("refusing to overwrite existing output: {path}")]
@@ -128,6 +134,9 @@ impl AppError {
             Self::UnsupportedInputFormat { .. } => "unsupported_input_format",
             Self::UnsupportedDirectoryEntry { .. } => "unsupported_directory_entry",
             Self::ReferenceRequired { .. } => "reference_required",
+            Self::ReferenceNotFound { .. } => "reference_not_found",
+            Self::UnsupportedInputForMode { .. } => "unsupported_input_for_mode",
+            Self::CramDecodeFailed { .. } => "cram_decode_failed",
             Self::InvalidFastq { .. } => "invalid_fastq",
             Self::OutputExists { .. } => "output_exists",
             Self::WriteError { .. } => "write_error",
@@ -179,8 +188,15 @@ impl AppError {
                 "Directory entry is not supported for consume.".to_string()
             }
             Self::ReferenceRequired { .. } => {
-                "Reference material is required for this consume mode.".to_string()
+                "CRAM ingestion requires reference material under the selected policy.".to_string()
             }
+            Self::ReferenceNotFound { .. } => {
+                "Reference material could not be resolved.".to_string()
+            }
+            Self::UnsupportedInputForMode { .. } => {
+                "Detected input is not supported in the selected consume mode.".to_string()
+            }
+            Self::CramDecodeFailed { .. } => "CRAM input could not be decoded.".to_string(),
             Self::InvalidFastq { .. } => "FASTQ input could not be parsed.".to_string(),
             Self::OutputExists { .. } => {
                 "Output path already exists and overwrite was not requested.".to_string()
@@ -235,6 +251,9 @@ impl AppError {
             Self::UnsupportedInputFormat { format, .. } => Some(format.clone()),
             Self::UnsupportedDirectoryEntry { detail, .. } => Some(detail.clone()),
             Self::ReferenceRequired { detail, .. } => Some(detail.clone()),
+            Self::ReferenceNotFound { detail, .. } => Some(detail.clone()),
+            Self::UnsupportedInputForMode { detail, .. } => Some(detail.clone()),
+            Self::CramDecodeFailed { detail, .. } => Some(detail.clone()),
             Self::InvalidFastq { detail, .. } => Some(detail.clone()),
             Self::WriteError { message, .. } => Some(message.clone()),
             Self::Unimplemented { detail, .. } => Some(detail.clone()),
@@ -292,7 +311,7 @@ impl AppError {
                 Some("Run bamana index --bam <file> or place a usable companion index next to the BAM.".to_string())
             }
             Self::IncompatibleHeaders { .. } => Some(
-                "Ensure all BAM/SAM inputs use the same reference dictionary before merging or alignment-mode consume."
+                "Ensure all BAM/SAM/CRAM inputs use the same reference dictionary before merging or alignment-mode consume."
                     .to_string(),
             ),
             Self::InvalidMergeRequest { .. } => Some(
@@ -317,6 +336,18 @@ impl AppError {
             ),
             Self::ReferenceRequired { .. } => Some(
                 "Provide the required reference material or choose a consume mode that does not require reference-backed decoding."
+                    .to_string(),
+            ),
+            Self::ReferenceNotFound { .. } => Some(
+                "Provide a readable indexed FASTA reference with an adjacent .fai file."
+                    .to_string(),
+            ),
+            Self::UnsupportedInputForMode { .. } => Some(
+                "Use --mode alignment for BAM, SAM, or CRAM inputs, and --mode unmapped for FASTQ or FASTQ.GZ inputs."
+                    .to_string(),
+            ),
+            Self::CramDecodeFailed { .. } => Some(
+                "Retry with an explicit --reference FASTA or inspect the CRAM with a validator before ingesting it."
                     .to_string(),
             ),
             Self::InvalidFastq { .. } => Some(
