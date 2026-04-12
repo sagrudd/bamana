@@ -215,3 +215,19 @@ Golden/example updates should be intentional and reviewable. Treat schema field
 renames, enum-literal changes, nullability changes, and meaning changes as
 breaking until explicitly reviewed under the contract versioning rules in
 `spec/contracts/versioning.md`.
+
+## Fixture Suite
+
+The repository also carries a planned tiny synthetic fixture suite under
+`tests/fixtures/`. This is the path from schema-only contract checks to
+executable interop tests against real BAM and BAI inputs.
+
+Key fixture assets:
+
+* `tests/fixtures/manifest.json` defines the planned fixture inventory
+* `tests/fixtures/plans/` documents taxonomy, coverage, and regeneration
+* `tests/fixtures/expected/` is reserved for fixture-backed golden JSON outputs
+* `docs/fixtures.md` explains how fixture changes should be reviewed
+
+The first fixture suite is intentionally small and deterministic. It favors a
+few purpose-built BAMs over large downloaded datasets or opaque binary blobs.

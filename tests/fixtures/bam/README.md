@@ -1,13 +1,14 @@
-# BAM Fixtures
+# BAM Fixture Categories
 
-Place tiny synthetic BAM fixtures here.
+The `bam/` tree groups planned fixture binaries and sidecar index files by
+intent rather than by command.
 
-Suggested future files:
+Subdirectories:
 
-* `tiny.coordinate.bam`
-* `tiny.queryname.bam`
-* `tiny.no_eof.bam`
-* `tiny.truncated.bam`
-* `tiny.aux-malformed.bam`
-* `tiny.merge.a.bam`
-* `tiny.merge.b.bam`
+* `valid/`: baseline valid BAMs for broad command coverage
+* `invalid/`: intentionally malformed BAMs for negative-path tests
+* `transforms/`: source and derived BAMs for sort/merge/explode workflows
+* `tags/`: tag-focused BAMs with deliberate auxiliary-field inventories
+* `sorting/`: reserved for future sort-specialized fixtures if needed
+* `mapping/`: reserved for future mapping-specialized fixtures if needed
+* `indexing/`: BAI and future CSI sidecars, plus indexing-specific variants

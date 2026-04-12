@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/tests/fixtures/manifest.schema.json",
+  "title": "Bamana Tiny Fixture Manifest",
+  "description": "Machine-readable plan for the tiny synthetic BAM fixture suite.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["suite_id", "version", "status", "fixtures"],
+  "properties": {
+    "suite_id": {
+      "type": "string",
+      "const": "bamana-tiny-fixtures"
+    },
+    "version": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planning", "active"]
+    },
+    "description": {
+      "type": "string"
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "path",
+          "format",
+          "category",
+          "validity",
+          "status",
+          "description",
+          "primary_commands",
+          "secondary_commands",
+          "generated",
+          "source_fixture_ids",
+          "regeneration_strategy",
+          "expected_artifacts"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "format": { "type": "string" },
+          "category": { "type": "string" },
+          "validity": { "type": "string" },
+          "status": { "type": "string" },
+          "description": { "type": "string" },
+          "planned_status": { "type": "string" },
+          "duplication_signature": { "type": "string" },
+          "expected_cleanliness": { "type": "string" },
+          "forensic_hallmarks": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "supports_dry_run": { "type": "boolean" },
+          "supports_output_fixture": { "type": "boolean" },
+          "header_anomaly_type": {
+            "type": ["string", "null"]
+          },
+          "read_name_regime_type": {
+            "type": ["string", "null"]
+          },
+          "primary_commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "secondary_commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "generated": { "type": "boolean" },
+          "source_fixture_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "regeneration_strategy": { "type": "string" },
+          "expected_artifacts": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

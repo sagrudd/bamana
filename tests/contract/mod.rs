@@ -6,6 +6,7 @@ use std::{
 pub mod cli_contract;
 pub mod golden_outputs;
 pub mod json_contract;
+pub mod support;
 
 pub fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

@@ -24,11 +24,18 @@ The `tests/fixtures/` tree is reserved for:
 * golden JSON outputs
 * CLI help snapshots
 
+The fixture plan is governed by:
+
+* `tests/fixtures/manifest.json`
+* `tests/fixtures/plans/fixture-matrix.md`
+* `tests/fixtures/plans/generation-strategy.md`
+* `tests/fixtures/plans/coverage-map.md`
+
 The current scaffold is intentionally lightweight. It is designed so future CI
 can add:
 
 * real JSON-schema validation
-* fixture-backed command execution
+* fixture-backed command execution against the manifest-defined suite
 * golden help-output snapshots
 * cross-version contract checks
 
