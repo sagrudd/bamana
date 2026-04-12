@@ -176,10 +176,23 @@ pub mod test_support {
     }
 
     pub fn build_bam_file() -> Vec<u8> {
+        build_bam_file_with_header("", &[])
+    }
+
+    pub fn build_bam_file_with_header(header_text: &str, references: &[(&str, u32)]) -> Vec<u8> {
         let mut payload = Vec::new();
         payload.extend_from_slice(b"BAM\x01");
-        payload.extend_from_slice(&0_i32.to_le_bytes());
-        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+        payload.extend_from_slice(header_text.as_bytes());
+        payload.extend_from_slice(&(references.len() as i32).to_le_bytes());
+
+        for (name, length) in references {
+            let mut nul_terminated_name = name.as_bytes().to_vec();
+            nul_terminated_name.push(0);
+            payload.extend_from_slice(&(nul_terminated_name.len() as i32).to_le_bytes());
+            payload.extend_from_slice(&nul_terminated_name);
+            payload.extend_from_slice(&(*length as i32).to_le_bytes());
+        }
 
         let mut bytes = build_bgzf_member(&payload);
         bytes.extend_from_slice(&BGZF_EOF_MARKER);

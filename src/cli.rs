@@ -33,6 +33,8 @@ pub enum Commands {
     /// Check for the canonical BGZF EOF marker only.
     #[command(name = "check_eof")]
     CheckEof(BamPathArgs),
+    /// Parse the BAM header only.
+    Header(BamPathArgs),
 }
 
 #[derive(Debug, Args)]

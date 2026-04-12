@@ -1,3 +1,4 @@
+mod bam;
 mod cli;
 mod commands;
 mod error;
@@ -10,6 +11,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use commands::{
     check_eof::{CheckEofRequest, CheckEofResponse},
+    header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     verify::{VerifyRequest, VerifyResponse},
 };
@@ -38,6 +40,13 @@ fn main() -> ExitCode {
             let result = commands::check_eof::run(CheckEofRequest { bam: bam.clone() });
             let response: CommandResponse<CheckEofResponse> =
                 CommandResponse::from_result("check_eof", Some(bam.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Header(args) => {
+            let bam = args.bam;
+            let result = commands::header::run(HeaderRequest { bam: bam.clone() });
+            let response: CommandResponse<HeaderResponse> =
+                CommandResponse::from_result("header", Some(bam.as_path()), result);
             emit_response(&response, cli.global.json_pretty)
         }
     }

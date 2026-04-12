@@ -24,6 +24,8 @@ pub enum AppError {
     },
     #[error("input does not satisfy shallow BAM expectations: {path}")]
     InvalidBam { path: PathBuf, detail: String },
+    #[error("bam header could not be parsed: {path}")]
+    InvalidHeader { path: PathBuf, detail: String },
     #[error("file is truncated or incomplete: {path}")]
     TruncatedFile { path: PathBuf, detail: String },
     #[error("unsupported format for this command: {path}")]
@@ -65,6 +67,7 @@ impl AppError {
             Self::UnknownFormat { .. } => "unknown_format",
             Self::NotBam { .. } => "not_bam",
             Self::InvalidBam { .. } => "invalid_bam",
+            Self::InvalidHeader { .. } => "invalid_header",
             Self::TruncatedFile { .. } => "truncated_file",
             Self::UnsupportedFormat { .. } => "unsupported_format",
             Self::Internal { .. } => "internal_error",
@@ -83,6 +86,7 @@ impl AppError {
             Self::InvalidBam { .. } => {
                 "Input does not satisfy shallow BAM verification.".to_string()
             }
+            Self::InvalidHeader { .. } => "BAM header could not be parsed.".to_string(),
             Self::TruncatedFile { .. } => "Expected BGZF EOF marker was not found.".to_string(),
             Self::UnsupportedFormat { .. } => {
                 "Detected format is not supported by this command.".to_string()
@@ -98,6 +102,7 @@ impl AppError {
                 detected_format, ..
             } => Some(format!("Detected format: {detected_format}.")),
             Self::InvalidBam { detail, .. } => Some(detail.clone()),
+            Self::InvalidHeader { detail, .. } => Some(detail.clone()),
             Self::TruncatedFile { detail, .. } => Some(detail.clone()),
             Self::UnsupportedFormat { format, .. } => Some(format.clone()),
             Self::Internal { message } => Some(message.clone()),
@@ -124,6 +129,10 @@ impl AppError {
             Self::InvalidBam { .. } => {
                 Some("Confirm the file is BGZF-compressed BAM and rerun bamana verify.".to_string())
             }
+            Self::InvalidHeader { .. } => Some(
+                "Run bamana verify to perform shallow BAM checks before parsing the header."
+                    .to_string(),
+            ),
             Self::TruncatedFile { .. } => {
                 Some("Re-transfer or regenerate the BAM file, then rerun the command.".to_string())
             }
