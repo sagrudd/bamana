@@ -19,7 +19,7 @@ use crate::{
     formats::probe::DetectedFormat,
     ingest::{
         cram::{
-            ConsumeReferenceContext, ConsumeReferencePolicy, ConsumeReferenceSourceUsed,
+            CramReferenceContext, ConsumeReferencePolicy, ConsumeReferenceSourceUsed,
             normalize_cram_to_record_layouts, prepare_reference_context,
         },
         discovery::DiscoveredFile,
@@ -114,7 +114,7 @@ pub fn prepare_cram_context_for_consume(
     reference: Option<&Path>,
     reference_cache: Option<&Path>,
     dry_run: bool,
-) -> Result<ConsumeReferenceContext, AppError> {
+) -> Result<CramReferenceContext, AppError> {
     prepare_reference_context(output_path, policy, reference, reference_cache, dry_run)
 }
 
@@ -188,7 +188,7 @@ pub fn synthetic_unmapped_header(
 
 fn execute_alignment_consume(
     options: &ConsumeExecutionOptions,
-    cram_context: Option<&ConsumeReferenceContext>,
+    cram_context: Option<&CramReferenceContext>,
 ) -> Result<ConsumeExecution, AppError> {
     let preexisting_output = options.output_path.exists();
     let mut base_header_text = None;

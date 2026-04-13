@@ -36,9 +36,9 @@ pub fn read_fastq_as_unmapped_records(
         };
         records.push(build_unmapped_record(
             path,
-            &format!("@{}", record.read_name),
+            &record.raw_header_line,
             &record.sequence,
-            "+",
+            &record.plus_line,
             &record.quality,
             read_group,
         )?);
@@ -216,7 +216,7 @@ fn build_unmapped_record(
     path: &Path,
     header_line: &str,
     sequence_line: &str,
-    plus_line: &str,
+    _plus_line: &str,
     quality_line: &str,
     read_group: Option<&str>,
 ) -> Result<RecordLayout, AppError> {
@@ -288,6 +288,7 @@ fn trim_line_endings(mut line: String) -> String {
     line
 }
 
+#[cfg(test)]
 fn write_fastq_records_to_writer(
     writer: &mut dyn Write,
     records: &[FastqRecord],

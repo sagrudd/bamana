@@ -1,8 +1,9 @@
 use std::process::ExitCode;
 
 use bamana::{
-    cli::{Cli, Commands},
+    cli::{Cli, Commands, ReheaderPlatform},
     commands,
+    forensics::duplication::DuplicationScanOptions,
     json::{CommandResponse, emit_response},
 };
 use clap::Parser;
@@ -63,7 +64,7 @@ fn main() -> ExitCode {
             let input = args.input;
             let response = commands::inspect_duplication::run(InspectDuplicationRequest {
                 input: input.clone(),
-                options: crate::forensics::duplication::DuplicationScanOptions {
+                options: DuplicationScanOptions {
                     identity_mode: args.identity,
                     min_block_size: args.min_block_size.max(1),
                     max_findings: args.max_findings.max(1),
@@ -97,13 +98,14 @@ fn main() -> ExitCode {
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::ForensicInspect(args) => {
+            let scopes = args.resolved_scopes();
             let input = args.input;
             let response = commands::forensic_inspect::run(ForensicInspectRequest {
                 input: input.clone(),
                 sample_records: args.sample_records,
                 full_scan: args.full_scan,
                 max_findings: args.max_findings,
-                scopes: args.resolved_scopes(),
+                scopes,
             });
             emit_response(&response, cli.global.json_pretty)
         }
@@ -181,10 +183,10 @@ fn main() -> ExitCode {
         Commands::Reheader(args) => {
             let bam = args.bam;
             let set_platform = args.set_platform.map(|platform| match platform {
-                cli::ReheaderPlatform::Ont => "ONT".to_string(),
-                cli::ReheaderPlatform::Illumina => "ILLUMINA".to_string(),
-                cli::ReheaderPlatform::Pacbio => "PACBIO".to_string(),
-                cli::ReheaderPlatform::Unknown => "UNKNOWN".to_string(),
+                ReheaderPlatform::Ont => "ONT".to_string(),
+                ReheaderPlatform::Illumina => "ILLUMINA".to_string(),
+                ReheaderPlatform::Pacbio => "PACBIO".to_string(),
+                ReheaderPlatform::Unknown => "UNKNOWN".to_string(),
             });
             let response = commands::reheader::run(ReheaderRequest {
                 bam: bam.clone(),

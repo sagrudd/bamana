@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use crate::{
     bam::annotate_rg::{
         AnnotateRgChecksumVerificationInfo, AnnotateRgConfig, AnnotateRgExecutionInfo,
-        AnnotateRgExecutionMode, AnnotateRgHeaderInfo, AnnotateRgHeaderPolicy, AnnotateRgIndexInfo,
-        AnnotateRgMode, AnnotateRgOutputInfo, AnnotateRgPayload, AnnotateRgRecordSummary,
+        AnnotateRgHeaderInfo, AnnotateRgHeaderPolicy, AnnotateRgIndexInfo, AnnotateRgMode,
+        AnnotateRgOutputInfo, AnnotateRgPayload, AnnotateRgRecordSummary,
         AnnotateRgRequestInfo, execute as execute_annotate_rg, preview as preview_annotate_rg,
     },
     error::AppError,
