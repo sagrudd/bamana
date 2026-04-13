@@ -15,15 +15,15 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
-    fastq::read_fastq_as_unmapped_records,
+    fastq::read_fastq_as_unmapped_records_with_label,
     formats::probe::DetectedFormat,
     ingest::{
         cram::{
             CramReferenceContext, ConsumeReferencePolicy, ConsumeReferenceSourceUsed,
-            normalize_cram_to_record_layouts, prepare_reference_context,
+            normalize_cram_to_record_layouts_with_label, prepare_reference_context,
         },
         discovery::DiscoveredFile,
-        sam::read_sam_file,
+        sam::read_sam_file_with_label,
     },
 };
 
@@ -206,14 +206,14 @@ fn execute_alignment_consume(
     for file in &options.files {
         match file.detected_format {
             DetectedFormat::Bam => {
-                let mut reader = BamReader::open(&file.path)?;
+                let mut reader = BamReader::open_with_label(&file.path, &file.logical_path)?;
                 let header = crate::bam::header::parse_bam_header_from_reader(&mut reader)?;
 
                 if let Some(expected) = base_references.as_ref() {
                     ensure_compatible_reference_dictionary(
                         expected,
                         &header.header.references,
-                        &file.path,
+                        &file.logical_path,
                     )?;
                 } else {
                     base_header_text = Some(header.header.raw_header_text.clone());
@@ -229,13 +229,14 @@ fn execute_alignment_consume(
                     message: "CRAM alignment input reached consume execution without a resolved reference context."
                         .to_string(),
                 })?;
-                let normalized = normalize_cram_to_record_layouts(&file.path, context)?;
+                let normalized =
+                    normalize_cram_to_record_layouts_with_label(&file.path, &file.logical_path, context)?;
 
                 if let Some(expected) = base_references.as_ref() {
                     ensure_compatible_reference_dictionary(
                         expected,
                         &normalized.references,
-                        &file.path,
+                        &file.logical_path,
                     )?;
                 } else {
                     header_strategy = "decoded_cram_header".to_string();
@@ -249,12 +250,12 @@ fn execute_alignment_consume(
                 records.extend(normalized.records);
             }
             DetectedFormat::Sam => {
-                let parsed = read_sam_file(&file.path)?;
+                let parsed = read_sam_file_with_label(&file.path, &file.logical_path)?;
                 if let Some(expected) = base_references.as_ref() {
                     ensure_compatible_reference_dictionary(
                         expected,
                         &parsed.references,
-                        &file.path,
+                        &file.logical_path,
                     )?;
                 } else {
                     base_header_text = Some(parsed.raw_header_text.clone());
@@ -264,7 +265,7 @@ fn execute_alignment_consume(
             }
             other => {
                 return Err(AppError::UnsupportedInputFormat {
-                    path: file.path.clone(),
+                    path: file.logical_path.clone(),
                     format: format!("Detected unsupported alignment input format {other}."),
                 });
             }
@@ -362,13 +363,16 @@ fn execute_unmapped_consume(
     for file in &options.files {
         match file.detected_format {
             DetectedFormat::Fastq | DetectedFormat::FastqGz => {
-                let mut file_records =
-                    read_fastq_as_unmapped_records(&file.path, options.read_group.as_deref())?;
+                let mut file_records = read_fastq_as_unmapped_records_with_label(
+                    &file.path,
+                    &file.logical_path,
+                    options.read_group.as_deref(),
+                )?;
                 records.append(&mut file_records);
             }
             other => {
                 return Err(AppError::UnsupportedInputFormat {
-                    path: file.path.clone(),
+                    path: file.logical_path.clone(),
                     format: format!("Detected unsupported raw-read input format {other}."),
                 });
             }
@@ -591,6 +595,7 @@ mod tests {
             mode: ConsumeMode::Alignment,
             files: vec![DiscoveredFile {
                 path: input.clone(),
+                logical_path: input.clone(),
                 detected_format: crate::formats::probe::DetectedFormat::Bam,
             }],
             output_path: output.clone(),
@@ -630,6 +635,7 @@ mod tests {
             mode: ConsumeMode::Unmapped,
             files: vec![DiscoveredFile {
                 path: input.clone(),
+                logical_path: input.clone(),
                 detected_format: crate::formats::probe::DetectedFormat::Fastq,
             }],
             output_path: output.clone(),
@@ -663,5 +669,67 @@ mod tests {
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn alignment_consume_reports_stdin_on_reference_mismatch() {
+        let stdin_staged = write_temp_file(
+            "consume-stdin-mismatch",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let other = write_temp_file(
+            "consume-file-mismatch",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr2\tLN:10\n",
+                &[("chr2", 10)],
+                &[build_light_record(0, 1, "read2", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-mismatch-output-{}.bam",
+            std::process::id()
+        ));
+
+        let error = execute_consume(&ConsumeExecutionOptions {
+            mode: ConsumeMode::Alignment,
+            files: vec![
+                DiscoveredFile {
+                    path: other.clone(),
+                    logical_path: other.clone(),
+                    detected_format: crate::formats::probe::DetectedFormat::Bam,
+                },
+                DiscoveredFile {
+                    path: stdin_staged.clone(),
+                    logical_path: std::path::PathBuf::from("-"),
+                    detected_format: crate::formats::probe::DetectedFormat::Bam,
+                },
+            ],
+            output_path: output,
+            force: true,
+            sort: ConsumeSortOrder::None,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
+            sample: None,
+            read_group: None,
+            platform: None,
+        })
+        .expect_err("mismatched references should fail");
+
+        match error {
+            crate::error::AppError::IncompatibleHeaders { path, .. } => {
+                assert_eq!(path, std::path::PathBuf::from("-"));
+            }
+            other => panic!("expected incompatible_headers, got {other:?}"),
+        }
+
+        fs::remove_file(stdin_staged).expect("fixture should be removable");
+        fs::remove_file(other).expect("fixture should be removable");
     }
 }

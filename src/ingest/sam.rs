@@ -25,8 +25,15 @@ pub struct ParsedSamFile {
 
 pub fn read_sam_file(path: &Path) -> Result<ParsedSamFile, AppError> {
     let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
-    let reader = BufReader::new(file);
+    read_sam_reader(BufReader::new(file), path)
+}
 
+pub fn read_sam_file_with_label(path: &Path, label: &Path) -> Result<ParsedSamFile, AppError> {
+    let file = File::open(path).map_err(|error| AppError::from_io(label, error))?;
+    read_sam_reader(BufReader::new(file), label)
+}
+
+fn read_sam_reader<R: BufRead>(reader: R, path: &Path) -> Result<ParsedSamFile, AppError> {
     let mut header_lines = Vec::new();
     let mut records = Vec::new();
     let mut seen_record = false;

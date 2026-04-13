@@ -27,15 +27,23 @@ pub fn read_fastq_as_unmapped_records(
     path: &Path,
     read_group: Option<&str>,
 ) -> Result<Vec<RecordLayout>, AppError> {
-    let mut reader = open_fastq_reader(path)?;
+    read_fastq_as_unmapped_records_with_label(path, path, read_group)
+}
+
+pub fn read_fastq_as_unmapped_records_with_label(
+    path: &Path,
+    label: &Path,
+    read_group: Option<&str>,
+) -> Result<Vec<RecordLayout>, AppError> {
+    let mut reader = open_fastq_reader_with_label(path, label)?;
     let mut records = Vec::new();
 
     loop {
-        let Some(record) = read_next_fastq_record(&mut reader, path)? else {
+        let Some(record) = read_next_fastq_record(&mut reader, label)? else {
             break;
         };
         records.push(build_unmapped_record(
-            path,
+            label,
             &record.raw_header_line,
             &record.sequence,
             &record.plus_line,
@@ -48,7 +56,14 @@ pub fn read_fastq_as_unmapped_records(
 }
 
 pub fn open_fastq_reader(path: &Path) -> Result<Box<dyn BufRead>, AppError> {
-    let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+    open_fastq_reader_with_label(path, path)
+}
+
+pub fn open_fastq_reader_with_label(
+    path: &Path,
+    label: &Path,
+) -> Result<Box<dyn BufRead>, AppError> {
+    let file = File::open(path).map_err(|error| AppError::from_io(label, error))?;
     if path
         .extension()
         .and_then(|extension| extension.to_str())

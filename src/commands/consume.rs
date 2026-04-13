@@ -12,7 +12,10 @@ use crate::{
             mapped_state_for_mode, prepare_cram_context_for_consume,
         },
         cram::{ConsumeReferencePolicy, ConsumeReferenceSourceUsed},
-        discovery::{DiscoveredFile, DiscoveryOptions, discover_requested_paths, format_counts},
+        discovery::{
+            DiscoveredFile, DiscoveryOptions, cleanup_staged_paths, discover_requested_paths,
+            format_counts,
+        },
     },
     json::CommandResponse,
 };
@@ -140,27 +143,40 @@ pub struct ConsumeChecksumVerificationInfo {
 }
 
 pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
+    let (response, staged_paths) = run_impl(&request);
+    cleanup_staged_paths(&staged_paths);
+    response
+}
+
+fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<PathBuf>) {
     if request.input.iter().any(|path| path == &request.out) {
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(base_payload(&request)),
-            AppError::InvalidConsumeRequest {
-                path: request.out.clone(),
-                detail: "Output path collides with one of the requested input paths.".to_string(),
-            },
+        return (
+            CommandResponse::failure_with_data(
+                "consume",
+                None,
+                Some(base_payload(request)),
+                AppError::InvalidConsumeRequest {
+                    path: request.out.clone(),
+                    detail: "Output path collides with one of the requested input paths."
+                        .to_string(),
+                },
+            ),
+            Vec::new(),
         );
     }
 
     if !request.include_glob.is_empty() || !request.exclude_glob.is_empty() {
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(base_payload(&request)),
-            AppError::Unimplemented {
-                path: request.out.clone(),
-                detail: "Include/exclude glob filtering is planned for consume but not implemented in this slice.".to_string(),
-            },
+        return (
+            CommandResponse::failure_with_data(
+                "consume",
+                None,
+                Some(base_payload(request)),
+                AppError::Unimplemented {
+                    path: request.out.clone(),
+                    detail: "Include/exclude glob filtering is planned for consume but not implemented in this slice.".to_string(),
+                },
+            ),
+            Vec::new(),
         );
     }
 
@@ -172,18 +188,22 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
     ) {
         Ok(discovery) => discovery,
         Err(error) => {
-            return CommandResponse::failure_with_data(
-                "consume",
-                None,
-                Some(base_payload(&request)),
-                error,
+            return (
+                CommandResponse::failure_with_data(
+                    "consume",
+                    None,
+                    Some(base_payload(request)),
+                    error,
+                ),
+                Vec::new(),
             );
         }
     };
+    let staged_paths = discovery.staged_paths.clone();
 
-    let mut payload = base_payload(&request);
+    let mut payload = base_payload(request);
     payload.inputs.directories_scanned = discovery.directories_scanned;
-    payload.inputs.files_discovered = discovery.candidate_files.len();
+    payload.inputs.files_discovered = discovery.discovered_files.len();
     payload.discovery.formats_detected = format_counts(&discovery.discovered_files);
     payload.reference.cram_inputs_present = discovery
         .discovered_files
@@ -209,7 +229,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
     let active_files = match resolve_mode_files(&request, &mut payload, &classified) {
         Ok(files) => files,
         Err(error) => {
-            return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+            return (
+                CommandResponse::failure_with_data("consume", None, Some(payload), error),
+                staged_paths,
+            );
         }
     };
 
@@ -233,7 +256,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
                 }
             }
             Err(error) => {
-                return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+                return (
+                    CommandResponse::failure_with_data("consume", None, Some(payload), error),
+                    staged_paths,
+                );
             }
         }
     }
@@ -246,7 +272,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
             "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
                 .to_string(),
         );
-        return CommandResponse::success("consume", None, payload);
+        return (
+            CommandResponse::success("consume", None, payload),
+            staged_paths,
+        );
     }
 
     if request.create_index {
@@ -264,19 +293,25 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
                     .to_string(),
             }
         };
-        return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+        return (
+            CommandResponse::failure_with_data("consume", None, Some(payload), error),
+            staged_paths,
+        );
     }
 
     if request.verify_checksum {
-        return CommandResponse::failure_with_data(
-            "consume",
-            None,
-            Some(payload),
-            AppError::Unimplemented {
-                path: request.out.clone(),
-                detail: "Checksum verification after consume is not implemented in this slice."
-                    .to_string(),
-            },
+        return (
+            CommandResponse::failure_with_data(
+                "consume",
+                None,
+                Some(payload),
+                AppError::Unimplemented {
+                    path: request.out.clone(),
+                    detail: "Checksum verification after consume is not implemented in this slice."
+                        .to_string(),
+                },
+            ),
+            staged_paths,
         );
     }
 
@@ -295,7 +330,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
     }) {
         Ok(execution) => execution,
         Err(error) => {
-            return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+            return (
+                CommandResponse::failure_with_data("consume", None, Some(payload), error),
+                staged_paths,
+            );
         }
     };
 
@@ -313,7 +351,10 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
             .push("Existing output path was overwritten because --force was supplied.".to_string());
     }
 
-    CommandResponse::success("consume", None, payload)
+    (
+        CommandResponse::success("consume", None, payload),
+        staged_paths,
+    )
 }
 
 struct ClassifiedFiles {
@@ -335,7 +376,7 @@ fn classify_files(files: &[DiscoveredFile], payload: &mut ConsumePayload) -> Cla
             InputSemanticClass::RawRead => classified.raw.push(file.clone()),
             InputSemanticClass::Unsupported => {
                 payload.discovery.skipped_files.push(ConsumeInputFileInfo {
-                    path: file.path.to_string_lossy().into_owned(),
+                    path: file.logical_path.to_string_lossy().into_owned(),
                     detected_format: file.detected_format.to_string(),
                     consumed: false,
                     reason: Some("unsupported_input_format".to_string()),
@@ -368,7 +409,7 @@ fn resolve_mode_files(
                 .iter()
                 .chain(&classified.raw)
                 .map(|file| ConsumeInputFileInfo {
-                    path: file.path.to_string_lossy().into_owned(),
+                    path: file.logical_path.to_string_lossy().into_owned(),
                     detected_format: file.detected_format.to_string(),
                     consumed: false,
                     reason: Some("mixed_input_modes_not_allowed".to_string()),
@@ -393,7 +434,7 @@ fn resolve_mode_files(
                     .discovery
                     .rejected_files
                     .extend(classified.raw.iter().map(|file| ConsumeInputFileInfo {
-                        path: file.path.to_string_lossy().into_owned(),
+                        path: file.logical_path.to_string_lossy().into_owned(),
                         detected_format: file.detected_format.to_string(),
                         consumed: false,
                         reason: Some("unsupported_input_for_mode".to_string()),
@@ -421,7 +462,7 @@ fn resolve_mode_files(
                             .alignment
                             .iter()
                             .map(|file| ConsumeInputFileInfo {
-                                path: file.path.to_string_lossy().into_owned(),
+                                path: file.logical_path.to_string_lossy().into_owned(),
                                 detected_format: file.detected_format.to_string(),
                                 consumed: false,
                                 reason: Some("unsupported_input_for_mode".to_string()),
@@ -445,7 +486,7 @@ fn resolve_mode_files(
 
 fn as_consumed_file(file: &DiscoveredFile) -> ConsumeInputFileInfo {
     ConsumeInputFileInfo {
-        path: file.path.to_string_lossy().into_owned(),
+        path: file.logical_path.to_string_lossy().into_owned(),
         detected_format: file.detected_format.to_string(),
         consumed: true,
         reason: None,
@@ -521,9 +562,16 @@ fn refresh_counts(payload: &mut ConsumePayload) {
 
 fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
     payload.notes.push(
-        "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice."
+        "Requested file arguments are consumed in the order provided; directory contents are traversed lexically, directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice."
             .to_string(),
     );
+
+    if request.input.iter().any(|path| path == &PathBuf::from("-")) {
+        payload.notes.push(
+            "STDIN is staged to a temporary input for deterministic probing and unified compatibility checks; uncompressed SAM or FASTQ over stdin is the canonical streaming path in this slice."
+                .to_string(),
+        );
+    }
 
     if request.mode == ConsumeMode::Alignment
         && (request.sample.is_some() || request.read_group.is_some() || request.platform.is_some())

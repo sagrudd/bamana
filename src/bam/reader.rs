@@ -15,11 +15,15 @@ pub struct BamReader {
 
 impl BamReader {
     pub fn open(path: &Path) -> Result<Self, AppError> {
+        Self::open_with_label(path, path)
+    }
+
+    pub fn open_with_label(path: &Path, label: &Path) -> Result<Self, AppError> {
         let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
         let decoder = MultiGzDecoder::new(BufReader::new(file));
 
         Ok(Self {
-            path: path.to_path_buf(),
+            path: label.to_path_buf(),
             decoder,
         })
     }

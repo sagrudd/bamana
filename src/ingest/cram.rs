@@ -180,6 +180,14 @@ pub fn normalize_cram_to_record_layouts(
     input_path: &Path,
     context: &CramReferenceContext,
 ) -> Result<CramNormalization, AppError> {
+    normalize_cram_to_record_layouts_with_label(input_path, input_path, context)
+}
+
+pub fn normalize_cram_to_record_layouts_with_label(
+    input_path: &Path,
+    label: &Path,
+    context: &CramReferenceContext,
+) -> Result<CramNormalization, AppError> {
     let mut builder = cram::io::reader::Builder::default();
 
     let source_used = match &context.plan {
@@ -195,10 +203,10 @@ pub fn normalize_cram_to_record_layouts(
 
     let mut reader = builder
         .build_from_path(input_path)
-        .map_err(|error| AppError::from_io(input_path, error))?;
+        .map_err(|error| AppError::from_io(label, error))?;
     let header = reader
         .read_header()
-        .map_err(|error| map_cram_decode_error(input_path, context, error))?;
+        .map_err(|error| map_cram_decode_error(label, context, error))?;
 
     let temp_bam_path = temporary_normalized_bam_path(input_path);
     if temp_bam_path.exists() {
@@ -215,8 +223,8 @@ pub fn normalize_cram_to_record_layouts(
 
         writer
             .write_header(&header)
-            .map_err(|error| AppError::CramDecodeFailed {
-                path: input_path.to_path_buf(),
+                .map_err(|error| AppError::CramDecodeFailed {
+                path: label.to_path_buf(),
                 detail: format!(
                     "CRAM header was decoded but temporary BAM header emission failed: {error}"
                 ),
@@ -224,11 +232,11 @@ pub fn normalize_cram_to_record_layouts(
 
         for result in reader.records(&header) {
             let record =
-                result.map_err(|error| map_cram_decode_error(input_path, context, error))?;
+                result.map_err(|error| map_cram_decode_error(label, context, error))?;
             writer
                 .write_alignment_record(&header, &record)
                 .map_err(|error| AppError::CramDecodeFailed {
-                    path: input_path.to_path_buf(),
+                    path: label.to_path_buf(),
                     detail: format!(
                         "CRAM record decoding succeeded but BAM normalization failed: {error}"
                     ),
@@ -249,7 +257,7 @@ pub fn normalize_cram_to_record_layouts(
     }
 
     let parsed = (|| -> Result<CramNormalization, AppError> {
-        let mut bam_reader = BamReader::open(&temp_bam_path)?;
+        let mut bam_reader = BamReader::open_with_label(&temp_bam_path, label)?;
         let header_payload = parse_bam_header_from_reader(&mut bam_reader)?;
         let mut records = Vec::new();
 
