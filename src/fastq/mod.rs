@@ -250,7 +250,10 @@ fn build_unmapped_record(
             detail,
         })?;
 
-    let aux_bytes = read_group.map_or_else(Vec::new, encode_read_group_aux);
+    let mut aux_bytes = parse_methylation_fastq_header_aux(path, header_line, sequence_line.len())?;
+    if let Some(read_group) = read_group {
+        aux_bytes.extend_from_slice(&encode_read_group_aux(read_group));
+    }
     let block_size =
         32 + read_name.len() + 1 + sequence_bytes.len() + quality_bytes.len() + aux_bytes.len();
 
@@ -294,6 +297,134 @@ fn encode_read_group_aux(read_group: &str) -> Vec<u8> {
     aux.extend_from_slice(read_group.as_bytes());
     aux.push(0);
     aux
+}
+
+fn parse_methylation_fastq_header_aux(
+    path: &Path,
+    header_line: &str,
+    sequence_len: usize,
+) -> Result<Vec<u8>, AppError> {
+    let mut aux = Vec::new();
+    let Some(rest) = header_line.strip_prefix('@') else {
+        return Ok(aux);
+    };
+    let mut fields = rest.split_whitespace();
+    let _read_name = fields.next();
+
+    for field in fields {
+        if !(field.starts_with("MM:") || field.starts_with("ML:") || field.starts_with("MN:")) {
+            continue;
+        }
+
+        let parsed = parse_single_hts_header_tag(path, field, sequence_len)?;
+        aux.extend_from_slice(&parsed);
+    }
+
+    Ok(aux)
+}
+
+fn parse_single_hts_header_tag(
+    path: &Path,
+    field: &str,
+    sequence_len: usize,
+) -> Result<Vec<u8>, AppError> {
+    let mut parts = field.splitn(3, ':');
+    let tag = parts.next().unwrap_or_default();
+    let type_code = parts.next().ok_or_else(|| AppError::InvalidFastq {
+        path: path.to_path_buf(),
+        detail: format!("FASTQ header tag {field} was malformed."),
+    })?;
+    let value = parts.next().ok_or_else(|| AppError::InvalidFastq {
+        path: path.to_path_buf(),
+        detail: format!("FASTQ header tag {field} was malformed."),
+    })?;
+
+    match (tag, type_code) {
+        ("MM", "Z") => {
+            let mut bytes = Vec::with_capacity(3 + value.len() + 1);
+            bytes.extend_from_slice(b"MM");
+            bytes.push(b'Z');
+            bytes.extend_from_slice(value.as_bytes());
+            bytes.push(0);
+            Ok(bytes)
+        }
+        ("ML", "B") => parse_ml_header_tag(path, value),
+        ("MN", "i") | ("MN", "I") => {
+            let parsed = value.parse::<i32>().map_err(|_| AppError::InvalidFastq {
+                path: path.to_path_buf(),
+                detail: format!("FASTQ header MN tag did not contain a valid integer: {value}"),
+            })?;
+            if parsed < 0 {
+                return Err(AppError::InvalidFastq {
+                    path: path.to_path_buf(),
+                    detail: "FASTQ header MN tag may not be negative.".to_string(),
+                });
+            }
+            if parsed as usize != sequence_len {
+                return Err(AppError::InvalidFastq {
+                    path: path.to_path_buf(),
+                    detail: format!(
+                        "FASTQ header MN tag reported sequence length {parsed}, but the FASTQ sequence length was {sequence_len}."
+                    ),
+                });
+            }
+            let mut bytes = Vec::with_capacity(7);
+            bytes.extend_from_slice(b"MN");
+            bytes.push(b'i');
+            bytes.extend_from_slice(&parsed.to_le_bytes());
+            Ok(bytes)
+        }
+        ("MM", _) | ("ML", _) | ("MN", _) => Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: format!(
+                "FASTQ header methylation tag {tag} used unsupported type code {type_code}."
+            ),
+        }),
+        _ => Ok(Vec::new()),
+    }
+}
+
+fn parse_ml_header_tag(path: &Path, value: &str) -> Result<Vec<u8>, AppError> {
+    let Some((subtype, values)) = value.split_once(',') else {
+        return Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: "FASTQ header ML tag must use B-array syntax such as ML:B:C,42,7."
+                .to_string(),
+        });
+    };
+
+    if subtype != "C" {
+        return Err(AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: format!(
+                "FASTQ header ML tag used unsupported B-array subtype {subtype}; only C is supported."
+            ),
+        });
+    }
+
+    let parsed_values = if values.is_empty() {
+        Vec::new()
+    } else {
+        values
+            .split(',')
+            .map(|entry| {
+                entry.parse::<u8>().map_err(|_| AppError::InvalidFastq {
+                    path: path.to_path_buf(),
+                    detail: format!(
+                        "FASTQ header ML tag contained an invalid probability byte: {entry}"
+                    ),
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    };
+
+    let mut bytes = Vec::with_capacity(8 + parsed_values.len());
+    bytes.extend_from_slice(b"ML");
+    bytes.push(b'B');
+    bytes.push(b'C');
+    bytes.extend_from_slice(&(parsed_values.len() as i32).to_le_bytes());
+    bytes.extend_from_slice(&parsed_values);
+    Ok(bytes)
 }
 
 fn trim_line_endings(mut line: String) -> String {
@@ -388,5 +519,25 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removable");
 
         assert_eq!(contents, "@read4 comment\nACGT\n+comment\n!!!!\n");
+    }
+
+    #[test]
+    fn parses_methylation_tags_from_hts_style_fastq_header() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-fastq-methyl-{}.fastq", std::process::id()));
+        fs::write(
+            &path,
+            "@modread MM:Z:C+m,0; ML:B:C,42,7 MN:i:4\nACGT\n+\n!!!!\n",
+        )
+        .expect("fastq should write");
+
+        let records =
+            read_fastq_as_unmapped_records(&path, None).expect("fastq should parse with mods");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(records.len(), 1);
+        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MMZ"));
+        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MLB"));
+        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MNi"));
     }
 }
