@@ -63,6 +63,8 @@ pub enum Commands {
     Reheader(ReheaderArgs),
     /// Sort a BAM file into a requested output ordering.
     Sort(SortArgs),
+    /// Strip reference-bound alignment state from a BAM while preserving non-mapping metadata.
+    Unmap(UnmapArgs),
     /// Perform shallow BAM verification only.
     Verify(BamPathArgs),
     /// Check for the canonical BGZF EOF marker only.
@@ -539,6 +541,25 @@ pub struct SortArgs {
     pub verify_checksum: bool,
     /// Overwrite an existing output file.
     #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct UnmapArgs {
+    /// Input BAM file to rewrite as unmapped.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output BAM path. Defaults to <input>.unmapped.bam.
+    #[arg(long = "out")]
+    pub out: Option<PathBuf>,
+    /// Plan the rewrite and report intended changes without writing output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output BAM.
+    #[arg(long = "force")]
     pub force: bool,
 }
 

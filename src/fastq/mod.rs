@@ -289,31 +289,6 @@ fn trim_line_endings(mut line: String) -> String {
 }
 
 #[cfg(test)]
-fn write_fastq_records_to_writer(
-    writer: &mut dyn Write,
-    records: &[FastqRecord],
-    path: &Path,
-) -> Result<(), AppError> {
-    for record in records {
-        for line in [
-            &record.raw_header_line,
-            &record.sequence,
-            &record.plus_line,
-            &record.quality,
-        ] {
-            writer
-                .write_all(line.as_bytes())
-                .and_then(|_| writer.write_all(b"\n"))
-                .map_err(|error| AppError::WriteError {
-                    path: path.to_path_buf(),
-                    message: error.to_string(),
-                })?;
-        }
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use std::{fs, fs::File, io::Write};
@@ -321,7 +296,7 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
 
     use super::{
-        open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record,
+        FastqRecord, open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record,
         write_fastq_records,
     };
 

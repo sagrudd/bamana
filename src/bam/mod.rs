@@ -14,5 +14,6 @@ pub mod reheader;
 pub mod sort;
 pub mod summary;
 pub mod tags;
+pub mod unmap;
 pub mod validate;
 pub mod write;

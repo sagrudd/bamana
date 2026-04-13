@@ -27,6 +27,7 @@ use commands::{
     sort::SortRequest,
     subsample::SubsampleRequest,
     summary::SummaryRequest,
+    unmap::UnmapRequest,
     validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
@@ -221,6 +222,17 @@ fn main() -> ExitCode {
                 memory_limit: args.memory_limit,
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
+                force: args.force,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Unmap(args) => {
+            let bam = args.bam;
+            let response = commands::unmap::run(UnmapRequest {
+                bam: bam.clone(),
+                out: args.out,
+                dry_run: args.dry_run,
+                threads: args.threads,
                 force: args.force,
             });
             emit_response(&response, cli.global.json_pretty)
