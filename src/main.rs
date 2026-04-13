@@ -17,6 +17,7 @@ use commands::{
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
     deduplicate::DeduplicateRequest,
+    fastq::FastqRequest,
     forensic_inspect::ForensicInspectRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
@@ -151,6 +152,16 @@ fn main() -> ExitCode {
                 platform: args.platform,
                 include_glob: args.include_glob,
                 exclude_glob: args.exclude_glob,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Fastq(args) => {
+            let bam = args.bam;
+            let response = commands::fastq::run(FastqRequest {
+                bam: bam.clone(),
+                out: args.out,
+                threads: args.threads,
+                force: args.force,
             });
             emit_response(&response, cli.global.json_pretty)
         }

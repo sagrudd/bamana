@@ -5,6 +5,7 @@
 
 pub mod annotate_rg;
 pub mod checksum;
+pub mod fastq;
 pub mod header;
 pub mod index;
 pub mod merge;

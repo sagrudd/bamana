@@ -55,6 +55,8 @@ pub enum Commands {
     AnnotateRg(AnnotateRgArgs),
     /// Consume files and directories into a normalized BAM with explicit ingest semantics.
     Consume(ConsumeArgs),
+    /// Rewrite a BAM as a single FASTQ.GZ stream as quickly as possible.
+    Fastq(FastqArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
     Checksum(ChecksumArgs),
     /// Merge multiple BAM inputs into a single BAM output.
@@ -389,6 +391,22 @@ pub struct ConsumeArgs {
     /// Future exclude filter applied to discovered paths.
     #[arg(long = "exclude-glob")]
     pub exclude_glob: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct FastqArgs {
+    /// Input BAM file to export as FASTQ.GZ.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output FASTQ.GZ path. Defaults to <input>.fastq.gz.
+    #[arg(long = "out")]
+    pub out: Option<PathBuf>,
+    /// Maximum worker threads for parallel decode/compression. Defaults to all available cores.
+    #[arg(short = 'j', long = "threads", default_value_t = 0)]
+    pub threads: usize,
+    /// Overwrite an existing output file.
+    #[arg(long = "force")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]
