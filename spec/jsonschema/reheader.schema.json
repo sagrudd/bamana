@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/reheader.schema.json",
+  "title": "Bamana Reheader Response",
+  "description": "Contract for bamana reheader JSON output.",
+  "x-bamana-command": "reheader",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "executionMode": {
+      "type": ["string", "null"],
+      "enum": ["in-place", "rewrite-minimized", "safe-rewrite", null]
+    },
+    "operationKind": {
+      "type": "string",
+      "enum": [
+        "replace_header",
+        "add_rg",
+        "set_rg",
+        "remove_rg",
+        "set_sample",
+        "set_platform",
+        "set_pg",
+        "add_comment"
+      ]
+    },
+    "mutationOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation"],
+      "properties": {
+        "operation": { "$ref": "#/$defs/operationKind" },
+        "source": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "target_rg": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "details": {
+          "type": ["object", "null"],
+          "additionalProperties": { "type": "string" }
+        },
+        "comment": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "mutation",
+        "planning",
+        "execution",
+        "output",
+        "index",
+        "checksum_verification",
+        "notes"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "mutation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operations"],
+          "properties": {
+            "operations": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/mutationOperation" },
+              "minItems": 1
+            }
+          }
+        },
+        "planning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode_requested",
+            "in_place_feasible",
+            "recommended_mode"
+          ],
+          "properties": {
+            "mode_requested": { "$ref": "#/$defs/executionMode" },
+            "in_place_feasible": { "type": "boolean" },
+            "recommended_mode": { "$ref": "#/$defs/executionMode" },
+            "reason": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode_used", "modified", "dry_run"],
+          "properties": {
+            "mode_used": { "$ref": "#/$defs/executionMode" },
+            "modified": { "type": "boolean" },
+            "dry_run": { "type": "boolean" }
+          }
+        },
+        "output": {
+          "allOf": [
+            { "$ref": "./common/defs.schema.json#/$defs/outputInfo" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "written"],
+              "properties": {
+                "path": { "type": "string" },
+                "written": { "type": "boolean" },
+                "overwritten": { "type": ["boolean", "null"] }
+              }
+            }
+          ]
+        },
+        "index": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "present_before",
+            "valid_after",
+            "reindex_requested",
+            "reindexed",
+            "kind"
+          ],
+          "properties": {
+            "present_before": { "type": "boolean" },
+            "valid_after": { "type": ["boolean", "null"] },
+            "reindex_requested": { "type": "boolean" },
+            "reindexed": { "type": "boolean" },
+            "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" }
+          }
+        },
+        "checksum_verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requested",
+            "performed",
+            "mode",
+            "header_included",
+            "match"
+          ],
+          "properties": {
+            "requested": { "type": "boolean" },
+            "performed": { "type": "boolean" },
+            "mode": { "$ref": "./common/defs.schema.json#/$defs/checksumMode" },
+            "header_included": { "type": "boolean" },
+            "input_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "output_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "match": { "type": ["boolean", "null"] }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "reheader" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "reheader" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

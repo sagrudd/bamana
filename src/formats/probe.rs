@@ -2,7 +2,7 @@ use std::{fs, fs::File, io::Read, path::Path};
 
 use serde::Serialize;
 
-use crate::{error::AppError, formats::bgzf};
+use crate::{bgzf, error::AppError};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub enum DetectedFormat {

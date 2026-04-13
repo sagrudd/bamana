@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "command": "deduplicate",
+  "path": "input.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ",
+    "mode": "contiguous-block",
+    "identity_mode": "qname_seq_qual",
+    "keep_policy": "first",
+    "execution": {
+      "dry_run": true,
+      "modified": true
+    },
+    "summary": {
+      "records_examined": 400000,
+      "duplicate_ranges_detected": 1,
+      "records_marked_for_removal": 200000,
+      "records_retained_if_applied": 200000
+    },
+    "ranges": [
+      {
+        "type": "whole_file_append_duplicate",
+        "keep_range": {
+          "start": 1,
+          "end": 200000
+        },
+        "remove_range": {
+          "start": 200001,
+          "end": 400000
+        }
+      }
+    ],
+    "notes": [
+      "This command remediates collection duplication and operator-error duplication; it is not molecular duplicate marking.",
+      "Dry run only. No file modifications were made."
+    ]
+  },
+  "error": null
+}

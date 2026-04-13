@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "command": "forensic_inspect",
+  "path": "clean.bam",
+  "data": {
+    "format": "BAM",
+    "scan_mode": "full",
+    "scopes": {
+      "header": true,
+      "read_groups": true,
+      "program_chain": true,
+      "read_names": true,
+      "tags": false,
+      "duplication_hallmarks": true
+    },
+    "records_examined": 50000,
+    "summary": {
+      "findings_total": 0,
+      "high_findings": 0,
+      "warning_findings": 0,
+      "info_findings": 0,
+      "category_counts": []
+    },
+    "findings": [],
+    "assessment": {
+      "suspicion_detected": false,
+      "likely_concatenation_or_coercion": false,
+      "recommended_follow_up": null
+    },
+    "notes": [
+      "forensic_inspect reports provenance anomalies and coercion hallmarks; it is not a structural validator.",
+      "forensic_inspect is not duplicate marking and does not make biological claims about PCR or molecular duplication.",
+      "Forensic findings indicate provenance anomalies or collection mishandling, not biological interpretation or fraud attribution.",
+      "Duplication hallmarks in this slice use qname_seq_qual identity for BAM body inspection."
+    ]
+  },
+  "error": null
+}

@@ -15,6 +15,7 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
+    fastq::read_fastq_as_unmapped_records,
     formats::probe::DetectedFormat,
     ingest::{
         cram::{
@@ -22,7 +23,6 @@ use crate::{
             normalize_cram_to_record_layouts, prepare_reference_context,
         },
         discovery::DiscoveredFile,
-        fastq::read_fastq_as_unmapped_records,
         sam::read_sam_file,
     },
 };

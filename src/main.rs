@@ -1,16 +1,13 @@
-mod bam;
-mod cli;
-mod commands;
-mod error;
-mod formats;
-mod ingest;
-mod json;
-
 use std::process::ExitCode;
 
+use bamana::{
+    cli::{Cli, Commands},
+    commands,
+    json::{CommandResponse, emit_response},
+};
 use clap::Parser;
-use cli::{Cli, Commands};
 use commands::{
+    annotate_rg::AnnotateRgRequest,
     check_eof::{CheckEofRequest, CheckEofResponse},
     check_index::CheckIndexRequest,
     check_map::{CheckMapPayload, CheckMapRequest},
@@ -18,16 +15,20 @@ use commands::{
     check_tag::CheckTagRequest,
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
+    deduplicate::DeduplicateRequest,
+    forensic_inspect::ForensicInspectRequest,
     header::{HeaderRequest, HeaderResponse},
     identify::{IdentifyRequest, IdentifyResponse},
     index::IndexRequest,
+    inspect_duplication::InspectDuplicationRequest,
     merge::MergeRequest,
+    reheader::ReheaderRequest,
     sort::SortRequest,
+    subsample::SubsampleRequest,
     summary::SummaryRequest,
     validate::ValidateRequest,
     verify::{VerifyRequest, VerifyResponse},
 };
-use json::{CommandResponse, emit_response};
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -38,6 +39,93 @@ fn main() -> ExitCode {
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
             let response: CommandResponse<IdentifyResponse> =
                 CommandResponse::from_result("identify", Some(path.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Subsample(args) => {
+            let input = args.input;
+            let response = commands::subsample::run(SubsampleRequest {
+                input: input.clone(),
+                out: args.out,
+                fraction: args.fraction,
+                mode: args.mode,
+                seed: args.seed,
+                identity: args.identity,
+                dry_run: args.dry_run,
+                create_index: args.create_index,
+                mapped_only: args.mapped_only,
+                primary_only: args.primary_only,
+                threads: args.threads,
+                force: args.force,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::InspectDuplication(args) => {
+            let input = args.input;
+            let response = commands::inspect_duplication::run(InspectDuplicationRequest {
+                input: input.clone(),
+                options: crate::forensics::duplication::DuplicationScanOptions {
+                    identity_mode: args.identity,
+                    min_block_size: args.min_block_size.max(1),
+                    max_findings: args.max_findings.max(1),
+                    record_limit: if args.full_scan {
+                        u64::MAX
+                    } else {
+                        args.sample_records.max(1) as u64
+                    },
+                },
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Deduplicate(args) => {
+            let input = args.input;
+            let response = commands::deduplicate::run(DeduplicateRequest {
+                input: input.clone(),
+                out: args.out,
+                mode: args.mode,
+                identity_mode: args.identity,
+                keep_policy: args.keep,
+                dry_run: args.dry_run,
+                force: args.force,
+                min_block_size: args.min_block_size,
+                verify_checksum: args.verify_checksum,
+                emit_removed_report: args.emit_removed_report,
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                reindex: args.reindex,
+                json_pretty: cli.global.json_pretty,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::ForensicInspect(args) => {
+            let input = args.input;
+            let response = commands::forensic_inspect::run(ForensicInspectRequest {
+                input: input.clone(),
+                sample_records: args.sample_records,
+                full_scan: args.full_scan,
+                max_findings: args.max_findings,
+                scopes: args.resolved_scopes(),
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::AnnotateRg(args) => {
+            let bam = args.bam;
+            let response = commands::annotate_rg::run(AnnotateRgRequest {
+                bam: bam.clone(),
+                rg_id: args.rg_id,
+                out: args.out,
+                only_missing: args.only_missing,
+                replace_existing: args.replace_existing,
+                fail_on_conflict: args.fail_on_conflict,
+                require_header_rg: args.require_header_rg,
+                create_header_rg: args.create_header_rg,
+                add_header_rg: args.add_header_rg,
+                set_header_rg: args.set_header_rg,
+                reindex: args.reindex,
+                verify_checksum: args.verify_checksum,
+                threads: args.threads,
+                force: args.force,
+                dry_run: args.dry_run,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::Consume(args) => {
@@ -87,6 +175,36 @@ fn main() -> ExitCode {
                 verify_checksum: args.verify_checksum,
                 threads: args.threads,
                 force: args.force,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Reheader(args) => {
+            let bam = args.bam;
+            let set_platform = args.set_platform.map(|platform| match platform {
+                cli::ReheaderPlatform::Ont => "ONT".to_string(),
+                cli::ReheaderPlatform::Illumina => "ILLUMINA".to_string(),
+                cli::ReheaderPlatform::Pacbio => "PACBIO".to_string(),
+                cli::ReheaderPlatform::Unknown => "UNKNOWN".to_string(),
+            });
+            let response = commands::reheader::run(ReheaderRequest {
+                bam: bam.clone(),
+                out: args.out,
+                header: args.header,
+                add_rg: args.add_rg,
+                set_rg: args.set_rg,
+                remove_rg: args.remove_rg,
+                set_sample: args.set_sample,
+                set_platform,
+                target_rg: args.target_rg,
+                set_pg: args.set_pg,
+                add_comment: args.add_comment,
+                in_place: args.in_place,
+                rewrite_minimized: args.rewrite_minimized,
+                safe_rewrite: args.safe_rewrite,
+                dry_run: args.dry_run,
+                force: args.force,
+                reindex: args.reindex,
+                verify_checksum: args.verify_checksum,
             });
             emit_response(&response, cli.global.json_pretty)
         }

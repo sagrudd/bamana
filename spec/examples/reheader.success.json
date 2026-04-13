@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "command": "reheader",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "mutation": {
+      "operations": [
+        {
+          "operation": "add_rg",
+          "source": null,
+          "target_rg": "rg001",
+          "details": {
+            "ID": "rg001",
+            "PL": "ONT",
+            "SM": "sampleA"
+          },
+          "comment": null
+        }
+      ]
+    },
+    "planning": {
+      "mode_requested": "rewrite-minimized",
+      "in_place_feasible": false,
+      "recommended_mode": "rewrite-minimized",
+      "reason": "Replacement header increases serialized size beyond safe in-place limits, and true BGZF header patching is not implemented safely in this slice."
+    },
+    "execution": {
+      "mode_used": "rewrite-minimized",
+      "modified": true,
+      "dry_run": false
+    },
+    "output": {
+      "path": "input.reheadered.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "index": {
+      "present_before": true,
+      "valid_after": false,
+      "reindex_requested": true,
+      "reindexed": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": true,
+      "performed": true,
+      "mode": "canonical-record-order",
+      "header_included": false,
+      "input_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "output_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "match": true
+    },
+    "notes": [
+      "Header-only mutation was applied or planned.",
+      "This command modifies only BAM header metadata; it does not add, remove, or replace per-record RG:Z tags in alignment records.",
+      "The current rewrite-minimized path still rewrites the BAM container, but it preserves serialized alignment-record layout bytes directly rather than performing a deep semantic record transformation.",
+      "Reindexing was requested, but index writing is not implemented in this slice. Any pre-existing index should be considered invalidated.",
+      "Canonical record-order checksum verification confirmed that alignment-record content was preserved while excluding header bytes from the checksum domain."
+    ]
+  },
+  "error": null
+}

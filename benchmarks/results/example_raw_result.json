@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1",
+  "timestamp_utc": "2026-04-12T11:42:19Z",
+  "benchmark_framework_version": "tool-wrapper-contract-example",
+  "scenario": "mapped_bam_pipeline",
+  "workflow_variant": "bamana_subsample_sort_partial_index",
+  "tool": "bamana",
+  "tool_version": "bamana 0.1.0",
+  "input": {
+    "source_input_id": "hg38_wgs_mapped",
+    "source_input_path": "/data/benchmarks/hg38_wgs.mapped.bam",
+    "source_input_type": "BAM",
+    "source_category": "mapped_bam",
+    "staged_input_id": "hg38_wgs_mapped",
+    "staged_input_path": "/scratch/bench/hg38_wgs_mapped.staged.bam",
+    "input_type": "BAM",
+    "mapped_state": "mapped",
+    "input_basename": "hg38_wgs.mapped.bam",
+    "input_bytes": 128000000000,
+    "records_processed": 860000000,
+    "expected_sort_order": "coordinate",
+    "has_index": true,
+    "reference_context": "{\"build_label\":\"GRCh38 primary assembly\",\"fasta_path\":\"/references/GRCh38/GRCh38.primary.fa\",\"required_for_interpretation\":true}"
+  },
+  "staging": {
+    "staging_mode": "hardlink",
+    "staging_realization": "hardlink_or_copy_fallback",
+    "scenario_materialization": "source_or_subsampled_bam",
+    "reuse_materialized_inputs": true,
+    "include_in_timing": false,
+    "storage_context": "local_ssd"
+  },
+  "subsampling": {
+    "enabled": true,
+    "fraction": 0.1,
+    "seed": 104729,
+    "mode": "deterministic",
+    "derived_input_id": "hg38_wgs_mapped"
+  },
+  "resources": {
+    "threads": 8,
+    "container_image": "bamana-bench:latest",
+    "memory_target": null,
+    "hardware_host_label": null
+  },
+  "execution": {
+    "replicate": 1,
+    "warmup_run": false,
+    "command_line": "\"../target/release/bamana\" subsample --input \"/scratch/bench/hg38_wgs_mapped.staged.bam\" --out \"bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1.subsampled.bam\" --fraction 0.1 --mode deterministic --force \"../target/release/bamana\" sort --bam \"bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1.subsampled.bam\" --out \"bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam\" --force",
+    "started_at": "2026-04-12T11:39:58Z",
+    "finished_at": "2026-04-12T11:42:19Z",
+    "wall_seconds": 141.22,
+    "user_cpu_seconds": 518.11,
+    "system_cpu_seconds": 28.34,
+    "cpu_seconds": 546.45,
+    "max_rss_bytes": 6316615680,
+    "exit_code": 0
+  },
+  "result": {
+    "status": "success",
+    "success": true,
+    "unsupported": false,
+    "failed": false,
+    "failure_category": null,
+    "semantic_equivalence": "partial",
+    "support_status": "completed",
+    "output_path": "bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam",
+    "output_bytes": 12450000000,
+    "compression_ratio": 0.097266,
+    "records_processed": 860000000,
+    "throughput_records_per_sec": 6090072.227730,
+    "throughput_bytes_per_sec": 906387197.280838,
+    "generated_files": [
+      "bamana.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam"
+    ]
+  },
+  "notes": [
+    "Bamana mapped-BAM benchmarking includes subsample plus sort. Index creation remains deferred, so semantic equivalence is partial."
+  ]
+}

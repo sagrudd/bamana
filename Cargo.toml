@@ -5,9 +5,20 @@ license = "Apache-2.0"
 rust-version = "1.85"
 version = "0.1.0"
 
+[features]
+default = ["cram-compat"]
+# Transitional compatibility feature. CRAM ingestion still depends on noodles
+# while the Bamana-native BAM/BGZF/FASTQ performance core is stabilized.
+cram-compat = []
+# External parser crates may be used in tests and conformance checks, but not
+# as the architectural center of hot-path execution.
+test-oracle = []
+
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
 flate2 = "1.1.2"
+# Transitional CRAM compatibility dependencies. These are not the intended
+# long-term engine for Bamana hot paths.
 noodles-bam = "0.85.0"
 noodles-cram = "0.88.0"
 noodles-fasta = "0.58.0"

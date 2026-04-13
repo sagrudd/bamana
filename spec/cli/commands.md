@@ -87,6 +87,298 @@ Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
 `checksum_verification`, `notes`.
 
+## `subsample`
+
+Synopsis:
+`bamana subsample --input <file> --out <output> --fraction <f> [--seed <int>] [--mode <random|deterministic>] [--force] [--json-pretty]`
+
+Semantics:
+Downsamples a single BAM, FASTQ, or FASTQ.GZ input under an explicit
+deterministic or random policy. The command is intended for production
+workflows and for reproducible comparison against `samtools`, `seqtk`,
+`rasusa`, and related tools in the benchmark framework.
+
+Current planned modes:
+
+* `deterministic`: stable inclusion policy given identical input, fraction, and
+  version, implemented in the current slice with stable hash-based selection
+* `random`: seeded random Bernoulli-style policy using `--seed`; a seed is
+  generated and reported when one is not supplied explicitly
+
+Current input support:
+
+* `BAM`
+* `FASTQ`
+* `FASTQ.GZ`
+
+Deterministic identity semantics:
+
+* `qname`: read name only
+* `qname_seq`: read name plus sequence
+* `full_record`: full record representation; this is the current default for
+  deterministic mode
+
+Current filter semantics:
+
+* `--mapped-only`: BAM only; non-mapped records are excluded from output
+* `--primary-only`: BAM only; secondary and supplementary records are excluded
+  from output
+
+Output-order semantics:
+
+* retained records preserve encounter order in the current slice
+* no implicit sorting is performed by `subsample`
+
+Does prove:
+Only the explicit subsampling policy, fraction, seed, deterministic identity,
+filters, and output path reported in JSON.
+
+Does not prove:
+It is not quality filtering, duplicate marking, or provenance cleanup. It does
+not imply semantic equivalence with comparator tools whose subsampling model is
+coverage-based or otherwise not directly fractional.
+
+Key output concepts:
+`format`, `selection`, `execution`, `output`, `index`, `filters`, `notes`.
+
+## `inspect_duplication`
+
+Synopsis:
+`bamana inspect_duplication --input <file> [--identity <qname_seq|qname_seq_qual|qname_seq_qual_rg>] [--min-block-size <N>] [--sample-records <N>] [--full-scan] [--max-findings <N>]`
+
+Semantics:
+Inspects a single BAM, FASTQ, or FASTQ.GZ input for suspicious
+collection-duplication signatures that are more consistent with operator error,
+unsafe concatenation, repeated appends, or coerced monolithic collections than
+with ordinary duplicate biology.
+
+Identity semantics:
+
+* `qname_seq`: read name plus sequence
+* `qname_seq_qual`: read name plus sequence plus quality; this is the current
+  default
+* `qname_seq_qual_rg`: BAM-only read name plus sequence plus quality plus read
+  group
+
+Current detection layers:
+
+* exact duplicate-record identity statistics
+* adjacent repeated-block detection with deterministic record ranges
+* whole-file append classification when the examined file halves repeat exactly
+
+Does prove:
+Only the duplication evidence reported in the JSON payload, under the explicit
+identity mode and scan scope that were actually used.
+
+Does not prove:
+It is not a Picard/GATK-style duplicate-marking contract. It does not interpret
+BAM duplicate flags as primary evidence. It does not make biological claims
+about PCR or molecular duplication. In bounded mode it does not prove whole-file
+absence of suspicious duplication.
+
+Key output concepts:
+`format`, `identity_mode`, `scan_mode`, `records_examined`, `summary`,
+`findings`, `assessment`, `notes`.
+
+## `deduplicate`
+
+Synopsis:
+`bamana deduplicate --input <file> --out <cleaned_output> --mode <contiguous-block|whole-file-append|global-exact> [--identity <qname_seq|qname_seq_qual|qname_seq_qual_rg>] [--dry-run] [--min-block-size <N>] [--keep <first|last>] [--verify-checksum] [--emit-removed-report <json>] [--sample-records <N>] [--full-scan] [--reindex] [--force]`
+
+Semantics:
+Removes suspicious collection-duplication signatures according to an explicit,
+conservative remediation policy. The current slice supports a single BAM, FASTQ,
+or FASTQ.GZ input and focuses on adjacent repeated contiguous blocks, including
+whole-file append signatures when the second half duplicates the first half
+under the selected identity mode.
+
+Mode semantics:
+
+* `contiguous-block`: detect adjacent repeated blocks and remove one copy
+  according to `--keep`
+* `whole-file-append`: restrict removal to strong whole-file append signatures
+* `global-exact`: reserved for a later, more aggressive slice and currently
+  returns `unimplemented`
+
+Identity semantics:
+
+* `qname_seq`: read name plus sequence
+* `qname_seq_qual`: read name plus sequence plus quality; this is the current
+  default
+* `qname_seq_qual_rg`: BAM-only read name plus sequence plus quality plus read
+  group
+
+Keep-policy semantics:
+
+* `first`: retain the first copy and remove the later adjacent copy
+* `last`: retain the later copy and remove the earlier adjacent copy
+
+Execution semantics:
+
+* `--dry-run` is the recommended first operational step and writes nothing
+* applied execution always writes a distinct output path
+* existing output or removed-report paths are rejected unless `--force` is
+  supplied
+* BAM headers are preserved, but pre-existing BAM indices must be treated as
+  invalid after record removal unless successful regeneration is reported
+
+Does prove:
+Only that the reported contiguous duplicate ranges were planned or removed under
+the explicit mode, identity policy, keep policy, and scan scope that were
+actually used.
+
+Does not prove:
+It is not a Picard/GATK-style duplicate-marking contract. It does not treat BAM
+duplicate flags as primary evidence. It does not imply broad biological
+duplicate removal, non-contiguous duplicate collapse, or pair-aware molecular
+duplicate semantics. In bounded dry-run mode it does not prove that no
+additional removable ranges exist beyond the examined records.
+
+Key output concepts:
+`format`, `mode`, `identity_mode`, `keep_policy`, `execution`, `summary`,
+`ranges`, `output`, `index`, `checksum_verification`, `notes`.
+
+## `forensic_inspect`
+
+Synopsis:
+`bamana forensic_inspect --input <file> [--sample-records <N>] [--full-scan] [--inspect-header] [--inspect-rg] [--inspect-pg] [--inspect-readnames] [--inspect-tags] [--inspect-duplication] [--max-findings <N>]`
+
+Semantics:
+Performs forensic-style provenance inspection of a single BAM input and reports
+hallmarks that are consistent with concatenation, repeated appended blocks,
+coerced monolithic collections, weak provenance discipline, or suspicious
+metadata/body transitions.
+
+Current inspection areas:
+
+* header anomalies such as duplicate `@RG`/`@PG` identifiers, sparse
+  provenance, and suspicious sample/platform mixtures
+* read-group mismatches between header declarations and record-level `RG:Z`
+  usage
+* broken or disconnected `@PG` chains
+* read-name regime shifts between early and late body windows
+* duplicate-block and whole-file-append hallmarks using `qname_seq_qual`
+  identity
+* selected aux-tag regime shifts when `--inspect-tags` is enabled
+
+Scope semantics:
+
+* when no explicit `--inspect-*` flags are supplied, the default suite is
+  `header`, `read_groups`, `program_chain`, `read_names`, and
+  `duplication_hallmarks`
+* `--inspect-tags` is opt-in in the current slice
+* the first slice is BAM-only; other formats are reported as unsupported for
+  this command
+
+Scan semantics:
+
+* header inspection is always complete for the parsed BAM header
+* bounded mode inspects the first `N` records only for body-oriented evidence
+* full-scan mode inspects the BAM body to EOF and can support stronger
+  collection-level conclusions
+* every finding reports whether its evidence was header-only, bounded body
+  evidence, full body evidence, or a combined header/body basis
+
+Does prove:
+Only the provenance anomalies and collection-hallmark findings explicitly
+reported in the JSON payload under the inspected scopes and scan mode that were
+actually used.
+
+Does not prove:
+It is not a structural-validation contract, not a duplicate-marking contract,
+and not a fraud-detection contract. It does not prove intentional misconduct.
+In bounded mode it does not prove whole-file absence of suspicious body-level
+anomalies.
+
+Key output concepts:
+`format`, `scan_mode`, `scopes`, `records_examined`, `summary`, `findings`,
+`assessment`, `notes`.
+
+## `annotate_rg`
+
+Synopsis:
+`bamana annotate_rg --bam <input.bam> --rg-id <ID> [--out <output.bam>] [--only-missing | --replace-existing | --fail-on-conflict] [--require-header-rg | --create-header-rg | --add-header-rg <KEY=VALUE,...> | --set-header-rg <KEY=VALUE,...>] [--reindex] [--verify-checksum] [-j, --threads <N>] [--force] [--dry-run]`
+
+Semantics:
+Performs record-level read-group annotation by scanning every BAM alignment
+record, inspecting existing `RG:Z:` aux tags, and inserting, replacing, or
+conflict-checking them according to the selected mode.
+
+Record modes:
+
+* `only_missing`: insert `RG:Z:<ID>` only when a record currently lacks an RG
+  tag
+* `replace_existing`: normalize every record to the requested RG ID
+* `fail_on_conflict`: fail if any record already contains a different RG value;
+  this is the current conservative default when no explicit mode flag is given
+
+Header policy:
+
+* `require_existing` is the current conservative default
+* `create_if_missing` adds a minimal matching `@RG` line when absent
+* `add_header_rg` adds a fully specified new `@RG` line
+* `set_header_rg` updates the existing target `@RG` line
+
+Does prove:
+That the BAM stream was rewritten with the reported record mode and header
+policy, and that the reported output file was written when `written: true`.
+
+Does not prove:
+It does not behave like `reheader`, because it touches alignment records. It
+does not imply broader BAM validation than what was parsed during the rewrite.
+It does not imply record-content preservation unless checksum verification was
+performed with the explicitly reported tag-exclusion policy.
+
+Key output concepts:
+`request`, `execution`, `records`, `header`, `output`, `index`,
+`checksum_verification`, `notes`.
+
+## `reheader`
+
+Synopsis:
+`bamana reheader --bam <input.bam> [--header <new_header.sam>] [--add-rg <KEY=VALUE,...>] [--set-rg <KEY=VALUE,...>] [--remove-rg <ID>] [--set-sample <NAME>] [--set-platform <ont|illumina|pacbio|unknown>] [--target-rg <ID>] [--set-pg <KEY=VALUE,...>] [--add-comment <TEXT>] [--in-place] [--rewrite-minimized] [--safe-rewrite] [--dry-run] [--out <output.bam>] [--force] [--reindex] [--verify-checksum]`
+
+Semantics:
+Performs BAM header-only metadata mutation. It can replace the full BAM header
+from a SAM-style header file or apply targeted header mutations such as adding,
+updating, or removing `@RG` records; updating `SM` or `PL` on a targeted read
+group; adding or updating `@PG`; and appending `@CO` lines.
+
+Execution-mode semantics:
+
+* `--in-place` requests true in-place header patching only if Bamana can prove
+  it is safe
+* if `--in-place` is not feasible, the command fails unless
+  `--rewrite-minimized` is also supplied to permit fallback
+* `--rewrite-minimized` is the practical execution path in the current slice
+* `--safe-rewrite` requests an explicit conservative rewrite path
+* `--dry-run` performs mutation validation and execution planning without
+  writing output
+
+Does prove:
+Only the BAM header mutation described in the response, the planning outcome
+for in-place feasibility, and the execution mode actually used.
+
+Does not prove:
+It does not add, remove, or rewrite per-record `RG:Z` tags in alignment
+records. If downstream tooling requires per-record `RG:Z` tags, the correct
+command is `annotate_rg`, not `reheader`. `reheader` does not imply full BAM
+validation, and it does not imply content preservation unless checksum
+verification was explicitly performed and matched.
+
+Index and checksum behavior:
+
+* existing indices should be treated as invalidated after reheader in the
+  current slice unless a future narrowly proven-safe case says otherwise
+* `--reindex` is accepted and reported, but index writing remains deferred in
+  the current slice
+* `--verify-checksum` uses canonical record-order checksum semantics with the
+  BAM header excluded so the command can demonstrate header-only behavior
+
+Key output concepts:
+`mutation`, `planning`, `execution`, `output`, `index`,
+`checksum_verification`, `notes`.
+
 ## `verify`
 
 Synopsis:

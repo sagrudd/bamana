@@ -112,6 +112,34 @@ pub fn aux_region_contains_tag(aux_bytes: &[u8], query: TagQuery) -> Result<bool
     Ok(matched)
 }
 
+pub fn extract_string_aux_tag(
+    aux_bytes: &[u8],
+    query_tag: [u8; 2],
+) -> Result<Option<String>, String> {
+    let mut value = None;
+    traverse_aux_fields(aux_bytes, |field| {
+        if field.tag == query_tag {
+            if field.type_code != b'Z' {
+                return Err(format!(
+                    "Auxiliary tag {}{} was present but not a Z string.",
+                    query_tag[0] as char, query_tag[1] as char
+                ));
+            }
+
+            let string_bytes = field.payload.strip_suffix(&[0]).ok_or_else(|| {
+                "Encountered a malformed NUL-terminated auxiliary string.".to_string()
+            })?;
+            let parsed = String::from_utf8(string_bytes.to_vec()).map_err(|error| {
+                format!("BAM auxiliary string tag was not valid UTF-8: {error}")
+            })?;
+            value = Some(parsed);
+        }
+        Ok(())
+    })?;
+
+    Ok(value)
+}
+
 pub fn traverse_aux_fields(
     aux_bytes: &[u8],
     mut visitor: impl FnMut(AuxField<'_>) -> Result<(), String>,
@@ -234,7 +262,9 @@ fn aux_type_matches(type_code: u8, required: AuxTypeCode) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{AuxTypeCode, TagQuery, aux_region_contains_tag, validate_tag};
+    use super::{
+        AuxTypeCode, TagQuery, aux_region_contains_tag, extract_string_aux_tag, validate_tag,
+    };
 
     #[test]
     fn validates_two_character_ascii_tags() {
@@ -312,5 +342,12 @@ mod tests {
         )
         .expect_err("truncated b-array should fail");
         assert!(error.contains("truncated auxiliary field"));
+    }
+
+    #[test]
+    fn extracts_string_aux_tag_values() {
+        let aux = b"RGZgroup1\0NMi\x01\0\0\0";
+        let value = extract_string_aux_tag(aux, *b"RG").expect("tag extraction should succeed");
+        assert_eq!(value.as_deref(), Some("group1"));
     }
 }

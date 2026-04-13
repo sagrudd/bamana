@@ -78,6 +78,22 @@
           "read_name_regime_type": {
             "type": ["string", "null"]
           },
+          "contract_assertions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "golden_profile": {
+            "type": "string"
+          },
+          "supports_json_contract": {
+            "type": "boolean"
+          },
+          "supports_golden_outputs": {
+            "type": "boolean"
+          },
+          "supports_cli_smoke": {
+            "type": "boolean"
+          },
           "primary_commands": {
             "type": "array",
             "items": { "type": "string" }

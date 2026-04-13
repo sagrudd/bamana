@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/results/benchmark_row.schema.json",
+  "title": "Bamana Benchmark Tidy Result Row",
+  "description": "Flat, aggregation-ready tidy row contract derived from raw per-run benchmark JSON and consumed by the R aggregation and plotting layer.",
+  "x-bamana-benchmark-contract-version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "timestamp_utc",
+    "benchmark_framework_version",
+    "scenario",
+    "workflow_variant",
+    "tool",
+    "tool_version",
+    "source_input_id",
+    "source_input_type",
+    "staged_input_id",
+    "replicate",
+    "warmup",
+    "subsample_enabled",
+    "subsample_mode",
+    "subsample_fraction",
+    "subsample_seed",
+    "threads",
+    "staging_mode",
+    "staging_included_in_timing",
+    "status",
+    "success",
+    "unsupported",
+    "failed",
+    "exit_code",
+    "input_bytes",
+    "records_processed",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "timestamp_utc": { "type": "string" },
+    "benchmark_framework_version": { "type": "string" },
+    "scenario": {
+      "type": "string",
+      "enum": [
+        "mapped_bam_pipeline",
+        "unmapped_bam_pipeline",
+        "fastq_consume_pipeline",
+        "subsample_only"
+      ]
+    },
+    "workflow_variant": { "type": "string" },
+    "tool": {
+      "type": "string",
+      "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
+    },
+    "tool_version": { "type": "string" },
+    "source_input_id": { "type": "string" },
+    "source_input_path": { "type": "string" },
+    "source_input_type": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ_GZ"]
+    },
+    "source_category": { "type": "string" },
+    "staged_input_id": { "type": "string" },
+    "staged_input_path": { "type": "string" },
+    "input_type": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ_GZ"]
+    },
+    "mapping_state": { "type": "string" },
+    "input_basename": { "type": "string" },
+    "expected_sort_order": { "type": "string" },
+    "has_index": { "type": "boolean" },
+    "reference_context": { "type": ["string", "null"] },
+    "source_owner": { "type": "string" },
+    "sensitivity_level": { "type": "string" },
+    "staging_mode": {
+      "type": "string",
+      "enum": ["direct", "copy", "hardlink", "symlink", "scratch_copy"]
+    },
+    "staging_realization": { "type": "string" },
+    "scenario_materialization": { "type": "string" },
+    "reuse_materialized_inputs": { "type": "boolean" },
+    "staging_included_in_timing": { "type": "boolean" },
+    "storage_context": { "type": "string" },
+    "input_bytes": { "type": "number", "minimum": 0 },
+    "input_records": { "type": ["number", "null"], "minimum": 0 },
+    "replicate": { "type": "integer", "minimum": 0 },
+    "warmup": { "type": "boolean" },
+    "subsample_enabled": { "type": "boolean" },
+    "subsample_mode": {
+      "type": "string",
+      "enum": ["deterministic", "random"]
+    },
+    "subsample_fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "subsample_seed": { "type": "integer", "minimum": 0 },
+    "threads": { "type": "integer", "minimum": 1 },
+    "semantic_equivalence": {
+      "type": "string",
+      "enum": ["full", "partial", "unsupported", "roadmap_blocked"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "unsupported", "failed", "skipped"]
+    },
+    "support_status": {
+      "type": "string",
+      "enum": ["completed", "failed", "unsupported", "roadmap_blocked"]
+    },
+    "success": { "type": "boolean" },
+    "unsupported": { "type": "boolean" },
+    "failed": { "type": "boolean" },
+    "exit_code": { "type": "integer", "minimum": 0 },
+    "wall_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "user_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "system_cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "cpu_seconds": { "type": ["number", "null"], "minimum": 0 },
+    "max_rss_bytes": { "type": ["number", "null"], "minimum": 0 },
+    "output_path": { "type": "string" },
+    "output_bytes": { "type": ["number", "null"], "minimum": 0 },
+    "compression_ratio": { "type": ["number", "null"], "minimum": 0 },
+    "records_processed": { "type": ["number", "null"], "minimum": 0 },
+    "throughput_records_per_sec": { "type": ["number", "null"], "minimum": 0 },
+    "throughput_bytes_per_sec": { "type": ["number", "null"], "minimum": 0 },
+    "container_image": { "type": "string" },
+    "command_line": { "type": "string" },
+    "notes": { "type": "string" },
+    "started_at": { "type": ["string", "null"] },
+    "finished_at": { "type": ["string", "null"] }
+  }
+}

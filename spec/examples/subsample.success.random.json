@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "command": "subsample",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "selection": {
+      "mode": "random",
+      "fraction_requested": 0.1,
+      "seed": 12345,
+      "deterministic_identity": null
+    },
+    "execution": {
+      "dry_run": false,
+      "records_examined": 42180321,
+      "records_retained": 4219502,
+      "fraction_retained_observed": 0.10003,
+      "order_preserved": true,
+      "eligible_records_examined": 42180321
+    },
+    "output": {
+      "path": "input.subsampled.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "index": {
+      "present_before": true,
+      "valid_after": false,
+      "reindex_requested": true,
+      "reindexed": false,
+      "kind": "BAI"
+    },
+    "filters": {
+      "mapped_only": false,
+      "primary_only": false
+    },
+    "notes": [
+      "Subsample is intended for production workflows and reproducible benchmarking on large BAM and FASTQ inputs.",
+      "Retained record order follows input encounter order.",
+      "Random seeded subsampling was applied per eligible record with seed 12345.",
+      "Any pre-existing BAM index for the input must be treated as invalid for the subsampled output unless index regeneration is reported explicitly."
+    ]
+  },
+  "error": null
+}

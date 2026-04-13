@@ -1,0 +1,59 @@
+{
+  "ok": true,
+  "command": "inspect_duplication",
+  "path": "input.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ",
+    "identity_mode": "qname_seq_qual",
+    "scan_mode": "full",
+    "records_examined": 400000,
+    "summary": {
+      "unique_identities": 200000,
+      "duplicate_identities": 200000,
+      "duplicate_records": 400000,
+      "duplicate_instances_beyond_first": 200000,
+      "fraction_duplicate_records": 1.0,
+      "fraction_duplicate_instances_beyond_first": 0.5
+    },
+    "findings": [
+      {
+        "type": "whole_file_append_duplicate",
+        "confidence": "high",
+        "evidence_strength": "strong",
+        "record_range_1": {
+          "start": 1,
+          "end": 200000
+        },
+        "record_range_2": {
+          "start": 200001,
+          "end": 400000
+        },
+        "message": "The second half of the examined records appears to duplicate the first half under qname_seq_qual identity."
+      },
+      {
+        "type": "exact_record_duplicate",
+        "confidence": "high",
+        "evidence_strength": "moderate",
+        "message": "200000 duplicate record identity signatures were observed under qname_seq_qual.",
+        "examples": [
+          {
+            "read_name": "read000001",
+            "sequence_preview": "ACGTACGTACGT",
+            "quality_preview": "IIIIIIIIIIII",
+            "observed_count": 2
+          }
+        ]
+      }
+    ],
+    "assessment": {
+      "duplication_detected": true,
+      "likely_operator_error": true,
+      "recommended_follow_up": "deduplicate"
+    },
+    "notes": [
+      "inspect_duplication detects collection-duplication and operator-error signatures; it is not Picard/GATK-style PCR duplicate marking.",
+      "BAM duplicate flags are not used as primary evidence for this command."
+    ]
+  },
+  "error": null
+}

@@ -1,0 +1,63 @@
+{
+  "ok": false,
+  "command": "reheader",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "mutation": {
+      "operations": [
+        {
+          "operation": "set_sample",
+          "source": null,
+          "target_rg": "rg_missing",
+          "details": {
+            "SM": "sampleA"
+          },
+          "comment": null
+        }
+      ]
+    },
+    "planning": {
+      "mode_requested": "rewrite-minimized",
+      "in_place_feasible": false,
+      "recommended_mode": "rewrite-minimized",
+      "reason": "Replacement header is not required for this targeted mutation, but true BGZF header patching is not implemented safely in this slice."
+    },
+    "execution": {
+      "mode_used": null,
+      "modified": false,
+      "dry_run": false
+    },
+    "output": {
+      "path": "input.reheadered.bam",
+      "written": false,
+      "overwritten": null
+    },
+    "index": {
+      "present_before": true,
+      "valid_after": false,
+      "reindex_requested": false,
+      "reindexed": false,
+      "kind": "BAI"
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "header_included": false,
+      "input_digest": null,
+      "output_digest": null,
+      "match": null
+    },
+    "notes": [
+      "Header-only mutation was applied or planned.",
+      "This command modifies only BAM header metadata; it does not add, remove, or replace per-record RG:Z tags in alignment records."
+    ]
+  },
+  "error": {
+    "code": "missing_read_group",
+    "message": "The requested read group could not be updated because it does not exist in the BAM header.",
+    "detail": "No @RG record with ID=rg_missing was found.",
+    "hint": "Use --add-rg to add a new read group or specify an existing RG ID."
+  }
+}

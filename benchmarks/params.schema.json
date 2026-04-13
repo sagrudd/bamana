@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/params.schema.json",
+  "title": "Bamana Benchmark Run Parameters",
+  "description": "Run-centric Nextflow parameter contract for selecting datasets, scenarios, tools, and benchmark execution settings.",
+  "x-benchmark-schema-version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "input_manifest": {
+      "type": "string",
+      "description": "Path to the benchmark input manifest JSON."
+    },
+    "dataset_ids": {
+      "type": "array",
+      "description": "Dataset ids from the manifest to include in this run.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
+      },
+      "minItems": 1
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "mapped_bam_pipeline",
+          "unmapped_bam_pipeline",
+          "fastq_consume_pipeline",
+          "subsample_only"
+        ]
+      },
+      "minItems": 1
+    },
+    "replicates": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3
+    },
+    "warmup_runs": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1
+    },
+    "subsample_fraction": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.1
+    },
+    "subsample_seed": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 104729
+    },
+    "subsample_mode": {
+      "type": "string",
+      "enum": ["deterministic", "random"],
+      "default": "deterministic"
+    },
+    "threads": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 4
+    },
+    "output_dir": {
+      "type": "string",
+      "default": "benchmarks/results/latest"
+    },
+    "derived_input_dir": {
+      "type": "string",
+      "default": "benchmarks/results/latest/derived_inputs"
+    },
+    "enable_plots": {
+      "type": "boolean",
+      "default": true
+    },
+    "enable_reports": {
+      "type": "boolean",
+      "default": true
+    },
+    "container_engine": {
+      "type": "string",
+      "enum": ["docker", "singularity", "podman", "none"],
+      "default": "docker"
+    },
+    "staging_override": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["direct", "copy", "hardlink", "symlink", "scratch_copy"]
+        },
+        { "type": "null" }
+      ],
+      "default": null
+    },
+    "include_unsupported_matrix_rows": {
+      "type": "boolean",
+      "default": true
+    },
+    "fastcat_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "max_memory": {
+      "type": "string",
+      "default": "16 GB"
+    },
+    "reuse_materialized_inputs": {
+      "type": "boolean",
+      "default": true
+    },
+    "include_staging_in_timing": {
+      "type": "boolean",
+      "default": false
+    },
+    "storage_context": {
+      "type": "string",
+      "default": "unspecified"
+    },
+    "cleanup_policy": {
+      "type": "string",
+      "enum": [
+        "retain_derived_retain_failed",
+        "retain_all",
+        "delete_ephemeral_keep_failures",
+        "delete_ephemeral_delete_failures"
+      ],
+      "default": "retain_derived_retain_failed"
+    },
+    "container_image": {
+      "type": "string",
+      "default": "bamana-bench:latest"
+    },
+    "bamana_bin": {
+      "type": "string",
+      "default": "../target/release/bamana"
+    },
+    "mapped_bams": {
+      "description": "Legacy direct-path mode for ad hoc mapped BAM runs when no manifest is supplied.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "unmapped_bams": {
+      "description": "Legacy direct-path mode for ad hoc unmapped BAM runs when no manifest is supplied.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "fastq_gzs": {
+      "description": "Legacy direct-path mode for ad hoc FASTQ.GZ runs when no manifest is supplied.",
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    }
+  },
+  "anyOf": [
+    { "required": ["input_manifest", "dataset_ids", "tools", "scenarios"] },
+    { "required": ["mapped_bams"] },
+    { "required": ["unmapped_bams"] },
+    { "required": ["fastq_gzs"] }
+  ]
+}

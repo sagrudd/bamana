@@ -6,7 +6,13 @@ inspection, and transformation of BAM files and related bioinformatics formats.
 The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
+* `bamana subsample --input <file> --out <output>`
+* `bamana inspect_duplication --input <file>`
+* `bamana deduplicate --input <file> --out <cleaned_output>`
+* `bamana forensic_inspect --input <file>`
 * `bamana consume --input <path...> --out <result.bam>`
+* `bamana annotate_rg --bam <input.bam> --rg-id <id>`
+* `bamana reheader --bam <input.bam>`
 * `bamana verify --bam <bamfile>`
 * `bamana check_eof --bam <bamfile>`
 * `bamana header --bam <bamfile>`
@@ -23,10 +29,41 @@ The current repository contains the first concrete CLI slice for:
 
 All command output is JSON.
 
+## Native Performance Core
+
+Bamana is being re-anchored around a **Bamana-native performance core** for
+BGZF, BAM, FASTQ, sampling, ingest, and forensic hot paths.
+
+This repository rule is now explicit:
+
+* performance-critical BAM and FASTQ operations must be implemented using
+  Bamana-native parsing, I/O, scanning, serialization, and transformation
+  primitives
+* general-purpose crates such as `noodles` are demoted to compatibility,
+  testing, oracle, or transitional roles
+* the current explicit transitional exception is conservative CRAM ingestion
+  support
+
+See:
+
+* [ARCHITECTURE.md](/Users/stephen/Projects/bamana/ARCHITECTURE.md)
+* [docs/architecture.md](/Users/stephen/Projects/bamana/docs/architecture.md)
+* [docs/dependency-policy.md](/Users/stephen/Projects/bamana/docs/dependency-policy.md)
+* [docs/performance-core.md](/Users/stephen/Projects/bamana/docs/performance-core.md)
+* [ROADMAP.md](/Users/stephen/Projects/bamana/ROADMAP.md)
+* [docs/roadmap.md](/Users/stephen/Projects/bamana/docs/roadmap.md)
+* [benchmarks/status_for_tomorrow.md](/Users/stephen/Projects/bamana/benchmarks/status_for_tomorrow.md)
+
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
+* `subsample` selects a subset of BAM, FASTQ, or FASTQ.GZ records under an explicit random or deterministic policy, preserves encounter order of retained records, and reports seed, identity basis, filter policy, and retained counts explicitly for production and benchmarking workflows
+* `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
+* `deduplicate` removes suspicious duplicated contiguous collection blocks conservatively according to an explicit remediation policy, with first-slice focus on adjacent repeated blocks and whole-file append signatures rather than molecular duplicate biology
+* `forensic_inspect` inspects BAM provenance anomalies and coercion hallmarks such as suspicious header/program/read-group mismatches, read-name regime shifts, abrupt metadata transitions, and duplicate-block signatures that remain parseable but operationally suspicious
 * `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy
+* `annotate_rg` performs record-level `RG:Z:` aux-tag insertion, replacement, or normalization across BAM alignment records, with optional coordinated `@RG` header updates
+* `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only, including the binary reference dictionary and textual SAM-style header records
@@ -41,8 +78,18 @@ The current semantics are intentionally narrow:
 * `sort` rewrites a BAM into an explicitly requested order using a deterministic in-memory first-slice engine with optional canonical checksum verification
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
 
+The repository also now contains a minimal but real benchmark execution and
+analysis path under [benchmarks/](/Users/stephen/Projects/bamana/benchmarks).
+That layer is intended to make tomorrow's first benchmark runs interpretable,
+not to claim full comparator or command parity already exists.
+
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
+`inspect_duplication` does not perform Picard/GATK-style duplicate marking, does not treat BAM duplicate flags as primary evidence, and does not make biological claims about PCR or molecular duplication.
+`deduplicate` is the conservative remediation companion to `inspect_duplication`; it removes duplicated collection blocks according to an explicit keep policy and does not act as Picard/GATK-style duplicate marking, duplicate-flag cleanup, or broad biological duplicate collapse.
+`forensic_inspect` is an evidence-driven provenance inspection command; it is not a structural validator, not duplicate marking, and not a fraud detector.
 `consume` does not imply that heterogeneous upstream inputs were normalized unless the response explicitly reports a written BAM output, and it does not silently combine alignment-bearing and raw-read inputs across the alignment/unmapped boundary.
+`annotate_rg` is a record-touching transformation and therefore more expensive than `reheader`; it does not silently act as a header-only command.
+`reheader` does not imply any record-level `RG:Z` tagging change, full BAM validation, or true in-place editing unless the response explicitly reports a proven-safe in-place mode in a future slice.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
 `check_map` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
@@ -54,16 +101,46 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 `sort` does not imply full BAM validity beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
 `merge` does not imply full validity of all inputs beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
+`subsample` does not imply exact-count sampling, quality filtering, duplicate marking, provenance cleanup, or BAM index regeneration unless those behaviors are reported explicitly.
+
+## Benchmark Framework
+
+The repository now contains a containerized benchmarking framework under
+[benchmarks/](/Users/stephen/Projects/bamana/benchmarks). It provides:
+
+* a modular Nextflow DSL2 workflow
+* explicit comparator support for `samtools`, `sambamba`, `seqtk`, `rasusa`,
+  and `EPI2ME fastcat`
+* seeded replication and warmup-run support
+* per-run machine-readable benchmark rows
+* R-based aggregation and publication-ready plotting
+
+The canonical BAM baseline is `samtools`. `fastcat` is included explicitly for
+ONT-style ingestion and concatenation comparisons. The benchmark framework is
+designed for real large user-supplied BAM and FASTQ.GZ files and records
+unsupported or partial comparisons explicitly instead of silently dropping them.
 
 ## Example Invocations
 
 ```bash
 cargo run -- identify example.bam
+cargo run -- subsample --input input.bam --out input.subsampled.bam --fraction 0.1 --mode random --seed 12345
+cargo run -- subsample --input reads.fastq.gz --out reads.subsampled.fastq.gz --fraction 0.25 --mode deterministic --identity full_record
+cargo run -- inspect_duplication --input input.fastq.gz --full-scan
+cargo run -- inspect_duplication --input input.bam --identity qname_seq_qual_rg --min-block-size 100 --sample-records 250000
+cargo run -- deduplicate --input input.fastq.gz --out input.cleaned.fastq.gz --mode contiguous-block --dry-run
+cargo run -- deduplicate --input input.bam --out input.cleaned.bam --mode whole-file-append --keep first --verify-checksum
+cargo run -- forensic_inspect --input input.bam --full-scan --inspect-tags
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
 cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
 cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
 cargo run -- consume --input sample.cram --out sample.bam --mode alignment --reference ref.fa --reference-policy strict
 cargo run -- consume --input sample.cram extra.bam --out combined.bam --mode alignment --reference ref.fa
+cargo run -- annotate_rg --bam example.bam --rg-id rg001 --replace-existing --create-header-rg --out example.annotated.bam
+cargo run -- annotate_rg --bam example.bam --rg-id rg001 --only-missing --require-header-rg --verify-checksum --out example.annotated.bam
+cargo run -- reheader --bam example.bam --add-rg ID=rg1,SM=sample1,PL=ONT --out example.reheadered.bam
+cargo run -- reheader --bam example.bam --set-sample sample1 --target-rg rg1 --rewrite-minimized --out example.reheadered.bam
+cargo run -- reheader --bam example.bam --header new_header.sam --dry-run --in-place
 cargo run -- verify --bam example.bam
 cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
@@ -100,6 +177,49 @@ cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order quer
 names and lengths, and joins optional fields from textual `@SQ` records into the
 structured JSON view when present.
 
+`subsample` is Bamana's explicit selection command for BAM, FASTQ, and
+FASTQ.GZ inputs. The current slice supports seeded random Bernoulli-style
+per-record selection and deterministic hash-based selection using one of three
+identity bases: `qname`, `qname_seq`, or `full_record`. Encounter order of
+retained records is preserved. BAM headers are preserved, BAM-only filters
+(`mapped_only` and `primary_only`) exclude non-eligible records before
+sampling, and any pre-existing BAM index must be treated as invalid for the
+subsampled output unless a future slice reports successful regeneration
+explicitly. This command is intended both for production downsampling workflows
+and for reproducible benchmarking on large user-supplied inputs.
+
+`inspect_duplication` is the collection-duplication and operator-error
+inspection command. It is intentionally distinct from ordinary PCR duplicate
+marking semantics. The current slice supports BAM, FASTQ, and FASTQ.GZ inputs,
+uses explicit identity modes (`qname_seq`, `qname_seq_qual`, and BAM-only
+`qname_seq_qual_rg`), reports exact duplicate-identity statistics, and detects
+adjacent repeated blocks of record identities. Direct adjacent repeated blocks,
+especially whole-file append signatures, are treated as strong evidence of
+unsafe concatenation, repeated appends, or coerced monolithic collections.
+Non-contiguous repeated-block detection is reserved for a later slice.
+
+`deduplicate` is the conservative remediation command for the signatures that
+`inspect_duplication` reports. The current slice supports BAM, FASTQ, and
+FASTQ.GZ inputs, requires an explicit remediation mode, and is intentionally
+narrow: it removes adjacent repeated contiguous blocks and whole-file append
+signatures under explicit identity and keep-policy semantics. Dry-run planning
+is a first-class workflow, applied execution writes a new output only, and
+existing BAM indices must be treated as invalid after record removal unless a
+future slice reports successful regeneration explicitly. Global exact duplicate
+collapse, non-contiguous block removal, and any molecular duplicate semantics
+remain deferred.
+
+`forensic_inspect` is the provenance-inspection companion to `validate`,
+`inspect_duplication`, and `deduplicate`. The current slice is BAM-first and
+focuses on evidence-driven hallmarks such as duplicate or append-like blocks,
+header and body read-group mismatches, disconnected `@PG` histories, sparse or
+weak provenance metadata, read-name regime shifts, and selected aux-tag regime
+changes. Findings carry explicit category, severity, confidence, evidence
+strength, and evidence-scope fields so bounded body scans do not overclaim
+whole-file conclusions. This command does not assert fraud or intent; it
+surfaces suspicious provenance and collection-hygiene anomalies with suggested
+follow-up commands.
+
 `consume` is the front-door normalization command for Bamana. In alignment mode
 it preserves alignments from BAM, SAM, and Stage 2 CRAM inputs while
 normalizing them into BAM. In unmapped mode it converts FASTQ and FASTQ.GZ
@@ -112,6 +232,24 @@ behavior. The current Rust slice supports explicit indexed FASTA
 reference decode attempts under `allow-embedded` or `auto-conservative`.
 Cache-backed CRAM decoding, include/exclude glob filtering, consume-driven
 index creation, and checksum verification remain explicitly deferred.
+
+`annotate_rg` is the explicit per-record read-group tagging command. It scans
+every BAM alignment record, inspects existing `RG:Z:` aux tags, and either
+inserts, replaces, or conflict-checks them according to the selected mode. It
+can also require or create a matching `@RG` header line explicitly. The current
+slice uses a safe rewrite path and can optionally compare canonical
+record-order checksums with `RG` excluded so automation can confirm that only
+read-group annotation changed within the checksum domain.
+
+`reheader` is a header-only metadata mutation command. It can replace the full
+header from a SAM-style header file or apply targeted mutations such as adding,
+updating, or removing `@RG` records, updating `SM`/`PL` on a targeted read
+group, appending `@CO` lines, and adding or updating `@PG` lines. The current
+slice always plans true in-place editing conservatively and falls back to a
+rewrite path for actual execution. That rewrite path still preserves serialized
+alignment-record layout bytes directly instead of performing semantic
+record-level mutation, but it is not a true in-place patch. `reheader` does not
+add, remove, or rewrite per-record `RG:Z` tags.
 
 `check_map` prefers index-derived mapping summaries when a usable BAI is present.
 Without a usable index it falls back to scan-based evidence. Bounded scan mode is

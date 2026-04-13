@@ -77,6 +77,9 @@ The initial scope of Bamana includes development of a Rust-based command-line to
 * BAM splitting / explosion for distributed workflows
 * BAM merge
 * BAM sort
+* BAM header-only metadata mutation
+* BAM record-level read-group annotation
+* BAM, FASTQ, and FASTQ.GZ subsampling under explicit deterministic or random policy
 * upstream file and directory ingestion into normalized BAM
 * index-aware operations
 * header and reference inspection
@@ -88,6 +91,9 @@ Representative initial commands may include:
 * `bamana identify`
 * `bamana verify`
 * `bamana consume`
+* `bamana annotate_rg`
+* `bamana subsample`
+* `bamana reheader`
 * `bamana check_eof`
 * `bamana check_map`
 * `bamana check_sort`
@@ -151,6 +157,10 @@ Bamana shall be governed by the following design principles.
 
 Each command shall pursue the fastest realistic path to a correct result. Full-file scans should not be performed where a shallower but semantically sufficient method exists.
 
+Performance ownership is part of this principle. For BAM, BGZF, and FASTQ hot
+paths, Bamana should own the execution core directly rather than delegating its
+primary engine to general-purpose format crates.
+
 ### 9.2 Limited Surface, Strong Guarantees
 
 Bamana shall remain intentionally narrow in feature scope, preferring a smaller number of robust capabilities over broad but weakly specified functionality.
@@ -170,6 +180,13 @@ Given identical inputs, versions, and execution conditions, Bamana should produc
 ### 9.6 Compliance-Oriented Engineering
 
 The software shall be suitable for environments requiring traceability, reproducibility, and operational controls.
+
+### 9.7 Native-Core Ownership
+
+Performance-critical BAM and FASTQ operations shall be implemented using
+Bamana-native parsing, scanning, serialization, and transformation primitives.
+External crates may be used for tests, fixture tooling, compatibility checks,
+or staged migration support, but should not define the production hot path.
 
 ## 10. Governance
 
@@ -269,9 +286,18 @@ Benchmarking should include, where relevant:
 * CPU utilization
 * memory usage
 * I/O behavior
+* replicated runs with warmup policy
+* seeded random or deterministic subsampling where sampling is part of the
+  workload
 * indexed and unindexed cases
 * small, medium, and large BAM files
 * local and realistic production-style storage scenarios where possible
+
+The repository benchmark framework is expected to remain reproducible and
+containerized. `samtools` is the canonical BAM baseline. `fastcat` should be
+included explicitly for ONT-style ingestion and concatenation comparisons.
+Additional comparators such as `sambamba`, `seqtk`, and `rasusa` should be
+used where their scope matches the benchmarked operation.
 
 ## 13. Security and Operational Considerations
 

@@ -104,7 +104,7 @@ pub struct OtherHeaderRecord {
     pub raw_line: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BinaryReference {
     name: String,
     length: u32,
@@ -114,6 +114,7 @@ struct BinaryReference {
 struct ParsedSamHeader {
     hd: HdRecord,
     sq: HashMap<String, SamSqRecord>,
+    sq_order: Vec<String>,
     read_groups: Vec<ReadGroupRecord>,
     programs: Vec<ProgramRecord>,
     comments: Vec<String>,
@@ -229,7 +230,7 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
         });
     }
 
-    let sam_header = parse_sam_header_text(&raw_header_text);
+    let sam_header = parse_sam_header_text_impl(&raw_header_text);
     let references = merge_references(binary_references, &sam_header.sq);
 
     Ok(HeaderPayload {
@@ -292,11 +293,203 @@ pub fn serialize_bam_header_payload(header_text: &str, references: &[ReferenceRe
     payload
 }
 
-fn parse_sam_header_text(raw_header_text: &str) -> ParsedSamHeader {
+pub fn parse_sam_header_text_with_references(
+    raw_header_text: &str,
+    references: &[ReferenceRecord],
+) -> Result<BamHeaderView, String> {
+    let normalized = normalize_header_text(raw_header_text);
+    for line in normalized.lines() {
+        if !line.is_empty() && !line.starts_with('@') {
+            return Err(
+                "Replacement header file contained non-header SAM content; only header lines are allowed."
+                    .to_string(),
+            );
+        }
+    }
+    let parsed = parse_sam_header_text_impl(&normalized);
+    validate_reheader_reference_dictionary(&parsed, references)?;
+    validate_unique_read_groups(&parsed.read_groups)?;
+    validate_unique_programs(&parsed.programs)?;
+
+    let binary_references = references
+        .iter()
+        .map(|reference| BinaryReference {
+            name: reference.name.clone(),
+            length: reference.length,
+        })
+        .collect();
+    let merged_references = merge_references(binary_references, &parsed.sq);
+
+    Ok(BamHeaderView {
+        raw_header_text: normalized,
+        hd: parsed.hd,
+        references: merged_references,
+        read_groups: parsed.read_groups,
+        programs: parsed.programs,
+        comments: parsed.comments,
+        other_header_records: parsed.other_header_records,
+    })
+}
+
+pub fn serialize_sam_header_text(header: &BamHeaderView) -> String {
+    let mut lines = Vec::new();
+
+    if header.hd.version.is_some()
+        || header.hd.sort_order.is_some()
+        || header.hd.sub_sort_order.is_some()
+        || header.hd.group_order.is_some()
+    {
+        let mut line = String::from("@HD");
+        if let Some(version) = &header.hd.version {
+            line.push_str("\tVN:");
+            line.push_str(version);
+        }
+        if let Some(sort_order) = &header.hd.sort_order {
+            line.push_str("\tSO:");
+            line.push_str(sort_order);
+        }
+        if let Some(sub_sort_order) = &header.hd.sub_sort_order {
+            line.push_str("\tSS:");
+            line.push_str(sub_sort_order);
+        }
+        if let Some(group_order) = &header.hd.group_order {
+            line.push_str("\tGO:");
+            line.push_str(group_order);
+        }
+        lines.push(line);
+    }
+
+    for reference in &header.references {
+        let mut line = format!("@SQ\tSN:{}\tLN:{}", reference.name, reference.length);
+        if let Some(m5) = &reference.header_fields.m5 {
+            line.push_str("\tM5:");
+            line.push_str(m5);
+        }
+        if let Some(ur) = &reference.header_fields.ur {
+            line.push_str("\tUR:");
+            line.push_str(ur);
+        }
+        if let Some(assembly) = &reference.header_fields.assembly {
+            line.push_str("\tAS:");
+            line.push_str(assembly);
+        }
+        if let Some(species) = &reference.header_fields.species {
+            line.push_str("\tSP:");
+            line.push_str(species);
+        }
+        if let Some(topology) = &reference.header_fields.topology {
+            line.push_str("\tTP:");
+            line.push_str(topology);
+        }
+        lines.push(line);
+    }
+
+    for rg in &header.read_groups {
+        let mut line = String::from("@RG");
+        if let Some(id) = &rg.id {
+            line.push_str("\tID:");
+            line.push_str(id);
+        }
+        if let Some(sample) = &rg.sample {
+            line.push_str("\tSM:");
+            line.push_str(sample);
+        }
+        if let Some(library) = &rg.library {
+            line.push_str("\tLB:");
+            line.push_str(library);
+        }
+        if let Some(platform) = &rg.platform {
+            line.push_str("\tPL:");
+            line.push_str(platform);
+        }
+        if let Some(platform_unit) = &rg.platform_unit {
+            line.push_str("\tPU:");
+            line.push_str(platform_unit);
+        }
+        if let Some(center) = &rg.center {
+            line.push_str("\tCN:");
+            line.push_str(center);
+        }
+        if let Some(description) = &rg.description {
+            line.push_str("\tDS:");
+            line.push_str(description);
+        }
+        if let Some(date) = &rg.date {
+            line.push_str("\tDT:");
+            line.push_str(date);
+        }
+        for (tag, value) in &rg.other_fields {
+            line.push('\t');
+            line.push_str(tag);
+            line.push(':');
+            line.push_str(value);
+        }
+        lines.push(line);
+    }
+
+    for pg in &header.programs {
+        let mut line = String::from("@PG");
+        if let Some(id) = &pg.id {
+            line.push_str("\tID:");
+            line.push_str(id);
+        }
+        if let Some(name) = &pg.name {
+            line.push_str("\tPN:");
+            line.push_str(name);
+        }
+        if let Some(version) = &pg.version {
+            line.push_str("\tVN:");
+            line.push_str(version);
+        }
+        if let Some(command_line) = &pg.command_line {
+            line.push_str("\tCL:");
+            line.push_str(command_line);
+        }
+        if let Some(previous_program_id) = &pg.previous_program_id {
+            line.push_str("\tPP:");
+            line.push_str(previous_program_id);
+        }
+        if let Some(description) = &pg.description {
+            line.push_str("\tDS:");
+            line.push_str(description);
+        }
+        for (tag, value) in &pg.other_fields {
+            line.push('\t');
+            line.push_str(tag);
+            line.push(':');
+            line.push_str(value);
+        }
+        lines.push(line);
+    }
+
+    for comment in &header.comments {
+        lines.push(format!("@CO\t{comment}"));
+    }
+
+    for record in &header.other_header_records {
+        if record.raw_line.starts_with('@') {
+            lines.push(record.raw_line.clone());
+        } else {
+            lines.push(format!("@{}\t{}", record.record_type, record.raw_line));
+        }
+    }
+
+    if lines.is_empty() {
+        String::new()
+    } else {
+        format!("{}\n", lines.join("\n"))
+    }
+}
+
+fn parse_sam_header_text_impl(raw_header_text: &str) -> ParsedSamHeader {
     let mut parsed = ParsedSamHeader::default();
 
     for line in raw_header_text.lines() {
         if line.is_empty() {
+            continue;
+        }
+
+        if !line.starts_with('@') {
             continue;
         }
 
@@ -333,6 +526,7 @@ fn parse_sam_header_text(raw_header_text: &str) -> ParsedSamHeader {
                     }
                 }
                 if let Some(name) = name {
+                    parsed.sq_order.push(name.clone());
                     parsed.sq.insert(name, sq);
                 }
             }
@@ -386,6 +580,94 @@ fn parse_sam_header_text(raw_header_text: &str) -> ParsedSamHeader {
     }
 
     parsed
+}
+
+fn normalize_header_text(raw_header_text: &str) -> String {
+    if raw_header_text.is_empty() {
+        String::new()
+    } else if raw_header_text.ends_with('\n') {
+        raw_header_text.to_string()
+    } else {
+        format!("{raw_header_text}\n")
+    }
+}
+
+fn validate_reheader_reference_dictionary(
+    parsed: &ParsedSamHeader,
+    references: &[ReferenceRecord],
+) -> Result<(), String> {
+    if parsed.sq_order.len() != references.len() {
+        return Err(format!(
+            "Replacement header has {} @SQ lines but the BAM reference dictionary has {} entries.",
+            parsed.sq_order.len(),
+            references.len()
+        ));
+    }
+
+    if parsed.sq.len() != parsed.sq_order.len() {
+        return Err("Replacement header contains duplicate @SQ names.".to_string());
+    }
+
+    for (index, (observed_name, expected_reference)) in
+        parsed.sq_order.iter().zip(references.iter()).enumerate()
+    {
+        if observed_name != &expected_reference.name {
+            return Err(format!(
+                "Replacement header @SQ order mismatch at index {index}: expected {} but observed {}.",
+                expected_reference.name, observed_name
+            ));
+        }
+
+        let Some(sq) = parsed.sq.get(observed_name) else {
+            return Err(format!(
+                "Replacement header @SQ record for {} could not be resolved.",
+                observed_name
+            ));
+        };
+        match sq.length {
+            Some(length) if length == expected_reference.length => {}
+            Some(length) => {
+                return Err(format!(
+                    "Replacement header @SQ LN mismatch for {}: expected {} but observed {}.",
+                    observed_name, expected_reference.length, length
+                ));
+            }
+            None => {
+                return Err(format!(
+                    "Replacement header @SQ record for {} is missing LN.",
+                    observed_name
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_unique_read_groups(read_groups: &[ReadGroupRecord]) -> Result<(), String> {
+    let mut seen = HashMap::new();
+    for rg in read_groups {
+        let Some(id) = &rg.id else {
+            return Err("Header contains an @RG record without ID.".to_string());
+        };
+        if seen.insert(id.clone(), ()).is_some() {
+            return Err(format!("Header contains duplicate @RG ID {id}."));
+        }
+    }
+    Ok(())
+}
+
+fn validate_unique_programs(programs: &[ProgramRecord]) -> Result<(), String> {
+    let mut seen = HashMap::new();
+    for pg in programs {
+        let Some(id) = &pg.id else {
+            continue;
+        };
+        if seen.insert(id.clone(), ()).is_some() {
+            return Err(format!("Header contains duplicate @PG ID {id}."));
+        }
+    }
+    Ok(())
 }
 
 fn rewrite_hd_line(line: &str, sort_order: &str, sub_sort_order: Option<&str>) -> String {

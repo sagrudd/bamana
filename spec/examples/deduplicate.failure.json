@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "command": "deduplicate",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "contiguous-block",
+    "identity_mode": "qname_seq_qual",
+    "keep_policy": "first"
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "Mapping state could not be determined reliably from the available evidence.",
+    "detail": "Input parsing failed before a stable removal plan could be constructed.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

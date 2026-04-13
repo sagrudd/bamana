@@ -1,0 +1,14 @@
+{
+  "ok": false,
+  "command": "subsample",
+  "path": "input.fastq.gz",
+  "data": {
+    "format": "FASTQ.GZ"
+  },
+  "error": {
+    "code": "invalid_fraction",
+    "message": "The requested subsampling fraction is invalid.",
+    "detail": "Fraction must be greater than 0 and less than or equal to 1.",
+    "hint": "Provide --fraction with a value greater than 0 and less than or equal to 1, such as 0.1 or 0.25."
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "samtools.mapped_bam_pipeline.hg38_wgs_mapped.rep1",
+  "timestamp_utc": "2026-04-12T11:42:55Z",
+  "benchmark_framework_version": "tool-wrapper-contract-example",
+  "scenario": "mapped_bam_pipeline",
+  "workflow_variant": "samtools_view_sort_index",
+  "tool": "samtools",
+  "tool_version": "samtools 1.20",
+  "input": {
+    "source_input_id": "hg38_wgs_mapped",
+    "source_input_path": "/data/benchmarks/hg38_wgs.mapped.bam",
+    "source_input_type": "BAM",
+    "source_category": "mapped_bam",
+    "staged_input_id": "hg38_wgs_mapped",
+    "staged_input_path": "/scratch/bench/hg38_wgs_mapped.staged.bam",
+    "input_type": "BAM",
+    "mapped_state": "mapped",
+    "input_basename": "hg38_wgs.mapped.bam",
+    "input_bytes": 128000000000,
+    "records_processed": 860000000,
+    "expected_sort_order": "coordinate",
+    "has_index": true,
+    "reference_context": "{\"build_label\":\"GRCh38 primary assembly\",\"fasta_path\":\"/references/GRCh38/GRCh38.primary.fa\",\"required_for_interpretation\":true}"
+  },
+  "staging": {
+    "staging_mode": "hardlink",
+    "staging_realization": "hardlink_or_copy_fallback",
+    "scenario_materialization": "source_or_subsampled_bam",
+    "reuse_materialized_inputs": true,
+    "include_in_timing": false,
+    "storage_context": "local_ssd"
+  },
+  "subsampling": {
+    "enabled": true,
+    "fraction": 0.1,
+    "seed": 104729,
+    "mode": "deterministic",
+    "derived_input_id": "hg38_wgs_mapped.subsample.f0_1.seed104729.deterministic.bam"
+  },
+  "resources": {
+    "threads": 8,
+    "container_image": "bamana-bench:latest",
+    "memory_target": null,
+    "hardware_host_label": null
+  },
+  "execution": {
+    "replicate": 1,
+    "warmup_run": false,
+    "command_line": "samtools view -b -s 104729.1 /scratch/bench/hg38_wgs_mapped.staged.bam | samtools sort -@ 8 -o samtools.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam - && samtools index samtools.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam",
+    "started_at": "2026-04-12T11:42:31Z",
+    "finished_at": "2026-04-12T11:42:55Z",
+    "wall_seconds": 24.18,
+    "user_cpu_seconds": 91.14,
+    "system_cpu_seconds": 12.49,
+    "cpu_seconds": 103.63,
+    "max_rss_bytes": 4188334080,
+    "exit_code": 1
+  },
+  "result": {
+    "status": "failed",
+    "success": false,
+    "unsupported": false,
+    "failed": true,
+    "failure_category": "missing_reference_context",
+    "semantic_equivalence": "full",
+    "support_status": "failed",
+    "output_path": "samtools.mapped_bam_pipeline.hg38_wgs_mapped.rep1.sorted.bam",
+    "output_bytes": null,
+    "compression_ratio": null,
+    "records_processed": 860000000,
+    "throughput_records_per_sec": null,
+    "throughput_bytes_per_sec": null,
+    "generated_files": []
+  },
+  "notes": [
+    "Illustrative failure example for a supported workflow variant that exited non-zero before producing a valid output."
+  ]
+}

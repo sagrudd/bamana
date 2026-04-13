@@ -5,10 +5,14 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
 use crate::bam::merge::MergeMode;
 use crate::bam::sort::{QuerynameSubOrder, SortOrder};
+use crate::forensics::deduplicate::{DeduplicateKeepPolicy, DeduplicateMode};
+use crate::forensics::duplication::DuplicationIdentityMode;
+use crate::forensics::forensic_inspect::ForensicScope;
 use crate::ingest::{
     consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
     cram::ConsumeReferencePolicy,
 };
+use crate::sampling::{DeterministicIdentity, SubsampleMode};
 
 #[derive(Debug, Clone, Args)]
 pub struct GlobalOptions {
@@ -36,12 +40,27 @@ pub struct Cli {
 pub enum Commands {
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
+    /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
+    Subsample(SubsampleArgs),
+    /// Inspect suspicious collection-duplication and operator-error signatures.
+    #[command(name = "inspect_duplication")]
+    InspectDuplication(InspectDuplicationArgs),
+    /// Remove suspicious collection-duplication blocks conservatively.
+    Deduplicate(DeduplicateArgs),
+    /// Inspect provenance anomalies and concatenation/coercion hallmarks.
+    #[command(name = "forensic_inspect")]
+    ForensicInspect(ForensicInspectArgs),
+    /// Insert, replace, or normalize per-record RG:Z tags across BAM alignment records.
+    #[command(name = "annotate_rg")]
+    AnnotateRg(AnnotateRgArgs),
     /// Consume files and directories into a normalized BAM with explicit ingest semantics.
     Consume(ConsumeArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
     Checksum(ChecksumArgs),
     /// Merge multiple BAM inputs into a single BAM output.
     Merge(MergeArgs),
+    /// Mutate BAM header metadata only without touching alignment-record RG tags.
+    Reheader(ReheaderArgs),
     /// Sort a BAM file into a requested output ordering.
     Sort(SortArgs),
     /// Perform shallow BAM verification only.
@@ -75,6 +94,237 @@ pub enum Commands {
 pub struct IdentifyArgs {
     /// Path to inspect.
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct SubsampleArgs {
+    /// Input BAM, FASTQ, or FASTQ.GZ file to subsample.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Output path for the subsampled collection.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Requested approximate retained fraction.
+    #[arg(long = "fraction")]
+    pub fraction: f64,
+    /// Subsampling mode.
+    #[arg(long = "mode", value_enum)]
+    pub mode: SubsampleMode,
+    /// Seed for reproducible random subsampling; generated and reported if omitted.
+    #[arg(long = "seed")]
+    pub seed: Option<u64>,
+    /// Deterministic identity basis for hash-based selection.
+    #[arg(
+        long = "identity",
+        value_enum,
+        default_value_t = DeterministicIdentity::FullRecord
+    )]
+    pub identity: DeterministicIdentity,
+    /// Plan and count only; do not write output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Attempt to regenerate an index for BAM output when supported.
+    #[arg(long = "create-index")]
+    pub create_index: bool,
+    /// For BAM input, consider mapped records only and drop unmapped records from output.
+    #[arg(long = "mapped-only")]
+    pub mapped_only: bool,
+    /// For BAM input, consider primary alignments only and drop secondary/supplementary records from output.
+    #[arg(long = "primary-only")]
+    pub primary_only: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output path.
+    #[arg(long = "force")]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct InspectDuplicationArgs {
+    /// Input BAM, FASTQ, or FASTQ.GZ file to inspect.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Record identity policy used for duplicate detection.
+    #[arg(
+        long = "identity",
+        value_enum,
+        default_value_t = DuplicationIdentityMode::QnameSeqQual
+    )]
+    pub identity: DuplicationIdentityMode,
+    /// Minimum adjacent repeated block size required for a block finding.
+    #[arg(long = "min-block-size", default_value_t = 50)]
+    pub min_block_size: usize,
+    /// Maximum records to inspect in bounded-scan mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan to EOF instead of stopping at the bounded record limit.
+    #[arg(long = "full-scan")]
+    pub full_scan: bool,
+    /// Bound the number of reported findings.
+    #[arg(long = "max-findings", default_value_t = 25)]
+    pub max_findings: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct DeduplicateArgs {
+    /// Input BAM, FASTQ, or FASTQ.GZ file to remediate.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Output path for the remediated collection.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Conservative remediation mode.
+    #[arg(long = "mode", value_enum)]
+    pub mode: DeduplicateMode,
+    /// Record identity policy used for duplication planning.
+    #[arg(
+        long = "identity",
+        value_enum,
+        default_value_t = DuplicationIdentityMode::QnameSeqQual
+    )]
+    pub identity: DuplicationIdentityMode,
+    /// Which duplicated copy to retain when a removable block is detected.
+    #[arg(long = "keep", value_enum, default_value_t = DeduplicateKeepPolicy::First)]
+    pub keep: DeduplicateKeepPolicy,
+    /// Plan only; do not write an output file.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Minimum adjacent repeated block size required for remediation.
+    #[arg(long = "min-block-size", default_value_t = 50)]
+    pub min_block_size: usize,
+    /// Compute descriptive checksum provenance when supported.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Emit a machine-readable removed-range report to this path.
+    #[arg(long = "emit-removed-report")]
+    pub emit_removed_report: Option<PathBuf>,
+    /// Maximum records to inspect in bounded dry-run mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan to EOF during dry-run planning.
+    #[arg(long = "full-scan")]
+    pub full_scan: bool,
+    /// Attempt to regenerate a BAM index when output is written.
+    #[arg(long = "reindex")]
+    pub reindex: bool,
+    /// Overwrite existing output or report paths.
+    #[arg(long = "force")]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ForensicInspectArgs {
+    /// Input BAM file to inspect for provenance anomalies.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Maximum records to inspect in bounded body-scan mode.
+    #[arg(long = "sample-records", default_value_t = 100_000)]
+    pub sample_records: usize,
+    /// Scan the BAM body to EOF instead of stopping at the bounded record limit.
+    #[arg(long = "full-scan")]
+    pub full_scan: bool,
+    /// Inspect BAM header structure and metadata.
+    #[arg(long = "inspect-header")]
+    pub inspect_header: bool,
+    /// Inspect read-group declarations and record-level RG usage.
+    #[arg(long = "inspect-rg")]
+    pub inspect_rg: bool,
+    /// Inspect @PG program-chain structure.
+    #[arg(long = "inspect-pg")]
+    pub inspect_pg: bool,
+    /// Inspect read-name regime shifts and naming-style changes.
+    #[arg(long = "inspect-readnames")]
+    pub inspect_readnames: bool,
+    /// Inspect selected auxiliary-tag usage regimes.
+    #[arg(long = "inspect-tags")]
+    pub inspect_tags: bool,
+    /// Inspect duplicate-block and append hallmarks in record order.
+    #[arg(long = "inspect-duplication")]
+    pub inspect_duplication: bool,
+    /// Bound the number of reported findings.
+    #[arg(long = "max-findings", default_value_t = 25)]
+    pub max_findings: usize,
+}
+
+impl ForensicInspectArgs {
+    pub fn resolved_scopes(&self) -> ForensicScope {
+        let specific_requested = self.inspect_header
+            || self.inspect_rg
+            || self.inspect_pg
+            || self.inspect_readnames
+            || self.inspect_tags
+            || self.inspect_duplication;
+
+        if specific_requested {
+            ForensicScope {
+                header: self.inspect_header,
+                read_groups: self.inspect_rg,
+                program_chain: self.inspect_pg,
+                read_names: self.inspect_readnames,
+                tags: self.inspect_tags,
+                duplication_hallmarks: self.inspect_duplication,
+            }
+        } else {
+            ForensicScope {
+                header: true,
+                read_groups: true,
+                program_chain: true,
+                read_names: true,
+                tags: false,
+                duplication_hallmarks: true,
+            }
+        }
+    }
+}
+
+#[derive(Debug, Args)]
+pub struct AnnotateRgArgs {
+    /// Input BAM file to annotate.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Requested read-group ID for per-record RG:Z tagging.
+    #[arg(long = "rg-id")]
+    pub rg_id: String,
+    /// Output BAM path.
+    #[arg(long = "out")]
+    pub out: Option<PathBuf>,
+    /// Insert RG tags only into records that currently lack them.
+    #[arg(long = "only-missing")]
+    pub only_missing: bool,
+    /// Replace every existing RG tag with the requested ID.
+    #[arg(long = "replace-existing")]
+    pub replace_existing: bool,
+    /// Fail if any record already carries an RG tag that differs from --rg-id.
+    #[arg(long = "fail-on-conflict")]
+    pub fail_on_conflict: bool,
+    /// Require the BAM header to already contain a matching @RG line.
+    #[arg(long = "require-header-rg")]
+    pub require_header_rg: bool,
+    /// Create a minimal matching @RG line when the BAM header lacks one.
+    #[arg(long = "create-header-rg")]
+    pub create_header_rg: bool,
+    /// Add a new @RG line using comma-separated KEY=VALUE fields.
+    #[arg(long = "add-header-rg")]
+    pub add_header_rg: Option<String>,
+    /// Update the existing @RG line using comma-separated KEY=VALUE fields.
+    #[arg(long = "set-header-rg")]
+    pub set_header_rg: Option<String>,
+    /// Attempt to regenerate an index after annotation.
+    #[arg(long = "reindex")]
+    pub reindex: bool,
+    /// Verify checksum preservation with RG excluded from the checksum domain.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
+    /// Requested worker thread count for future parallel implementations.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Overwrite an existing output file.
+    #[arg(long = "force")]
+    pub force: bool,
+    /// Plan the mutation without writing output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Args)]
@@ -193,6 +443,72 @@ pub struct MergeArgs {
     /// Overwrite an existing output file.
     #[arg(long)]
     pub force: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ReheaderPlatform {
+    Ont,
+    Illumina,
+    Pacbio,
+    Unknown,
+}
+
+#[derive(Debug, Args)]
+pub struct ReheaderArgs {
+    /// Input BAM file to mutate.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Replace the full BAM header from a SAM-style header file.
+    #[arg(long = "header")]
+    pub header: Option<PathBuf>,
+    /// Add a new @RG record using comma-separated KEY=VALUE fields. ID is required.
+    #[arg(long = "add-rg")]
+    pub add_rg: Vec<String>,
+    /// Update an existing @RG record using comma-separated KEY=VALUE fields.
+    #[arg(long = "set-rg")]
+    pub set_rg: Vec<String>,
+    /// Remove an @RG record by ID.
+    #[arg(long = "remove-rg")]
+    pub remove_rg: Vec<String>,
+    /// Set SM on the targeted @RG record.
+    #[arg(long = "set-sample")]
+    pub set_sample: Option<String>,
+    /// Set PL on the targeted @RG record.
+    #[arg(long = "set-platform", value_enum)]
+    pub set_platform: Option<ReheaderPlatform>,
+    /// Target @RG ID for focused mutations such as --set-sample and --set-platform.
+    #[arg(long = "target-rg")]
+    pub target_rg: Option<String>,
+    /// Add or update a @PG record using comma-separated KEY=VALUE fields. ID is required.
+    #[arg(long = "set-pg")]
+    pub set_pg: Vec<String>,
+    /// Append an @CO line to the BAM header.
+    #[arg(long = "add-comment")]
+    pub add_comment: Vec<String>,
+    /// Request true in-place header modification only if provably safe.
+    #[arg(long = "in-place")]
+    pub in_place: bool,
+    /// Permit a rewrite-minimized fallback when true in-place modification is not feasible.
+    #[arg(long = "rewrite-minimized")]
+    pub rewrite_minimized: bool,
+    /// Request an explicit safe rewrite mode.
+    #[arg(long = "safe-rewrite")]
+    pub safe_rewrite: bool,
+    /// Plan the requested header mutation without writing output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Overwrite an existing output BAM.
+    #[arg(long = "force")]
+    pub force: bool,
+    /// Output BAM path for rewrite modes.
+    #[arg(long = "out")]
+    pub out: Option<PathBuf>,
+    /// Attempt to regenerate an index after reheader.
+    #[arg(long = "reindex")]
+    pub reindex: bool,
+    /// Verify that alignment-record content was preserved while excluding header bytes.
+    #[arg(long = "verify-checksum")]
+    pub verify_checksum: bool,
 }
 
 #[derive(Debug, Args)]

@@ -7,10 +7,10 @@ const BAM_FPROPER_PAIR: u16 = 0x2;
 const BAM_FREVERSE: u16 = 0x10;
 const BAM_FREAD1: u16 = 0x40;
 const BAM_FREAD2: u16 = 0x80;
-const BAM_FSECONDARY: u16 = 0x100;
+pub const BAM_FSECONDARY: u16 = 0x100;
 const BAM_FQCFAIL: u16 = 0x200;
 const BAM_FDUP: u16 = 0x400;
-const BAM_FSUPPLEMENTARY: u16 = 0x800;
+pub const BAM_FSUPPLEMENTARY: u16 = 0x800;
 
 #[derive(Clone, Debug)]
 pub struct LightAlignmentRecord {
@@ -94,6 +94,30 @@ pub fn encode_bam_sequence(sequence: &str) -> Result<Vec<u8>, String> {
     Ok(encoded)
 }
 
+pub fn decode_bam_sequence(sequence_bytes: &[u8], l_seq: usize) -> Result<String, String> {
+    let mut sequence = String::with_capacity(l_seq);
+
+    for (index, byte) in sequence_bytes.iter().enumerate() {
+        let high = decode_base(byte >> 4)?;
+        sequence.push(high);
+
+        let position = index * 2 + 1;
+        if position < l_seq {
+            let low = decode_base(byte & 0x0f)?;
+            sequence.push(low);
+        }
+    }
+
+    if sequence.len() != l_seq {
+        return Err(format!(
+            "Decoded BAM sequence length {} did not match declared length {l_seq}.",
+            sequence.len()
+        ));
+    }
+
+    Ok(sequence)
+}
+
 pub fn encode_bam_qualities(qualities: &str) -> Result<Vec<u8>, String> {
     qualities
         .bytes()
@@ -104,6 +128,26 @@ pub fn encode_bam_qualities(qualities: &str) -> Result<Vec<u8>, String> {
                 ))
             } else {
                 Ok(byte - 33)
+            }
+        })
+        .collect()
+}
+
+pub fn decode_bam_qualities(qualities: &[u8]) -> Result<String, String> {
+    if qualities.iter().all(|score| *score == 0xff) {
+        return Ok("*".to_string());
+    }
+
+    qualities
+        .iter()
+        .map(|score| {
+            if *score == 0xff {
+                Err("Encountered a mixed BAM quality vector containing both missing and present scores.".to_string())
+            } else {
+                let value = score.checked_add(33).ok_or_else(|| {
+                    "BAM quality score overflowed printable Phred+33 conversion.".to_string()
+                })?;
+                Ok(char::from(value))
             }
         })
         .collect()
@@ -275,5 +319,61 @@ fn encode_base(base: u8) -> Result<u8, String> {
         other => Err(format!(
             "Sequence contains unsupported base byte 0x{other:02x}."
         )),
+    }
+}
+
+fn decode_base(value: u8) -> Result<char, String> {
+    match value {
+        0 => Ok('='),
+        1 => Ok('A'),
+        2 => Ok('C'),
+        3 => Ok('M'),
+        4 => Ok('G'),
+        5 => Ok('R'),
+        6 => Ok('S'),
+        7 => Ok('V'),
+        8 => Ok('T'),
+        9 => Ok('W'),
+        10 => Ok('Y'),
+        11 => Ok('H'),
+        12 => Ok('K'),
+        13 => Ok('D'),
+        14 => Ok('B'),
+        15 => Ok('N'),
+        other => Err(format!(
+            "Encountered unsupported BAM sequence nybble 0x{other:02x}."
+        )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        decode_bam_qualities, decode_bam_sequence, encode_bam_qualities, encode_bam_sequence,
+        missing_quality_scores,
+    };
+
+    #[test]
+    fn bam_sequence_round_trip_preserves_bases() {
+        let sequence = "ACGTN";
+        let encoded = encode_bam_sequence(sequence).expect("sequence should encode");
+        let decoded =
+            decode_bam_sequence(&encoded, sequence.len()).expect("sequence should decode");
+        assert_eq!(decoded, sequence);
+    }
+
+    #[test]
+    fn bam_quality_round_trip_preserves_ascii_scores() {
+        let qualities = "II!!";
+        let encoded = encode_bam_qualities(qualities).expect("qualities should encode");
+        let decoded = decode_bam_qualities(&encoded).expect("qualities should decode");
+        assert_eq!(decoded, qualities);
+    }
+
+    #[test]
+    fn missing_qualities_decode_to_star() {
+        let decoded =
+            decode_bam_qualities(&missing_quality_scores(4)).expect("qualities should decode");
+        assert_eq!(decoded, "*");
     }
 }

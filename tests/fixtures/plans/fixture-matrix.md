@@ -48,7 +48,22 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.forensic.bam.readname_shift` | forensic | mixed run or concatenation hallmark | `forensic_inspect` | read-name regime-shift finding |
 | `tiny.forensic.bam.concatenated_signature` | forensic | strongest suspicious concatenation case | `forensic_inspect`, `inspect_duplication` | high-confidence suspicious assessment plus duplicate hallmark overlap |
 | `tiny.invalid.fastq.truncated` | invalid | FASTQ parse-failure path | `inspect_duplication`, `deduplicate` | parse uncertainty / failure |
-| `tiny.invalid.bam.truncated_record.duplication` | invalid | BAM parse-failure path | `inspect_duplication`, `deduplicate`, `forensic_inspect` | parse uncertainty / failure |
+| `tiny.invalid.bam.truncated_record` | invalid | BAM parse-failure path | `inspect_duplication`, `deduplicate`, `forensic_inspect` | parse uncertainty / failure |
+
+## Trio Golden Output Stems
+
+| Fixture ID | Reserved Golden Output Stems |
+| --- | --- |
+| `tiny.clean.fastq` | `inspect_duplication.tiny.clean.fastq.success.json`, `deduplicate.tiny.clean.fastq.noop.success.json` |
+| `tiny.clean.bam` | `inspect_duplication.tiny.clean.bam.success.json`, `deduplicate.tiny.clean.bam.noop.success.json`, `forensic_inspect.tiny.clean.bam.success.json` |
+| `tiny.duplicate.fastq.whole_append` | `inspect_duplication.tiny.duplicate.fastq.whole_append.success.json`, `deduplicate.tiny.duplicate.fastq.whole_append.dry_run.success.json`, `deduplicate.tiny.duplicate.fastq.whole_append.applied.success.json` |
+| `tiny.duplicate.fastq.local_block` | `inspect_duplication.tiny.duplicate.fastq.local_block.success.json`, `deduplicate.tiny.duplicate.fastq.local_block.dry_run.success.json`, `deduplicate.tiny.duplicate.fastq.local_block.applied.success.json` |
+| `tiny.duplicate.bam.local_block` | `inspect_duplication.tiny.duplicate.bam.local_block.success.json`, `deduplicate.tiny.duplicate.bam.local_block.dry_run.success.json`, `deduplicate.tiny.duplicate.bam.local_block.applied.success.json` |
+| `tiny.forensic.bam.rg_pg_inconsistent` | `forensic_inspect.tiny.forensic.bam.rg_pg_inconsistent.success.json` |
+| `tiny.forensic.bam.readname_shift` | `forensic_inspect.tiny.forensic.bam.readname_shift.success.json` |
+| `tiny.forensic.bam.concatenated_signature` | `forensic_inspect.tiny.forensic.bam.concatenated_signature.success.json`, `inspect_duplication.tiny.forensic.bam.concatenated_signature.success.json` |
+| `tiny.invalid.fastq.truncated` | `inspect_duplication.tiny.invalid.fastq.truncated.failure.json`, `deduplicate.tiny.invalid.fastq.truncated.failure.json` |
+| `tiny.invalid.bam.truncated_record` | `inspect_duplication.tiny.invalid.bam.truncated_record.failure.json`, `deduplicate.tiny.invalid.bam.truncated_record.failure.json`, `forensic_inspect.tiny.invalid.bam.truncated_record.failure.json` |
 
 ## Guidance
 

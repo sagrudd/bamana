@@ -1,0 +1,22 @@
+name: bamana-bench
+channels:
+  - conda-forge
+  - bioconda
+  - nanoporetech
+dependencies:
+  - samtools
+  - sambamba
+  - seqtk
+  - rasusa
+  - fastcat
+  - pigz
+  - jq
+  - r-base
+  - r-tidyverse
+  - r-jsonlite
+  - r-patchwork
+  - r-cowplot
+  - r-gt
+  - r-scales
+  - r-rmarkdown
+  - r-knitr

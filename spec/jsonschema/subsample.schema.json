@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/subsample.schema.json",
+  "title": "Bamana Subsample Response",
+  "description": "Contract for bamana subsample JSON output.",
+  "x-bamana-command": "subsample",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "format": {
+      "type": "string",
+      "enum": ["BAM", "FASTQ", "FASTQ.GZ", "UNKNOWN"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["random", "deterministic"]
+    },
+    "deterministicIdentity": {
+      "type": ["string", "null"],
+      "enum": ["qname", "qname_seq", "full_record", null]
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "fraction_requested",
+        "seed",
+        "deterministic_identity"
+      ],
+      "properties": {
+        "mode": { "$ref": "#/$defs/mode" },
+        "fraction_requested": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "seed": { "type": ["integer", "null"], "minimum": 0 },
+        "deterministic_identity": {
+          "$ref": "#/$defs/deterministicIdentity"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run",
+        "records_examined",
+        "records_retained",
+        "fraction_retained_observed",
+        "order_preserved"
+      ],
+      "properties": {
+        "dry_run": { "type": "boolean" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "records_retained": { "type": "integer", "minimum": 0 },
+        "fraction_retained_observed": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "order_preserved": { "type": "boolean" },
+        "eligible_records_examined": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "written", "overwritten"],
+      "properties": {
+        "path": { "type": "string" },
+        "written": { "type": "boolean" },
+        "overwritten": { "type": "boolean" }
+      }
+    },
+    "index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "present_before",
+        "valid_after",
+        "reindex_requested",
+        "reindexed"
+      ],
+      "properties": {
+        "present_before": { "type": "boolean" },
+        "valid_after": { "type": ["boolean", "null"] },
+        "reindex_requested": { "type": "boolean" },
+        "reindexed": { "type": "boolean" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" }
+      }
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapped_only", "primary_only"],
+      "properties": {
+        "mapped_only": { "type": "boolean" },
+        "primary_only": { "type": "boolean" }
+      }
+    },
+    "successData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "selection", "execution", "output", "notes"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "selection": { "$ref": "#/$defs/selection" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "output": { "$ref": "#/$defs/output" },
+        "index": { "$ref": "#/$defs/index" },
+        "filters": { "$ref": "#/$defs/filters" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "failureData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format"],
+      "properties": {
+        "format": { "$ref": "#/$defs/format" },
+        "selection": { "$ref": "#/$defs/selection" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "output": { "$ref": "#/$defs/output" },
+        "index": { "$ref": "#/$defs/index" },
+        "filters": { "$ref": "#/$defs/filters" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "subsample" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/successData" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "subsample" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

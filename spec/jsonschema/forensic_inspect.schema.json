@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/forensic_inspect.schema.json",
+  "title": "Bamana Forensic Inspect Response",
+  "description": "Contract for bamana forensic_inspect JSON output.",
+  "x-bamana-command": "forensic_inspect",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "successFormat": {
+      "type": "string",
+      "enum": ["BAM"]
+    },
+    "failureFormat": {
+      "type": "string",
+      "enum": ["BAM", "SAM", "CRAM", "FASTQ", "FASTQ.GZ", "FASTA", "BED", "GFF", "UNKNOWN"]
+    },
+    "scanMode": {
+      "type": "string",
+      "enum": ["bounded", "full"]
+    },
+    "evidenceScope": {
+      "type": "string",
+      "enum": [
+        "header_only",
+        "body_bounded",
+        "body_full",
+        "header_and_body_bounded",
+        "header_and_body_full"
+      ]
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": [
+        "inspect_duplication",
+        "deduplicate",
+        "validate",
+        "checksum",
+        "header",
+        "reheader",
+        "forensic_inspect --full-scan"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "header",
+        "read_groups",
+        "program_chain",
+        "read_names",
+        "tags",
+        "duplication_hallmarks"
+      ],
+      "properties": {
+        "header": { "type": "boolean" },
+        "read_groups": { "type": "boolean" },
+        "program_chain": { "type": "boolean" },
+        "read_names": { "type": "boolean" },
+        "tags": { "type": "boolean" },
+        "duplication_hallmarks": { "type": "boolean" }
+      }
+    },
+    "duplicateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 1 },
+        "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "severity",
+        "confidence",
+        "evidence_strength",
+        "evidence_scope",
+        "message"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "header_inconsistency",
+            "read_group_inconsistency",
+            "program_chain_anomaly",
+            "read_name_regime_shift",
+            "duplicate_block_hallmark",
+            "concatenation_hallmark",
+            "mixed_run_signature",
+            "manual_edit_suspicion",
+            "tag_schema_shift",
+            "ordering_anomaly"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "high"]
+        },
+        "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
+        "evidence_strength": { "$ref": "./common/defs.schema.json#/$defs/evidenceStrength" },
+        "evidence_scope": { "$ref": "#/$defs/evidenceScope" },
+        "record_range_1": {
+          "oneOf": [{ "$ref": "#/$defs/duplicateRange" }, { "type": "null" }]
+        },
+        "record_range_2": {
+          "oneOf": [{ "$ref": "#/$defs/duplicateRange" }, { "type": "null" }]
+        },
+        "message": { "type": "string" },
+        "recommended_follow_up": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/recommendation" }
+        }
+      }
+    },
+    "categoryCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "count"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "header_inconsistency",
+            "read_group_inconsistency",
+            "program_chain_anomaly",
+            "read_name_regime_shift",
+            "duplicate_block_hallmark",
+            "concatenation_hallmark",
+            "mixed_run_signature",
+            "manual_edit_suspicion",
+            "tag_schema_shift",
+            "ordering_anomaly"
+          ]
+        },
+        "count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "findings_total",
+        "high_findings",
+        "warning_findings",
+        "info_findings",
+        "category_counts"
+      ],
+      "properties": {
+        "findings_total": { "type": "integer", "minimum": 0 },
+        "high_findings": { "type": "integer", "minimum": 0 },
+        "warning_findings": { "type": "integer", "minimum": 0 },
+        "info_findings": { "type": "integer", "minimum": 0 },
+        "category_counts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/categoryCount" }
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suspicion_detected",
+        "likely_concatenation_or_coercion",
+        "recommended_follow_up"
+      ],
+      "properties": {
+        "suspicion_detected": { "type": "boolean" },
+        "likely_concatenation_or_coercion": { "type": ["boolean", "null"] },
+        "recommended_follow_up": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": { "$ref": "#/$defs/recommendation" }
+            },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "successData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "scan_mode",
+        "scopes",
+        "records_examined",
+        "summary",
+        "findings",
+        "assessment",
+        "notes"
+      ],
+      "properties": {
+        "format": { "$ref": "#/$defs/successFormat" },
+        "scan_mode": { "$ref": "#/$defs/scanMode" },
+        "scopes": { "$ref": "#/$defs/scope" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "summary": { "$ref": "#/$defs/summary" },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "assessment": { "$ref": "#/$defs/assessment" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "failureData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format"],
+      "properties": {
+        "format": { "$ref": "#/$defs/failureFormat" },
+        "scan_mode": {
+          "oneOf": [{ "$ref": "#/$defs/scanMode" }, { "type": "null" }]
+        },
+        "scopes": { "$ref": "#/$defs/scope" },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "summary": { "$ref": "#/$defs/summary" },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "assessment": { "$ref": "#/$defs/assessment" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "forensic_inspect" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/successData" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "forensic_inspect" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

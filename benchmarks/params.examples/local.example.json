@@ -1,0 +1,32 @@
+{
+  "input_manifest": "benchmarks/inputs/example_manifest.json",
+  "dataset_ids": [
+    "hg38_wgs_mapped",
+    "ont_reads_fastq_gz"
+  ],
+  "tools": ["bamana", "samtools", "fastcat"],
+  "scenarios": [
+    "mapped_bam_pipeline",
+    "fastq_consume_pipeline"
+  ],
+  "replicates": 1,
+  "warmup_runs": 0,
+  "subsample_fraction": 0.1,
+  "subsample_seed": 104729,
+  "subsample_mode": "deterministic",
+  "threads": 4,
+  "output_dir": "/workspace/benchmarks/results/local-example",
+  "derived_input_dir": "/workspace/benchmarks/results/local-example/derived_inputs",
+  "enable_plots": false,
+  "enable_reports": false,
+  "container_engine": "docker",
+  "staging_override": null,
+  "include_unsupported_matrix_rows": true,
+  "fastcat_enabled": true,
+  "storage_context": "local_ssd",
+  "cleanup_policy": "retain_derived_retain_failed",
+  "reuse_materialized_inputs": true,
+  "include_staging_in_timing": false,
+  "container_image": "bamana-bench:latest",
+  "bamana_bin": "../target/release/bamana"
+}

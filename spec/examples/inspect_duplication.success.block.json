@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "command": "inspect_duplication",
+  "path": "input.bam",
+  "data": {
+    "format": "BAM",
+    "identity_mode": "qname_seq_qual",
+    "scan_mode": "bounded",
+    "records_examined": 100000,
+    "summary": {
+      "unique_identities": 99800,
+      "duplicate_identities": 200,
+      "duplicate_records": 400,
+      "duplicate_instances_beyond_first": 200,
+      "fraction_duplicate_records": 0.004,
+      "fraction_duplicate_instances_beyond_first": 0.002
+    },
+    "findings": [
+      {
+        "type": "contiguous_block_duplicate",
+        "confidence": "high",
+        "evidence_strength": "strong",
+        "record_range_1": {
+          "start": 12001,
+          "end": 12200
+        },
+        "record_range_2": {
+          "start": 12201,
+          "end": 12400
+        },
+        "message": "A contiguous block of 200 record identities appears twice in immediate succession under qname_seq_qual identity."
+      }
+    ],
+    "assessment": {
+      "duplication_detected": true,
+      "likely_operator_error": true,
+      "recommended_follow_up": "deduplicate"
+    },
+    "notes": [
+      "inspect_duplication detects collection-duplication and operator-error signatures; it is not Picard/GATK-style PCR duplicate marking.",
+      "BAM duplicate flags are not used as primary evidence for this command."
+    ]
+  },
+  "error": null
+}

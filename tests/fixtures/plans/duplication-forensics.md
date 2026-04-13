@@ -36,7 +36,7 @@ duplicate semantics.
   `tiny.forensic.bam.concatenated_signature`
 * invalid:
   `tiny.invalid.fastq.truncated`,
-  `tiny.invalid.bam.truncated_record.duplication`
+  `tiny.invalid.bam.truncated_record`
 
 ## Review Guidance
 
@@ -47,3 +47,8 @@ When a fixture in this family changes, reviewers should ask:
 * was parseability intentionally preserved or intentionally broken?
 * do the expected outputs still match the command contract rather than a local
   implementation quirk?
+
+For forensic fixtures specifically, reviewers should reject a change that turns
+the file into a malformed parse-failure asset unless the fixture is being
+reclassified into the `invalid` class intentionally and the manifest, matrix,
+and golden-output plan are updated to match.

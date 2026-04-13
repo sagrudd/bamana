@@ -1,2 +1,4 @@
 /target
-
+/benchmarks/.nextflow*
+/benchmarks/work/
+/benchmarks/results/latest/
