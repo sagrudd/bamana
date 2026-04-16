@@ -248,13 +248,21 @@ mod tests {
         let discovery = discover_requested_paths_with_reader(
             &requested,
             &DiscoveryOptions { recursive: false },
-            Cursor::new(b"@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:10\nread1\t4\t*\t0\t0\t*\t*\t0\t0\tAC\t!!\n"),
+            Cursor::new(
+                b"@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:10\nread1\t4\t*\t0\t0\t*\t*\t0\t0\tAC\t!!\n",
+            ),
         )
         .expect("stdin discovery should succeed");
 
         assert_eq!(discovery.discovered_files.len(), 1);
-        assert_eq!(discovery.discovered_files[0].logical_path, PathBuf::from("-"));
-        assert_eq!(discovery.discovered_files[0].detected_format, DetectedFormat::Sam);
+        assert_eq!(
+            discovery.discovered_files[0].logical_path,
+            PathBuf::from("-")
+        );
+        assert_eq!(
+            discovery.discovered_files[0].detected_format,
+            DetectedFormat::Sam
+        );
 
         let staged = discovery.staged_paths.clone();
         cleanup_staged_paths(&staged);

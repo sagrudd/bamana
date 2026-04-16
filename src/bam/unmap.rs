@@ -24,9 +24,9 @@ const BAM_FMREVERSE: u16 = 0x20;
 const UNMAPPED_BIN: u16 = 4680;
 
 const MAPPING_TAGS: [[u8; 2]; 31] = [
-    *b"AM", *b"AS", *b"BQ", *b"CC", *b"CG", *b"CM", *b"CP", *b"H0", *b"H1", *b"H2", *b"HI",
-    *b"IH", *b"MC", *b"MD", *b"MQ", *b"NH", *b"NM", *b"OA", *b"OC", *b"OP", *b"PQ", *b"SA",
-    *b"SM", *b"UQ", *b"XS", *b"cm", *b"ms", *b"s1", *b"s2", *b"tp", *b"ts",
+    *b"AM", *b"AS", *b"BQ", *b"CC", *b"CG", *b"CM", *b"CP", *b"H0", *b"H1", *b"H2", *b"HI", *b"IH",
+    *b"MC", *b"MD", *b"MQ", *b"NH", *b"NM", *b"OA", *b"OC", *b"OP", *b"PQ", *b"SA", *b"SM", *b"UQ",
+    *b"XS", *b"cm", *b"ms", *b"s1", *b"s2", *b"tp", *b"ts",
 ];
 
 const ALIGNMENT_DIAGNOSTIC_TAGS: [[u8; 2]; 7] =
@@ -118,8 +118,7 @@ pub fn unmap_bam(options: &UnmapExecutionOptions) -> Result<UnmapExecution, AppE
         writer.write_all(&header_payload)?;
 
         while let Some(layout) = read_next_record_layout(&mut reader)? {
-            let (unmapped, removed_here) =
-                rewrite_record_as_unmapped(layout, &options.input_path)?;
+            let (unmapped, removed_here) = rewrite_record_as_unmapped(layout, &options.input_path)?;
             writer.write_all(&serialize_record_layout(&unmapped))?;
             records_read += 1;
             records_written += 1;
@@ -290,9 +289,9 @@ mod tests {
             sequence_bytes: vec![0x12, 0x48],
             quality_bytes: vec![30, 30, 30, 30],
             aux_bytes: vec![
-                b'N', b'M', b'C', 5, b'M', b'D', b'Z', b'4', 0, b'M', b'M', b'Z', b'C', b'+',
-                b'm', b',', b'1', b';', 0, b'M', b'L', b'B', b'C', 1, 0, 0, 0, 42, b'R', b'G',
-                b'Z', b'r', b'g', b'1', 0,
+                b'N', b'M', b'C', 5, b'M', b'D', b'Z', b'4', 0, b'M', b'M', b'Z', b'C', b'+', b'm',
+                b',', b'1', b';', 0, b'M', b'L', b'B', b'C', 1, 0, 0, 0, 42, b'R', b'G', b'Z',
+                b'r', b'g', b'1', 0,
             ],
         };
 
@@ -319,7 +318,10 @@ mod tests {
 
         let parsed_header = parse_bam_header(&output).expect("header should parse");
         assert!(parsed_header.header.references.is_empty());
-        assert_eq!(parsed_header.header.hd.sort_order.as_deref(), Some("unsorted"));
+        assert_eq!(
+            parsed_header.header.hd.sort_order.as_deref(),
+            Some("unsorted")
+        );
         assert_eq!(parsed_header.header.hd.sub_sort_order, None);
         assert_eq!(parsed_header.header.read_groups.len(), 1);
         assert_eq!(execution.records_read, 1);

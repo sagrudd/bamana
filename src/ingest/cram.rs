@@ -223,7 +223,7 @@ pub fn normalize_cram_to_record_layouts_with_label(
 
         writer
             .write_header(&header)
-                .map_err(|error| AppError::CramDecodeFailed {
+            .map_err(|error| AppError::CramDecodeFailed {
                 path: label.to_path_buf(),
                 detail: format!(
                     "CRAM header was decoded but temporary BAM header emission failed: {error}"
@@ -231,8 +231,7 @@ pub fn normalize_cram_to_record_layouts_with_label(
             })?;
 
         for result in reader.records(&header) {
-            let record =
-                result.map_err(|error| map_cram_decode_error(label, context, error))?;
+            let record = result.map_err(|error| map_cram_decode_error(label, context, error))?;
             writer
                 .write_alignment_record(&header, &record)
                 .map_err(|error| AppError::CramDecodeFailed {

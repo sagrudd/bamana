@@ -388,8 +388,7 @@ fn parse_ml_header_tag(path: &Path, value: &str) -> Result<Vec<u8>, AppError> {
     let Some((subtype, values)) = value.split_once(',') else {
         return Err(AppError::InvalidFastq {
             path: path.to_path_buf(),
-            detail: "FASTQ header ML tag must use B-array syntax such as ML:B:C,42,7."
-                .to_string(),
+            detail: "FASTQ header ML tag must use B-array syntax such as ML:B:C,42,7.".to_string(),
         });
     };
 
@@ -536,8 +535,23 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removable");
 
         assert_eq!(records.len(), 1);
-        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MMZ"));
-        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MLB"));
-        assert!(records[0].aux_bytes.windows(3).any(|window| window == b"MNi"));
+        assert!(
+            records[0]
+                .aux_bytes
+                .windows(3)
+                .any(|window| window == b"MMZ")
+        );
+        assert!(
+            records[0]
+                .aux_bytes
+                .windows(3)
+                .any(|window| window == b"MLB")
+        );
+        assert!(
+            records[0]
+                .aux_bytes
+                .windows(3)
+                .any(|window| window == b"MNi")
+        );
     }
 }

@@ -19,7 +19,7 @@ use crate::{
     formats::probe::DetectedFormat,
     ingest::{
         cram::{
-            CramReferenceContext, ConsumeReferencePolicy, ConsumeReferenceSourceUsed,
+            ConsumeReferencePolicy, ConsumeReferenceSourceUsed, CramReferenceContext,
             normalize_cram_to_record_layouts_with_label, prepare_reference_context,
         },
         discovery::DiscoveredFile,
@@ -229,8 +229,11 @@ fn execute_alignment_consume(
                     message: "CRAM alignment input reached consume execution without a resolved reference context."
                         .to_string(),
                 })?;
-                let normalized =
-                    normalize_cram_to_record_layouts_with_label(&file.path, &file.logical_path, context)?;
+                let normalized = normalize_cram_to_record_layouts_with_label(
+                    &file.path,
+                    &file.logical_path,
+                    context,
+                )?;
 
                 if let Some(expected) = base_references.as_ref() {
                     ensure_compatible_reference_dictionary(

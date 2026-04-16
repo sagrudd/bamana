@@ -12,7 +12,9 @@ use flate2::{Compression, GzBuilder};
 use crate::{
     bam::{
         reader::BamReader,
-        records::{RecordLayout, decode_bam_qualities, decode_bam_sequence, read_next_record_layout},
+        records::{
+            RecordLayout, decode_bam_qualities, decode_bam_sequence, read_next_record_layout,
+        },
         tags::{AuxField, traverse_aux_fields},
     },
     error::AppError,
@@ -76,12 +78,13 @@ pub fn export_bam_to_fastq_gz(
     let write_result = (|| -> Result<(u64, u64), AppError> {
         let mut reader = BamReader::open(&options.input_path)?;
         let _header = crate::bam::header::parse_bam_header_from_reader(&mut reader)?;
-        let mut writer = BufWriter::new(
-            File::create(&temp_path).map_err(|error| AppError::WriteError {
-                path: temp_path.clone(),
-                message: error.to_string(),
-            })?,
-        );
+        let mut writer =
+            BufWriter::new(
+                File::create(&temp_path).map_err(|error| AppError::WriteError {
+                    path: temp_path.clone(),
+                    message: error.to_string(),
+                })?,
+            );
 
         let (job_tx, job_rx) = mpsc::channel::<BatchJob>();
         let (result_tx, result_rx) = mpsc::channel::<BatchResult>();
@@ -122,7 +125,9 @@ pub fn export_bam_to_fastq_gz(
 
         while let Some(layout) = read_next_record_layout(&mut reader)? {
             current_batch_bytes += layout.block_size.max(
-                32 + layout.read_name.len() + layout.sequence_bytes.len() + layout.quality_bytes.len(),
+                32 + layout.read_name.len()
+                    + layout.sequence_bytes.len()
+                    + layout.quality_bytes.len(),
             );
             current_batch.push(layout);
             records_read += 1;
@@ -296,8 +301,7 @@ fn compress_batch(records: Vec<RecordLayout>, input_path: &Path) -> Result<Vec<u
         append_fastq_record(&mut payload, &record, input_path)?;
     }
 
-    let mut encoder = GzBuilder::new()
-        .write(Vec::new(), Compression::fast());
+    let mut encoder = GzBuilder::new().write(Vec::new(), Compression::fast());
     encoder
         .write_all(&payload)
         .map_err(|error| AppError::WriteError {
@@ -379,7 +383,10 @@ fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
                 .ok_or_else(|| "Auxiliary A tag payload was empty.".to_string())?;
             format!("A:{}", char::from(value))
         }
-        b'c' => format!("c:{}", i8::from_le_bytes([require_payload(field.payload, 1)?[0]])),
+        b'c' => format!(
+            "c:{}",
+            i8::from_le_bytes([require_payload(field.payload, 1)?[0]])
+        ),
         b'C' => format!("C:{}", require_payload(field.payload, 1)?[0]),
         b's' => {
             let bytes = require_payload(field.payload, 2)?;
@@ -391,23 +398,32 @@ fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
         }
         b'i' => {
             let bytes = require_payload(field.payload, 4)?;
-            format!("i:{}", i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+            format!(
+                "i:{}",
+                i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+            )
         }
         b'I' => {
             let bytes = require_payload(field.payload, 4)?;
-            format!("I:{}", u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+            format!(
+                "I:{}",
+                u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+            )
         }
         b'f' => {
             let bytes = require_payload(field.payload, 4)?;
-            format!("f:{}", f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+            format!(
+                "f:{}",
+                f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+            )
         }
         b'Z' | b'H' => {
-            let value = field
-                .payload
-                .strip_suffix(&[0])
-                .ok_or_else(|| "Encountered a malformed NUL-terminated auxiliary string.".to_string())?;
-            let value = String::from_utf8(value.to_vec())
-                .map_err(|error| format!("BAM auxiliary string tag was not valid UTF-8: {error}"))?;
+            let value = field.payload.strip_suffix(&[0]).ok_or_else(|| {
+                "Encountered a malformed NUL-terminated auxiliary string.".to_string()
+            })?;
+            let value = String::from_utf8(value.to_vec()).map_err(|error| {
+                format!("BAM auxiliary string tag was not valid UTF-8: {error}")
+            })?;
             format!("{}:{}", field.type_code as char, value)
         }
         b'B' => format_b_array(field.payload)?,
@@ -415,7 +431,7 @@ fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
             return Err(format!(
                 "Encountered unsupported or malformed BAM auxiliary type code '{}'.",
                 other as char
-            ))
+            ));
         }
     };
 
@@ -424,13 +440,18 @@ fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
 
 fn format_b_array(payload: &[u8]) -> Result<String, String> {
     if payload.len() < 5 {
-        return Err("Encountered a truncated auxiliary field before a stable conclusion was reached.".to_string());
+        return Err(
+            "Encountered a truncated auxiliary field before a stable conclusion was reached."
+                .to_string(),
+        );
     }
 
     let subtype = payload[0] as char;
     let count = i32::from_le_bytes([payload[1], payload[2], payload[3], payload[4]]);
     if count < 0 {
-        return Err("Encountered a BAM auxiliary B-array with a negative element count.".to_string());
+        return Err(
+            "Encountered a BAM auxiliary B-array with a negative element count.".to_string(),
+        );
     }
     let count = count as usize;
     let values = &payload[5..];
@@ -475,7 +496,7 @@ fn format_b_array(payload: &[u8]) -> Result<String, String> {
             return Err(format!(
                 "Encountered unsupported BAM auxiliary B-array subtype '{}'.",
                 other as char
-            ))
+            ));
         }
     };
 
@@ -528,7 +549,9 @@ mod tests {
     use crate::{
         bam::{
             fastq::{FastqExportOptions, append_fastq_record, export_bam_to_fastq_gz},
-            records::{RecordLayout, encode_bam_qualities, encode_bam_sequence, missing_quality_scores},
+            records::{
+                RecordLayout, encode_bam_qualities, encode_bam_sequence, missing_quality_scores,
+            },
         },
         fastq::{open_fastq_reader, read_next_fastq_record},
         formats::bgzf::test_support::{build_bam_file_with_header_and_records, write_temp_file},
@@ -584,8 +607,10 @@ mod tests {
                 ],
             ),
         );
-        let output =
-            std::env::temp_dir().join(format!("bamana-fastq-export-{}.fastq.gz", std::process::id()));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-fastq-export-{}.fastq.gz",
+            std::process::id()
+        ));
 
         let execution = export_bam_to_fastq_gz(&FastqExportOptions {
             input_path: input.clone(),
@@ -659,8 +684,8 @@ mod tests {
             sequence_bytes: encode_bam_sequence("AC").expect("seq should encode"),
             quality_bytes: encode_bam_qualities("!!").expect("qual should encode"),
             aux_bytes: vec![
-                b'M', b'M', b'Z', b'C', b'+', b'm', b',', b'0', b';', 0, b'M', b'L', b'B', b'C',
-                2, 0, 0, 0, 42, 7, b'M', b'N', b'i', 2, 0, 0, 0,
+                b'M', b'M', b'Z', b'C', b'+', b'm', b',', b'0', b';', 0, b'M', b'L', b'B', b'C', 2,
+                0, 0, 0, 42, 7, b'M', b'N', b'i', 2, 0, 0, 0,
             ],
         };
 
