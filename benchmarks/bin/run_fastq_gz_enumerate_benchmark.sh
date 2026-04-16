@@ -31,12 +31,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$profile" != "fastq_ingress" ]]; then
-  echo "run_fastq_ingress_benchmark.sh only supports --profile fastq_ingress" >&2
+if [[ "$profile" != "fastq_gz_enumerate" ]]; then
+  echo "run_fastq_gz_enumerate_benchmark.sh only supports --profile fastq_gz_enumerate" >&2
   exit 2
 fi
 
-for value_name in fastq bamana_output comparator_output report workdir container_image bamana_bin bamana_enumerator_bin; do
+for value_name in fastq bamana_output comparator_output report workdir container_image bamana_enumerator_bin; do
   if [[ -z "${!value_name}" ]]; then
     echo "missing required argument: ${value_name}" >&2
     exit 2
@@ -90,21 +90,21 @@ jq -n \
     records_processed: $input_records
   }' > "${input_metrics_json}"
 
-bamana_command_file="${metadata_dir}/fastq_ingress.bamana.command.sh"
+bamana_command_file="${metadata_dir}/fastq_gz_enumerate.bamana.command.sh"
 cat > "${bamana_command_file}" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-"${bamana_bin}" consume --input "${fastq}" --out "${bamana_output}" --mode unmapped --threads "${threads}" --force
+"${bamana_enumerator_bin}" --input "${fastq}" --out "${bamana_output}"
 EOF
 chmod +x "${bamana_command_file}"
 
-fastcat_samtools_command_file="${metadata_dir}/fastq_ingress.fastcat_samtools.command.sh"
-cat > "${fastcat_samtools_command_file}" <<EOF
+gzip_command_file="${metadata_dir}/fastq_gz_enumerate.gzip.command.sh"
+cat > "${gzip_command_file}" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-fastcat fastq "${fastq}" | samtools import -o "${comparator_output}" -
+/usr/bin/gzip -cd "${fastq}" | /usr/bin/awk 'END { printf "%.0f\n", NR / 4 }' > "${comparator_output}"
 EOF
-chmod +x "${fastcat_samtools_command_file}"
+chmod +x "${gzip_command_file}"
 
 run_one() {
   local run_id="$1"
@@ -118,12 +118,12 @@ run_one() {
 
   (
     cd "${raw_dir}"
-    BAMANA_BENCHMARK_FRAMEWORK_VERSION="fastq_ingress_cli_v1" \
+    BAMANA_BENCHMARK_FRAMEWORK_VERSION="fastq_gz_enumerate_cli_v1" \
       /usr/local/bin/run_benchmark.sh \
         --run-id "${run_id}" \
         --tool "${tool}" \
         --tool-version-cmd "${version_cmd}" \
-        --scenario "fastq_consume_pipeline" \
+        --scenario "fastq_gz_enumerate" \
         --workflow-variant "${workflow_variant}" \
         --semantic-equivalence "${semantic_equivalence}" \
         --support-status "supported" \
@@ -151,24 +151,24 @@ run_one() {
 }
 
 run_one \
-  "fastq_ingress.bamana.rep1" \
+  "fastq_gz_enumerate.bamana.rep1" \
   "bamana" \
-  "\"${bamana_bin}\" --version" \
-  "bamana_consume_unmapped_bam" \
+  "printf 'bamana_fastq_gz_enumerate=%s\n' \"\$("${bamana_bin}" --version | head -n 1)\"" \
+  "bamana_fastq_gz_enumerate" \
   "full" \
   "${bamana_output}" \
   "${bamana_command_file}" \
-  "Bamana FASTQ ingress benchmark normalizes FASTQ.GZ input into unmapped BAM."
+  "Bamana-native FASTQ.GZ enumeration counts records without shelling out to gzip."
 
 run_one \
-  "fastq_ingress.fastcat_samtools.rep1" \
-  "fastcat_samtools" \
-  "printf 'fastcat=%s; samtools=%s\n' \"\$(/opt/conda/bin/fastcat fastq --version 2>&1 | head -n 1)\" \"\$(/opt/conda/bin/samtools --version 2>&1 | head -n 1)\"" \
-  "fastcat_samtools_unmapped_bam" \
+  "fastq_gz_enumerate.gzip.rep1" \
+  "gzip" \
+  "printf 'gzip=%s; awk=%s\n' \"\$(/usr/bin/gzip --version 2>&1 | head -n 1)\" \"\$(/usr/bin/awk --version 2>&1 | head -n 1)\"" \
+  "gzip_decompress_line_count" \
   "partial" \
   "${comparator_output}" \
-  "${fastcat_samtools_command_file}" \
-  "Comparator path uses fastcat for FASTQ.GZ ingress and samtools import for unmapped BAM materialization."
+  "${gzip_command_file}" \
+  "Comparator path uses gzip decompression plus line counting to derive FASTQ record count."
 
 Rscript /workspace/benchmarks/R/aggregate_results.R \
   --input-dir "${raw_dir}" \
@@ -179,7 +179,7 @@ Rscript /workspace/benchmarks/R/build_support_matrix.R \
   --outdir "${aggregated_dir}"
 
 Rscript /workspace/benchmarks/R/render_fastq_ingress_report.R \
-  --template "/workspace/benchmarks/R/fastq_ingress_report.Rmd" \
+  --template "/workspace/benchmarks/R/fastq_gz_enumerate_report.Rmd" \
   --tidy-csv "${aggregated_dir}/tidy_results.csv" \
   --summary-csv "${aggregated_dir}/tidy_summary.csv" \
   --support-csv "${aggregated_dir}/support_matrix.csv" \
@@ -187,8 +187,8 @@ Rscript /workspace/benchmarks/R/render_fastq_ingress_report.R \
   --fastq "${fastq}" \
   --bamana-output "${bamana_output}" \
   --comparator-output "${comparator_output}" \
-  --bamana-output-label "Bamana BAM output" \
-  --comparator-output-label "Comparator BAM output" \
+  --bamana-output-label "Bamana enumeration output" \
+  --comparator-output-label "gzip comparator output" \
   --container-image "${container_image}" \
   --profile "${profile}" \
   --output "${report}"

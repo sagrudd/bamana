@@ -100,6 +100,8 @@ pub enum Commands {
 pub enum BenchmarkProfile {
     #[value(name = "fastq_ingress", alias = "fastq-ingress")]
     FastqIngress,
+    #[value(name = "fastq_gz_enumerate", alias = "fastq-gz-enumerate")]
+    FastqGzEnumerate,
 }
 
 #[derive(Debug, Args)]
@@ -110,9 +112,9 @@ pub struct BenchmarkArgs {
     /// Input FASTQ.GZ file for FASTQ ingress benchmarking.
     #[arg(long = "fastq")]
     pub fastq: PathBuf,
-    /// Output BAM path for the Bamana normalization result.
+    /// Output BAM path for the fastq_ingress Bamana normalization result.
     #[arg(long = "bam")]
-    pub bam: PathBuf,
+    pub bam: Option<PathBuf>,
     /// Output PDF path for the rendered benchmark report.
     #[arg(long = "report")]
     pub report: PathBuf,

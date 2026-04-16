@@ -1,6 +1,7 @@
 [package]
 name = "bamana"
 edition = "2024"
+default-run = "bamana"
 license = "Apache-2.0"
 rust-version = "1.85"
 version = "0.1.0"

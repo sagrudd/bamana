@@ -55,6 +55,24 @@ pub fn read_fastq_as_unmapped_records_with_label(
     Ok(records)
 }
 
+pub fn count_fastq_records(path: &Path) -> Result<u64, AppError> {
+    count_fastq_records_with_label(path, path)
+}
+
+pub fn count_fastq_records_with_label(path: &Path, label: &Path) -> Result<u64, AppError> {
+    let mut reader = open_fastq_reader_with_label(path, label)?;
+    let mut records = 0u64;
+
+    loop {
+        let Some(_record) = read_next_fastq_record(&mut reader, label)? else {
+            break;
+        };
+        records += 1;
+    }
+
+    Ok(records)
+}
+
 pub fn open_fastq_reader(path: &Path) -> Result<Box<dyn BufRead>, AppError> {
     open_fastq_reader_with_label(path, path)
 }
@@ -434,15 +452,14 @@ fn trim_line_endings(mut line: String) -> String {
 }
 
 #[cfg(test)]
-#[cfg(test)]
 mod tests {
     use std::{fs, fs::File, io::Write};
 
     use flate2::{Compression, write::GzEncoder};
 
     use super::{
-        FastqRecord, open_fastq_reader, read_fastq_as_unmapped_records, read_next_fastq_record,
-        write_fastq_records,
+        FastqRecord, count_fastq_records, open_fastq_reader, read_fastq_as_unmapped_records,
+        read_next_fastq_record, write_fastq_records,
     };
 
     #[test]
@@ -480,6 +497,34 @@ mod tests {
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].read_name, "read2");
         assert_eq!(records[0].l_seq, 2);
+    }
+
+    #[test]
+    fn counts_plain_and_gzipped_fastq_records_without_unpacking() {
+        let plain_path =
+            std::env::temp_dir().join(format!("bamana-fastq-count-{}.fastq", std::process::id()));
+        fs::write(&plain_path, "@read1\nAC\n+\n!!\n@read2\nTG\n+\n##\n")
+            .expect("plain fastq should write");
+
+        let gzip_path = std::env::temp_dir().join(format!(
+            "bamana-fastq-count-{}.fastq.gz",
+            std::process::id()
+        ));
+        let file = File::create(&gzip_path).expect("gzip fixture should open");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        encoder
+            .write_all(b"@read1\nAC\n+\n!!\n@read2\nTG\n+\n##\n")
+            .expect("gzip fixture should write");
+        encoder.finish().expect("gzip fixture should finish");
+
+        let plain_count = count_fastq_records(&plain_path).expect("plain count should succeed");
+        let gzip_count = count_fastq_records(&gzip_path).expect("gzip count should succeed");
+
+        fs::remove_file(plain_path).expect("plain fixture should be removable");
+        fs::remove_file(gzip_path).expect("gzip fixture should be removable");
+
+        assert_eq!(plain_count, 2);
+        assert_eq!(gzip_count, 2);
     }
 
     #[test]

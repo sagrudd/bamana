@@ -14,7 +14,7 @@ use crate::{cli::BenchmarkProfile, error::AppError, json::CommandResponse};
 pub struct BenchmarkRequest {
     pub profile: BenchmarkProfile,
     pub fastq: PathBuf,
-    pub bam: PathBuf,
+    pub bam: Option<PathBuf>,
     pub report: PathBuf,
     pub threads: usize,
     pub container_image: String,
@@ -25,8 +25,8 @@ pub struct BenchmarkRequest {
 pub struct BenchmarkPayload {
     pub profile: String,
     pub fastq: String,
-    pub bamana_bam: String,
-    pub comparator_bam: String,
+    pub bamana_output: String,
+    pub comparator_output: String,
     pub report_pdf: String,
     pub workdir: String,
     pub raw_results_dir: String,
@@ -64,13 +64,8 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     })?;
 
     let fastq = absolute_existing_path(&current_dir, &request.fastq)?;
-    let bam = absolute_path(&current_dir, &request.bam);
     let report = absolute_path(&current_dir, &request.report);
-
-    ensure_parent_dir(&bam)?;
     ensure_parent_dir(&report)?;
-
-    let comparator_bam = comparator_bam_path(&bam);
     let workdir = report
         .parent()
         .unwrap_or_else(|| Path::new("."))
@@ -83,8 +78,12 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     let tool_versions_tsv = metadata_dir.join("tool_versions.tsv");
     let bamana_binary = repo_root.join("target").join("release").join("bamana");
 
+    let profile = profile_id(request.profile);
+    let (bamana_output, comparator_output, runner_script, runner_notes) =
+        profile_outputs_and_runner(request, &current_dir, &report, &workdir)?;
+
     if !request.force {
-        for path in [&bam, &comparator_bam, &report, &workdir] {
+        for path in [&bamana_output, &comparator_output, &report, &workdir] {
             if path.exists() {
                 return Err(AppError::OutputExists {
                     path: path.to_path_buf(),
@@ -99,7 +98,7 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
             message: error.to_string(),
         })?;
     }
-    for path in [&bam, &comparator_bam, &report] {
+    for path in [&bamana_output, &comparator_output, &report] {
         if path.exists() {
             fs::remove_file(path).map_err(|error| AppError::Io {
                 path: path.to_path_buf(),
@@ -126,12 +125,7 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     })?;
 
     let cargo_log = logs_dir.join("cargo_build.log");
-    let cargo_args = vec![
-        "build".to_string(),
-        "--release".to_string(),
-        "--bin".to_string(),
-        "bamana".to_string(),
-    ];
+    let cargo_args = vec!["build".to_string(), "--release".to_string()];
     run_and_log("cargo", &cargo_args, &repo_root, &cargo_log, "cargo build")?;
 
     let docker_build_log = logs_dir.join("docker_build.log");
@@ -152,12 +146,13 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     )?;
 
     let fastq_parent = fastq.parent().unwrap_or_else(|| Path::new("/"));
-    let bam_parent = bam.parent().unwrap_or_else(|| Path::new("/"));
+    let output_parent = bamana_output.parent().unwrap_or_else(|| Path::new("/"));
     let report_parent = report.parent().unwrap_or_else(|| Path::new("/"));
 
     let fastq_container = container_join("/benchmark-inputs", file_name(&fastq)?);
-    let bam_container = container_join("/benchmark-outputs", file_name(&bam)?);
-    let comparator_container = container_join("/benchmark-outputs", file_name(&comparator_bam)?);
+    let bamana_output_container = container_join("/benchmark-outputs", file_name(&bamana_output)?);
+    let comparator_output_container =
+        container_join("/benchmark-outputs", file_name(&comparator_output)?);
     let report_container = container_join("/benchmark-report", file_name(&report)?);
     let workdir_container = container_join(
         "/benchmark-report",
@@ -181,20 +176,20 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
         "-v".to_string(),
         format!("{}:/benchmark-inputs:ro", fastq_parent.display()),
         "-v".to_string(),
-        format!("{}:/benchmark-outputs", bam_parent.display()),
+        format!("{}:/benchmark-outputs", output_parent.display()),
         "-v".to_string(),
         format!("{}:/benchmark-report", report_parent.display()),
         request.container_image.clone(),
         "bash".to_string(),
-        "/workspace/benchmarks/bin/run_fastq_ingress_benchmark.sh".to_string(),
+        runner_script.to_string(),
         "--profile".to_string(),
-        profile_id(request.profile).to_string(),
+        profile.to_string(),
         "--fastq".to_string(),
         fastq_container.clone(),
         "--bamana-output".to_string(),
-        bam_container.clone(),
-        "--fastcat-samtools-output".to_string(),
-        comparator_container.clone(),
+        bamana_output_container.clone(),
+        "--comparator-output".to_string(),
+        comparator_output_container.clone(),
         "--report".to_string(),
         report_container.clone(),
         "--workdir".to_string(),
@@ -205,6 +200,8 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
         request.container_image.clone(),
         "--bamana-bin".to_string(),
         "/workspace/target/release/bamana".to_string(),
+        "--bamana-enumerator-bin".to_string(),
+        "/workspace/target/release/bamana_fastq_gz_enumerate".to_string(),
     ];
 
     run_and_log(
@@ -218,8 +215,8 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     Ok(BenchmarkPayload {
         profile: profile_id(request.profile).to_string(),
         fastq: fastq.display().to_string(),
-        bamana_bam: bam.display().to_string(),
-        comparator_bam: comparator_bam.display().to_string(),
+        bamana_output: bamana_output.display().to_string(),
+        comparator_output: comparator_output.display().to_string(),
         report_pdf: report.display().to_string(),
         workdir: workdir.display().to_string(),
         raw_results_dir: raw_results_dir.display().to_string(),
@@ -246,10 +243,7 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
                 command: format!("docker {}", docker_run_args.join(" ")),
             },
         ],
-        notes: vec![
-            "The fastq_ingress profile compares Bamana against a fastcat-plus-samtools unmapped-BAM path.".to_string(),
-            "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
-        ],
+        notes: runner_notes,
     })
 }
 
@@ -293,6 +287,51 @@ fn comparator_bam_path(bam: &Path) -> PathBuf {
         .join(file_name)
 }
 
+fn profile_outputs_and_runner(
+    request: &BenchmarkRequest,
+    current_dir: &Path,
+    report: &Path,
+    workdir: &Path,
+) -> Result<(PathBuf, PathBuf, &'static str, Vec<String>), AppError> {
+    match request.profile {
+        BenchmarkProfile::FastqIngress => {
+            let bam = request
+                .bam
+                .as_ref()
+                .ok_or_else(|| AppError::InvalidConsumeRequest {
+                    path: report.to_path_buf(),
+                    detail: "fastq_ingress requires --bam to declare the Bamana BAM output path."
+                        .to_string(),
+                })?;
+            let bam = absolute_path(current_dir, bam);
+            ensure_parent_dir(&bam)?;
+            let comparator_bam = comparator_bam_path(&bam);
+            Ok((
+                bam,
+                comparator_bam,
+                "/workspace/benchmarks/bin/run_fastq_ingress_benchmark.sh",
+                vec![
+                    "The fastq_ingress profile compares Bamana against a fastcat-plus-samtools unmapped-BAM path.".to_string(),
+                    "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
+                ],
+            ))
+        }
+        BenchmarkProfile::FastqGzEnumerate => {
+            let bamana_output = workdir.join("fastq_gz_enumerate.bamana.count.json");
+            let comparator_output = workdir.join("fastq_gz_enumerate.gzip.count.txt");
+            Ok((
+                bamana_output,
+                comparator_output,
+                "/workspace/benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh",
+                vec![
+                    "The fastq_gz_enumerate profile compares Bamana-native FASTQ.GZ record enumeration against gzip-only decompression plus line counting.".to_string(),
+                    "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
+                ],
+            ))
+        }
+    }
+}
+
 fn file_name(path: &Path) -> Result<&str, AppError> {
     path.file_name()
         .and_then(OsStr::to_str)
@@ -320,6 +359,7 @@ fn container_join(prefix: &str, name: &str) -> String {
 fn profile_id(profile: BenchmarkProfile) -> &'static str {
     match profile {
         BenchmarkProfile::FastqIngress => "fastq_ingress",
+        BenchmarkProfile::FastqGzEnumerate => "fastq_gz_enumerate",
     }
 }
 

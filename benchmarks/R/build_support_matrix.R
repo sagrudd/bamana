@@ -46,6 +46,9 @@ derive_input_type <- function(tool, scenario) {
   if (scenario == "fastq_consume_pipeline") {
     return("FASTQ_GZ")
   }
+  if (scenario == "fastq_gz_enumerate") {
+    return("FASTQ_GZ")
+  }
   if (scenario %in% c("mapped_bam_pipeline", "unmapped_bam_pipeline")) {
     return("BAM")
   }
@@ -192,6 +195,7 @@ if (tolower(render_plot) == "true") {
           "mapped_bam_pipeline",
           "unmapped_bam_pipeline",
           "fastq_consume_pipeline",
+          "fastq_gz_enumerate",
           "subsample_only"
         )
       ),

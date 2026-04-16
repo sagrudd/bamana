@@ -17,4 +17,6 @@ print_version sambamba sambamba --version
 print_version seqtk bash -lc "seqtk 2>&1"
 print_version rasusa rasusa --version
 print_version fastcat fastcat fastq --version
+print_version gzip /usr/bin/gzip --version
+print_version awk /usr/bin/awk --version
 print_version R R --version
