@@ -86,3 +86,7 @@ The repository also contains a benchmark framework under
 containerized toolchains, replicated benchmark runs, and R-based aggregation to
 compare Bamana against `samtools`, `fastcat`, and other relevant comparators
 without forcing unsupported workflows into misleading timing results.
+
+Benchmark-profile operator documentation for the owned
+`bamana benchmark --profile ...` command now lives under
+[sphinx/index.rst](/Users/stephen/Projects/bamana/docs/sphinx/index.rst).

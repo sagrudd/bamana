@@ -2,3 +2,5 @@
 /benchmarks/.nextflow*
 /benchmarks/work/
 /benchmarks/results/latest/
+/docs/sphinx/_build/
+/docs/sphinx/.venv/

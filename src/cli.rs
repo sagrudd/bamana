@@ -109,7 +109,7 @@ pub struct BenchmarkArgs {
     /// Benchmark profile to execute.
     #[arg(long = "profile", value_enum)]
     pub profile: BenchmarkProfile,
-    /// Input FASTQ.GZ file for FASTQ ingress benchmarking.
+    /// Input FASTQ.GZ file for FASTQ benchmark profiles.
     #[arg(long = "fastq")]
     pub fastq: PathBuf,
     /// Output BAM path for the fastq_ingress Bamana normalization result.
