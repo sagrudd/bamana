@@ -38,6 +38,8 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
+    /// Run a containerized benchmark profile with owned tool and report setup.
+    Benchmark(BenchmarkArgs),
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
     /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
@@ -92,6 +94,37 @@ pub enum Commands {
     /// Assess declared and observed BAM sort characteristics.
     #[command(name = "check_sort")]
     CheckSort(CheckSortArgs),
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum BenchmarkProfile {
+    #[value(name = "fastq_ingress", alias = "fastq-ingress")]
+    FastqIngress,
+}
+
+#[derive(Debug, Args)]
+pub struct BenchmarkArgs {
+    /// Benchmark profile to execute.
+    #[arg(long = "profile", value_enum)]
+    pub profile: BenchmarkProfile,
+    /// Input FASTQ.GZ file for FASTQ ingress benchmarking.
+    #[arg(long = "fastq")]
+    pub fastq: PathBuf,
+    /// Output BAM path for the Bamana normalization result.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output PDF path for the rendered benchmark report.
+    #[arg(long = "report")]
+    pub report: PathBuf,
+    /// Requested worker thread count for benchmarked commands.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
+    /// Container image tag to build and execute.
+    #[arg(long = "container-image", default_value = "bamana-bench:latest")]
+    pub container_image: String,
+    /// Overwrite existing benchmark outputs and report targets.
+    #[arg(long = "force")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]
@@ -343,13 +376,13 @@ pub struct ConsumeArgs {
     #[arg(long = "mode", value_enum)]
     pub mode: ConsumeMode,
     /// Descend into input directories recursively.
-    #[arg(long)]
+    #[arg(long = "recursive")]
     pub recursive: bool,
     /// Requested worker thread count for future parallel implementations.
     #[arg(short = 'j', long = "threads", default_value_t = 1)]
     pub threads: usize,
     /// Overwrite an existing output file.
-    #[arg(long)]
+    #[arg(long = "force")]
     pub force: bool,
     /// Output sort policy after ingestion.
     #[arg(long = "sort", value_enum, default_value_t = ConsumeSortOrder::None)]
@@ -443,7 +476,7 @@ pub struct MergeArgs {
     #[arg(long = "out")]
     pub out: PathBuf,
     /// Shorthand for --order coordinate.
-    #[arg(long)]
+    #[arg(long = "sort")]
     pub sort: bool,
     /// Requested output merge mode.
     #[arg(long = "order", value_enum)]
@@ -461,7 +494,7 @@ pub struct MergeArgs {
     #[arg(short = 'j', long = "threads", default_value_t = 1)]
     pub threads: usize,
     /// Overwrite an existing output file.
-    #[arg(long)]
+    #[arg(long = "force")]
     pub force: bool,
 }
 
@@ -558,7 +591,7 @@ pub struct SortArgs {
     #[arg(long = "verify-checksum")]
     pub verify_checksum: bool,
     /// Overwrite an existing output file.
-    #[arg(long)]
+    #[arg(long = "force")]
     pub force: bool,
 }
 
@@ -597,7 +630,7 @@ pub struct CheckSortArgs {
     #[arg(long = "sample-records", default_value_t = 10_000)]
     pub sample_records: usize,
     /// Continue scanning beyond the sample window until EOF or a stronger conclusion is reached.
-    #[arg(long)]
+    #[arg(long = "strict")]
     pub strict: bool,
 }
 
@@ -610,7 +643,7 @@ pub struct CheckMapArgs {
     #[arg(long = "sample-records", default_value_t = 10_000)]
     pub sample_records: usize,
     /// Scan the full alignment stream when no usable index is available.
-    #[arg(long)]
+    #[arg(long = "full-scan")]
     pub full_scan: bool,
     /// Prefer index-derived mapping information when a usable index exists.
     #[arg(long = "prefer-index", default_value_t = true)]
@@ -623,10 +656,10 @@ pub struct CheckIndexArgs {
     #[arg(long = "bam")]
     pub bam: PathBuf,
     /// Fail if no usable index is available.
-    #[arg(long)]
+    #[arg(long = "require")]
     pub require: bool,
     /// Prefer CSI over BAI when multiple adjacent indices are present.
-    #[arg(long)]
+    #[arg(long = "prefer-csi")]
     pub prefer_csi: bool,
 }
 
@@ -642,13 +675,13 @@ pub struct IndexArgs {
     #[arg(long = "bam")]
     pub bam: PathBuf,
     /// Explicit output path for the index file.
-    #[arg(long)]
+    #[arg(long = "out")]
     pub out: Option<PathBuf>,
     /// Overwrite an existing index output path.
-    #[arg(long)]
+    #[arg(long = "force")]
     pub force: bool,
     /// Requested output index format.
-    #[arg(long, value_enum)]
+    #[arg(long = "format", value_enum)]
     pub format: Option<IndexFormatArg>,
 }
 
@@ -661,7 +694,7 @@ pub struct SummaryArgs {
     #[arg(long = "sample-records", default_value_t = 100_000)]
     pub sample_records: usize,
     /// Scan the full alignment stream.
-    #[arg(long)]
+    #[arg(long = "full-scan")]
     pub full_scan: bool,
     /// Prefer index-derived totals where a usable index exists.
     #[arg(long = "prefer-index", default_value_t = true)]
@@ -686,7 +719,7 @@ pub struct CheckTagArgs {
     #[arg(long = "sample-records", default_value_t = 100_000)]
     pub sample_records: usize,
     /// Scan the full alignment stream.
-    #[arg(long)]
+    #[arg(long = "full-scan")]
     pub full_scan: bool,
     /// Require the tag to be present with the specified BAM aux type.
     #[arg(long = "require-type")]

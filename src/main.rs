@@ -9,6 +9,7 @@ use bamana::{
 use clap::Parser;
 use commands::{
     annotate_rg::AnnotateRgRequest,
+    benchmark::BenchmarkRequest,
     check_eof::{CheckEofRequest, CheckEofResponse},
     check_index::CheckIndexRequest,
     check_map::{CheckMapPayload, CheckMapRequest},
@@ -42,6 +43,19 @@ fn main() -> ExitCode {
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
             let response: CommandResponse<IdentifyResponse> =
                 CommandResponse::from_result("identify", Some(path.as_path()), result);
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Benchmark(args) => {
+            let fastq = args.fastq;
+            let response = commands::benchmark::run(BenchmarkRequest {
+                profile: args.profile,
+                fastq: fastq.clone(),
+                bam: args.bam,
+                report: args.report,
+                threads: args.threads,
+                container_image: args.container_image,
+                force: args.force,
+            });
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::Subsample(args) => {

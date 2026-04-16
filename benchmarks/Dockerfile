@@ -10,11 +10,18 @@ RUN apt-get update && \
       ca-certificates \
       coreutils \
       curl \
+      gawk \
       git \
       openjdk-17-jre-headless \
+      pandoc \
       procps \
+      texlive-fonts-recommended \
+      texlive-latex-base \
+      texlive-latex-extra \
+      texlive-latex-recommended \
       time \
-      util-linux && \
+      util-linux \
+      lmodern && \
     rm -rf /var/lib/apt/lists/*
 
 COPY benchmarks/environment.yml /tmp/environment.yml

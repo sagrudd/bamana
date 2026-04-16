@@ -139,10 +139,10 @@ support_matrix <- capabilities |>
     support_status = case_when(
       intended_support == "unsupported" ~ "unsupported",
       !attempted ~ "not_attempted",
-      n_success > 0 && n_failed > 0 ~ "mixed_results",
+      n_success > 0 & n_failed > 0 ~ "mixed_results",
       n_success > 0 ~ "supported_success",
       n_failed > 0 ~ "supported_failed",
-      n_unsupported > 0 && intended_support != "unsupported" ~ "supported_failed",
+      n_unsupported > 0 & intended_support != "unsupported" ~ "supported_failed",
       TRUE ~ "not_attempted"
     ),
     notes = str_trim(str_c(capability_notes, observed_notes, sep = " | "), side = "both"),

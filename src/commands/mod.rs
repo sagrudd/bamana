@@ -1,4 +1,5 @@
 pub mod annotate_rg;
+pub mod benchmark;
 pub mod check_eof;
 pub mod check_index;
 pub mod check_map;
