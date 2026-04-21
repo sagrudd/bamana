@@ -6,6 +6,7 @@ inspection, and transformation of BAM files and related bioinformatics formats.
 The current repository contains the first concrete CLI slice for:
 
 * `bamana identify <path>`
+* `bamana enumerate --input <file> [-j <threads>]`
 * `bamana subsample --input <file> --out <output>`
 * `bamana inspect_duplication --input <file>`
 * `bamana deduplicate --input <file> --out <cleaned_output>`
@@ -19,7 +20,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana check_map --bam <bamfile>`
 * `bamana check_sort --bam <bamfile>`
 * `bamana check_index --bam <bamfile>`
-* `bamana index --bam <bamfile>`
+* `bamana index --input <file>`
 * `bamana summary --bam <bamfile>`
 * `bamana check_tag --tag <TAG> --bam <bamfile>`
 * `bamana validate --bam <bamfile>`
@@ -57,11 +58,12 @@ See:
 The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
+* `enumerate` counts top-level records in a single BAM, SAM, FASTQ, FASTQ.GZ, or FASTA input using format-aware parsing, auto-materializes `FASTQ.GZI` sidecars for `FASTQ.GZ`, and then reuses the exact indexed total on later runs
 * `subsample` selects a subset of BAM, FASTQ, or FASTQ.GZ records under an explicit random or deterministic policy, preserves encounter order of retained records, and reports seed, identity basis, filter policy, and retained counts explicitly for production and benchmarking workflows
 * `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
 * `deduplicate` removes suspicious duplicated contiguous collection blocks conservatively according to an explicit remediation policy, with first-slice focus on adjacent repeated blocks and whole-file append signatures rather than molecular duplicate biology
 * `forensic_inspect` inspects BAM provenance anomalies and coercion hallmarks such as suspicious header/program/read-group mismatches, read-name regime shifts, abrupt metadata transitions, and duplicate-block signatures that remain parseable but operationally suspicious
-* `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy
+* `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy; `FASTQ.GZ` imports now parallelize across files and use adjacent `FASTQ.GZI` checkpoint totals to drive single-file worker-batch conversion
 * `annotate_rg` performs record-level `RG:Z:` aux-tag insertion, replacement, or normalization across BAM alignment records, with optional coordinated `@RG` header updates
 * `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
@@ -70,7 +72,7 @@ The current semantics are intentionally narrow:
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
-* `index` currently validates the BAM and resolves the output index path and format, but reports index creation as not yet implemented in this slice
+* `index` validates BAM inputs honestly, still defers BAI/CSI writing, and now creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with cumulative record totals stored at each checkpoint
 * `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
@@ -124,6 +126,7 @@ unsupported or partial comparisons explicitly instead of silently dropping them.
 
 ```bash
 cargo run -- identify example.bam
+cargo run -- enumerate --input reads.fastq.gz
 cargo run -- subsample --input input.bam --out input.subsampled.bam --fraction 0.1 --mode random --seed 12345
 cargo run -- subsample --input reads.fastq.gz --out reads.subsampled.fastq.gz --fraction 0.25 --mode deterministic --identity full_record
 cargo run -- inspect_duplication --input input.fastq.gz --full-scan
@@ -150,8 +153,10 @@ cargo run -- check_sort --bam example.bam
 cargo run -- check_sort --bam example.bam --sample-records 50000 --strict
 cargo run -- check_index --bam example.bam
 cargo run -- check_index --bam example.bam --require
-cargo run -- index --bam example.bam
-cargo run -- index --bam example.bam --format csi --out example.bam.csi
+cargo run -- index --input example.bam
+cargo run -- index --input example.bam --format csi --out example.bam.csi
+cargo run -- index --input reads.fastq.gz
+cargo run -- index --input reads.fastq.gz --format gzi --out reads.fastq.gzi
 cargo run -- summary --bam example.bam
 cargo run -- summary --bam example.bam --sample-records 250000 --include-mapq-hist --include-flags
 cargo run -- summary --bam example.bam --full-scan --prefer-index
@@ -266,10 +271,17 @@ priority order and reports whether a selected index is BAI, CSI, or unknown.
 Stale-index detection is heuristic and based on file modification times rather
 than proof that every indexed offset still matches the BAM.
 
-`index` currently establishes the index lifecycle command path by validating the
-BAM, selecting a default output path (`<bam>.bai` or `<bam>.csi`), and enforcing
-overwrite rules. Actual BAI/CSI writing is still deferred, and the JSON error
-response makes that limitation explicit instead of pretending an index was built.
+`index` now handles two distinct paths. For BAM it still validates the input,
+selects a default output path (`<bam>.bai` or `<bam>.csi`), and enforces
+overwrite rules, but actual BAI/CSI writing is still deferred and the JSON
+error response makes that limitation explicit instead of pretending an index
+was built. For `FASTQ.GZ` it writes a binary `FASTQ.GZI` sidecar, defaulting to
+`<input>.gzi`, with checkpoints sampled at approximately 1% compressed-offset
+intervals and pinned to completed FASTQ record boundaries rather than every
+read. The `FASTQ.GZI` sidecar stores header metadata plus sampled
+`(compressed_offset, uncompressed_offset, cumulative_records)` checkpoint
+pairs, so enumerate can reuse an exact indexed record total and consume can
+size parallel worker batches from the same sidecar.
 
 `summary` combines BAM header metadata with a bounded scan by default and
 switches to full-file totals only when EOF is actually reached or `--full-scan`

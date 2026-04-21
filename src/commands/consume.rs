@@ -319,6 +319,7 @@ fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<P
         mode: request.mode,
         files: active_files,
         output_path: request.out.clone(),
+        threads: request.threads,
         force: request.force,
         sort: request.sort,
         reference: request.reference.clone(),
@@ -602,10 +603,10 @@ fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
                 .to_string(),
         );
     }
-    if request.threads > 1 {
-        payload.notes.push(format!(
-            "Thread count was set to {}, but this slice does not yet parallelize consume execution.",
-            request.threads
-        ));
+    if request.threads == 1 {
+        payload.notes.push(
+            "Single-thread consume remains the deterministic path for otherwise parallelisable FASTQ.GZ imports."
+                .to_string(),
+        );
     }
 }

@@ -250,6 +250,12 @@ fn inspect_selected_index(
                 Some(error.to_json_error().message),
             ),
         },
+        IndexKind::Gzi => (
+            Some(false),
+            false,
+            IndexCompatibility::MismatchedOrInvalid,
+            Some("An adjacent FASTQ.GZI sidecar was found, but check_index only inspects BAM BAI/CSI indices.".to_string()),
+        ),
         IndexKind::Unknown => (
             Some(false),
             false,

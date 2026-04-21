@@ -9,6 +9,7 @@ pub mod bgzf;
 pub mod cli;
 pub mod commands;
 pub mod error;
+pub mod fasta;
 pub mod fastq;
 pub mod forensics;
 pub mod formats;

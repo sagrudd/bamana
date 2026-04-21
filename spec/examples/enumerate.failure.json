@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "enumerate",
+  "path": "notes.gff",
+  "data": null,
+  "error": {
+    "code": "unsupported_format",
+    "message": "Detected format is not supported by this command.",
+    "detail": "Enumerate currently supports BAM, SAM, FASTQ, FASTQ.GZ, and FASTA inputs; detected GFF.",
+    "hint": "Use a command intended for the detected format."
+  }
+}

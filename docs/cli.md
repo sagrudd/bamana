@@ -34,6 +34,27 @@ hash-based subsampling with explicit identity semantics. The command preserves
 encounter order of retained records, emits JSON only, and is designed to
 support both production workflows and reproducible benchmarking.
 
+`enumerate` is the simple record-counting command. It accepts a single
+`BAM`, `SAM`, `FASTQ`, `FASTQ.GZ`, or `FASTA` input via `--input`, emits JSON
+only, and reports a top-level record count derived from format-aware streaming
+parsing rather than filename heuristics. For `FASTQ.GZ`, the first enumerate
+run now materializes a sibling `FASTQ.GZI` sidecar and later enumerate runs
+reuse the exact record total stored in that sidecar.
+
+`index` is now format-aware. It still validates BAM inputs and reports honest
+BAI/CSI writer limitations, but it also creates sampled `FASTQ.GZI` sidecars
+for `FASTQ.GZ` inputs via `--input`. The default `FASTQ.GZI` rule places
+checkpoints at approximately 1% compressed-offset intervals, pins each
+checkpoint to the next completed FASTQ record boundary, and stores cumulative
+record totals for exact indexed enumeration and consume planning.
+
+`consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
+parallelized across files when multiple gzip inputs are present, and a single
+indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent
+`FASTQ.GZI` checkpoint totals. `-j 0` means use all available cores, while
+`-j 1` remains the deterministic fallback for otherwise parallelisable
+`FASTQ.GZ` ingestion.
+
 `consume` is the ingestion gateway into Bamana. It is the command that accepts
 files and directories containing supported upstream formats and normalizes them
 into a single BAM according to an explicit ingest mode. The current staged

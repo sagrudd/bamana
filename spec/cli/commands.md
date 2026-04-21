@@ -31,6 +31,41 @@ Deep content validity or full semantic correctness.
 Key output concepts:
 `detected_format`, `container`, `confidence`.
 
+## `enumerate`
+
+Synopsis:
+`bamana enumerate --input <file> [-j, --threads <N>]`
+
+Semantics:
+Counts top-level records in a supported single-file input using format-aware
+streaming parsing. In the current slice, a FASTA entry counts as one record,
+each FASTQ record counts as one record, each SAM alignment line counts as one
+record, and each BAM alignment record counts as one record. For `FASTQ.GZ`,
+enumeration now materializes a sibling `FASTQ.GZI` sidecar when one is absent
+and then reuses the stored exact total-record count on subsequent runs instead
+of rewalking the gzip stream.
+
+Current input support:
+
+* `BAM`
+* `SAM`
+* `FASTQ`
+* `FASTQ.GZ`
+* `FASTA`
+
+Does prove:
+That the input parsed cleanly enough for the selected format-specific counter
+to reach EOF and report a stable record count. For `FASTQ.GZ`, it proves either
+that the sidecar was built successfully or that an existing sidecar carried a
+usable exact record total.
+
+Does not prove:
+Deep semantic validation beyond the parsing actually required for counting, nor
+support for directories, CRAM, BED, or GFF in this slice.
+
+Key output concepts:
+`detected_format`, `records`.
+
 ## `consume`
 
 Synopsis:
@@ -70,6 +105,17 @@ Directory traversal rules:
 * symlinks are not followed in the current slice
 * unsupported or skipped entries are reported explicitly in JSON
 
+FASTQ.GZ execution rules:
+
+* `-j 0` means use all available cores
+* `-j 1` is the deterministic fallback for otherwise parallelisable `FASTQ.GZ`
+  imports
+* when a single `FASTQ.GZ` input has an adjacent `FASTQ.GZI`, consume uses the
+  checkpoint totals to size a worker-batch conversion pipeline
+* when multiple `FASTQ.GZ` inputs are present, consume parallelizes import
+  across files and does not preserve discovery-order determinism unless the
+  caller constrains execution to one thread
+
 Does prove:
 Deterministic discovery, input classification, mixed-format policy enforcement,
 and staged BAM normalization for supported inputs. In dry-run mode it proves
@@ -81,7 +127,7 @@ Successful BAM normalization unless the response explicitly reports a written
 output. It does not imply alignment for raw-read inputs, and it does not imply
 reference independence for CRAM unless that is explicitly reported. Cache-backed
 CRAM decoding, include/exclude glob filtering, checksum verification, and
-post-ingest index creation remain deferred in the current slice.
+post-ingest BAM index creation remain deferred in the current slice.
 
 Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
@@ -495,18 +541,28 @@ Key output concepts:
 ## `index`
 
 Synopsis:
-`bamana index --bam <bamfile> [--out <path>] [--force] [--format <bai|csi>]`
+`bamana index --input <file> [--out <path>] [--force] [--format <bai|csi|gzi>]`
 
 Semantics:
-Establishes the index-creation command path, validates BAM plausibility, and
-resolves output rules. In the current slice it reports writer limitations
-honestly rather than pretending an index was created.
+Creates a format-appropriate sidecar index for supported inputs. BAM input still
+validates plausibility and resolves output rules honestly, but BAI/CSI writing
+remains deferred in the current slice. `FASTQ.GZ` input writes a binary
+`FASTQ.GZI` sidecar by scanning the gzip stream once and sampling checkpoint
+boundaries at approximately 1% compressed-offset intervals by default, pinned
+to completed FASTQ record boundaries rather than arbitrary byte positions. The
+binary `FASTQ.GZI` payload stores header metadata plus sampled
+`(compressed_offset, uncompressed_offset, cumulative_records)` checkpoint
+pairs.
 
 Does prove:
-Command input validation and output-path resolution.
+For BAM: command input validation and output-path resolution.
+For FASTQ.GZ: that a `FASTQ.GZI` sidecar was written and that its checkpoints
+track approximate compressed-stream progress at record-safe boundaries.
 
 Does not prove:
-That index creation occurred unless `created: true` is returned.
+That BAM index creation occurred unless `created: true` is returned.
+That a `FASTQ.GZI` checkpoint exists for every read or every gzip member
+boundary; the sidecar is intentionally sampled rather than exhaustive.
 
 Key output concepts:
 `requested_index_kind`, `output_index`, `notes`.

@@ -19,6 +19,8 @@ pub enum IndexKind {
     Bai,
     #[serde(rename = "CSI")]
     Csi,
+    #[serde(rename = "GZI")]
+    Gzi,
     #[serde(rename = "UNKNOWN")]
     Unknown,
 }
@@ -81,7 +83,9 @@ pub fn resolve_index_for_bam(path: &Path) -> IndexResolution {
     if let Some(candidate) = discover_index_candidates(path, false).into_iter().next() {
         match candidate.kind {
             IndexKind::Bai => return IndexResolution::Present(candidate),
-            IndexKind::Csi | IndexKind::Unknown => return IndexResolution::Unsupported(candidate),
+            IndexKind::Csi | IndexKind::Gzi | IndexKind::Unknown => {
+                return IndexResolution::Unsupported(candidate);
+            }
         }
     }
 
@@ -92,6 +96,11 @@ pub fn default_index_output_path(bam_path: &Path, kind: IndexKind) -> Result<Pat
     match kind {
         IndexKind::Bai => Ok(PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()))),
         IndexKind::Csi => Ok(PathBuf::from(format!("{}.csi", bam_path.to_string_lossy()))),
+        IndexKind::Gzi => {
+            let mut path = bam_path.to_path_buf();
+            path.set_extension("gzi");
+            Ok(path)
+        }
         IndexKind::Unknown => Err(AppError::UnsupportedIndex {
             path: bam_path.to_path_buf(),
             detail: "Unknown index kind cannot be used to derive an output path.".to_string(),

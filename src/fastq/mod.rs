@@ -61,7 +61,7 @@ pub fn count_fastq_records(path: &Path) -> Result<u64, AppError> {
 
 pub fn count_fastq_records_with_label(path: &Path, label: &Path) -> Result<u64, AppError> {
     let mut reader = open_fastq_reader_with_label(path, label)?;
-    let mut records = 0u64;
+    let mut records = 0_u64;
 
     loop {
         let Some(_record) = read_next_fastq_record(&mut reader, label)? else {

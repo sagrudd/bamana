@@ -98,7 +98,7 @@
     },
     "indexKind": {
       "type": ["string", "null"],
-      "enum": ["BAI", "CSI", "UNKNOWN", null]
+      "enum": ["BAI", "CSI", "GZI", "UNKNOWN", null]
     },
     "checksumMode": {
       "type": ["string", "null"],

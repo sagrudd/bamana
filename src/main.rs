@@ -18,6 +18,7 @@ use commands::{
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
     deduplicate::DeduplicateRequest,
+    enumerate::EnumerateRequest,
     fastq::FastqRequest,
     forensic_inspect::ForensicInspectRequest,
     header::{HeaderRequest, HeaderResponse},
@@ -55,6 +56,14 @@ fn main() -> ExitCode {
                 threads: args.threads,
                 container_image: args.container_image,
                 force: args.force,
+            });
+            emit_response(&response, cli.global.json_pretty)
+        }
+        Commands::Enumerate(args) => {
+            let input = args.input;
+            let response = commands::enumerate::run(EnumerateRequest {
+                input: input.clone(),
+                threads: args.threads,
             });
             emit_response(&response, cli.global.json_pretty)
         }

@@ -188,7 +188,7 @@ write_result() {
     --argjson include_staging_in_timing "$include_staging_in_timing" \
     --arg storage_context "$storage_context" \
     --argjson input_bytes "${input_bytes:-0}" \
-    --argjson input_records "${input_records:-0}" \
+    --argjson input_records "${input_records:-null}" \
     --arg tool "$tool" \
     --arg tool_version "$tool_version" \
     --arg workflow_variant "$workflow_variant" \
@@ -210,7 +210,7 @@ write_result() {
     --arg output_path "$output_target" \
     --argjson output_bytes "${output_bytes:-null}" \
     --argjson compression_ratio "${compression_ratio:-null}" \
-    --argjson records_processed "${records_processed:-0}" \
+    --argjson records_processed "${records_processed:-null}" \
     --argjson throughput_records_per_sec "${throughput_records_per_sec:-null}" \
     --argjson throughput_bytes_per_sec "${throughput_bytes_per_sec:-null}" \
     --arg container_image "$container_image" \
@@ -311,7 +311,7 @@ command_line="$(tr '\n' ' ' <"$command_file" | sed 's/[[:space:]]\+/ /g; s/^ //;
 
 if [[ "$support_status" != "supported" ]]; then
   combined_notes="$notes"
-  write_result 0 false "" "" "" "" "" "" "" "${input_records:-0}" "$started_at" "$finished_at" "$command_line" "$combined_notes"
+  write_result 0 false "" "" "" "" "" "" "" "${input_records:-}" "$started_at" "$finished_at" "$command_line" "$combined_notes"
   exit 0
 fi
 
@@ -365,7 +365,7 @@ write_result \
   "${max_rss_bytes:-}" \
   "${output_bytes:-}" \
   "${compression_ratio:-}" \
-  "${input_records:-0}" \
+  "${input_records:-}" \
   "$started_at" \
   "$finished_at" \
   "$command_line" \

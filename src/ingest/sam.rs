@@ -33,6 +33,15 @@ pub fn read_sam_file_with_label(path: &Path, label: &Path) -> Result<ParsedSamFi
     read_sam_reader(BufReader::new(file), label)
 }
 
+pub fn count_sam_records(path: &Path) -> Result<u64, AppError> {
+    count_sam_records_with_label(path, path)
+}
+
+pub fn count_sam_records_with_label(path: &Path, label: &Path) -> Result<u64, AppError> {
+    let file = File::open(path).map_err(|error| AppError::from_io(label, error))?;
+    count_sam_reader(BufReader::new(file), label)
+}
+
 fn read_sam_reader<R: BufRead>(reader: R, path: &Path) -> Result<ParsedSamFile, AppError> {
     let mut header_lines = Vec::new();
     let mut records = Vec::new();
@@ -79,6 +88,42 @@ fn read_sam_reader<R: BufRead>(reader: R, path: &Path) -> Result<ParsedSamFile, 
         references,
         records,
     })
+}
+
+fn count_sam_reader<R: BufRead>(reader: R, path: &Path) -> Result<u64, AppError> {
+    let mut seen_record = false;
+    let mut records = 0_u64;
+    let mut ref_name_to_id = HashMap::new();
+    let mut references = Vec::new();
+
+    for line_result in reader.lines() {
+        let line = line_result.map_err(|error| AppError::from_io(path, error))?;
+        if line.is_empty() {
+            continue;
+        }
+
+        if line.starts_with('@') {
+            if seen_record {
+                return Err(AppError::InvalidHeader {
+                    path: path.to_path_buf(),
+                    detail: "SAM header lines were encountered after alignment records began."
+                        .to_string(),
+                });
+            }
+            if line.starts_with("@SQ") {
+                let reference = parse_sq_line(path, &line, references.len())?;
+                ref_name_to_id.insert(reference.name.clone(), reference.index as i32);
+                references.push(reference);
+            }
+            continue;
+        }
+
+        seen_record = true;
+        let _ = parse_alignment_line(path, &line, &ref_name_to_id)?;
+        records += 1;
+    }
+
+    Ok(records)
 }
 
 fn parse_sq_line(path: &Path, line: &str, index: usize) -> Result<ReferenceRecord, AppError> {
@@ -516,7 +561,7 @@ where
 mod tests {
     use std::fs;
 
-    use super::read_sam_file;
+    use super::{count_sam_records, read_sam_file};
 
     #[test]
     fn parses_minimal_sam_with_header_and_aux() {
@@ -540,5 +585,26 @@ mod tests {
         assert_eq!(parsed.records[0].ref_id, 0);
         assert_eq!(parsed.records[0].pos, 0);
         assert_eq!(parsed.records[0].n_cigar_op, 1);
+    }
+
+    #[test]
+    fn counts_sam_alignment_records() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-sam-count-{}.sam", std::process::id()));
+        fs::write(
+            &path,
+            concat!(
+                "@HD\tVN:1.6\tSO:unsorted\n",
+                "@SQ\tSN:chr1\tLN:10\n",
+                "read1\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\t!!!!\n",
+                "read2\t4\t*\t0\t0\t*\t*\t0\t0\tTTAA\t####\n"
+            ),
+        )
+        .expect("sam fixture should write");
+
+        let count = count_sam_records(&path).expect("sam should count");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(count, 2);
     }
 }

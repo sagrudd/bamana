@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "command": "enumerate",
+  "path": "example.fastq.gz",
+  "data": {
+    "detected_format": "FASTQ.GZ",
+    "records": 2450017
+  },
+  "error": null
+}

@@ -68,10 +68,8 @@ process STAGE_INPUT {
 
     if [[ "${inputType}" == "BAM" ]]; then
       records_processed=\$(samtools view -c "${input_file}")
-    elif [[ "${inputType}" == "FASTQ_GZ" ]]; then
-      records_processed=\$(gzip -dc "${input_file}" | awk 'END { printf "%.0f", NR / 4 }')
     else
-      records_processed=0
+      records_processed=null
     fi
 
     jq -n \
@@ -100,7 +98,7 @@ process STAGE_INPUT {
       --argjson include_staging_in_timing ${includeStagingInTiming} \
       --arg notes "${notes}" \
       --argjson input_bytes "\${input_bytes}" \
-      --argjson records_processed "\${records_processed}" \
+      --argjson records_processed \${records_processed} \
       '{
         input_id: \$input_id,
         input_type: \$input_type,

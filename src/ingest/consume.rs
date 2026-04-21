@@ -1,6 +1,8 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+    thread,
 };
 
 use clap::ValueEnum;
@@ -15,7 +17,10 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
-    fastq::read_fastq_as_unmapped_records_with_label,
+    fastq::{
+        gzi::{fastq_gzi_output_path, read_fastq_gzi},
+        read_fastq_as_unmapped_records_threaded_with_label, resolved_threads,
+    },
     formats::probe::DetectedFormat,
     ingest::{
         cram::{
@@ -63,6 +68,7 @@ pub struct ConsumeExecutionOptions {
     pub mode: ConsumeMode,
     pub files: Vec<DiscoveredFile>,
     pub output_path: PathBuf,
+    pub threads: usize,
     pub force: bool,
     pub sort: ConsumeSortOrder,
     pub reference: Option<PathBuf>,
@@ -362,35 +368,59 @@ fn execute_unmapped_consume(
         });
     }
 
-    let mut records = Vec::new();
-    for file in &options.files {
-        match file.detected_format {
-            DetectedFormat::Fastq | DetectedFormat::FastqGz => {
-                let mut file_records = read_fastq_as_unmapped_records_with_label(
-                    &file.path,
-                    &file.logical_path,
-                    options.read_group.as_deref(),
-                )?;
-                records.append(&mut file_records);
-            }
-            other => {
-                return Err(AppError::UnsupportedInputFormat {
-                    path: file.logical_path.clone(),
-                    format: format!("Detected unsupported raw-read input format {other}."),
-                });
-            }
-        }
-    }
+    let resolved = resolved_threads(options.threads);
+    let deterministic = resolved == 1;
+    let gz_input_count = options
+        .files
+        .iter()
+        .filter(|file| matches!(file.detected_format, DetectedFormat::FastqGz))
+        .count();
+    let indexed_single_fastq_gz = options.files.len() == 1
+        && matches!(options.files[0].detected_format, DetectedFormat::FastqGz)
+        && fastq_gzi_output_path(&options.files[0].path).is_file();
+
+    let mut notes = vec![
+        "FASTQ inputs were converted to unmapped BAM records.".to_string(),
+        "No alignments were inferred or fabricated during unmapped ingestion.".to_string(),
+    ];
+
+    let mut records = if deterministic {
+        read_unmapped_inputs_serial(options)?
+    } else if options.files.len() > 1 && gz_input_count > 1 {
+        notes.push(format!(
+            "FASTQ.GZ import used {} worker threads across {} input files without preserving discovery-order determinism.",
+            resolved.min(options.files.len()),
+            gz_input_count
+        ));
+        read_unmapped_inputs_parallel(options, resolved)?
+    } else if indexed_single_fastq_gz {
+        let index = read_fastq_gzi(&fastq_gzi_output_path(&options.files[0].path))?;
+        notes.push(format!(
+            "Indexed FASTQ.GZ import used {} threads with worker-batch conversion guided by FASTQ.GZI checkpoint totals.",
+            resolved
+        ));
+        read_fastq_as_unmapped_records_threaded_with_label(
+            &options.files[0].path,
+            &options.files[0].logical_path,
+            options.read_group.as_deref(),
+            resolved,
+            Some(index.total_records),
+        )?
+    } else {
+        read_unmapped_inputs_serial(options)?
+    };
 
     let mut header_text = synthetic_unmapped_header(
         options.sample.as_deref(),
         options.read_group.as_deref(),
         options.platform,
     );
-    let mut notes = vec![
-        "FASTQ inputs were converted to unmapped BAM records.".to_string(),
-        "No alignments were inferred or fabricated during unmapped ingestion.".to_string(),
-    ];
+    if deterministic {
+        notes.push(
+            "FASTQ.GZ import remained deterministic because execution used a single worker thread."
+                .to_string(),
+        );
+    }
 
     if matches!(options.sort, ConsumeSortOrder::Queryname) {
         sort_records(&mut records, ConsumeSortOrder::Queryname);
@@ -419,6 +449,101 @@ fn execute_unmapped_consume(
         decode_without_external_reference: None,
         notes,
     })
+}
+
+fn read_unmapped_inputs_serial(
+    options: &ConsumeExecutionOptions,
+) -> Result<Vec<RecordLayout>, AppError> {
+    let mut records = Vec::new();
+    for file in &options.files {
+        let mut file_records = read_single_unmapped_input(file, options.read_group.as_deref(), 1)?;
+        records.append(&mut file_records);
+    }
+    Ok(records)
+}
+
+fn read_unmapped_inputs_parallel(
+    options: &ConsumeExecutionOptions,
+    threads: usize,
+) -> Result<Vec<RecordLayout>, AppError> {
+    let worker_count = threads.min(options.files.len()).max(1);
+    if worker_count == 1 {
+        return read_unmapped_inputs_serial(options);
+    }
+
+    let shared_files = Arc::new(Mutex::new(options.files.clone().into_iter()));
+    let mut handles = Vec::with_capacity(worker_count);
+
+    for _ in 0..worker_count {
+        let shared_files = Arc::clone(&shared_files);
+        let read_group = options.read_group.clone();
+        handles.push(thread::spawn(
+            move || -> Result<Vec<RecordLayout>, AppError> {
+                let mut worker_records = Vec::new();
+                loop {
+                    let next_file = {
+                        let mut lock = shared_files.lock().map_err(|_| AppError::Internal {
+                            message: "consume file-queue mutex was poisoned.".to_string(),
+                        })?;
+                        lock.next()
+                    };
+
+                    let Some(file) = next_file else {
+                        break;
+                    };
+
+                    let mut file_records =
+                        read_single_unmapped_input(&file, read_group.as_deref(), 1)?;
+                    worker_records.append(&mut file_records);
+                }
+                Ok(worker_records)
+            },
+        ));
+    }
+
+    let mut records = Vec::new();
+    for handle in handles {
+        let mut worker_records = handle.join().map_err(|_| AppError::Internal {
+            message: "consume raw-read worker panicked.".to_string(),
+        })??;
+        records.append(&mut worker_records);
+    }
+    Ok(records)
+}
+
+fn read_single_unmapped_input(
+    file: &DiscoveredFile,
+    read_group: Option<&str>,
+    threads: usize,
+) -> Result<Vec<RecordLayout>, AppError> {
+    match file.detected_format {
+        DetectedFormat::Fastq => read_fastq_as_unmapped_records_threaded_with_label(
+            &file.path,
+            &file.logical_path,
+            read_group,
+            1,
+            None,
+        ),
+        DetectedFormat::FastqGz => {
+            let index_path = fastq_gzi_output_path(&file.path);
+            let total_records_hint = if index_path.is_file() {
+                Some(read_fastq_gzi(&index_path)?.total_records)
+            } else {
+                None
+            };
+            read_fastq_as_unmapped_records_threaded_with_label(
+                &file.path,
+                &file.logical_path,
+                read_group,
+                threads,
+                total_records_hint,
+            )
+        }
+        other => Err(AppError::UnsupportedInputFormat {
+            path: file.logical_path.clone(),
+            format: format!("Detected unsupported raw-read input format {other}."),
+        }),
+    }
 }
 
 fn sort_records(records: &mut [RecordLayout], sort: ConsumeSortOrder) {
@@ -554,7 +679,7 @@ fn platform_name(platform: ConsumePlatform) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io::Write};
 
     use crate::{
         bam::{header::parse_bam_header, reader::BamReader, records::read_next_record_layout},
@@ -602,6 +727,7 @@ mod tests {
                 detected_format: crate::formats::probe::DetectedFormat::Bam,
             }],
             output_path: output.clone(),
+            threads: 0,
             force: true,
             sort: ConsumeSortOrder::None,
             reference: None,
@@ -642,6 +768,7 @@ mod tests {
                 detected_format: crate::formats::probe::DetectedFormat::Fastq,
             }],
             output_path: output.clone(),
+            threads: 0,
             force: true,
             sort: ConsumeSortOrder::Queryname,
             reference: None,
@@ -672,6 +799,108 @@ mod tests {
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn unmapped_consume_uses_indexed_fastq_gz_input() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-consume-fastq-gz-input-{}.fastq.gz",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-fastq-gz-output-{}.bam",
+            std::process::id()
+        ));
+        let index = crate::fastq::gzi::fastq_gzi_output_path(&input);
+        let file = fs::File::create(&input).expect("gzip fixture should create");
+        let mut encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        encoder
+            .write_all(b"@zread\nAC\n+\n!!\n@aread\nGT\n+\n##\n")
+            .expect("gzip fixture should write");
+        encoder.finish().expect("gzip fixture should finish");
+        crate::fastq::gzi::build_fastq_gzi(&input, &index).expect("index should build");
+
+        let execution = execute_consume(&ConsumeExecutionOptions {
+            mode: ConsumeMode::Unmapped,
+            files: vec![DiscoveredFile {
+                path: input.clone(),
+                logical_path: input.clone(),
+                detected_format: crate::formats::probe::DetectedFormat::FastqGz,
+            }],
+            output_path: output.clone(),
+            threads: 0,
+            force: true,
+            sort: ConsumeSortOrder::None,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
+            sample: None,
+            read_group: Some("rg1".to_string()),
+            platform: None,
+        })
+        .expect("indexed fastq.gz consume should succeed");
+
+        assert_eq!(execution.records_written, 2);
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(index).expect("index should be removable");
+        fs::remove_file(output).expect("output should be removable");
+    }
+
+    #[test]
+    fn unmapped_consume_parallelizes_multiple_fastq_gz_inputs() {
+        let input_a = std::env::temp_dir().join(format!(
+            "bamana-consume-fastq-gz-a-{}.fastq.gz",
+            std::process::id()
+        ));
+        let input_b = std::env::temp_dir().join(format!(
+            "bamana-consume-fastq-gz-b-{}.fastq.gz",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-fastq-gz-multi-{}.bam",
+            std::process::id()
+        ));
+
+        for path in [&input_a, &input_b] {
+            let file = fs::File::create(path).expect("gzip fixture should create");
+            let mut encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+            encoder
+                .write_all(b"@read1\nAC\n+\n!!\n@read2\nGT\n+\n##\n")
+                .expect("gzip fixture should write");
+            encoder.finish().expect("gzip fixture should finish");
+        }
+
+        let execution = execute_consume(&ConsumeExecutionOptions {
+            mode: ConsumeMode::Unmapped,
+            files: vec![
+                DiscoveredFile {
+                    path: input_a.clone(),
+                    logical_path: input_a.clone(),
+                    detected_format: crate::formats::probe::DetectedFormat::FastqGz,
+                },
+                DiscoveredFile {
+                    path: input_b.clone(),
+                    logical_path: input_b.clone(),
+                    detected_format: crate::formats::probe::DetectedFormat::FastqGz,
+                },
+            ],
+            output_path: output.clone(),
+            threads: 0,
+            force: true,
+            sort: ConsumeSortOrder::None,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
+            sample: None,
+            read_group: None,
+            platform: None,
+        })
+        .expect("multi fastq.gz consume should succeed");
+
+        assert_eq!(execution.records_written, 4);
+        fs::remove_file(input_a).expect("fixture should be removable");
+        fs::remove_file(input_b).expect("fixture should be removable");
+        fs::remove_file(output).expect("output should be removable");
     }
 
     #[test]
@@ -714,6 +943,7 @@ mod tests {
                 },
             ],
             output_path: output,
+            threads: 0,
             force: true,
             sort: ConsumeSortOrder::None,
             reference: None,

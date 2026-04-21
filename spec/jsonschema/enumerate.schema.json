@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/enumerate.schema.json",
+  "title": "Bamana Enumerate Response",
+  "description": "Contract for bamana enumerate JSON output.",
+  "x-bamana-command": "enumerate",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detected_format", "records"],
+      "properties": {
+        "detected_format": {
+          "type": "string",
+          "enum": ["BAM", "SAM", "FASTQ", "FASTQ.GZ", "FASTA"]
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "enumerate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "enumerate" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/data" },
+            { "type": "null" }
+          ]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

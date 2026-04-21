@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/spec/jsonschema/index.schema.json",
   "title": "Bamana Index Response",
-  "description": "Contract for bamana index JSON output.",
+  "description": "Contract for bamana index JSON output across BAM and FASTQ.GZ inputs.",
   "x-bamana-command": "index",
   "x-bamana-contract-version": "0.1.0",
   "$defs": {
@@ -22,7 +22,10 @@
       "additionalProperties": false,
       "required": ["format", "requested_index_kind", "output_index", "notes"],
       "properties": {
-        "format": { "const": "BAM" },
+        "format": {
+          "type": "string",
+          "enum": ["BAM", "FASTQ.GZ"]
+        },
         "requested_index_kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
         "output_index": { "$ref": "#/$defs/outputIndex" },
         "notes": {

@@ -42,6 +42,8 @@ pub enum Commands {
     Benchmark(BenchmarkArgs),
     /// Determine the likely file type quickly and deterministically.
     Identify(IdentifyArgs),
+    /// Count top-level records in a supported bioinformatics file.
+    Enumerate(EnumerateArgs),
     /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
     Subsample(SubsampleArgs),
     /// Inspect suspicious collection-duplication and operator-error signatures.
@@ -82,7 +84,7 @@ pub enum Commands {
     /// Inspect BAM index presence, type, and shallow usability.
     #[command(name = "check_index")]
     CheckIndex(CheckIndexArgs),
-    /// Create a BAM index or report the deferred writer path honestly.
+    /// Create a BAM or FASTQ.GZ index according to the detected input format.
     Index(IndexArgs),
     /// Produce a fast operational summary of BAM characteristics.
     Summary(SummaryArgs),
@@ -136,6 +138,16 @@ pub struct IdentifyArgs {
 }
 
 #[derive(Debug, Args)]
+pub struct EnumerateArgs {
+    /// Input BAM, SAM, FASTQ, FASTQ.GZ, or FASTA file to enumerate.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Maximum worker threads for indexed FASTQ.GZ enumeration or future parallel implementations. Defaults to all available cores.
+    #[arg(short = 'j', long = "threads", default_value_t = 0)]
+    pub threads: usize,
+}
+
+#[derive(Debug, Args)]
 pub struct SubsampleArgs {
     /// Input BAM, FASTQ, or FASTQ.GZ file to subsample.
     #[arg(long = "input")]
@@ -171,8 +183,8 @@ pub struct SubsampleArgs {
     /// For BAM input, consider primary alignments only and drop secondary/supplementary records from output.
     #[arg(long = "primary-only")]
     pub primary_only: bool,
-    /// Requested worker thread count for future parallel implementations.
-    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    /// Maximum worker threads for FASTQ.GZ import. Defaults to all available cores; use 1 to keep deterministic ingest order.
+    #[arg(short = 'j', long = "threads", default_value_t = 0)]
     pub threads: usize,
     /// Overwrite an existing output path.
     #[arg(long = "force")]
@@ -669,13 +681,14 @@ pub struct CheckIndexArgs {
 pub enum IndexFormatArg {
     Bai,
     Csi,
+    Gzi,
 }
 
 #[derive(Debug, Args)]
 pub struct IndexArgs {
-    /// BAM file to index.
-    #[arg(long = "bam")]
-    pub bam: PathBuf,
+    /// Input BAM or FASTQ.GZ file to index.
+    #[arg(long = "input", alias = "bam")]
+    pub input: PathBuf,
     /// Explicit output path for the index file.
     #[arg(long = "out")]
     pub out: Option<PathBuf>,
