@@ -79,11 +79,13 @@
     },
     "enable_plots": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Generate the wall-time plot PDF/PNG from aggregated benchmark CSV outputs."
     },
     "enable_reports": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Generate the compact benchmark PDF report with reduced tables, salient observations, and memory shown in MiB instead of raw bytes."
     },
     "container_engine": {
       "type": "string",

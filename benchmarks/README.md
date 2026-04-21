@@ -259,13 +259,26 @@ The minimal execution slice always writes raw execution artifacts first:
 * `${output_dir}/metadata/`: wrapper planning JSON and raw-result inventory files
 * `${output_dir}/aggregated/`: tidy per-run CSV and grouped summary CSV
 * `${output_dir}/plots/`: benchmark figures such as `wall_time_by_tool.png`
+* `${output_dir}/reports/`: compact PDF benchmark report and reduced summary CSV when `enable_reports = true`
 
 The first plotting slice intentionally focuses on one honest figure:
 
 * wall time by tool and scenario, using successful measured runs only
 
 Later layers can extend this with throughput, memory, variability, and richer
-publication reporting once the raw-result-first path is stable.
+publication reporting once the raw-result-first path is stable. The current PDF
+report intentionally keeps only a reduced metric table so cells do not overlap:
+
+* tool
+* threads
+* median wall time
+* median byte throughput
+* peak RSS in MiB
+* successful-run count
+
+Raw byte-valued memory fields remain in the CSV layer, but the PDF renders
+memory as MiB explicitly so values like `4161536` are not mistaken for read
+counts.
 
 Build the capability-aware support layer with:
 
@@ -362,6 +375,11 @@ Rscript benchmarks/R/plot_benchmarks.R \
   --tidy-csv /abs/path/to/results/aggregated/tidy_results.csv \
   --summary-csv /abs/path/to/results/aggregated/tidy_summary.csv \
   --output-dir /abs/path/to/results/plots
+
+Rscript benchmarks/R/build_benchmark_report.R \
+  --tidy-csv /abs/path/to/results/aggregated/tidy_results.csv \
+  --summary-csv /abs/path/to/results/aggregated/tidy_summary.csv \
+  --output-dir /abs/path/to/results/reports
 ```
 
 Then inspect:
@@ -369,6 +387,7 @@ Then inspect:
 * `/abs/path/to/results/aggregated/tidy_results.csv`
 * `/abs/path/to/results/aggregated/tidy_summary.csv`
 * `/abs/path/to/results/plots/wall_time_by_tool.png`
+* `/abs/path/to/results/reports/benchmark_report.pdf`
 
 Direct path parameters remain available for ad hoc runs:
 

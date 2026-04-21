@@ -4,6 +4,9 @@ import groovy.json.JsonSlurper
 nextflow.enable.dsl = 2
 
 include { STAGE_INPUT } from './modules/stage_input'
+include { AGGREGATE_RESULTS } from './modules/aggregate_results'
+include { PLOT_RESULTS } from './modules/plot_results'
+include { REPORT_RESULTS } from './modules/report_results'
 include { RUN_BENCHMARK_MATRIX } from './subworkflows/run_benchmark_matrix'
 include { COLLECT_RESULTS } from './subworkflows/collect_results'
 
@@ -401,6 +404,33 @@ workflow {
         matrix_results.command_log
     )
 
+    aggregated_tidy_csv_ch = Channel.empty()
+    aggregated_summary_csv_ch = Channel.empty()
+    wall_pdf_ch = Channel.empty()
+    wall_png_ch = Channel.empty()
+    report_pdf_ch = Channel.empty()
+    report_summary_csv_ch = Channel.empty()
+    analysis_outputs_enabled = (params.enable_plots as boolean) || (params.enable_plotting as boolean) || (params.enable_reports as boolean)
+    plot_outputs_enabled = (params.enable_plots as boolean) || (params.enable_plotting as boolean)
+
+    if (analysis_outputs_enabled) {
+        aggregated = AGGREGATE_RESULTS(collected.raw_json.map { meta, result_json -> result_json }.collect())
+        aggregated_tidy_csv_ch = aggregated.tidy_csv
+        aggregated_summary_csv_ch = aggregated.summary_csv
+    }
+
+    if (plot_outputs_enabled && analysis_outputs_enabled) {
+        plotted = PLOT_RESULTS(aggregated_tidy_csv_ch, aggregated_summary_csv_ch)
+        wall_pdf_ch = plotted.wall_pdf
+        wall_png_ch = plotted.wall_png
+    }
+
+    if ((params.enable_reports as boolean) && analysis_outputs_enabled) {
+        reported = REPORT_RESULTS(aggregated_tidy_csv_ch, aggregated_summary_csv_ch)
+        report_pdf_ch = reported.report_pdf
+        report_summary_csv_ch = reported.report_summary_csv
+    }
+
     emit:
     raw_json = collected.raw_json
     raw_tsv = collected.raw_tsv
@@ -409,4 +439,10 @@ workflow {
     command_log = collected.command_log
     inventory_tsv = collected.inventory_tsv
     inventory_json = collected.inventory_json
+    tidy_csv = aggregated_tidy_csv_ch
+    summary_csv = aggregated_summary_csv_ch
+    wall_pdf = wall_pdf_ch
+    wall_png = wall_png_ch
+    report_pdf = report_pdf_ch
+    report_summary_csv = report_summary_csv_ch
 }
