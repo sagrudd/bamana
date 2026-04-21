@@ -314,9 +314,9 @@ fn main() -> ExitCode {
             emit_response(&response, cli.global.json_pretty)
         }
         Commands::Index(args) => {
-            let bam = args.bam;
+            let input = args.input;
             let response = commands::index::run(IndexRequest {
-                bam: bam.clone(),
+                input: input.clone(),
                 out: args.out,
                 force: args.force,
                 format: args.format,

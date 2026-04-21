@@ -1,7 +1,11 @@
+pub mod gzi;
+
 use std::{
     fs::File,
     io::{BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
+    sync::{Arc, Mutex, mpsc},
+    thread,
 };
 
 use flate2::read::MultiGzDecoder;
@@ -31,6 +35,34 @@ pub fn read_fastq_as_unmapped_records(
 }
 
 pub fn read_fastq_as_unmapped_records_with_label(
+    path: &Path,
+    label: &Path,
+    read_group: Option<&str>,
+) -> Result<Vec<RecordLayout>, AppError> {
+    read_fastq_as_unmapped_records_threaded_with_label(path, label, read_group, 1, None)
+}
+
+pub fn read_fastq_as_unmapped_records_threaded_with_label(
+    path: &Path,
+    label: &Path,
+    read_group: Option<&str>,
+    threads: usize,
+    total_records_hint: Option<u64>,
+) -> Result<Vec<RecordLayout>, AppError> {
+    if is_gzip_fastq_path(path) && resolved_threads(threads) > 1 {
+        return read_fastq_gz_as_unmapped_records_parallel_with_label(
+            path,
+            label,
+            read_group,
+            threads,
+            total_records_hint,
+        );
+    }
+
+    read_fastq_as_unmapped_records_serial_with_label(path, label, read_group)
+}
+
+fn read_fastq_as_unmapped_records_serial_with_label(
     path: &Path,
     label: &Path,
     read_group: Option<&str>,
@@ -297,6 +329,123 @@ fn build_unmapped_record(
         },
         aux_bytes,
     })
+}
+
+fn read_fastq_gz_as_unmapped_records_parallel_with_label(
+    path: &Path,
+    label: &Path,
+    read_group: Option<&str>,
+    threads: usize,
+    total_records_hint: Option<u64>,
+) -> Result<Vec<RecordLayout>, AppError> {
+    let resolved = resolved_threads(threads);
+    if resolved <= 1 {
+        return read_fastq_as_unmapped_records_serial_with_label(path, label, read_group);
+    }
+
+    let worker_count = resolved.saturating_sub(1).max(1);
+    let batch_records = batch_record_target(total_records_hint, worker_count);
+    let (batch_tx, batch_rx) = mpsc::sync_channel::<Vec<FastqRecord>>(worker_count * 2);
+    let shared_rx = Arc::new(Mutex::new(batch_rx));
+    let mut handles = Vec::with_capacity(worker_count);
+
+    for _ in 0..worker_count {
+        let rx = Arc::clone(&shared_rx);
+        let worker_label = label.to_path_buf();
+        let worker_read_group = read_group.map(|value| value.to_string());
+        handles.push(thread::spawn(
+            move || -> Result<Vec<RecordLayout>, AppError> {
+                let mut layouts = Vec::new();
+                loop {
+                    let batch = {
+                        let lock = rx.lock().map_err(|_| AppError::Internal {
+                            message: "FASTQ worker queue mutex was poisoned.".to_string(),
+                        })?;
+                        match lock.recv() {
+                            Ok(batch) => batch,
+                            Err(_) => break,
+                        }
+                    };
+
+                    for record in batch {
+                        layouts.push(build_unmapped_record(
+                            &worker_label,
+                            &record.raw_header_line,
+                            &record.sequence,
+                            &record.plus_line,
+                            &record.quality,
+                            worker_read_group.as_deref(),
+                        )?);
+                    }
+                }
+                Ok(layouts)
+            },
+        ));
+    }
+
+    let mut reader = open_fastq_reader_with_label(path, label)?;
+    let mut batch = Vec::with_capacity(batch_records);
+    loop {
+        let Some(record) = read_next_fastq_record(&mut reader, label)? else {
+            break;
+        };
+        batch.push(record);
+        if batch.len() >= batch_records {
+            if batch_tx
+                .send(std::mem::replace(
+                    &mut batch,
+                    Vec::with_capacity(batch_records),
+                ))
+                .is_err()
+            {
+                return Err(AppError::Internal {
+                    message: "FASTQ worker queue closed before parsing completed.".to_string(),
+                });
+            }
+        }
+    }
+
+    if !batch.is_empty() && batch_tx.send(batch).is_err() {
+        return Err(AppError::Internal {
+            message: "FASTQ worker queue closed before parsing completed.".to_string(),
+        });
+    }
+    drop(batch_tx);
+
+    let mut records = Vec::new();
+    for handle in handles {
+        let mut worker_records = handle.join().map_err(|_| AppError::Internal {
+            message: "FASTQ parser worker panicked.".to_string(),
+        })??;
+        records.append(&mut worker_records);
+    }
+
+    Ok(records)
+}
+
+fn batch_record_target(total_records_hint: Option<u64>, worker_count: usize) -> usize {
+    let Some(total_records) = total_records_hint else {
+        return 4096;
+    };
+    let per_worker = total_records / worker_count.max(1) as u64;
+    per_worker.clamp(1024, 16384) as usize
+}
+
+fn is_gzip_fastq_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("gz"))
+}
+
+pub fn resolved_threads(requested_threads: usize) -> usize {
+    let available = thread::available_parallelism()
+        .map(|parallelism| parallelism.get())
+        .unwrap_or(1);
+    if requested_threads == 0 {
+        available.max(1)
+    } else {
+        requested_threads.min(available).max(1)
+    }
 }
 
 fn parse_read_name(header_line: &str) -> Option<String> {
