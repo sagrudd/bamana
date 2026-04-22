@@ -128,5 +128,5 @@ The comparator path uses `fastcat` to own FASTQ.GZ ingress and pipes the
 result into `samtools import` for unmapped BAM materialization. That makes the
 comparison informative for ingress benchmarking while still keeping the
 resulting artifact in BAM space. The benchmark prep path itself now uses a
-Bamana-native FASTQ.GZ enumerator for input record counting, so the ingress
+Bamana ``enumerate`` for input record counting, so the ingress
 profile no longer shells out to `gzip -cd` just to size the run.

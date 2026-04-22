@@ -50,7 +50,7 @@ Bamana path:
 
 .. code-block:: bash
 
-   bamana_fastq_gz_enumerate --input <fastq.gz> --out <bamana.count.json>
+   bamana enumerate --input <fastq.gz> --json-pretty > <bamana.count.json>
 
 Comparator path:
 
@@ -58,8 +58,9 @@ Comparator path:
 
    gzip -cd <fastq.gz> | awk 'END { printf "%.0f\n", NR / 4 }' > <gzip.count.txt>
 
-The Bamana enumerator uses the repository's native FASTQ reader and counts
-records directly from the gzipped stream. The comparator intentionally exposes
+The Bamana path now uses the main CLI ``enumerate`` subcommand, which counts
+records directly from the gzipped stream and auto-materializes a sibling
+``FASTQ.GZI`` sidecar when one is absent. The comparator intentionally exposes
 the traditional shell pipeline so the benchmark can answer whether Bamana beats
 that baseline on the same input.
 

@@ -10,7 +10,6 @@ workdir=""
 threads="1"
 container_image=""
 bamana_bin=""
-bamana_enumerator_bin=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,7 +22,6 @@ while [[ $# -gt 0 ]]; do
     --threads) threads="$2"; shift 2 ;;
     --container-image) container_image="$2"; shift 2 ;;
     --bamana-bin) bamana_bin="$2"; shift 2 ;;
-    --bamana-enumerator-bin) bamana_enumerator_bin="$2"; shift 2 ;;
     *)
       echo "unknown argument: $1" >&2
       exit 2
@@ -36,7 +34,7 @@ if [[ "$profile" != "fastq_ingress" ]]; then
   exit 2
 fi
 
-for value_name in fastq bamana_output comparator_output report workdir container_image bamana_bin bamana_enumerator_bin; do
+for value_name in fastq bamana_output comparator_output report workdir container_image bamana_bin; do
   if [[ -z "${!value_name}" ]]; then
     echo "missing required argument: ${value_name}" >&2
     exit 2
@@ -57,7 +55,7 @@ input_id="${input_id%.fastq.gz}"
 input_id="${input_id%.fq.gz}"
 input_bytes="$(stat -c %s "${fastq}")"
 input_count_probe="${metadata_dir}/input_count_probe.json"
-"${bamana_enumerator_bin}" --input "${fastq}" --out "${input_count_probe}"
+"${bamana_bin}" enumerate --input "${fastq}" --json-pretty > "${input_count_probe}"
 input_records="$(jq -r '.data.records' "${input_count_probe}")"
 
 input_metrics_json="${metadata_dir}/input_metrics.json"

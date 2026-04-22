@@ -200,8 +200,6 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
         request.container_image.clone(),
         "--bamana-bin".to_string(),
         "/workspace/target/release/bamana".to_string(),
-        "--bamana-enumerator-bin".to_string(),
-        "/workspace/target/release/bamana_fastq_gz_enumerate".to_string(),
     ];
 
     run_and_log(
