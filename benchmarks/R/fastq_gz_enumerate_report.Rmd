@@ -25,6 +25,18 @@ library(dplyr)
 library(ggplot2)
 library(knitr)
 
+format_wall_seconds <- function(value) {
+  ifelse(
+    is.na(value),
+    "NA",
+    ifelse(
+      value >= 10,
+      sprintf("%.2f", value),
+      ifelse(value >= 1, sprintf("%.3f", value), sprintf("%.6f", value))
+    )
+  )
+}
+
 tidy_runs <- read_csv(params$tidy_csv, show_col_types = FALSE)
 summary_runs <- read_csv(params$summary_csv, show_col_types = FALSE)
 support_matrix <- read_csv(params$support_csv, show_col_types = FALSE)
@@ -63,7 +75,7 @@ display_runs <- tidy_runs %>%
     workflow_variant,
     status,
     semantic_equivalence,
-    wall_seconds = round(wall_seconds, 3),
+    wall_seconds = format_wall_seconds(wall_seconds),
     max_rss_bytes,
     output_path,
     output_bytes
@@ -80,7 +92,7 @@ plot_data <- successful_runs %>%
 
 ggplot(plot_data, aes(x = tool, y = wall_seconds, fill = tool)) +
   geom_col(width = 0.6, show.legend = FALSE) +
-  geom_text(aes(label = sprintf("%.2fs", wall_seconds)), vjust = -0.4, size = 3.5) +
+  geom_text(aes(label = sprintf("%ss", format_wall_seconds(wall_seconds))), vjust = -0.4, size = 3.5) +
   labs(
     title = "FASTQ.GZ record enumeration wall time",
     x = "Tool path",
