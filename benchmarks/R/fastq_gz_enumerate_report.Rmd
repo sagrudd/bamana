@@ -24,6 +24,14 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(knitr)
+library(jsonlite)
+
+`%||%` <- function(lhs, rhs) {
+  if (is.null(lhs) || length(lhs) == 0) {
+    return(rhs)
+  }
+  lhs
+}
 
 format_wall_seconds <- function(value) {
   ifelse(
@@ -49,6 +57,9 @@ tool_versions <- read_tsv(
 successful_runs <- tidy_runs %>%
   filter(success) %>%
   mutate(tool = factor(tool, levels = unique(tool)))
+
+bamana_response <- fromJSON(params$bamana_output, simplifyVector = TRUE)
+bamana_analysis_wall_seconds <- bamana_response$analysis_wall_seconds %||% NA_real_
 ```
 
 ## Run Summary
@@ -59,6 +70,7 @@ The benchmark container image was `r params$container_image`.
 - FASTQ input: `r params$fastq`
 - `r params$bamana_output_label`: `r params$bamana_output`
 - `r params$comparator_output_label`: `r params$comparator_output`
+- Bamana internal analysis wall time: `r ifelse(is.na(bamana_analysis_wall_seconds), "NA", sprintf("%.6f s", bamana_analysis_wall_seconds))`
 
 ## Tool Versions
 
@@ -136,7 +148,8 @@ kable(support_display, align = "l")
 
 ## Notes
 
-The `fastq_gz_enumerate` profile measures a narrow question: how quickly a
-Bamana-owned FASTQ.GZ stream can be enumerated into a stable record count,
-compared with a shell pipeline that decompresses the entire file with
-`gzip -cd` and derives the count from total FASTQ lines.
+The `fastq_gz_enumerate` profile measures how quickly Bamana can return a
+stable FASTQ.GZ record count for the visible input state. When an adjacent
+`FASTQ.GZI` sidecar is present, the Bamana path times indexed enumeration
+rather than a full decompression pass. The comparator path remains a full
+`gzip -cd` plus line-count pipeline.

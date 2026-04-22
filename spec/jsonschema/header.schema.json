@@ -135,6 +135,7 @@
         "ok": { "const": true },
         "command": { "const": "header" },
         "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": { "$ref": "#/$defs/data" },
         "error": { "type": "null" }
       }
@@ -147,6 +148,7 @@
         "ok": { "const": false },
         "command": { "const": "header" },
         "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": {
           "oneOf": [
             { "$ref": "#/$defs/data" },

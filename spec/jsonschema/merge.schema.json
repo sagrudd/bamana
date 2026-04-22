@@ -67,6 +67,7 @@
         "ok": { "const": true },
         "command": { "const": "merge" },
         "path": { "type": "null" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": { "$ref": "#/$defs/data" },
         "error": { "type": "null" }
       }
@@ -79,6 +80,7 @@
         "ok": { "const": false },
         "command": { "const": "merge" },
         "path": { "type": "null" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "object" }, { "type": "null" }] },
         "error": { "$ref": "./common/json_error.schema.json" }
       }

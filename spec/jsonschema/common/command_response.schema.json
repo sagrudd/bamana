@@ -17,6 +17,10 @@
     "path": {
       "$ref": "./defs.schema.json#/$defs/pathOrNull"
     },
+    "analysis_wall_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
     "data": {},
     "error": {
       "oneOf": [

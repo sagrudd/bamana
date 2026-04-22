@@ -169,6 +169,7 @@
         "ok": { "const": true },
         "command": { "const": "inspect_duplication" },
         "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": { "$ref": "#/$defs/successData" },
         "error": { "type": "null" }
       }
@@ -181,6 +182,7 @@
         "ok": { "const": false },
         "command": { "const": "inspect_duplication" },
         "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
         "data": {
           "oneOf": [{ "$ref": "#/$defs/failureData" }, { "type": "null" }]
         },

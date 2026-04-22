@@ -1,4 +1,4 @@
-use std::process::ExitCode;
+use std::{process::ExitCode, time::Instant};
 
 use bamana::{
     cli::{Cli, Commands, ReheaderPlatform},
@@ -7,13 +7,14 @@ use bamana::{
     json::{CommandResponse, emit_response},
 };
 use clap::Parser;
+use serde::Serialize;
 use commands::{
     annotate_rg::AnnotateRgRequest,
     benchmark::BenchmarkRequest,
-    check_eof::{CheckEofRequest, CheckEofResponse},
+    check_eof::CheckEofRequest,
     check_index::CheckIndexRequest,
-    check_map::{CheckMapPayload, CheckMapRequest},
-    check_sort::{CheckSortPayload, CheckSortRequest},
+    check_map::CheckMapRequest,
+    check_sort::CheckSortRequest,
     check_tag::CheckTagRequest,
     checksum::ChecksumRequest,
     consume::ConsumeRequest,
@@ -21,8 +22,8 @@ use commands::{
     enumerate::EnumerateRequest,
     fastq::FastqRequest,
     forensic_inspect::ForensicInspectRequest,
-    header::{HeaderRequest, HeaderResponse},
-    identify::{IdentifyRequest, IdentifyResponse},
+    header::HeaderRequest,
+    identify::IdentifyRequest,
     index::IndexRequest,
     inspect_duplication::InspectDuplicationRequest,
     merge::MergeRequest,
@@ -32,23 +33,31 @@ use commands::{
     summary::SummaryRequest,
     unmap::UnmapRequest,
     validate::ValidateRequest,
-    verify::{VerifyRequest, VerifyResponse},
+    verify::VerifyRequest,
 };
+
+fn emit_timed_response<T, F>(pretty: bool, build: F) -> ExitCode
+where
+    T: Serialize,
+    F: FnOnce() -> CommandResponse<T>,
+{
+    let started = Instant::now();
+    let response = build().with_analysis_wall_seconds(started.elapsed().as_secs_f64());
+    emit_response(&response, pretty)
+}
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Identify(args) => {
+        Commands::Identify(args) => emit_timed_response(cli.global.json_pretty, || {
             let path = args.path;
             let result = commands::identify::run(IdentifyRequest { path: path.clone() });
-            let response: CommandResponse<IdentifyResponse> =
-                CommandResponse::from_result("identify", Some(path.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Benchmark(args) => {
+            CommandResponse::from_result("identify", Some(path.as_path()), result)
+        }),
+        Commands::Benchmark(args) => emit_timed_response(cli.global.json_pretty, || {
             let fastq = args.fastq;
-            let response = commands::benchmark::run(BenchmarkRequest {
+            commands::benchmark::run(BenchmarkRequest {
                 profile: args.profile,
                 fastq: fastq.clone(),
                 bam: args.bam,
@@ -56,20 +65,18 @@ fn main() -> ExitCode {
                 threads: args.threads,
                 container_image: args.container_image,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Enumerate(args) => {
+            })
+        }),
+        Commands::Enumerate(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
-            let response = commands::enumerate::run(EnumerateRequest {
+            commands::enumerate::run(EnumerateRequest {
                 input: input.clone(),
                 threads: args.threads,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Subsample(args) => {
+            })
+        }),
+        Commands::Subsample(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
-            let response = commands::subsample::run(SubsampleRequest {
+            commands::subsample::run(SubsampleRequest {
                 input: input.clone(),
                 out: args.out,
                 fraction: args.fraction,
@@ -82,12 +89,11 @@ fn main() -> ExitCode {
                 primary_only: args.primary_only,
                 threads: args.threads,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::InspectDuplication(args) => {
+            })
+        }),
+        Commands::InspectDuplication(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
-            let response = commands::inspect_duplication::run(InspectDuplicationRequest {
+            commands::inspect_duplication::run(InspectDuplicationRequest {
                 input: input.clone(),
                 options: DuplicationScanOptions {
                     identity_mode: args.identity,
@@ -99,12 +105,11 @@ fn main() -> ExitCode {
                         args.sample_records.max(1) as u64
                     },
                 },
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Deduplicate(args) => {
+            })
+        }),
+        Commands::Deduplicate(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
-            let response = commands::deduplicate::run(DeduplicateRequest {
+            commands::deduplicate::run(DeduplicateRequest {
                 input: input.clone(),
                 out: args.out,
                 mode: args.mode,
@@ -119,24 +124,22 @@ fn main() -> ExitCode {
                 full_scan: args.full_scan,
                 reindex: args.reindex,
                 json_pretty: cli.global.json_pretty,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::ForensicInspect(args) => {
+            })
+        }),
+        Commands::ForensicInspect(args) => emit_timed_response(cli.global.json_pretty, || {
             let scopes = args.resolved_scopes();
             let input = args.input;
-            let response = commands::forensic_inspect::run(ForensicInspectRequest {
+            commands::forensic_inspect::run(ForensicInspectRequest {
                 input: input.clone(),
                 sample_records: args.sample_records,
                 full_scan: args.full_scan,
                 max_findings: args.max_findings,
                 scopes,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::AnnotateRg(args) => {
+            })
+        }),
+        Commands::AnnotateRg(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::annotate_rg::run(AnnotateRgRequest {
+            commands::annotate_rg::run(AnnotateRgRequest {
                 bam: bam.clone(),
                 rg_id: args.rg_id,
                 out: args.out,
@@ -152,11 +155,10 @@ fn main() -> ExitCode {
                 threads: args.threads,
                 force: args.force,
                 dry_run: args.dry_run,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Consume(args) => {
-            let response = commands::consume::run(ConsumeRequest {
+            })
+        }),
+        Commands::Consume(args) => emit_timed_response(cli.global.json_pretty, || {
+            commands::consume::run(ConsumeRequest {
                 input: args.input,
                 out: args.out,
                 mode: args.mode,
@@ -175,22 +177,20 @@ fn main() -> ExitCode {
                 platform: args.platform,
                 include_glob: args.include_glob,
                 exclude_glob: args.exclude_glob,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Fastq(args) => {
+            })
+        }),
+        Commands::Fastq(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::fastq::run(FastqRequest {
+            commands::fastq::run(FastqRequest {
                 bam: bam.clone(),
                 out: args.out,
                 threads: args.threads,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Checksum(args) => {
+            })
+        }),
+        Commands::Checksum(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::checksum::run(ChecksumRequest {
+            commands::checksum::run(ChecksumRequest {
                 bam: bam.clone(),
                 mode: args.mode,
                 algorithm: args.algorithm,
@@ -198,11 +198,10 @@ fn main() -> ExitCode {
                 exclude_tags: args.exclude_tags,
                 only_primary: args.only_primary,
                 mapped_only: args.mapped_only,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Merge(args) => {
-            let response = commands::merge::run(MergeRequest {
+            })
+        }),
+        Commands::Merge(args) => emit_timed_response(cli.global.json_pretty, || {
+            commands::merge::run(MergeRequest {
                 bam: args.bam,
                 out: args.out,
                 sort: args.sort,
@@ -212,10 +211,9 @@ fn main() -> ExitCode {
                 verify_checksum: args.verify_checksum,
                 threads: args.threads,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Reheader(args) => {
+            })
+        }),
+        Commands::Reheader(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let set_platform = args.set_platform.map(|platform| match platform {
                 ReheaderPlatform::Ont => "ONT".to_string(),
@@ -223,7 +221,7 @@ fn main() -> ExitCode {
                 ReheaderPlatform::Pacbio => "PACBIO".to_string(),
                 ReheaderPlatform::Unknown => "UNKNOWN".to_string(),
             });
-            let response = commands::reheader::run(ReheaderRequest {
+            commands::reheader::run(ReheaderRequest {
                 bam: bam.clone(),
                 out: args.out,
                 header: args.header,
@@ -242,12 +240,11 @@ fn main() -> ExitCode {
                 force: args.force,
                 reindex: args.reindex,
                 verify_checksum: args.verify_checksum,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Sort(args) => {
+            })
+        }),
+        Commands::Sort(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::sort::run(SortRequest {
+            commands::sort::run(SortRequest {
                 bam: bam.clone(),
                 out: args.out,
                 order: args.order,
@@ -257,42 +254,34 @@ fn main() -> ExitCode {
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Unmap(args) => {
+            })
+        }),
+        Commands::Unmap(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::unmap::run(UnmapRequest {
+            commands::unmap::run(UnmapRequest {
                 bam: bam.clone(),
                 out: args.out,
                 dry_run: args.dry_run,
                 threads: args.threads,
                 force: args.force,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Verify(args) => {
+            })
+        }),
+        Commands::Verify(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let result = commands::verify::run(VerifyRequest { bam: bam.clone() });
-            let response: CommandResponse<VerifyResponse> =
-                CommandResponse::from_result("verify", Some(bam.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::CheckEof(args) => {
+            CommandResponse::from_result("verify", Some(bam.as_path()), result)
+        }),
+        Commands::CheckEof(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let result = commands::check_eof::run(CheckEofRequest { bam: bam.clone() });
-            let response: CommandResponse<CheckEofResponse> =
-                CommandResponse::from_result("check_eof", Some(bam.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Header(args) => {
+            CommandResponse::from_result("check_eof", Some(bam.as_path()), result)
+        }),
+        Commands::Header(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let result = commands::header::run(HeaderRequest { bam: bam.clone() });
-            let response: CommandResponse<HeaderResponse> =
-                CommandResponse::from_result("header", Some(bam.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::CheckMap(args) => {
+            CommandResponse::from_result("header", Some(bam.as_path()), result)
+        }),
+        Commands::CheckMap(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let result = commands::check_map::run(CheckMapRequest {
                 bam: bam.clone(),
@@ -300,44 +289,39 @@ fn main() -> ExitCode {
                 full_scan: args.full_scan,
                 prefer_index: args.prefer_index,
             });
-            let response: CommandResponse<CheckMapPayload> =
-                CommandResponse::from_result("check_map", Some(bam.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::CheckIndex(args) => {
+            CommandResponse::from_result("check_map", Some(bam.as_path()), result)
+        }),
+        Commands::CheckIndex(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::check_index::run(CheckIndexRequest {
+            commands::check_index::run(CheckIndexRequest {
                 bam: bam.clone(),
                 require: args.require,
                 prefer_csi: args.prefer_csi,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Index(args) => {
+            })
+        }),
+        Commands::Index(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
-            let response = commands::index::run(IndexRequest {
+            commands::index::run(IndexRequest {
                 input: input.clone(),
                 out: args.out,
                 force: args.force,
                 format: args.format,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Summary(args) => {
+            })
+        }),
+        Commands::Summary(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::summary::run(SummaryRequest {
+            commands::summary::run(SummaryRequest {
                 bam: bam.clone(),
                 sample_records: args.sample_records,
                 full_scan: args.full_scan,
                 prefer_index: args.prefer_index,
                 include_mapq_hist: args.include_mapq_hist,
                 include_flags: args.include_flags,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::Validate(args) => {
+            })
+        }),
+        Commands::Validate(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::validate::run(ValidateRequest {
+            commands::validate::run(ValidateRequest {
                 bam: bam.clone(),
                 max_errors: args.max_errors,
                 max_warnings: args.max_warnings,
@@ -345,31 +329,27 @@ fn main() -> ExitCode {
                 records: args.records,
                 fail_fast: args.fail_fast,
                 include_warnings: args.include_warnings,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::CheckTag(args) => {
+            })
+        }),
+        Commands::CheckTag(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
-            let response = commands::check_tag::run(CheckTagRequest {
+            commands::check_tag::run(CheckTagRequest {
                 bam: bam.clone(),
                 tag: args.tag,
                 sample_records: args.sample_records,
                 full_scan: args.full_scan,
                 require_type: args.require_type,
                 count_hits: args.count_hits,
-            });
-            emit_response(&response, cli.global.json_pretty)
-        }
-        Commands::CheckSort(args) => {
+            })
+        }),
+        Commands::CheckSort(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;
             let result = commands::check_sort::run(CheckSortRequest {
                 bam: bam.clone(),
                 sample_records: args.sample_records,
                 strict: args.strict,
             });
-            let response: CommandResponse<CheckSortPayload> =
-                CommandResponse::from_result("check_sort", Some(bam.as_path()), result);
-            emit_response(&response, cli.global.json_pretty)
-        }
+            CommandResponse::from_result("check_sort", Some(bam.as_path()), result)
+        }),
     }
 }

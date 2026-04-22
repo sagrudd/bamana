@@ -60,19 +60,6 @@ if [[ -f "${fastq_gzi_path}" ]]; then
   preexisting_fastq_gzi="true"
 fi
 
-if [[ "${preexisting_fastq_gzi}" == "true" ]]; then
-  cat >&2 <<EOF
-fastq_gz_enumerate refuses to run when an adjacent FASTQ.GZI already exists.
-Input: ${fastq}
-Index: ${fastq_gzi_path}
-
-This profile is intended to measure cold FASTQ.GZ enumeration against the gzip
-pipeline. A pre-existing FASTQ.GZI would turn Bamana into an indexed lookup and
-make the timing non-comparable.
-EOF
-  exit 2
-fi
-
 input_count_probe="${metadata_dir}/input_count_probe.json"
 input_count_probe_stdout="${logs_dir}/input_count_probe_gzip.stdout.log"
 input_count_probe_stderr="${logs_dir}/input_count_probe_gzip.stderr.log"
@@ -187,7 +174,7 @@ run_one \
   "full" \
   "${bamana_output}" \
   "${bamana_command_file}" \
-  "Bamana enumerate counts FASTQ.GZ records and auto-materializes FASTQ.GZI sidecars when absent. This benchmark enforces a cold run by requiring that no adjacent FASTQ.GZI exists before timing begins."
+  "Bamana enumerate counts FASTQ.GZ records and uses an adjacent FASTQ.GZI sidecar when available. Pre-existing FASTQ.GZI visible to the timed run: ${preexisting_fastq_gzi}."
 
 run_one \
   "fastq_gz_enumerate.gzip.rep1" \

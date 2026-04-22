@@ -10,10 +10,15 @@ Every command response follows the same top-level pattern:
 * `ok`
 * `command`
 * `path`
+* `analysis_wall_seconds`
 * `data`
 * `error`
 
 This repository treats those fields as governed public interface.
+
+`analysis_wall_seconds` reports Bamana's in-process wall time for the command's
+analysis and execution path up to JSON emission. It excludes any outer wrapper
+or benchmark harness timing.
 
 ## Schema Use
 

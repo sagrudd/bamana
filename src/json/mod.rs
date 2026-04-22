@@ -25,6 +25,7 @@ where
     pub ok: bool,
     pub command: String,
     pub path: Option<String>,
+    pub analysis_wall_seconds: Option<f64>,
     pub data: Option<T>,
     pub error: Option<JsonError>,
 }
@@ -38,6 +39,7 @@ where
             ok: true,
             command: command.to_string(),
             path: path.map(path_to_string),
+            analysis_wall_seconds: None,
             data: Some(data),
             error: None,
         }
@@ -57,6 +59,7 @@ where
             ok: false,
             command: command.to_string(),
             path: path.map(path_to_string),
+            analysis_wall_seconds: None,
             data,
             error: Some(error.to_json_error()),
         }
@@ -67,6 +70,11 @@ where
             Ok(data) => Self::success(command, path, data),
             Err(error) => Self::failure(command, path, error),
         }
+    }
+
+    pub fn with_analysis_wall_seconds(mut self, seconds: f64) -> Self {
+        self.analysis_wall_seconds = Some(seconds.max(0.0));
+        self
     }
 }
 
@@ -109,6 +117,7 @@ where
                 "ok": false,
                 "command": "internal",
                 "path": null,
+                "analysis_wall_seconds": null,
                 "data": null,
                 "error": fallback_error
             });
