@@ -309,6 +309,7 @@ write_result() {
 started_at="$(timestamp_utc)"
 finished_at="$started_at"
 command_line="$(tr '\n' ' ' <"$command_file" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+wall_start="${EPOCHREALTIME:-}"
 
 if [[ "$support_status" != "supported" ]]; then
   combined_notes="$notes"
@@ -324,8 +325,13 @@ set +e
 exit_code="$?"
 set -e
 finished_at="$(timestamp_utc)"
+wall_end="${EPOCHREALTIME:-}"
 
-wall_seconds="$(awk -F '\t' '$1=="wall_seconds"{print $2}' "$time_path")"
+wall_seconds_time="$(awk -F '\t' '$1=="wall_seconds"{print $2}' "$time_path")"
+wall_seconds="${wall_seconds_time:-}"
+if [[ -n "${wall_start:-}" && -n "${wall_end:-}" ]]; then
+  wall_seconds="$(awk -v start="${wall_start}" -v end="${wall_end}" 'BEGIN { printf "%.6f", (end - start) }')"
+fi
 user_cpu_seconds="$(awk -F '\t' '$1=="user_cpu_seconds"{print $2}' "$time_path")"
 system_cpu_seconds="$(awk -F '\t' '$1=="system_cpu_seconds"{print $2}' "$time_path")"
 max_rss_kb="$(awk -F '\t' '$1=="max_rss_kb"{print $2}' "$time_path")"

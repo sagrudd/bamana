@@ -54,20 +54,25 @@ input_id="$(basename "${fastq}")"
 input_id="${input_id%.fastq.gz}"
 input_id="${input_id%.fq.gz}"
 input_bytes="$(stat -c %s "${fastq}")"
+fastq_gzi_path="${fastq%.gz}.gzi"
+preexisting_fastq_gzi="false"
+if [[ -f "${fastq_gzi_path}" ]]; then
+  preexisting_fastq_gzi="true"
+fi
 input_count_probe="${metadata_dir}/input_count_probe.json"
-input_count_probe_stdout="${logs_dir}/input_count_probe.stdout.log"
-input_count_probe_stderr="${logs_dir}/input_count_probe.stderr.log"
-if ! "${bamana_bin}" enumerate --input "${fastq}" --json-pretty > "${input_count_probe_stdout}" 2> "${input_count_probe_stderr}"; then
-  cp "${input_count_probe_stdout}" "${input_count_probe}"
-  echo "bamana enumerate failed while preparing benchmark input metrics" >&2
+input_count_probe_stdout="${logs_dir}/input_count_probe_gzip.stdout.log"
+input_count_probe_stderr="${logs_dir}/input_count_probe_gzip.stderr.log"
+if ! /usr/bin/bash -lc "/usr/bin/gzip -cd \"${fastq}\" | /usr/bin/awk 'END { printf \"%.0f\\n\", NR / 4 }'" > "${input_count_probe_stdout}" 2> "${input_count_probe_stderr}"; then
+  echo "gzip comparator failed while preparing benchmark input metrics" >&2
   echo "see ${input_count_probe_stdout} and ${input_count_probe_stderr}" >&2
-  if [[ -s "${input_count_probe_stdout}" ]]; then
-    cat "${input_count_probe_stdout}" >&2
-  fi
   exit 1
 fi
-cp "${input_count_probe_stdout}" "${input_count_probe}"
-input_records="$(jq -r '.data.records' "${input_count_probe}")"
+input_records="$(tr -d '\r\n' < "${input_count_probe_stdout}")"
+jq -n \
+  --arg fastq "${fastq}" \
+  --argjson records "${input_records:-0}" \
+  '{ok: true, command: "gzip_count_probe", path: $fastq, data: {records: $records}, error: null}' \
+  > "${input_count_probe}"
 
 input_metrics_json="${metadata_dir}/input_metrics.json"
 jq -n \
@@ -75,6 +80,7 @@ jq -n \
   --arg source_input_path "${fastq}" \
   --arg staged_input_id "${input_id}" \
   --arg staged_input_path "${fastq}" \
+  --arg has_index "${preexisting_fastq_gzi}" \
   --argjson input_bytes "${input_bytes}" \
   --argjson input_records "${input_records}" \
   '{
@@ -83,7 +89,7 @@ jq -n \
     source_input_type: "FASTQ_GZ",
     source_category: "fastq_gz",
     expected_sort_order: "not_applicable",
-    has_index: false,
+    has_index: ($has_index == "true"),
     reference_context: "not_applicable",
     source_owner: "user_supplied",
     sensitivity_level: "unspecified",
@@ -167,7 +173,7 @@ run_one \
   "full" \
   "${bamana_output}" \
   "${bamana_command_file}" \
-  "Bamana enumerate counts FASTQ.GZ records and auto-materializes FASTQ.GZI sidecars when absent."
+  "Bamana enumerate counts FASTQ.GZ records and auto-materializes FASTQ.GZI sidecars when absent. Pre-existing FASTQ.GZI available before the timed run: ${preexisting_fastq_gzi}."
 
 run_one \
   "fastq_gz_enumerate.gzip.rep1" \
