@@ -94,6 +94,7 @@ reference_context="$(jq -r '.reference_context // empty' "$input_metrics_json")"
 
 stdout_path="${run_id}.stdout.log"
 stderr_path="${run_id}.stderr.log"
+failure_path="${run_id}.failure.log"
 time_path="${run_id}.time.tsv"
 result_tsv="${run_id}.result.tsv"
 result_json="${run_id}.result.json"
@@ -353,6 +354,20 @@ if [[ "$success" != "true" ]]; then
   else
     combined_notes="command failed with exit code ${exit_code}"
   fi
+
+  {
+    printf 'run_id=%s\n' "$run_id"
+    printf 'command_line=%s\n' "$command_line"
+    printf 'exit_code=%s\n' "$exit_code"
+    printf '\n[stdout]\n'
+    if [[ -f "$stdout_path" ]]; then
+      cat "$stdout_path"
+    fi
+    printf '\n[stderr]\n'
+    if [[ -f "$stderr_path" ]]; then
+      cat "$stderr_path"
+    fi
+  } >"$failure_path"
 fi
 
 write_result \

@@ -55,7 +55,18 @@ input_id="${input_id%.fastq.gz}"
 input_id="${input_id%.fq.gz}"
 input_bytes="$(stat -c %s "${fastq}")"
 input_count_probe="${metadata_dir}/input_count_probe.json"
-"${bamana_bin}" enumerate --input "${fastq}" --json-pretty > "${input_count_probe}"
+input_count_probe_stdout="${logs_dir}/input_count_probe.stdout.log"
+input_count_probe_stderr="${logs_dir}/input_count_probe.stderr.log"
+if ! "${bamana_bin}" enumerate --input "${fastq}" --json-pretty > "${input_count_probe_stdout}" 2> "${input_count_probe_stderr}"; then
+  cp "${input_count_probe_stdout}" "${input_count_probe}"
+  echo "bamana enumerate failed while preparing benchmark input metrics" >&2
+  echo "see ${input_count_probe_stdout} and ${input_count_probe_stderr}" >&2
+  if [[ -s "${input_count_probe_stdout}" ]]; then
+    cat "${input_count_probe_stdout}" >&2
+  fi
+  exit 1
+fi
+cp "${input_count_probe_stdout}" "${input_count_probe}"
 input_records="$(jq -r '.data.records' "${input_count_probe}")"
 
 input_metrics_json="${metadata_dir}/input_metrics.json"
@@ -141,7 +152,7 @@ run_one() {
         --notes "${notes}"
   )
 
-  for suffix in stdout.log stderr.log time.tsv; do
+  for suffix in stdout.log stderr.log time.tsv failure.log; do
     if [[ -f "${raw_dir}/${run_id}.${suffix}" ]]; then
       mv "${raw_dir}/${run_id}.${suffix}" "${logs_dir}/${run_id}.${suffix}"
     fi

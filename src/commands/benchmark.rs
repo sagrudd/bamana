@@ -174,7 +174,7 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
         "-v".to_string(),
         format!("{}:/workspace", repo_root.display()),
         "-v".to_string(),
-        format!("{}:/benchmark-inputs:ro", fastq_parent.display()),
+        format!("{}:/benchmark-inputs", fastq_parent.display()),
         "-v".to_string(),
         format!("{}:/benchmark-outputs", output_parent.display()),
         "-v".to_string(),
@@ -311,6 +311,7 @@ fn profile_outputs_and_runner(
                 vec![
                     "The fastq_ingress profile compares Bamana against a fastcat-plus-samtools unmapped-BAM path.".to_string(),
                     "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
+                    "The FASTQ input directory is bind-mounted read-write so adjacent FASTQ.GZI sidecars created by Bamana can persist on the host.".to_string(),
                 ],
             ))
         }
@@ -324,6 +325,7 @@ fn profile_outputs_and_runner(
                 vec![
                     "The fastq_gz_enumerate profile compares Bamana-native FASTQ.GZ record enumeration against gzip-only decompression plus line counting.".to_string(),
                     "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
+                    "The FASTQ input directory is bind-mounted read-write so adjacent FASTQ.GZI sidecars created by Bamana can persist on the host.".to_string(),
                 ],
             ))
         }
