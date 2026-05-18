@@ -926,6 +926,12 @@ Known present pieces:
   through `BamScanner` and `SummaryAccumulator::observe_view`;
 * production `check_tag` now routes aux lookup through `BamScanner` and
   record-view aux helpers;
+* production `validate` now uses `BamScanner` and `BamRecordView` for
+  record-level structural checks that fit the lightweight view;
+* `inspect_duplication` BAM traversal now uses `BamScanner` and borrowed
+  record sections for sequence, quality, read-name, and selected RG evidence;
+* `forensic_inspect` BAM body scanning now uses `BamScanner` for read-group,
+  read-name regime, aux-tag regime, and duplication-hallmark evidence;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -933,19 +939,20 @@ Known present pieces:
   is derived from `RecordLayout` and is not yet a true selective scanner view;
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
-* `validate`, `inspect_duplication`, `forensic_inspect`, and BAM-side
-  `subsample` still perform record-facing work through existing first-slice
-  readers and helpers;
+* BAM-side `subsample` and writer-heavy transform paths still perform
+  record-facing work through existing first-slice readers and helpers;
 * dependency-boundary checks already prohibit production `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
-* remaining validation, forensics, and BAM-side transform consumers are not
-  migrated onto a shared scanner substrate;
+* remaining BAM-side transform consumers are not migrated onto a shared scanner
+  substrate;
+* richer decode and lossless serialization paths still use `RecordLayout` where
+  command behavior needs owned sequence, quality, aux, or whole-record bytes;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.8 through M3.10 remain outstanding.
+* M3.9 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1249,7 +1256,7 @@ Completion evidence:
 
 ### M3.8 Migrate Validation And Forensics First-Slice Consumers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1272,7 +1279,18 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* migrated `validate_bam` record traversal to `BamScanner::open` and
+  `BamScanner::next_record`;
+* migrated scanner-compatible validation checks to `BamRecordView` fields and
+  `traverse_record_aux_fields`;
+* migrated `inspect_duplication` BAM traversal to `BamScanner`, borrowed
+  sequence/quality slices, and `extract_record_string_aux_tag`;
+* migrated `forensic_inspect` BAM body scanning to `BamScanner`, borrowed
+  read-name/sequence/quality slices, and record-view aux helpers;
+* documented that remaining writer-heavy transform work and richer owned
+  decode/serialization paths remain deferred;
+* `cargo test bam::validate`, `cargo test forensics::duplication`, and
+  `cargo test forensics::forensic_inspect` passed.
 
 ### M3.9 Add Scanner Oracle, Dependency Boundary, And Microbenchmarks
 

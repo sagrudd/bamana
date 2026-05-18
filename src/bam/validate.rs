@@ -4,10 +4,8 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{HeaderPayload, parse_bam_header_from_reader},
-        reader::BamReader,
-        records::{RecordLayout, read_next_record_layout},
-        tags::traverse_aux_fields,
+        header::HeaderPayload, record::BamRecordView, scan::BamScanner,
+        tags::traverse_record_aux_fields,
     },
     bgzf,
     error::AppError,
@@ -84,7 +82,6 @@ pub fn validate_bam(
     path: &std::path::Path,
     options: ValidationOptions,
 ) -> Result<ValidatePayload, AppError> {
-    let mut reader = BamReader::open(path)?;
     let mode = if options.header_only {
         ValidationMode::HeaderOnly
     } else if options.record_limit.is_some() {
@@ -118,8 +115,8 @@ pub fn validate_bam(
         Err(_) => {}
     }
 
-    let header = match parse_bam_header_from_reader(&mut reader) {
-        Ok(header) => header,
+    let mut scanner = match BamScanner::open(path) {
+        Ok(scanner) => scanner,
         Err(error) => {
             collector.push(ValidationFinding {
                 severity: FindingSeverity::Error,
@@ -137,6 +134,7 @@ pub fn validate_bam(
             return Ok(build_payload(mode, false, 0, false, collector));
         }
     };
+    let header = scanner.header().clone();
 
     validate_header(&header, &mut collector);
 
@@ -161,7 +159,7 @@ pub fn validate_bam(
             }
         }
 
-        match read_next_record_layout(&mut reader) {
+        match scanner.next_record() {
             Ok(Some(record)) => {
                 records_examined += 1;
                 validate_record(&record, records_examined, &reference_names, &mut collector);
@@ -313,17 +311,17 @@ fn validate_header(header: &HeaderPayload, collector: &mut FindingCollector) {
 }
 
 fn validate_record(
-    record: &RecordLayout,
+    record: &BamRecordView<'_>,
     record_index: u64,
     reference_names: &[String],
     collector: &mut FindingCollector,
 ) {
-    let reference_name = usize::try_from(record.ref_id)
+    let reference_name = usize::try_from(record.ref_id())
         .ok()
         .and_then(|index| reference_names.get(index))
         .cloned();
 
-    if record.block_size < 32 {
+    if record.block_size() < 32 {
         collector.push(record_finding(
             FindingSeverity::Error,
             "invalid_block_size",
@@ -334,7 +332,7 @@ fn validate_record(
         ));
     }
 
-    if record.read_name.is_empty() {
+    if record.read_name().is_empty() {
         collector.push(record_finding(
             FindingSeverity::Error,
             "empty_read_name",
@@ -344,7 +342,7 @@ fn validate_record(
             None,
         ));
     } else if record
-        .read_name
+        .read_name()
         .chars()
         .any(|character| character.is_control())
     {
@@ -358,17 +356,9 @@ fn validate_record(
         ));
     }
 
-    let is_unmapped = record.flags & 0x4 != 0;
-    let is_paired = record.flags & 0x1 != 0;
-    let is_proper_pair = record.flags & 0x2 != 0;
-    let is_secondary = record.flags & 0x100 != 0;
-    let is_qc_fail = record.flags & 0x200 != 0;
-    let is_duplicate = record.flags & 0x400 != 0;
-    let is_supplementary = record.flags & 0x800 != 0;
-    let is_read1 = record.flags & 0x40 != 0;
-    let is_read2 = record.flags & 0x80 != 0;
+    let flags = record.flag_summary();
 
-    if is_unmapped && record.ref_id >= 0 {
+    if flags.is_unmapped && record.ref_id() >= 0 {
         collector.push(record_finding(
             FindingSeverity::Error,
             "contradictory_mapping_state",
@@ -378,7 +368,7 @@ fn validate_record(
             None,
         ));
     }
-    if !is_unmapped && record.ref_id < 0 {
+    if !flags.is_unmapped && record.ref_id() < 0 {
         collector.push(record_finding(
             FindingSeverity::Error,
             "contradictory_mapping_state",
@@ -388,7 +378,7 @@ fn validate_record(
             None,
         ));
     }
-    if !is_unmapped && record.pos < 0 {
+    if !flags.is_unmapped && record.pos() < 0 {
         collector.push(record_finding(
             FindingSeverity::Error,
             "negative_position_for_mapped_record",
@@ -398,7 +388,7 @@ fn validate_record(
             None,
         ));
     }
-    if record.next_ref_id >= 0 && record.next_pos < 0 {
+    if record.next_ref_id() >= 0 && record.next_pos() < 0 {
         collector.push(record_finding(
             FindingSeverity::Warning,
             "mate_position_inconsistency",
@@ -408,7 +398,7 @@ fn validate_record(
             None,
         ));
     }
-    if is_proper_pair && !is_paired {
+    if flags.is_proper_pair && !flags.is_paired {
         collector.push(record_finding(
             FindingSeverity::Warning,
             "proper_pair_without_paired_flag",
@@ -418,7 +408,7 @@ fn validate_record(
             None,
         ));
     }
-    if is_read1 && is_read2 {
+    if flags.is_read1 && flags.is_read2 {
         collector.push(record_finding(
             FindingSeverity::Warning,
             "read1_and_read2_both_set",
@@ -428,7 +418,7 @@ fn validate_record(
             None,
         ));
     }
-    if is_secondary && is_supplementary {
+    if flags.is_secondary && flags.is_supplementary {
         collector.push(record_finding(
             FindingSeverity::Warning,
             "secondary_and_supplementary_both_set",
@@ -438,7 +428,7 @@ fn validate_record(
             None,
         ));
     }
-    if !is_unmapped && record.n_cigar_op == 0 {
+    if !flags.is_unmapped && record.n_cigar_op() == 0 {
         collector.push(record_finding(
             FindingSeverity::Warning,
             "mapped_record_without_cigar",
@@ -449,13 +439,8 @@ fn validate_record(
         ));
     }
 
-    let _ = is_qc_fail;
-    let _ = is_duplicate;
-    let _ = record.mapping_quality;
-    let _ = record.l_seq;
-
     let mut seen_tags = HashSet::new();
-    let traversal_result = traverse_aux_fields(&record.aux_bytes, |field| {
+    let traversal_result = traverse_record_aux_fields(record, |field| {
         if !seen_tags.insert(field.tag) {
             let tag = String::from_utf8_lossy(&field.tag).into_owned();
             collector.push(record_finding(

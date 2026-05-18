@@ -7,10 +7,11 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{HeaderPayload, ProgramRecord, ReadGroupRecord, parse_bam_header_from_reader},
-        reader::BamReader,
-        records::{decode_bam_qualities, decode_bam_sequence, read_next_record_layout},
-        tags::{extract_string_aux_tag, traverse_aux_fields},
+        header::{HeaderPayload, ProgramRecord, ReadGroupRecord},
+        record::BamRecordView,
+        records::{decode_bam_qualities, decode_bam_sequence},
+        scan::BamScanner,
+        tags::{collect_record_aux_tag_keys, extract_record_string_aux_tag},
     },
     error::AppError,
     forensics::duplication::{
@@ -315,8 +316,7 @@ fn load_bam(
     (HeaderPayload, Option<BodyScanState>),
     (Option<HeaderPayload>, Option<BodyScanState>, AppError),
 > {
-    let mut reader = BamReader::open(path).map_err(|error| (None, None, error))?;
-    let header = parse_bam_header_from_reader(&mut reader).map_err(|error| {
+    let mut scanner = BamScanner::open(path).map_err(|error| {
         (
             None,
             None,
@@ -326,6 +326,7 @@ fn load_bam(
             },
         )
     })?;
+    let header = scanner.header().clone();
 
     if !needs_body_scan(config.scopes) {
         return Ok((header, None));
@@ -351,8 +352,8 @@ fn load_bam(
         .collect::<HashSet<_>>();
 
     while state.records_examined < config.record_limit {
-        let layout = match read_next_record_layout(&mut reader) {
-            Ok(Some(layout)) => layout,
+        let record = match scanner.next_record() {
+            Ok(Some(record)) => record,
             Ok(None) => {
                 state.reached_eof = true;
                 break;
@@ -373,7 +374,7 @@ fn load_bam(
         };
 
         let read_group = if config.scopes.read_groups || config.scopes.tags {
-            extract_string_aux_tag(&layout.aux_bytes, *b"RG").map_err(|detail| {
+            extract_record_string_aux_tag(&record, *b"RG").map_err(|detail| {
                 (
                     Some(header.clone()),
                     Some(state_snapshot(&state)),
@@ -388,7 +389,7 @@ fn load_bam(
         };
 
         let tag_keys = if config.scopes.tags {
-            collect_tag_keys(&layout.aux_bytes).map_err(|detail| {
+            collect_record_tag_keys(&record).map_err(|detail| {
                 (
                     Some(header.clone()),
                     Some(state_snapshot(&state)),
@@ -404,7 +405,7 @@ fn load_bam(
 
         let name_style =
             if config.scopes.read_names || config.scopes.tags || config.scopes.read_groups {
-                classify_read_name(&layout.read_name)
+                classify_read_name(record.read_name())
             } else {
                 ReadNameStyle::SimpleToken
             };
@@ -412,8 +413,8 @@ fn load_bam(
         state.records_examined += 1;
 
         if config.scopes.duplication_hallmarks {
-            let sequence =
-                decode_bam_sequence(&layout.sequence_bytes, layout.l_seq).map_err(|detail| {
+            let sequence = decode_bam_sequence(record.sequence_bytes(), record.sequence_len())
+                .map_err(|detail| {
                     (
                         Some(header.clone()),
                         Some(state_snapshot(&state)),
@@ -423,7 +424,7 @@ fn load_bam(
                         },
                     )
                 })?;
-            let quality = decode_bam_qualities(&layout.quality_bytes).map_err(|detail| {
+            let quality = decode_bam_qualities(record.quality_bytes()).map_err(|detail| {
                 (
                     Some(header.clone()),
                     Some(state_snapshot(&state)),
@@ -435,7 +436,7 @@ fn load_bam(
             })?;
             let key = build_identity_key(
                 DUPLICATION_IDENTITY_MODE,
-                &layout.read_name,
+                record.read_name(),
                 &sequence,
                 Some(quality.as_str()),
                 None,
@@ -1103,12 +1104,11 @@ fn base_payload(format: DetectedFormat) -> ForensicInspectPayload {
     }
 }
 
-fn collect_tag_keys(aux_bytes: &[u8]) -> Result<Vec<String>, String> {
-    let mut tags = Vec::new();
-    traverse_aux_fields(aux_bytes, |field| {
-        tags.push(String::from_utf8_lossy(&field.tag).into_owned());
-        Ok(())
-    })?;
+fn collect_record_tag_keys(record: &BamRecordView<'_>) -> Result<Vec<String>, String> {
+    let mut tags = collect_record_aux_tag_keys(record)?
+        .into_iter()
+        .map(|tag| String::from_utf8_lossy(&tag).into_owned())
+        .collect::<Vec<_>>();
     tags.sort();
     Ok(tags)
 }
@@ -1556,7 +1556,7 @@ mod tests {
         );
     }
 
-    fn full_scan_config(path: &PathBuf) -> ForensicInspectConfig {
+    fn full_scan_config(_path: &PathBuf) -> ForensicInspectConfig {
         ForensicInspectConfig {
             record_limit: u64::MAX,
             max_findings: 25,

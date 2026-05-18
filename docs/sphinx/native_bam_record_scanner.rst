@@ -120,6 +120,13 @@ and uses scanner traversal for fallback scans. ``summary`` observes
 selected aux lookup through record-view aux helpers. Their JSON payloads remain
 unchanged.
 
+``validate``, ``inspect_duplication``, and ``forensic_inspect`` now use the
+scanner for their scanner-compatible BAM body scans. Validation reads core
+fields and aux structure from ``BamRecordView``. The forensic paths use borrowed
+record sections for read names, sequences, qualities, RG evidence, and aux-tag
+regime evidence. Writer-heavy transforms and paths that need owned whole-record
+serialization remain on ``RecordLayout`` until later work moves them.
+
 Boundaries
 ----------
 

@@ -5,10 +5,9 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::parse_bam_header_from_reader,
-        reader::BamReader,
-        records::{decode_bam_qualities, decode_bam_sequence, read_next_record_layout},
-        tags::extract_string_aux_tag,
+        records::{decode_bam_qualities, decode_bam_sequence},
+        scan::BamScanner,
+        tags::extract_record_string_aux_tag,
     },
     error::AppError,
     fastq::{open_fastq_reader, read_next_fastq_record},
@@ -256,15 +255,14 @@ fn scan_bam(
     options: DuplicationScanOptions,
     state: &mut ScanState,
 ) -> Result<bool, AppError> {
-    let mut reader = BamReader::open(path)?;
-    parse_bam_header_from_reader(&mut reader).map_err(|error| AppError::ParseUncertainty {
+    let mut scanner = BamScanner::open(path).map_err(|error| AppError::ParseUncertainty {
         path: path.to_path_buf(),
         detail: error.detail().unwrap_or_else(|| error.to_string()),
     })?;
 
     while state.records_examined < options.record_limit {
-        let layout = match read_next_record_layout(&mut reader) {
-            Ok(Some(layout)) => layout,
+        let record = match scanner.next_record() {
+            Ok(Some(record)) => record,
             Ok(None) => return Ok(true),
             Err(
                 AppError::InvalidRecord { detail, .. } | AppError::TruncatedFile { detail, .. },
@@ -277,21 +275,19 @@ fn scan_bam(
             Err(error) => return Err(error),
         };
 
-        let sequence =
-            decode_bam_sequence(&layout.sequence_bytes, layout.l_seq).map_err(|detail| {
-                AppError::ParseUncertainty {
-                    path: path.to_path_buf(),
-                    detail,
-                }
+        let sequence = decode_bam_sequence(record.sequence_bytes(), record.sequence_len())
+            .map_err(|detail| AppError::ParseUncertainty {
+                path: path.to_path_buf(),
+                detail,
             })?;
-        let quality = decode_bam_qualities(&layout.quality_bytes).map_err(|detail| {
+        let quality = decode_bam_qualities(record.quality_bytes()).map_err(|detail| {
             AppError::ParseUncertainty {
                 path: path.to_path_buf(),
                 detail,
             }
         })?;
         let read_group = if options.identity_mode == DuplicationIdentityMode::QnameSeqQualRg {
-            extract_string_aux_tag(&layout.aux_bytes, *b"RG").map_err(|detail| {
+            extract_record_string_aux_tag(&record, *b"RG").map_err(|detail| {
                 AppError::ParseUncertainty {
                     path: path.to_path_buf(),
                     detail,
@@ -305,7 +301,7 @@ fn scan_bam(
             state,
             options.identity_mode,
             InspectableRecord {
-                read_name: layout.read_name,
+                read_name: record.read_name().to_string(),
                 sequence,
                 quality: Some(quality),
                 read_group,

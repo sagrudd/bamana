@@ -196,6 +196,15 @@ scanner-owned record views. `check_tag` now performs aux lookup through
 record-view aux helpers. These migrations preserve existing JSON payloads and
 diagnostic semantics.
 
+M3.8 migrated validation and forensic first-slice body scans onto the scanner.
+`validate` now uses `BamRecordView` fields and record-view aux traversal for
+scanner-compatible structural checks. `inspect_duplication` and
+`forensic_inspect` now use `BamScanner` plus borrowed record sections for
+read-name, sequence, quality, RG, and aux-tag evidence. Remaining
+writer-heavy transform paths and behavior that requires owned whole-record
+serialization continue to use `RecordLayout` until later tasks explicitly move
+them.
+
 ## Benchmark Hooks
 
 * records-per-second BAM scanner microbenchmark

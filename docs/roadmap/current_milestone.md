@@ -94,6 +94,12 @@ Known present pieces:
   observes scanner-owned record views directly;
 * production `check_tag` uses `BamScanner` plus record-view aux helpers for
   selected tag lookup;
+* production `validate` uses `BamScanner` and `BamRecordView` for record-level
+  structural checks that fit the lightweight view;
+* `inspect_duplication` uses `BamScanner`, borrowed sequence/quality sections,
+  and record-view RG extraction for BAM body scans;
+* `forensic_inspect` uses `BamScanner` for BAM body evidence across read-group,
+  read-name regime, aux-tag regime, and duplication-hallmark checks;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -102,22 +108,24 @@ Known present pieces:
   `RecordLayout` path rather than a true selective scanner;
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
-* remaining record-facing commands include `validate`, `inspect_duplication`,
-  `forensic_inspect`, and BAM-side `subsample`;
+* remaining record-facing transform paths include BAM-side `subsample` and
+  writer-heavy workflows that still need owned record materialization;
 * dependency-boundary tests already prohibit production `noodles` usage outside
   the CRAM compatibility exception.
 
 Known gaps:
 
-* remaining validation, forensics, and BAM-side transform consumers have not yet
-  been migrated onto a shared scanner;
+* remaining BAM-side transform consumers have not yet been migrated onto a
+  shared scanner;
+* richer decode and lossless serialization paths still use `RecordLayout` where
+  command behavior needs owned sequence, quality, aux, or whole-record bytes;
 * scanner oracle coverage and microbenchmarks are not yet present.
 
 First consumer order:
 
 1. `check_sort` complete;
 2. `check_map`, `summary`, and `check_tag` complete;
-3. `validate`, `inspect_duplication`, and `forensic_inspect`;
+3. `validate`, `inspect_duplication`, and `forensic_inspect` complete;
 4. BAM-side `subsample` and other raw-record writers after scanner-owned raw
    record access or lossless `RecordLayout` bridging is available.
 
