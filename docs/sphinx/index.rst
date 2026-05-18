@@ -35,3 +35,4 @@ Build the site locally with:
 
    native_bam_header_codec
    native_bam_record_scanner
+   native_fastq_core

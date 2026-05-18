@@ -89,11 +89,18 @@ Milestone 1 through 3 completion evidence remains recorded in:
 
 Known present pieces:
 
-* `src/fastq/mod.rs` contains the current native FASTQ parser/writer surface,
-  including `FastqRecord`, plain/gzip reader opening, record parsing, record
-  counting, unmapped-BAM conversion, threaded FASTQ.GZ-to-BAM conversion,
-  plain/gzip FASTQ writing, and selected HTS-style methylation header tag
-  conversion;
+* `src/fastq/mod.rs` is the current native FASTQ parser/writer facade and
+  preserves compatibility imports for existing command consumers;
+* `src/fastq/record.rs` owns the `FastqRecord` data model and read-name
+  parsing helper;
+* `src/fastq/reader.rs` owns plain/gzip reader opening, record parsing, record
+  validation, and record counting;
+* `src/fastq/writer.rs` owns plain/gzip FASTQ writing and finish behavior;
+* `src/fastq/gzip.rs` owns extension-based gzip detection, `MultiGzDecoder`
+  reader construction, and shared FASTQ thread-count resolution;
+* `src/fastq/unmapped.rs` owns unmapped-BAM conversion,
+  threaded FASTQ.GZ-to-BAM conversion, and selected HTS-style methylation
+  header tag conversion;
 * `src/fastq/gzi.rs` owns the `FASTQ.GZI` sidecar builder, reader, checkpoint
   sampler, and explode range planner;
 * `src/ingest/fastq.rs` is a compatibility shim that re-exports
@@ -110,8 +117,6 @@ Known present pieces:
 
 Known gaps:
 
-* FASTQ code is still concentrated in `src/fastq/mod.rs` instead of explicit
-  `record`, `reader`, `writer`, and gzip-oriented modules;
 * the current `FastqRecord` owns all strings, so field-only consumers still
   allocate complete record lines;
 * FASTQ.GZ behavior needs explicit stream semantics and tests for multi-member

@@ -10,10 +10,12 @@ core.
 Primary ownership:
 
 * `src/fastq/mod.rs`
-* future `src/fastq/reader.rs`
-* future `src/fastq/writer.rs`
-* future `src/fastq/gzip.rs`
-* future `src/fastq/record.rs`
+* `src/fastq/record.rs`
+* `src/fastq/reader.rs`
+* `src/fastq/writer.rs`
+* `src/fastq/gzip.rs`
+* `src/fastq/unmapped.rs`
+* `src/fastq/gzi.rs`
 
 Compatibility shim:
 

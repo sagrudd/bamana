@@ -1419,11 +1419,17 @@ Status: active.
 
 Known present pieces:
 
-* `src/fastq/mod.rs` already contains Bamana-native FASTQ functionality,
-  including `FastqRecord`, plain/gzip reader opening, record parsing, record
-  counting, unmapped-BAM conversion, threaded FASTQ.GZ-to-BAM conversion,
-  plain/gzip FASTQ writing, and selected HTS-style methylation header tag
-  conversion;
+* `src/fastq/mod.rs` is the Bamana-native FASTQ facade and preserves
+  compatibility imports for existing command consumers;
+* `src/fastq/record.rs` owns `FastqRecord` and read-name parsing;
+* `src/fastq/reader.rs` owns plain/gzip reader opening, record parsing, record
+  validation, and record counting;
+* `src/fastq/writer.rs` owns plain/gzip FASTQ writing and finish behavior;
+* `src/fastq/gzip.rs` owns extension-based gzip detection, `MultiGzDecoder`
+  reader construction, and shared FASTQ thread-count resolution;
+* `src/fastq/unmapped.rs` owns unmapped-BAM conversion,
+  threaded FASTQ.GZ-to-BAM conversion, and selected HTS-style methylation
+  header tag conversion;
 * `src/fastq/gzi.rs` owns the current `FASTQ.GZI` sidecar builder, reader,
   checkpoint sampler, and explode range planner;
 * `src/ingest/fastq.rs` is now a compatibility shim that re-exports
@@ -1449,8 +1455,6 @@ Known present pieces:
 
 Known gaps:
 
-* FASTQ code is still concentrated in `src/fastq/mod.rs` rather than split
-  into explicit `reader`, `writer`, `record`, and gzip-oriented modules;
 * the current `FastqRecord` owns all strings, so field-only consumers still
   allocate complete record lines;
 * gzip behavior is extension-driven and uses generic gzip decoding, while the
@@ -1542,7 +1546,7 @@ Completion evidence:
 
 ### M4.2 Split FASTQ Core Into Explicit Native Modules
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1565,7 +1569,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/fastq/record.rs` for `FastqRecord` and read-name parsing;
+* added `src/fastq/reader.rs` for reader opening, record parsing, validation,
+  and record counting;
+* added `src/fastq/writer.rs` for `FastqWriter`, `write_fastq_records`, and
+  plain/gzip finish behavior;
+* added `src/fastq/gzip.rs` for extension-driven gzip detection,
+  `MultiGzDecoder` reader construction, and shared FASTQ thread-count
+  resolution;
+* added `src/fastq/unmapped.rs` for FASTQ-to-unmapped-BAM conversion,
+  threaded FASTQ.GZ conversion, read-group aux emission, and selected
+  HTS-style methylation header tag conversion;
+* kept `src/fastq/mod.rs` as a narrow public facade that re-exports the stable
+  functions and types used by existing command consumers;
+* left `src/fastq/gzi.rs` as the owner of `FASTQ.GZI` sidecar logic;
+* kept `src/ingest/fastq.rs` as a compatibility shim only;
+* added Sphinx technical documentation for the native FASTQ core module
+  ownership in `docs/sphinx/native_fastq_core.rst`;
+* focused module tests passed with `cargo test fastq:: --lib`.
 
 ### M4.3 Define Native FASTQ Record View And Owned Record Contract
 
