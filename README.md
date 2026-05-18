@@ -393,8 +393,10 @@ work is the native BAM record scanner: `BamRecordView` now defines the borrowed
 record-view contract, and `BamScanner` now provides the native BGZF/header
 record iteration substrate. Scanner-facing helpers now centralize common flag,
 coordinate, MAPQ, read-name, sequence-length, section-range, and skip-offset
-access. Bounded aux-region traversal and migration of the first record-scanning
-command consumers remain in progress. Full BAM semantic validation, BAI/CSI
+access. Record-view aux helpers now provide bounded traversal, selected tag
+lookup, tag counting, tag-key collection, and string tag extraction without
+materializing richer record layouts. Migration of the first record-scanning
+command consumers remains in progress. Full BAM semantic validation, BAI/CSI
 random access, native CRAM scanning, and broader BAM operations remain
 incremental downstream work under the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).

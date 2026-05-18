@@ -164,6 +164,23 @@ offset arithmetic and the owned `RecordLayout` materialization bridge remain
 implementation details for scanner construction or richer downstream
 consumers.
 
+## Scanner-Owned Aux Traversal
+
+M3.5 added record-view aux helpers in `src/bam/tags.rs`. Scanner consumers can
+now traverse `BamRecordView::aux_bytes`, test selected tag presence, count
+matching tags, collect tag keys, and extract string tags without materializing a
+full `RecordLayout`.
+
+The helpers reuse the existing bounded aux parser, including type skipping for
+scalar values, NUL-terminated strings, hex strings, and B-arrays. Malformed aux
+payloads continue to fail with precise errors for truncated fields,
+unterminated strings, unsupported type codes, unsupported B-array subtypes,
+negative B-array counts, and array payload length overflows.
+
+This completes the scanner aux helper substrate. Command paths such as
+`check_tag`, read-group evidence, validation, and forensics still need to be
+migrated onto these helpers in M3.7 and M3.8.
+
 ## Benchmark Hooks
 
 * records-per-second BAM scanner microbenchmark

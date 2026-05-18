@@ -914,6 +914,9 @@ Known present pieces:
 * `BamRecordView` now centralizes selective helpers for flags, coordinates,
   MAPQ, read name, sequence length, section ranges, section presence, borrowed
   section slices, and skip offsets;
+* `src/bam/tags.rs` now provides record-view aux helpers for bounded traversal,
+  tag lookup, tag counting, tag-key collection, and string tag extraction over
+  `BamRecordView::aux_bytes`;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -929,12 +932,10 @@ Known present pieces:
 
 Known gaps:
 
-* record-scanning consumers generally use the transitional `BamReader::open`
-  gzip backend today rather than requiring the native BGZF backend;
 * command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.5 through M3.10 remain outstanding.
+* M3.6 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1128,7 +1129,7 @@ Completion evidence:
 
 ### M3.5 Add Aux Region Traversal Without Full Decode
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1150,7 +1151,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added scanner-facing record-view aux helpers in `src/bam/tags.rs`:
+  `traverse_record_aux_fields`, `record_aux_contains_tag`,
+  `count_record_aux_tag`, `collect_record_aux_tag_keys`, and
+  `extract_record_string_aux_tag`;
+* reused the existing bounded aux payload parser, so scanner consumers get one
+  shared type-skipping path for scalar tags, strings, hex strings, and
+  B-arrays instead of a second decoder;
+* helpers operate on `BamRecordView::aux_bytes`, so selected tag lookup and
+  read-group evidence do not require `RecordLayout` materialization;
+* malformed aux payloads still report precise parse errors for truncated
+  scalar fields, unterminated strings, truncated arrays, negative array counts,
+  unsupported B-array subtypes, and unsupported aux type codes;
+* added tests for record-view scalar tag lookup, string RG extraction,
+  B-array skipping before later tags, missing-tag absence, duplicate-tag
+  counting, malformed aux lengths, and borrowed aux traversal;
+* `cargo test bam::tags` passed.
 
 ### M3.6 Migrate `check_sort` To The Native Scanner
 

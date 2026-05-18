@@ -82,6 +82,9 @@ Known present pieces:
 * `BamRecordView` centralizes selective helpers for flags, coordinates, MAPQ,
   read name, sequence length, section ranges, borrowed section slices, section
   presence, and skip offsets;
+* `src/bam/tags.rs` provides record-view aux helpers for bounded traversal,
+  selected tag lookup, tag counting, tag-key collection, and string tag
+  extraction over `BamRecordView::aux_bytes`;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -98,10 +101,7 @@ Known present pieces:
 
 Known gaps:
 
-* aux-region traversal for selected tag lookup is not yet a scanner-owned API;
 * first command consumers have not yet been migrated onto a shared scanner;
-* record-scanning consumers generally use the transitional `BamReader::open`
-  gzip backend today rather than requiring the native BGZF backend;
 * scanner oracle coverage and microbenchmarks are not yet present.
 
 First consumer order:

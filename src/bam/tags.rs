@@ -1,5 +1,5 @@
 use crate::{
-    bam::{reader::BamReader, records::read_next_record_layout},
+    bam::{reader::BamReader, record::BamRecordView, records::read_next_record_layout},
     error::AppError,
 };
 
@@ -112,6 +112,32 @@ pub fn aux_region_contains_tag(aux_bytes: &[u8], query: TagQuery) -> Result<bool
     Ok(matched)
 }
 
+pub fn record_aux_contains_tag(
+    record: &BamRecordView<'_>,
+    query: TagQuery,
+) -> Result<bool, String> {
+    aux_region_contains_tag(record.aux_bytes(), query)
+}
+
+pub fn count_aux_tag(aux_bytes: &[u8], query: TagQuery) -> Result<u64, String> {
+    let mut count = 0_u64;
+    traverse_aux_fields(aux_bytes, |field| {
+        let matches_type = query
+            .required_type
+            .is_none_or(|required| aux_type_matches(field.type_code, required));
+        if field.tag == query.tag && matches_type {
+            count += 1;
+        }
+        Ok(())
+    })?;
+
+    Ok(count)
+}
+
+pub fn count_record_aux_tag(record: &BamRecordView<'_>, query: TagQuery) -> Result<u64, String> {
+    count_aux_tag(record.aux_bytes(), query)
+}
+
 pub fn extract_string_aux_tag(
     aux_bytes: &[u8],
     query_tag: [u8; 2],
@@ -138,6 +164,26 @@ pub fn extract_string_aux_tag(
     })?;
 
     Ok(value)
+}
+
+pub fn extract_record_string_aux_tag(
+    record: &BamRecordView<'_>,
+    query_tag: [u8; 2],
+) -> Result<Option<String>, String> {
+    extract_string_aux_tag(record.aux_bytes(), query_tag)
+}
+
+pub fn collect_aux_tag_keys(aux_bytes: &[u8]) -> Result<Vec<[u8; 2]>, String> {
+    let mut tags = Vec::new();
+    traverse_aux_fields(aux_bytes, |field| {
+        tags.push(field.tag);
+        Ok(())
+    })?;
+    Ok(tags)
+}
+
+pub fn collect_record_aux_tag_keys(record: &BamRecordView<'_>) -> Result<Vec<[u8; 2]>, String> {
+    collect_aux_tag_keys(record.aux_bytes())
 }
 
 pub fn traverse_aux_fields(
@@ -174,6 +220,13 @@ pub fn traverse_aux_fields(
     }
 
     Ok(())
+}
+
+pub fn traverse_record_aux_fields(
+    record: &BamRecordView<'_>,
+    visitor: impl FnMut(AuxField<'_>) -> Result<(), String>,
+) -> Result<(), String> {
+    traverse_aux_fields(record.aux_bytes(), visitor)
 }
 
 pub fn serialize_filtered_aux(
@@ -263,8 +316,11 @@ fn aux_type_matches(type_code: u8, required: AuxTypeCode) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        AuxTypeCode, TagQuery, aux_region_contains_tag, extract_string_aux_tag, validate_tag,
+        AuxTypeCode, TagQuery, aux_region_contains_tag, collect_record_aux_tag_keys,
+        count_record_aux_tag, extract_record_string_aux_tag, extract_string_aux_tag,
+        record_aux_contains_tag, traverse_record_aux_fields, validate_tag,
     };
+    use crate::bam::record::BamRecordView;
 
     #[test]
     fn validates_two_character_ascii_tags() {
@@ -349,5 +405,146 @@ mod tests {
         let aux = b"RGZgroup1\0NMi\x01\0\0\0";
         let value = extract_string_aux_tag(aux, *b"RG").expect("tag extraction should succeed");
         assert_eq!(value.as_deref(), Some("group1"));
+    }
+
+    #[test]
+    fn record_view_finds_scalar_tags_without_full_decode() {
+        let raw = build_record_with_aux(b"NMc\x05ASi*\0\0\0");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let matched = record_aux_contains_tag(
+            &view,
+            TagQuery {
+                tag: *b"NM",
+                required_type: Some(AuxTypeCode::CLower),
+            },
+        )
+        .expect("record aux scan should succeed");
+
+        assert!(matched);
+        assert_eq!(
+            collect_record_aux_tag_keys(&view).expect("tag keys should collect"),
+            vec![*b"NM", *b"AS"]
+        );
+    }
+
+    #[test]
+    fn record_view_extracts_string_tags_for_read_group_evidence() {
+        let raw = build_record_with_aux(b"RGZgroup1\0NMc\x05");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let value =
+            extract_record_string_aux_tag(&view, *b"RG").expect("record string tag should parse");
+
+        assert_eq!(value.as_deref(), Some("group1"));
+    }
+
+    #[test]
+    fn record_view_skips_arrays_when_finding_later_tags() {
+        let raw = build_record_with_aux(b"MLBc\x03\0\0\0\x01\x02\x03NMc\x02");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let matched = record_aux_contains_tag(
+            &view,
+            TagQuery {
+                tag: *b"NM",
+                required_type: Some(AuxTypeCode::CLower),
+            },
+        )
+        .expect("record aux scan should succeed");
+
+        assert!(matched);
+    }
+
+    #[test]
+    fn record_view_distinguishes_missing_tags_from_malformed_aux() {
+        let raw = build_record_with_aux(b"RGZgroup1\0");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let matched = record_aux_contains_tag(
+            &view,
+            TagQuery {
+                tag: *b"NM",
+                required_type: None,
+            },
+        )
+        .expect("well-formed missing tag should not fail");
+
+        assert!(!matched);
+    }
+
+    #[test]
+    fn record_view_counts_duplicate_tags() {
+        let raw = build_record_with_aux(b"NMc\x01NMc\x02RGZgroup1\0");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let count = count_record_aux_tag(
+            &view,
+            TagQuery {
+                tag: *b"NM",
+                required_type: Some(AuxTypeCode::CLower),
+            },
+        )
+        .expect("duplicate tag count should succeed");
+
+        assert_eq!(count, 2);
+    }
+
+    #[test]
+    fn record_view_rejects_malformed_aux_lengths() {
+        let raw = build_record_with_aux(b"NMc");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let error = record_aux_contains_tag(
+            &view,
+            TagQuery {
+                tag: *b"NM",
+                required_type: None,
+            },
+        )
+        .expect_err("truncated scalar payload should fail");
+
+        assert!(error.contains("truncated auxiliary field"));
+    }
+
+    #[test]
+    fn record_view_traverses_borrowed_aux_fields() {
+        let raw = build_record_with_aux(b"RGZgroup1\0NMc\x02");
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+        let mut seen = Vec::new();
+
+        traverse_record_aux_fields(&view, |field| {
+            seen.push((field.tag, field.type_code, field.payload.len()));
+            Ok(())
+        })
+        .expect("record aux traversal should succeed");
+
+        assert_eq!(seen, vec![(*b"RG", b'Z', 7), (*b"NM", b'c', 1)]);
+    }
+
+    fn build_record_with_aux(aux: &[u8]) -> Vec<u8> {
+        let mut variable = Vec::new();
+        variable.extend_from_slice(b"read1\0");
+        variable.extend_from_slice(aux);
+
+        let block_size = 32 + variable.len();
+        let bin_mq_nl = variable
+            .len()
+            .checked_sub(aux.len())
+            .expect("read name length should be present") as u32;
+        let flag_nc = 0_u32;
+
+        let mut raw = Vec::with_capacity(4 + block_size);
+        raw.extend_from_slice(&(block_size as i32).to_le_bytes());
+        raw.extend_from_slice(&0_i32.to_le_bytes());
+        raw.extend_from_slice(&1_i32.to_le_bytes());
+        raw.extend_from_slice(&bin_mq_nl.to_le_bytes());
+        raw.extend_from_slice(&flag_nc.to_le_bytes());
+        raw.extend_from_slice(&0_i32.to_le_bytes());
+        raw.extend_from_slice(&(-1_i32).to_le_bytes());
+        raw.extend_from_slice(&(-1_i32).to_le_bytes());
+        raw.extend_from_slice(&0_i32.to_le_bytes());
+        raw.extend_from_slice(&variable);
+        raw
     }
 }

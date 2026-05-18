@@ -88,6 +88,23 @@ sequence, quality, or auxiliary payloads without rebuilding byte-offset
 arithmetic. Parser internals and the owned ``RecordLayout`` bridge remain
 separate from this stable scanner helper surface.
 
+Scanner-Owned Aux Traversal
+---------------------------
+
+``src/bam/tags.rs`` provides record-view helpers for bounded auxiliary-field
+traversal over ``BamRecordView::aux_bytes``. Scanner consumers can test selected
+tag presence, count matching tags, collect tag keys, and extract string tags
+without materializing ``RecordLayout``.
+
+The helpers reuse the existing bounded aux parser and its type-skipping logic
+for scalar values, NUL-terminated strings, hex strings, and B-arrays. Malformed
+aux payloads fail with precise parse errors instead of being silently truncated
+or over-read.
+
+Command paths such as ``check_tag``, read-group evidence, validation, and
+forensics still need to move onto these scanner-owned helpers in later M3
+tasks.
+
 Boundaries
 ----------
 
