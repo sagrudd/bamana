@@ -1,0 +1,26 @@
+{
+  "ok": false,
+  "command": "unmap",
+  "path": "aligned.bam",
+  "analysis_wall_seconds": 0.000433,
+  "data": {
+    "format": "BAM",
+    "output": {
+      "path": "aligned.unmapped.bam",
+      "written": false,
+      "overwritten": null
+    },
+    "execution": {
+      "records_read": null,
+      "records_written": null,
+      "mapping_tags_removed": null
+    },
+    "notes": []
+  },
+  "error": {
+    "code": "output_exists",
+    "message": "The requested output path already exists.",
+    "detail": "aligned.unmapped.bam already exists and --force was not supplied.",
+    "hint": "Pass --force to overwrite an existing output file."
+  }
+}

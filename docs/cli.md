@@ -28,6 +28,11 @@ The spec layer covers both:
 This separation is deliberate: repository-facing contract design should not wait
 for every implementation detail to be finished.
 
+`benchmark`, `fastq`, and `unmap` are public contract commands. They are not
+experimental aliases: each command must have a JSON schema, canonical success
+and failure examples, user-facing documentation, and contract tests that keep
+the public surface visible.
+
 `subsample` is now an implemented command for BAM, FASTQ, and FASTQ.GZ inputs.
 It provides seeded random Bernoulli-style subsampling and deterministic
 hash-based subsampling with explicit identity semantics. The command preserves
@@ -108,6 +113,9 @@ containerized toolchains, replicated benchmark runs, and R-based aggregation to
 compare Bamana against `samtools`, `fastcat`, and other relevant comparators
 without forcing unsupported workflows into misleading timing results.
 
-Benchmark-profile operator documentation for the owned
-`bamana benchmark --profile ...` command now lives under
+`benchmark` is the owned operator entry point for selected benchmark profiles.
+It builds the local release binary, builds the benchmark container, runs the
+selected profile, captures logs and machine-readable outputs, and renders the
+requested report. Benchmark-profile operator documentation for
+`bamana benchmark --profile ...` lives under
 [sphinx/index.rst](/Users/stephen/Projects/bamana/docs/sphinx/index.rst).

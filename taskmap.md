@@ -70,7 +70,7 @@ Completion evidence:
 
 ### M1.2 Make Public Contract Coverage Complete
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -94,6 +94,17 @@ Acceptance criteria:
   removed or treated as experimental;
 * user-facing and Sphinx docs describe the public commands without implying
   unsupported guarantees.
+
+Completion evidence:
+
+* added schemas and canonical examples for `benchmark`, `fastq`, `unmap`, and
+  `annotate_rg`;
+* added a contract test that protects `benchmark`, `fastq`, and `unmap` as
+  public contract commands;
+* updated `README.md`, `docs/cli.md`, `spec/cli/commands.md`, and Sphinx docs;
+* `cargo test --test contract` passed with 12 contract tests;
+* `cargo test` passed with 100 library tests, 12 contract tests, and doc tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M1.3 Split BGZF Core Into Explicit Native Modules
 

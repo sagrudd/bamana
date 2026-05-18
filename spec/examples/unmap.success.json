@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "command": "unmap",
+  "path": "aligned.bam",
+  "analysis_wall_seconds": 0.912,
+  "data": {
+    "format": "BAM",
+    "output": {
+      "path": "aligned.unmapped.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "execution": {
+      "records_read": 120000,
+      "records_written": 120000,
+      "mapping_tags_removed": 360000
+    },
+    "notes": [
+      "Reference dictionary entries were removed from both the SAM header text and the BAM binary reference table.",
+      "Alignment coordinates, CIGAR data, mate coordinates, template length, and mapping-quality fields were stripped from every record.",
+      "Non-mapping auxiliary tags were preserved, including methylation-related tags such as MM and ML."
+    ]
+  },
+  "error": null
+}

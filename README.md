@@ -27,6 +27,9 @@ The current repository contains the first concrete CLI slice for:
 * `bamana checksum --bam <bamfile>`
 * `bamana sort --bam <bamfile> --out <result.bam>`
 * `bamana merge --bam <bamfile1> <bamfile2> ... --out <result.bam>`
+* `bamana fastq --bam <bamfile>`
+* `bamana unmap --bam <bamfile>`
+* `bamana benchmark --profile <profile> --fastq <reads.fastq.gz> --report <report.pdf>`
 
 All command output is JSON.
 
@@ -79,6 +82,9 @@ The current semantics are intentionally narrow:
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
 * `sort` rewrites a BAM into an explicitly requested order using a deterministic in-memory first-slice engine with optional canonical checksum verification
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
+* `fastq` exports BAM records to an ordered `FASTQ.GZ` stream, preserving input encounter order for read names, sequences, and qualities while intentionally dropping BAM header metadata
+* `unmap` rewrites a BAM as unmapped BAM by removing reference-bound mapping state, CIGAR/mate/coordinate fields, and mapping-related auxiliary tags while preserving non-mapping metadata
+* `benchmark` owns selected benchmark profiles by building the local release binary, building the benchmark container, running the profile, and rendering the requested report
 
 The repository also now contains a minimal but real benchmark execution and
 analysis path under [benchmarks/](/Users/stephen/Projects/bamana/benchmarks).
@@ -103,6 +109,9 @@ Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
 `checksum` does not imply full BAM validity, biological correctness, or semantic equivalence under any mode other than the one explicitly reported in the response.
 `sort` does not imply full BAM validity beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
 `merge` does not imply full validity of all inputs beyond what was parsed, semantic preservation unless checksum verification was actually performed, or index correctness unless index creation and inspection explicitly succeeded.
+`fastq` does not imply BAM validation beyond the records parsed during export, pairing repair, read filtering, or preservation of BAM-only metadata in FASTQ output.
+`unmap` does not imply biological remapping, realignment, or reference-independent validation of the source BAM.
+`benchmark` does not imply broad comparator parity; each profile reports the exact command paths and comparison scope it ran.
 `subsample` does not imply exact-count sampling, quality filtering, duplicate marking, provenance cleanup, or BAM index regeneration unless those behaviors are reported explicitly.
 
 ## Benchmark Framework
@@ -176,6 +185,9 @@ cargo run -- sort --bam example.bam --out sorted.bam --verify-checksum --create-
 cargo run -- merge --bam shard1.bam shard2.bam --out merged.bam
 cargo run -- merge --bam a.bam b.bam --out merged.sorted.bam --sort --verify-checksum
 cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order queryname --queryname-suborder lexicographical
+cargo run -- fastq --bam input.bam --out input.fastq.gz -j 8
+cargo run -- unmap --bam aligned.bam --out aligned.unmapped.bam --dry-run
+cargo run -- benchmark --profile fastq_gz_enumerate --fastq reads.fastq.gz --report fastq-gz-enumerate.pdf --force
 ```
 
 `header` uses the binary BAM reference section as authoritative for reference
@@ -337,6 +349,18 @@ input-order merge outputs are not suitable for standard coordinate BAI
 indexing. Optional checksum verification compares the canonical
 order-insensitive multiset checksum of the combined inputs against the merged
 output.
+
+`fastq` exports BAM alignment records as an ordered `FASTQ.GZ` stream. It emits
+read names, sequences, and qualities in input encounter order and uses
+concatenated gzip members so decode and compression work can run across worker
+threads. FASTQ output cannot preserve BAM header records, reference
+dictionaries, alignment flags, or auxiliary tags.
+
+`unmap` rewrites a BAM into an unmapped BAM by clearing reference-bound header
+state and stripping alignment coordinates, CIGAR data, mate coordinates,
+template length, mapping quality, and mapping-related auxiliary tags from every
+record. Non-mapping auxiliary tags are preserved. `--dry-run` reports the
+planned rewrite and record counts without writing an output file.
 
 ## Development
 

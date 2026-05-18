@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "command": "benchmark",
+  "path": "reads.fastq.gz",
+  "analysis_wall_seconds": 42.519,
+  "data": {
+    "profile": "fastq_gz_enumerate",
+    "fastq": "/data/reads.fastq.gz",
+    "bamana_output": "/reports/fastq-gz-enumerate.benchmark/fastq_gz_enumerate.bamana.count.json",
+    "comparator_output": "/reports/fastq-gz-enumerate.benchmark/fastq_gz_enumerate.gzip.count.txt",
+    "report_pdf": "/reports/fastq-gz-enumerate.pdf",
+    "workdir": "/reports/fastq-gz-enumerate.benchmark",
+    "raw_results_dir": "/reports/fastq-gz-enumerate.benchmark/raw",
+    "aggregated_dir": "/reports/fastq-gz-enumerate.benchmark/aggregated",
+    "metadata_dir": "/reports/fastq-gz-enumerate.benchmark/metadata",
+    "logs_dir": "/reports/fastq-gz-enumerate.benchmark/logs",
+    "container_image": "bamana-bench:latest",
+    "bamana_binary": "/workspace/target/release/bamana",
+    "tool_versions_tsv": "/reports/fastq-gz-enumerate.benchmark/metadata/tool_versions.tsv",
+    "steps": [
+      {
+        "name": "cargo build",
+        "log_path": "/reports/fastq-gz-enumerate.benchmark/logs/cargo_build.log",
+        "command": "cargo build --release"
+      },
+      {
+        "name": "docker run",
+        "log_path": "/reports/fastq-gz-enumerate.benchmark/logs/container_run.log",
+        "command": "docker run --rm bamana-bench:latest bash /workspace/benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh ..."
+      }
+    ],
+    "notes": [
+      "The fastq_gz_enumerate profile compares Bamana-native FASTQ.GZ record enumeration against gzip-only decompression plus line counting.",
+      "The PDF report is rendered from R Markdown inside the benchmark container."
+    ]
+  },
+  "error": null
+}

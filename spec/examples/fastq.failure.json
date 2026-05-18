@@ -1,0 +1,13 @@
+{
+  "ok": false,
+  "command": "fastq",
+  "path": "reads.fastq.gz",
+  "analysis_wall_seconds": 0.000514,
+  "data": null,
+  "error": {
+    "code": "not_bam",
+    "message": "The input is not a BAM file.",
+    "detail": "Detected FASTQ.GZ where BAM was required.",
+    "hint": "Provide a BAM input to this command."
+  }
+}

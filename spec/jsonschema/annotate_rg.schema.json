@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/annotate_rg.schema.json",
+  "title": "Bamana Annotate Read Group Response",
+  "description": "Contract for bamana annotate_rg JSON output.",
+  "x-bamana-command": "annotate_rg",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "recordMode": {
+      "type": "string",
+      "enum": ["only_missing", "replace_existing", "fail_on_conflict"]
+    },
+    "headerPolicy": {
+      "type": "string",
+      "enum": ["require_existing", "create_if_missing", "add_header_rg", "set_header_rg"]
+    },
+    "executionMode": {
+      "type": ["string", "null"],
+      "enum": ["safe_rewrite", null]
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "records_examined": { "type": ["integer", "null"], "minimum": 0 },
+        "records_annotated": { "type": ["integer", "null"], "minimum": 0 },
+        "records_already_matching": { "type": ["integer", "null"], "minimum": 0 },
+        "records_missing_rg_before": { "type": ["integer", "null"], "minimum": 0 },
+        "records_conflicting_before": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "request",
+        "execution",
+        "records",
+        "header",
+        "output",
+        "index",
+        "checksum_verification",
+        "notes"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "request": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rg_id", "record_mode", "header_policy"],
+          "properties": {
+            "rg_id": { "type": "string" },
+            "record_mode": { "$ref": "#/$defs/recordMode" },
+            "header_policy": { "$ref": "#/$defs/headerPolicy" }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["modified", "dry_run"],
+          "properties": {
+            "mode_used": { "$ref": "#/$defs/executionMode" },
+            "modified": { "type": "boolean" },
+            "dry_run": { "type": "boolean" }
+          }
+        },
+        "records": { "$ref": "#/$defs/records" },
+        "header": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rg_present_before", "rg_present_after", "header_modified"],
+          "properties": {
+            "rg_present_before": { "type": "boolean" },
+            "rg_present_after": { "type": "boolean" },
+            "header_modified": { "type": "boolean" }
+          }
+        },
+        "output": { "$ref": "./common/defs.schema.json#/$defs/outputInfo" },
+        "index": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present_before", "reindex_requested", "reindexed"],
+          "properties": {
+            "present_before": { "type": "boolean" },
+            "valid_after": { "type": ["boolean", "null"] },
+            "reindex_requested": { "type": "boolean" },
+            "reindexed": { "type": "boolean" },
+            "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" }
+          }
+        },
+        "checksum_verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requested", "performed", "excluded_tags"],
+          "properties": {
+            "requested": { "type": "boolean" },
+            "performed": { "type": "boolean" },
+            "mode": { "$ref": "./common/defs.schema.json#/$defs/checksumMode" },
+            "excluded_tags": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "input_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "output_digest": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+            "match": { "type": ["boolean", "null"] }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "annotate_rg" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "annotate_rg" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

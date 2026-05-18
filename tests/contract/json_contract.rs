@@ -176,6 +176,41 @@ fn contract_docs_exist() {
 }
 
 #[test]
+fn public_contract_commands_have_docs_schemas_and_examples() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+
+    for command in ["benchmark", "fastq", "unmap"] {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "public command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "public command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "public command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "public command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "public command {command} is missing from docs/cli.md"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

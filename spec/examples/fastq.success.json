@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "command": "fastq",
+  "path": "input.bam",
+  "analysis_wall_seconds": 1.742,
+  "data": {
+    "format": "FASTQ.GZ",
+    "output": {
+      "path": "input.fastq.gz",
+      "written": true,
+      "overwritten": false
+    },
+    "execution": {
+      "records_read": 240000,
+      "records_written": 240000,
+      "threads_used": 8
+    },
+    "notes": [
+      "FASTQ.GZ output is written as an ordered stream of concatenated gzip members so decode and compression work can spread across multiple CPU cores.",
+      "Read names, sequences, and qualities are emitted in input BAM order; BAM header content is not represented in FASTQ output.",
+      "FASTQ export used 8 worker threads for parallel decode/compression."
+    ]
+  },
+  "error": null
+}

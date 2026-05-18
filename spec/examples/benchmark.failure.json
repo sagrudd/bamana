@@ -1,0 +1,13 @@
+{
+  "ok": false,
+  "command": "benchmark",
+  "path": "missing.fastq.gz",
+  "analysis_wall_seconds": 0.000311,
+  "data": null,
+  "error": {
+    "code": "file_not_found",
+    "message": "The requested file does not exist.",
+    "detail": "Input FASTQ path missing.fastq.gz was not found.",
+    "hint": "Check the path and try again."
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "ok": false,
+  "command": "annotate_rg",
+  "path": "input.bam",
+  "analysis_wall_seconds": 0.000522,
+  "data": {
+    "format": "BAM",
+    "request": {
+      "rg_id": "rg001",
+      "record_mode": "fail_on_conflict",
+      "header_policy": "require_existing"
+    },
+    "execution": {
+      "mode_used": null,
+      "modified": false,
+      "dry_run": false
+    },
+    "records": {},
+    "header": {
+      "rg_present_before": false,
+      "rg_present_after": false,
+      "header_modified": false
+    },
+    "output": {
+      "path": "input.annotated_rg.bam",
+      "written": false,
+      "overwritten": null
+    },
+    "index": {
+      "present_before": false,
+      "valid_after": false,
+      "reindex_requested": false,
+      "reindexed": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "excluded_tags": [],
+      "input_digest": null,
+      "output_digest": null,
+      "match": null
+    },
+    "notes": [
+      "Per-record RG tags were modified or planned.",
+      "This command is distinct from header-only reheader and may rewrite every BAM alignment record."
+    ]
+  },
+  "error": {
+    "code": "missing_read_group",
+    "message": "The requested read group is missing.",
+    "detail": "Read group rg001 is not present in the BAM header.",
+    "hint": "Use --create-header-rg or provide a BAM header that declares the requested read group."
+  }
+}

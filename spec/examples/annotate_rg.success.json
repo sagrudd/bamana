@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "command": "annotate_rg",
+  "path": "input.bam",
+  "analysis_wall_seconds": 0.734,
+  "data": {
+    "format": "BAM",
+    "request": {
+      "rg_id": "rg001",
+      "record_mode": "replace_existing",
+      "header_policy": "create_if_missing"
+    },
+    "execution": {
+      "mode_used": "safe_rewrite",
+      "modified": true,
+      "dry_run": false
+    },
+    "records": {
+      "records_examined": 120000,
+      "records_annotated": 120000,
+      "records_already_matching": 0,
+      "records_missing_rg_before": 120000,
+      "records_conflicting_before": 0
+    },
+    "header": {
+      "rg_present_before": false,
+      "rg_present_after": true,
+      "header_modified": true
+    },
+    "output": {
+      "path": "input.annotated_rg.bam",
+      "written": true,
+      "overwritten": false
+    },
+    "index": {
+      "present_before": false,
+      "valid_after": false,
+      "reindex_requested": false,
+      "reindexed": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "excluded_tags": [],
+      "input_digest": null,
+      "output_digest": null,
+      "match": null
+    },
+    "notes": [
+      "Per-record RG tags were modified or planned.",
+      "This command is distinct from header-only reheader and may rewrite every BAM alignment record."
+    ]
+  },
+  "error": null
+}

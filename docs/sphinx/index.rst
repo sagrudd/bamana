@@ -19,3 +19,9 @@ Build the site locally with:
 
    fastq_ingress
    fastq_gz_enumerate
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Public CLI Commands
+
+   public_commands

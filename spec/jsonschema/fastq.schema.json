@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/fastq.schema.json",
+  "title": "Bamana FASTQ Export Response",
+  "description": "Contract for bamana fastq JSON output.",
+  "x-bamana-command": "fastq",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "records_read": { "type": ["integer", "null"], "minimum": 0 },
+        "records_written": { "type": ["integer", "null"], "minimum": 0 },
+        "threads_used": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "output", "execution", "notes"],
+      "properties": {
+        "format": { "const": "FASTQ.GZ" },
+        "output": { "$ref": "./common/defs.schema.json#/$defs/outputInfo" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "fastq" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "fastq" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

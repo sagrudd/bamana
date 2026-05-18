@@ -695,3 +695,52 @@ CLI slice.
 
 Planned key output concepts:
 `input`, `explode`, `outputs`, `index`, `checksum_verification`, `notes`.
+
+
+## `fastq`
+
+Synopsis:
+`bamana fastq --bam <input.bam> [--out <output.fastq.gz>] [-j, --threads <N>] [--force]`
+
+Semantics:
+Exports one BAM as a single ordered `FASTQ.GZ` stream. Read names, sequences,
+and qualities are emitted in input encounter order. The output is written as an
+ordered stream of gzip members so decode and compression work can use multiple
+worker threads while preserving record order.
+
+Does prove:
+The reported BAM records were parsed and emitted to the reported FASTQ.GZ
+output path in encounter order.
+
+Does not prove:
+Full BAM validation, pair repair, filtering, alignment preservation, or
+retention of BAM-only metadata. BAM header records, alignment fields, and
+auxiliary tags are not represented in FASTQ output.
+
+Key output concepts:
+`format`, `output`, `execution.records_read`, `execution.records_written`,
+`execution.threads_used`, `notes`.
+
+## `unmap`
+
+Synopsis:
+`bamana unmap --bam <input.bam> [--out <output.bam>] [--dry-run] [-j, --threads <N>] [--force]`
+
+Semantics:
+Rewrites one BAM as unmapped BAM. The output header has reference dictionary
+state removed, and each record has reference-bound mapping state stripped:
+coordinates, CIGAR data, mate coordinates, template length, mapping quality,
+and mapping-related auxiliary tags. Non-mapping auxiliary metadata is
+preserved.
+
+Does prove:
+Only the unmapped rewrite described by the JSON payload. In dry-run mode it
+proves planning and record traversal only; it does not write output.
+
+Does not prove:
+Biological remapping, realignment, source-reference correctness, or full BAM
+validity beyond the records parsed during the rewrite.
+
+Key output concepts:
+`format`, `output`, `execution.records_read`, `execution.records_written`,
+`execution.mapping_tags_removed`, `notes`.

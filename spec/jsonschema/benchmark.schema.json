@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/benchmark.schema.json",
+  "title": "Bamana Benchmark Response",
+  "description": "Contract for bamana benchmark JSON output.",
+  "x-bamana-command": "benchmark",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "log_path", "command"],
+      "properties": {
+        "name": { "type": "string" },
+        "log_path": { "type": "string" },
+        "command": { "type": "string" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "fastq",
+        "bamana_output",
+        "comparator_output",
+        "report_pdf",
+        "workdir",
+        "raw_results_dir",
+        "aggregated_dir",
+        "metadata_dir",
+        "logs_dir",
+        "container_image",
+        "bamana_binary",
+        "tool_versions_tsv",
+        "steps"
+      ],
+      "properties": {
+        "profile": {
+          "type": "string",
+          "enum": ["fastq_ingress", "fastq_gz_enumerate"]
+        },
+        "fastq": { "type": "string" },
+        "bamana_output": { "type": "string" },
+        "comparator_output": { "type": "string" },
+        "report_pdf": { "type": "string" },
+        "workdir": { "type": "string" },
+        "raw_results_dir": { "type": "string" },
+        "aggregated_dir": { "type": "string" },
+        "metadata_dir": { "type": "string" },
+        "logs_dir": { "type": "string" },
+        "container_image": { "type": "string" },
+        "bamana_binary": { "type": "string" },
+        "tool_versions_tsv": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/step" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "benchmark" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "benchmark" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}
