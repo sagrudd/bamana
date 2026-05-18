@@ -1641,7 +1641,7 @@ Completion evidence:
 
 ### M4.4 Strengthen Plain FASTQ Reader Validation
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1662,7 +1662,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/fastq/reader.rs` tests for valid single-record parsing followed
+  by clean EOF;
+* added `src/fastq/reader.rs` tests for valid multi-record plain FASTQ parsing
+  in encounter order;
+* added reader tests proving raw header comments, plus-line comments, sequence
+  text, and quality text are preserved after parsing;
+* added CRLF line-ending coverage proving trailing `\r\n` is normalized without
+  corrupting FASTQ line semantics;
+* added clean empty-input EOF coverage;
+* added truncated-record tests for missing sequence, missing plus, and missing
+  quality boundaries;
+* added invalid-marker tests for malformed header and plus lines;
+* added malformed-content tests for sequence/quality length mismatch and blank
+  read name;
+* malformed reader tests assert structured `AppError::InvalidFastq` errors
+  include the input path and precise detail text;
+* focused tests passed with `cargo test fastq::reader::tests --lib` and
+  `cargo test fastq:: --lib`.
 
 ### M4.5 Strengthen FASTQ.GZ Reader And Gzip Stream Semantics
 
