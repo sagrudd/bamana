@@ -1491,7 +1491,7 @@ Command-surface scope:
 
 ### M4.1 Activate Milestone 4 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1515,7 +1515,30 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* `docs/roadmap/current_milestone.md` names Milestone 4 as active as of
+  2026-05-18 and records Milestones 1 through 3 as complete;
+* `docs/roadmap.md` lists Milestone 4 as active and Milestones 1 through 3 as
+  complete, so the top-level milestone index no longer names Milestone 3 as
+  active;
+* audited `src/fastq/mod.rs` and confirmed the current native FASTQ surface
+  includes `FastqRecord`, reader opening for plain and `.gz` inputs,
+  `read_next_fastq_record`, record counting, unmapped-BAM conversion,
+  threaded FASTQ.GZ-to-BAM conversion, `FastqWriter`, and plain/gzip writing;
+* audited `src/fastq/gzi.rs` and confirmed it owns `FASTQ.GZI` build, read,
+  checkpoint sampling, metadata flags, and explode range planning;
+* audited `src/ingest/fastq.rs` and confirmed it is only a compatibility shim
+  re-exporting `crate::fastq`;
+* audited FASTQ-facing consumers and confirmed `enumerate`, FASTQ-side
+  `subsample`, `consume`, `inspect_duplication`, `deduplicate`, `index`, and
+  FASTQ.GZ `explode` already call native FASTQ helpers in some form;
+* recorded baseline gaps in the Milestone 4 current-state section: monolithic
+  `src/fastq/mod.rs`, owned-string `FastqRecord`, extension-driven gzip
+  behavior, incomplete gzip stream semantics tests, writer contract gaps,
+  pending command-consumer API audit, and missing FASTQ benchmark closeout
+  evidence;
+* no runtime behavior changes were made for M4.1;
+* public contract commands remain explicitly protected by existing contract
+  coverage for `benchmark`, `fastq`, and `unmap`.
 
 ### M4.2 Split FASTQ Core Into Explicit Native Modules
 
