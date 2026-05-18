@@ -5,7 +5,9 @@ Milestone 1 is the Native BGZF Core milestone described in
 `docs/roadmap/milestone-01-bgzf.md`. Milestone 2 is the Native BAM Header Codec
 milestone described in `docs/roadmap/milestone-02-bam-header.md`. Milestone 3
 is the Native BAM Record Scanner milestone described in
-`docs/roadmap/milestone-03-bam-record-scan.md`.
+`docs/roadmap/milestone-03-bam-record-scan.md`. Milestone 4 is the Native
+FASTQ / FASTQ.GZ Parser milestone described in
+`docs/roadmap/milestone-04-fastq.md`.
 
 ## Milestone 1 Definition
 
@@ -1388,3 +1390,355 @@ Completion evidence:
 * selected scanner consumers are documented as `check_sort`, `check_map`,
   `summary`, `check_tag`, `validate`, `inspect_duplication`, and
   `forensic_inspect`.
+
+## Milestone 4 Definition
+
+Milestone 4 is complete only when Bamana owns a native FASTQ and FASTQ.GZ
+parser/writer core that is explicit enough for ingest, subsampling,
+duplication inspection, deduplication, indexing, enumeration, and benchmark
+work to depend on it. The milestone covers plain FASTQ record parsing,
+FASTQ.GZ stream handling, record validation, allocation-conscious record
+views, valid FASTQ writing, gzip writing, existing `FASTQ.GZI` sidecar
+integration, command consumer migration, and benchmark hooks.
+
+## Milestone 4 Current State
+
+Status: active.
+
+Known present pieces:
+
+* `src/fastq/mod.rs` already contains Bamana-native FASTQ functionality,
+  including `FastqRecord`, plain/gzip reader opening, record parsing, record
+  counting, unmapped-BAM conversion, threaded FASTQ.GZ-to-BAM conversion,
+  plain/gzip FASTQ writing, and selected HTS-style methylation header tag
+  conversion;
+* `src/fastq/gzi.rs` owns the current `FASTQ.GZI` sidecar builder, reader,
+  checkpoint sampler, and explode range planner;
+* `src/ingest/fastq.rs` is now a compatibility shim that re-exports
+  `crate::fastq`;
+* `read_next_fastq_record` validates the four-line FASTQ structure, header
+  marker, plus marker, sequence/quality length equality, and usable read name;
+* `open_fastq_reader_with_label` reads plain FASTQ and `.gz` inputs with
+  `flate2::read::MultiGzDecoder`;
+* `FastqWriter` writes plain FASTQ or gzip-compressed FASTQ according to the
+  output extension;
+* `enumerate` uses `count_fastq_records` for plain FASTQ and
+  `ensure_fastq_gzi` for FASTQ.GZ counting and sidecar reuse;
+* FASTQ-side `subsample` uses `FastqRecord`, `FastqWriter`,
+  `open_fastq_reader`, and `read_next_fastq_record`;
+* `consume` uses the native FASTQ helpers for raw-read to unmapped-BAM
+  normalization, including indexed single-FASTQ.GZ and multi-FASTQ.GZ worker
+  paths;
+* `inspect_duplication` and `deduplicate` already consume the native FASTQ
+  helpers for FASTQ and FASTQ.GZ inputs;
+* `explode` uses FASTQ helpers plus `FASTQ.GZI` planning for FASTQ.GZ shards;
+* public contract coverage already treats `benchmark`, `fastq`, and `unmap`
+  as governed public commands.
+
+Known gaps:
+
+* FASTQ code is still concentrated in `src/fastq/mod.rs` rather than split
+  into explicit `reader`, `writer`, `record`, and gzip-oriented modules;
+* the current `FastqRecord` owns all strings, so field-only consumers still
+  allocate complete record lines;
+* gzip behavior is extension-driven and uses generic gzip decoding, while the
+  Milestone 4 boundary needs explicit FASTQ.GZ stream semantics and tests for
+  multi-member and malformed gzip inputs;
+* writer behavior exists but needs a clearer contract for line endings,
+  finishing/flushing, gzip output, and round-trip validation;
+* command consumers share helpers but have not been audited against a stable
+  Milestone 4 reader/writer API;
+* FASTQ microbenchmark hooks are present in the broader benchmark framework,
+  but a small native parser/writer smoke benchmark and closeout evidence are
+  not yet recorded in the milestone task map.
+
+Milestone 4 closeout evidence must include:
+
+* all M4.1 through M4.10 tasks complete;
+* `cargo test` passing;
+* `cargo test --test contract` passing;
+* Sphinx documentation building successfully;
+* FASTQ parser/writer benchmark or smoke benchmark runnable with
+  machine-readable output;
+* command migration evidence recorded for FASTQ-side `subsample`, `consume`,
+  `inspect_duplication`, `deduplicate`, `enumerate`, and relevant
+  `FASTQ.GZI`/`explode` consumers;
+* dependency-boundary evidence showing FASTQ hot paths remain Bamana-native
+  and do not depend on external generic bioinformatics parser crates.
+
+Command-surface scope:
+
+* Milestone 4 evidence is limited to native FASTQ and FASTQ.GZ parsing,
+  writing, record validation, sidecar-aware enumeration/planning, and selected
+  command consumers that use those primitives.
+* Paired-read reconciliation, biological quality interpretation, adapter
+  trimming, richer ONT/PacBio metadata semantics, and full comparator parity
+  remain downstream unless a specific M4 task explicitly includes them.
+
+## Milestone 4 Task List
+
+### M4.1 Activate Milestone 4 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 4 is the active
+  milestone and Milestones 1 through 3 remain recorded as complete;
+* update roadmap/task-map status so the top-level milestone index no longer
+  names Milestone 3 as active;
+* audit `src/fastq/mod.rs`, `src/fastq/gzi.rs`, `src/ingest/fastq.rs`, and
+  FASTQ-facing command consumers;
+* record the existing parser, writer, gzip, sidecar, and command-consumer
+  baseline before refactoring modules;
+* update user-facing and Sphinx documentation if the active milestone status
+  changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 4 as active;
+* task-map baseline lists present FASTQ functionality and known gaps;
+* no runtime behavior changes are made unless required by the audit;
+* public contract commands remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M4.2 Split FASTQ Core Into Explicit Native Modules
+
+Status: pending.
+
+Tasks:
+
+* introduce or complete `src/fastq/record.rs`;
+* introduce or complete `src/fastq/reader.rs`;
+* introduce or complete `src/fastq/writer.rs`;
+* introduce or complete an explicit gzip/FASTQ.GZ boundary module if the
+  existing reader/writer split needs it;
+* keep `src/fastq/mod.rs` as the narrow public facade;
+* preserve compatibility imports used by existing command consumers during the
+  split.
+
+Acceptance criteria:
+
+* FASTQ record types, reader logic, writer logic, gzip handling, and `FASTQ.GZI`
+  sidecar logic have clear module ownership;
+* existing command behavior is preserved;
+* no FASTQ hot path is moved into `src/ingest/fastq.rs`;
+* focused module tests pass.
+
+Completion evidence:
+
+* pending.
+
+### M4.3 Define Native FASTQ Record View And Owned Record Contract
+
+Status: pending.
+
+Tasks:
+
+* define the stable owned FASTQ record type for consumers that need retained
+  records;
+* define a borrowed or allocation-conscious record view for field-only
+  consumers where practical;
+* centralize read-name parsing, raw header retention, plus-line handling,
+  sequence access, quality access, and identity-byte helpers;
+* document which APIs are stable scanner/parser contracts versus internal
+  layout helpers.
+
+Acceptance criteria:
+
+* consumers do not duplicate FASTQ read-name or identity parsing;
+* field-only readers can avoid unnecessary copies where the reader design
+  permits it;
+* owned record behavior remains available for `subsample`, `deduplicate`, and
+  writer-heavy paths;
+* tests cover headers with comments, empty comments, plus-line comments, and
+  representative sequence/quality payloads.
+
+Completion evidence:
+
+* pending.
+
+### M4.4 Strengthen Plain FASTQ Reader Validation
+
+Status: pending.
+
+Tasks:
+
+* add reader tests for valid single-record and multi-record plain FASTQ;
+* add tests for missing sequence, plus, and quality lines;
+* add tests for invalid header and plus markers;
+* add tests for sequence/quality length mismatches;
+* add tests for blank read names and edge-case line endings;
+* ensure errors include input path context and precise failure details.
+
+Acceptance criteria:
+
+* malformed plain FASTQ fails deterministically with structured
+  `InvalidFastq` errors;
+* valid records preserve encounter order and raw line semantics required by
+  existing writers;
+* tests cover both EOF and truncated-record boundaries.
+
+Completion evidence:
+
+* pending.
+
+### M4.5 Strengthen FASTQ.GZ Reader And Gzip Stream Semantics
+
+Status: pending.
+
+Tasks:
+
+* add tests for valid single-member FASTQ.GZ;
+* add tests for valid multi-member FASTQ.GZ;
+* add tests for truncated or corrupt gzip streams;
+* document the supported gzip semantics for FASTQ.GZ inputs;
+* make extension-based gzip detection explicit and auditable, or replace it
+  with a better local policy if needed;
+* preserve compatibility with `FASTQ.GZI` sidecar creation and reuse.
+
+Acceptance criteria:
+
+* FASTQ.GZ parsing supports the documented gzip member behavior;
+* corrupt or truncated gzip input reports structured errors instead of silent
+  count or record truncation;
+* `enumerate`, `consume`, and `explode` sidecar paths still pass.
+
+Completion evidence:
+
+* pending.
+
+### M4.6 Complete FASTQ Writer And Round-Trip Guarantees
+
+Status: pending.
+
+Tasks:
+
+* define the writer contract for line endings, raw header preservation,
+  plus-line preservation, gzip output selection, flushing, and finish behavior;
+* add round-trip tests for plain FASTQ records;
+* add round-trip tests for gzip-compressed FASTQ records;
+* add tests for write errors where practical;
+* document when output compression is inferred from the filename extension.
+
+Acceptance criteria:
+
+* valid owned FASTQ records can be written and read back without record
+  content changes;
+* gzip output is finalized before command success is reported;
+* writer failures surface as structured write errors with output path context.
+
+Completion evidence:
+
+* pending.
+
+### M4.7 Migrate FASTQ-Side `subsample` And `enumerate` Consumers
+
+Status: pending.
+
+Tasks:
+
+* route FASTQ-side `subsample` through the stable Milestone 4 reader and writer
+  APIs;
+* route plain FASTQ counting through the stable reader API;
+* preserve `FASTQ.GZI`-assisted FASTQ.GZ enumeration behavior;
+* preserve existing JSON payloads, examples, schemas, and command caveats
+  unless a deliberate contract update is made in the same task;
+* update command tests and documentation if behavior changes.
+
+Acceptance criteria:
+
+* FASTQ and FASTQ.GZ `subsample` behavior uses the Milestone 4 parser/writer
+  contracts;
+* `enumerate` remains sidecar-aware for FASTQ.GZ;
+* public contracts remain stable or are deliberately versioned;
+* relevant command tests and contract tests pass.
+
+Completion evidence:
+
+* pending.
+
+### M4.8 Migrate `consume`, Duplication, Deduplication, And Shard Consumers
+
+Status: pending.
+
+Tasks:
+
+* route `consume` FASTQ and FASTQ.GZ import through the stable Milestone 4
+  reader APIs while preserving threaded/import-label behavior;
+* route `inspect_duplication` FASTQ scans through the stable reader API;
+* route `deduplicate` FASTQ load/write paths through the stable reader/writer
+  APIs;
+* audit `explode` FASTQ.GZ shard planning and compression against the stable
+  reader, writer, and `FASTQ.GZI` contracts;
+* document any remaining richer or command-specific FASTQ behavior deferred
+  beyond Milestone 4.
+
+Acceptance criteria:
+
+* selected FASTQ command consumers share the stable parser/writer primitives;
+* JSON contracts and user-facing semantics remain stable unless explicitly
+  updated;
+* threaded consume behavior and `FASTQ.GZI`-guided execution remain covered by
+  tests.
+
+Completion evidence:
+
+* pending.
+
+### M4.9 Add FASTQ Oracle, Dependency Boundary, And Microbenchmarks
+
+Status: pending.
+
+Tasks:
+
+* add native malformed FASTQ and FASTQ.GZ tests that do not depend on external
+  parsers for expected failures;
+* add any useful test-only oracle or differential coverage while keeping oracle
+  usage outside production code;
+* extend dependency-boundary tests so production FASTQ hot paths cannot import
+  external generic bioinformatics parser crates;
+* add or formalize FASTQ parse, FASTQ.GZ parse, and writer microbenchmark
+  hooks with machine-readable output;
+* document benchmark commands, profiles, schemas, and interpretation.
+
+Acceptance criteria:
+
+* malformed FASTQ and FASTQ.GZ behavior is covered by native tests;
+* production FASTQ hot paths remain Bamana-native;
+* FASTQ benchmarks are runnable without private data;
+* benchmark JSON can be archived or validated by a documented schema.
+
+Completion evidence:
+
+* pending.
+
+### M4.10 Close Milestone 4
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run the FASTQ parser/writer microbenchmark or smoke benchmark profile;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-04-fastq.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 4 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M4.1 through M4.10 tasks are complete;
+* full tests, contract tests, Sphinx, and FASTQ benchmark smoke checks pass;
+* command consumer evidence is recorded for the selected FASTQ command paths;
+* production FASTQ hot paths remain Bamana-native;
+* Milestone 4 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.

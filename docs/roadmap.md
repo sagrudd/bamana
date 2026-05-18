@@ -57,13 +57,14 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 3: Native BAM Record Scanner
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-03-bam-record-scan.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-03-bam-record-scan.md)
 * goal: own selective BAM record iteration and lightweight field extraction
 * commands enabled first: scan commands and BAM-side `subsample`
 
 ### Milestone 4: Native FASTQ / FASTQ.GZ Parser
 
+* status: active
 * detail: [roadmap/milestone-04-fastq.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-04-fastq.md)
 * goal: own FASTQ and FASTQ.GZ parsing and writing for ingest and transform
   paths

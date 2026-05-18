@@ -403,6 +403,11 @@ transforms, and broader BAM operations remain incremental downstream work under
 the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 
+Milestone 4 is now the active native-core milestone. It focuses on turning the
+existing FASTQ and FASTQ.GZ helpers into an explicit native parser/writer core
+with stable module boundaries, stronger validation, command-consumer migration
+evidence, and benchmark smoke coverage.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

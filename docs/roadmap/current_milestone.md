@@ -2,27 +2,31 @@
 
 ## Milestone Status
 
-**Milestone 3: Native BAM Record Scanner** is complete as of 2026-05-18.
+**Milestone 4: Native FASTQ / FASTQ.GZ Parser** is active as of 2026-05-18.
 
 See:
 
-* [milestone-03-bam-record-scan.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-03-bam-record-scan.md)
+* [milestone-04-fastq.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-04-fastq.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
 ## Why This Is Current
 
 Milestone 1 completed the native BGZF substrate. Milestone 2 completed native
 BAM header parsing and deterministic header serialization. Milestone 3
-completed the next dependency layer: selective native BAM record scanning that
-iterates alignment records, exposes lightweight field views, safely skips
-unneeded variable sections, and supports selected aux-tag traversal without
-full generic decode.
+completed selective native BAM record scanning and migrated the first
+scanner-compatible BAM command consumers.
 
-This milestone is intentionally smaller than full BAM semantic validation,
-BAI/CSI random access, native CRAM scanning, or broad command parity. It makes
-the first record-scanning command paths depend on Bamana-native BGZF, native
-BAM headers, and a shared native scanner without implying that every BAM
-operation has migrated.
+Milestone 4 moves the native-core sequence to FASTQ and FASTQ.GZ. The goal is
+to turn the existing useful FASTQ helpers into an explicit parser/writer core
+with clear module ownership, robust plain FASTQ and FASTQ.GZ validation,
+stable record contracts, command-consumer migration evidence, and benchmark
+hooks.
+
+This milestone is intentionally smaller than broad ingest parity, paired-read
+reconciliation, adapter trimming, biological quality interpretation, or full
+comparator parity. It should make FASTQ-side command paths depend on
+Bamana-native FASTQ primitives without implying that every raw-read workflow is
+complete.
 
 ## Previously Completed Milestones
 
@@ -59,124 +63,105 @@ The M2 closeout established:
 * dependency-boundary checks protecting production native header code from
   direct `noodles` imports.
 
-Milestone 1 and 2 completion evidence remains recorded in:
+**Milestone 3: Native BAM Record Scanner**
+
+See:
+
+* [milestone-03-bam-record-scan.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-03-bam-record-scan.md)
+
+The M3 closeout established:
+
+* `BamRecordView` as the borrowed native BAM record-view contract;
+* `BamScanner` as the native BGZF/header-backed BAM record iteration substrate;
+* scanner-owned helpers for flags, coordinates, MAPQ, read names, sequence
+  length, section ranges, skip offsets, borrowed section slices, and selected
+  aux traversal;
+* scanner-backed `check_sort`, `check_map`, `summary`, `check_tag`,
+  `validate`, `inspect_duplication`, and `forensic_inspect` paths;
+* scanner malformed-record tests, dependency-boundary protection, and
+  `scanner_microbench` hooks.
+
+Milestone 1 through 3 completion evidence remains recorded in:
 
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-## Milestone 3 Completed State
+## Milestone 4 Current State
 
 Known present pieces:
 
-* native BGZF reading can feed BAM payload bytes;
-* native BAM header parsing can position readers at the first alignment record;
-* `src/bam/record.rs` defines `BamRecordView`, a borrowed lightweight record
-  view over one complete length-prefixed BAM record;
-* `BamRecordView` exposes core fields, sequence length, raw record bytes, and
-  stable ranges for core, read name, CIGAR, sequence, qualities, and aux
-  regions without allocating skipped sections;
-* `BamRecordView::to_record_layout` preserves the bridge back to the existing
-  owned `RecordLayout` type for richer consumers that still need
-  materialization or lossless serialization;
-* `src/bam/scan.rs` defines `BamScanner`, which opens BAM input through the
-  native BGZF backend, parses the native BAM header once, and iterates complete
-  raw alignment records into `BamRecordView`;
-* `BamRecordView` centralizes selective helpers for flags, coordinates, MAPQ,
-  read name, sequence length, section ranges, borrowed section slices, section
-  presence, and skip offsets;
-* `src/bam/tags.rs` provides record-view aux helpers for bounded traversal,
-  selected tag lookup, tag counting, tag-key collection, and string tag
-  extraction over `BamRecordView::aux_bytes`;
-* production `check_sort` uses `BamScanner` and scanner-owned field helpers for
-  record traversal while preserving its existing bounded and strict scan
-  behavior;
-* production `check_map` preserves its index-preferred behavior and uses
-  `BamScanner` for scan fallback record traversal;
-* production `summary` uses `BamScanner` for bounded and full record scans and
-  observes scanner-owned record views directly;
-* production `check_tag` uses `BamScanner` plus record-view aux helpers for
-  selected tag lookup;
-* production `validate` uses `BamScanner` and `BamRecordView` for record-level
-  structural checks that fit the lightweight view;
-* `inspect_duplication` uses `BamScanner`, borrowed sequence/quality sections,
-  and record-view RG extraction for BAM body scans;
-* `forensic_inspect` uses `BamScanner` for BAM body evidence across read-group,
-  read-name regime, aux-tag regime, and duplication-hallmark checks;
-* native scanner malformed-record tests cover scanner-owned expected failures
-  without external parser dependency;
-* dependency-boundary tests explicitly protect the scanner substrate and
-  migrated record hot paths from direct `noodles` imports;
-* `scanner_microbench` provides records-per-second and selective
-  field-extraction microbenchmarks with machine-readable JSON output;
-* `src/bam/records.rs` contains the current central record bridge through
-  `read_next_record_layout`, which performs bounded layout checks and
-  materializes read name, CIGAR, sequence, quality, and aux sections;
-* `LightAlignmentRecord` already exposes field-only record information for
-  several commands, but it is derived from the fully materialized
-  `RecordLayout` path rather than a true selective scanner;
-* `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
-  materialized aux bytes;
-* remaining record-facing transform paths include BAM-side `subsample` and
-  writer-heavy workflows that still need owned record materialization;
-* dependency-boundary tests already prohibit production `noodles` usage outside
-  the CRAM compatibility exception.
+* `src/fastq/mod.rs` contains the current native FASTQ parser/writer surface,
+  including `FastqRecord`, plain/gzip reader opening, record parsing, record
+  counting, unmapped-BAM conversion, threaded FASTQ.GZ-to-BAM conversion,
+  plain/gzip FASTQ writing, and selected HTS-style methylation header tag
+  conversion;
+* `src/fastq/gzi.rs` owns the `FASTQ.GZI` sidecar builder, reader, checkpoint
+  sampler, and explode range planner;
+* `src/ingest/fastq.rs` is a compatibility shim that re-exports
+  `crate::fastq`;
+* the current reader validates the four-line FASTQ structure, header marker,
+  plus marker, sequence/quality length equality, and usable read name;
+* the current gzip reader uses `flate2::read::MultiGzDecoder` for `.gz`
+  inputs;
+* the current writer emits plain FASTQ or gzip-compressed FASTQ according to
+  the output extension;
+* `enumerate`, FASTQ-side `subsample`, `consume`, `inspect_duplication`,
+  `deduplicate`, and FASTQ.GZ `explode` already consume native FASTQ helpers
+  in some form.
 
 Known gaps:
 
-* remaining BAM-side transform consumers have not yet been migrated onto a
-  shared scanner where command behavior needs owned records or writer-heavy
-  serialization;
-* richer decode and lossless serialization paths still use `RecordLayout` where
-  command behavior needs owned sequence, quality, aux, or whole-record bytes.
-
-Completed evidence:
-
-* `cargo test` passed with 180 library tests, 18 contract tests, 2
-  header-oracle integration tests, binary tests, and doc tests;
-* `cargo test --test contract` passed with 18 contract tests;
-* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed;
-* `cargo run --bin scanner_microbench -- --profile small --iterations 1`
-  passed, and the JSON smoke check verified the small profile, one iteration,
-  1,024 generated records, and the expected result schema.
+* FASTQ code is still concentrated in `src/fastq/mod.rs` instead of explicit
+  `record`, `reader`, `writer`, and gzip-oriented modules;
+* the current `FastqRecord` owns all strings, so field-only consumers still
+  allocate complete record lines;
+* FASTQ.GZ behavior needs explicit stream semantics and tests for multi-member
+  and malformed gzip inputs;
+* writer behavior needs a clear contract for line endings, gzip finalization,
+  flushing, and round-trip guarantees;
+* command consumers need to be audited and migrated to a stable Milestone 4
+  parser/writer API;
+* FASTQ parser/writer benchmark smoke evidence has not yet been recorded.
 
 First consumer order:
 
-1. `check_sort` complete;
-2. `check_map`, `summary`, and `check_tag` complete;
-3. `validate`, `inspect_duplication`, and `forensic_inspect` complete;
-4. scanner malformed-record tests, dependency boundaries, and microbenchmarks
-   complete;
-5. BAM-side `subsample` and other raw-record writers after scanner-owned raw
-   record access or lossless `RecordLayout` bridging is available.
+1. module split and stable record/reader/writer APIs;
+2. plain FASTQ validation and FASTQ.GZ stream semantics;
+3. writer round-trip guarantees;
+4. FASTQ-side `subsample` and `enumerate`;
+5. `consume`, `inspect_duplication`, `deduplicate`, and FASTQ.GZ `explode`;
+6. FASTQ oracle, dependency-boundary, and microbenchmark closeout evidence.
 
 ## Completion Boundary
 
-Milestone 3 completion means:
+Milestone 4 completion will mean:
 
-* BAM alignment records can be iterated natively without a full generic decode;
-* lightweight record views expose at least `refID`, `pos`, flags, MAPQ, read
-  name, sequence length, and aux-region boundaries;
-* scanner helpers can skip CIGAR, sequence, quality, and aux payloads when a
-  consumer does not need them;
-* selected aux tags can be traversed safely without rich materialization;
-* selected first command consumers use the shared scanner for record traversal;
-* scanner microbenchmark hooks are runnable and documented;
-* production BAM record hot-path scanning does not depend on `noodles`.
+* plain FASTQ parsing is native, tested, and documented;
+* FASTQ.GZ parsing is native, tested, and documented;
+* FASTQ record validation covers four-line structure, header and plus markers,
+  read-name parsing, and sequence/quality length equality;
+* valid FASTQ and FASTQ.GZ writing is supported with round-trip tests;
+* `FASTQ.GZI` sidecar behavior remains integrated with enumeration and
+  shard-planning consumers;
+* selected FASTQ command consumers use the stable native parser/writer APIs;
+* FASTQ microbenchmark hooks are runnable and documented;
+* production FASTQ hot paths do not depend on external generic bioinformatics
+  parser crates.
 
 ## Command-Surface Boundary
 
-Milestone 3 evidence is limited to native BAM record scanning and the selected
-command paths that consume scanner-owned record views.
+Milestone 4 evidence is limited to native FASTQ and FASTQ.GZ parsing, writing,
+record validation, sidecar-aware enumeration/planning, and selected command
+consumers that use those primitives.
 
-Commands such as `check_sort`, `check_map`, `summary`, `check_tag`,
-`validate`, `inspect_duplication`, `forensic_inspect`, and BAM-side
-`subsample` are beneficiaries, but each command's broader semantics remain
-bounded by its existing public contract unless an explicit M3 task updates that
-contract.
+Commands such as FASTQ-side `subsample`, `consume`, `inspect_duplication`,
+`deduplicate`, `enumerate`, and FASTQ.GZ `explode` are beneficiaries, but each
+command's broader semantics remain bounded by its existing public contract
+unless an explicit M4 task updates that contract.
 
 ## What Should Not Happen
 
-Do not treat Milestone 3 as full BAM semantic validation, BAI/CSI random
-access, native CRAM scanning, broad command parity, biological interpretation,
-or wholesale replacement of every rich record conversion path. Those remain
-later milestones or downstream command work unless an explicit M3 task includes
-them.
+Do not treat Milestone 4 as broad ingest parity, paired-read reconciliation,
+adapter trimming, biological quality interpretation, native CRAM scanning,
+full comparator parity, or wholesale replacement of every command-specific
+FASTQ behavior. Those remain later milestones or downstream command work unless
+an explicit M4 task includes them.
