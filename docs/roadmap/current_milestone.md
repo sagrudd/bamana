@@ -121,6 +121,10 @@ Known present pieces:
 * `consume`, `inspect_duplication`, `deduplicate`, and FASTQ.GZ `explode`
   use the stable FASTQ reader/writer primitives, preserve logical labels where
   needed, and keep `FASTQ.GZI`-guided consume/explode behavior covered;
+* native malformed FASTQ and FASTQ.GZ tests own failure expectations without
+  relying on external parsers;
+* `fastq_microbench` provides runnable native FASTQ parser/writer smoke
+  benchmarks with machine-readable JSON output;
 
 Known gaps:
 
@@ -130,7 +134,8 @@ Known gaps:
   available;
 * richer command-specific FASTQ behavior beyond the selected M4 consumers
   remains deferred to later command-migration work;
-* FASTQ parser/writer benchmark smoke evidence has not yet been recorded.
+* FASTQ parser/writer benchmark closeout evidence has not yet been recorded in
+  M4.10.
 
 First consumer order:
 

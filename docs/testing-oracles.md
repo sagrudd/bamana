@@ -50,3 +50,15 @@ expected error. Differential scanner checks may compare native scanner views
 against Bamana's owned `RecordLayout` bridge or a clearly labelled test-only
 oracle, but production scanner and migrated record hot paths must remain free of
 direct `noodles` imports.
+
+## Native FASTQ Oracle Boundary
+
+Milestone 4 FASTQ expectations are native-first. Malformed FASTQ and FASTQ.GZ failure expectations
+must stay in Bamana-native tests under `src/fastq` and must not depend on
+`noodles`, `bio`, `needletail`, `seq_io`, `rust-htslib`, or another external
+generic bioinformatics parser to define expected behavior.
+
+Differential checks may be added later as a clearly labelled test-only oracle
+surface, but production FASTQ parser, writer, command-consumer, and FASTQ.GZI paths must remain
+Bamana-native. This includes `src/fastq`, FASTQ-facing command consumers,
+unmapped FASTQ consume paths, duplication inspection, and deduplication.

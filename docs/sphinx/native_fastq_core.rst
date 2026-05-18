@@ -106,3 +106,16 @@ FASTQ records with ``write_fastq_records``. FASTQ.GZ ``explode`` uses
 ``FASTQ.GZI`` for shard planning, reads records through the stable reader, and
 serializes each compressed shard batch through the shared writer record-line
 helper before emitting concatenated gzip members.
+
+Oracle And Benchmark Boundary
+-----------------------------
+
+Malformed FASTQ and FASTQ.GZ expectations are native-owned unit tests under
+``src/fastq``. External parser crates may be used only in clearly labelled
+test-only oracle surfaces; production FASTQ parser, writer, ``FASTQ.GZI``, and
+command-consumer hot paths are protected by dependency-boundary contract tests.
+
+``fastq_microbench`` provides local parser and writer smoke benchmarks for
+plain FASTQ and FASTQ.GZ. It generates deterministic synthetic fixtures,
+requires no private data, and emits JSON conforming to
+``benchmarks/results/fastq_microbench.schema.json``.

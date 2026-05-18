@@ -22,6 +22,7 @@ Build the site locally with:
    bgzf_microbenchmarks
    header_microbenchmarks
    scanner_microbenchmarks
+   fastq_microbenchmarks
 
 .. toctree::
    :maxdepth: 2

@@ -1469,9 +1469,8 @@ Known gaps:
 * selected command consumers are audited against the stable Milestone 4
   reader/writer API, while richer command-specific FASTQ behavior remains
   deferred to later command-migration work;
-* FASTQ microbenchmark hooks are present in the broader benchmark framework,
-  but a small native parser/writer smoke benchmark and closeout evidence are
-  not yet recorded in the milestone task map.
+* FASTQ microbenchmark hooks are present through `fastq_microbench`, but M4.10
+  still needs closeout smoke-run evidence recorded in the milestone task map.
 
 Milestone 4 closeout evidence must include:
 
@@ -1859,7 +1858,7 @@ Completion evidence:
 
 ### M4.9 Add FASTQ Oracle, Dependency Boundary, And Microbenchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1882,7 +1881,35 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed native malformed plain FASTQ coverage in `src/fastq/reader.rs`
+  owns header marker, plus marker, blank read name, sequence/quality length,
+  and truncated-record expectations without external parsers;
+* added FASTQ.GZ malformed-record tests in `src/fastq/gzip.rs` proving valid
+  gzip streams containing invalid FASTQ report native `InvalidFastq` errors for
+  structural and truncated-record failures;
+* extended `tests/contract/dependency_boundary.rs` so protected FASTQ modules
+  and FASTQ-facing command consumers cannot directly import `noodles`, `bio`,
+  `needletail`, `seq_io`, or `rust-htslib` parser crates;
+* documented the native FASTQ oracle boundary in `docs/testing-oracles.md` and
+  added a contract test requiring that policy language;
+* added `src/bin/fastq_microbench.rs`, a deterministic synthetic FASTQ
+  parser/writer microbenchmark covering plain parse, FASTQ.GZ parse, plain
+  writer, gzip writer, and optional `enumerate` command timings;
+* added `benchmarks/results/fastq_microbench.schema.json` for archivable
+  machine-readable benchmark output;
+* added `docs/sphinx/fastq_microbenchmarks.rst`, linked it from the Sphinx
+  index, and updated benchmark result schema documentation;
+* updated native FASTQ technical docs and the current milestone roadmap with
+  oracle, dependency-boundary, and benchmark scope.
+* focused malformed FASTQ.GZ tests passed with
+  `cargo test fastq::gzip::tests::malformed_fastq_inside_valid_gzip_reports_native_fastq_error --lib`
+  and
+  `cargo test fastq::gzip::tests::truncated_fastq_record_inside_valid_gzip_reports_native_fastq_error --lib`;
+* `cargo build --bin fastq_microbench` passed;
+* FASTQ dependency-boundary and oracle-policy contract checks passed;
+* `cargo run --bin fastq_microbench -- --profile small --iterations 1`
+  passed and a JSON smoke check verified the benchmark name, profile,
+  iteration count, generated record count, and expected result keys.
 
 ### M4.10 Close Milestone 4
 

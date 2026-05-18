@@ -179,6 +179,53 @@ mod tests {
     }
 
     #[test]
+    fn malformed_fastq_inside_valid_gzip_reports_native_fastq_error() {
+        let path = temp_path("malformed-record", "fastq.gz");
+        write_bytes(&path, &gzip_member(b"@read1\nACGT\nplus\n!!!!\n"));
+
+        let error = count_fastq_records(&path).expect_err("malformed FASTQ.GZ should fail");
+        remove_if_exists(&path);
+
+        match error {
+            AppError::InvalidFastq { path, detail } => {
+                assert_eq!(
+                    path.file_name().and_then(|name| name.to_str()),
+                    Some(
+                        format!("bamana-malformed-record-{}-fastq.gz", std::process::id()).as_str()
+                    )
+                );
+                assert_eq!(detail, "FASTQ record plus line did not start with '+'.");
+            }
+            other => panic!("expected native InvalidFastq error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn truncated_fastq_record_inside_valid_gzip_reports_native_fastq_error() {
+        let path = temp_path("truncated-record", "fastq.gz");
+        write_bytes(&path, &gzip_member(b"@read1\nACGT\n+\n"));
+
+        let error = count_fastq_records(&path).expect_err("truncated FASTQ.GZ record should fail");
+        remove_if_exists(&path);
+
+        match error {
+            AppError::InvalidFastq { path, detail } => {
+                assert_eq!(
+                    path.file_name().and_then(|name| name.to_str()),
+                    Some(
+                        format!("bamana-truncated-record-{}-fastq.gz", std::process::id()).as_str()
+                    )
+                );
+                assert_eq!(
+                    detail,
+                    "FASTQ ended before the quality line of a complete record was available."
+                );
+            }
+            other => panic!("expected native InvalidFastq error, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn fastq_gzi_builds_for_multi_member_fastq_gz() {
         let path = temp_path("multi-member-gzi", "fastq.gz");
         let index_path = fastq_gzi_output_path(&path);

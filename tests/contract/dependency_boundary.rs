@@ -111,6 +111,46 @@ fn scanner_and_migrated_hot_paths_do_not_import_noodles() {
 }
 
 #[test]
+fn fastq_hot_paths_do_not_import_external_bio_parser_crates() {
+    let protected_paths = [
+        "src/fastq/mod.rs",
+        "src/fastq/record.rs",
+        "src/fastq/reader.rs",
+        "src/fastq/writer.rs",
+        "src/fastq/gzip.rs",
+        "src/fastq/gzi.rs",
+        "src/fastq/unmapped.rs",
+        "src/commands/enumerate.rs",
+        "src/commands/subsample.rs",
+        "src/commands/explode.rs",
+        "src/ingest/consume.rs",
+        "src/forensics/duplication.rs",
+        "src/forensics/deduplicate.rs",
+    ];
+    let mut violations = Vec::new();
+
+    for relative in protected_paths {
+        let path = repo_root().join(relative);
+        for (line_number, line) in read_utf8(&path).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                continue;
+            }
+
+            if contains_external_bio_parser_reference(trimmed) {
+                violations.push(format!("{relative}:{}: {line}", line_number + 1));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "native FASTQ hot paths must stay free of external generic bioinformatics parser crates:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn cram_compatibility_exception_is_documented_with_removal_criteria() {
     let policy = read_utf8(&docs_dir().join("dependency-policy.md"));
     let demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
@@ -174,8 +214,33 @@ fn scanner_oracle_surface_is_documented_as_native_first() {
     }
 }
 
+#[test]
+fn fastq_oracle_surface_is_documented_as_native_first() {
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+
+    for required in [
+        "Native FASTQ Oracle Boundary",
+        "Malformed FASTQ and FASTQ.GZ failure expectations",
+        "production FASTQ parser, writer, command-consumer, and FASTQ.GZI paths",
+        "src/fastq",
+    ] {
+        assert!(
+            oracle_policy.contains(required),
+            "testing oracle policy is missing FASTQ-oracle boundary language: {required}"
+        );
+    }
+}
+
 fn contains_direct_noodles_reference(line: &str) -> bool {
     line.contains("noodles_") || line.contains("noodles::")
+}
+
+fn contains_external_bio_parser_reference(line: &str) -> bool {
+    contains_direct_noodles_reference(line)
+        || line.contains("bio::")
+        || line.contains("needletail::")
+        || line.contains("seq_io::")
+        || line.contains("rust_htslib::")
 }
 
 fn rust_sources(dir: &Path) -> Vec<PathBuf> {
