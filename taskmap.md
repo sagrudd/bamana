@@ -1,9 +1,9 @@
 # Bamana Task Map
 
-This file tracks explicit development tasks for outstanding Milestone 1 work.
+This file tracks explicit development tasks for Bamana native-core milestones.
 Milestone 1 is the Native BGZF Core milestone described in
-`docs/roadmap/milestone-01-bgzf.md` and
-`docs/roadmap/current_milestone.md`.
+`docs/roadmap/milestone-01-bgzf.md`. Milestone 2 is the Native BAM Header Codec
+milestone described in `docs/roadmap/milestone-02-bam-header.md`.
 
 ## Milestone 1 Definition
 
@@ -54,7 +54,56 @@ Command-surface scope:
   commands may depend on this substrate, but their broader command semantics
   remain downstream work and must not be treated as Milestone 1 closure proof.
 
-## Task List
+## Milestone 2 Definition
+
+Milestone 2 is complete only when Bamana owns BAM header parsing and
+deterministic header serialization above the Milestone 1 BGZF substrate. The
+milestone covers BAM magic, `l_text`, SAM-style textual header content, the
+binary reference dictionary, native error handling for malformed header
+prefixes, and the command migration needed for `verify` and `header` to use the
+native header path.
+
+## Milestone 2 Current State
+
+Status: planned.
+
+Known present pieces:
+
+* Milestone 1 BGZF reading is complete and can inflate the first BAM member;
+* `src/bam/header.rs` already contains first-slice header parsing helpers;
+* `header` and `verify` exist as public commands and have JSON contracts;
+* dependency-boundary checks already prevent production `noodles` usage outside
+  the CRAM compatibility exception.
+
+Known gaps:
+
+* Milestone 2 does not yet have completion evidence;
+* the current header codec has not been audited against the full M2 acceptance
+  criteria;
+* malformed-length, reference-dictionary reconciliation, and deterministic
+  reserialization behavior need explicit milestone tests;
+* header parse and serialization microbenchmarks are not yet present;
+* `docs/roadmap/current_milestone.md` still records Milestone 1 as the completed
+  milestone and Milestone 2 as next.
+
+Milestone 2 closeout evidence must include:
+
+* all M2.1 through M2.10 tasks complete;
+* `cargo test` passing;
+* `cargo test --test contract` passing;
+* Sphinx documentation building successfully;
+* header microbenchmarks runnable with machine-readable output;
+* roadmap and task-map status updated to record Milestone 2 completion.
+
+Command-surface scope:
+
+* Milestone 2 evidence is limited to native BAM header ownership and the
+  `verify` and `header` command paths that consume it.
+* `reheader`, `check_sort`, `check_map`, `summary`, `merge`, and checksum
+  behavior may benefit from the codec, but their broader semantics remain
+  downstream work unless a specific M2 task says otherwise.
+
+## Milestone 1 Task List
 
 ### M1.1 Restore Green Verification
 
@@ -380,3 +429,270 @@ Completion evidence:
 * roadmap and task map status now record Milestone 1 as complete while keeping
   deferred BAM header, BAM record scanning, BAI/CSI random access, and broader
   command migration work outside the milestone.
+
+## Milestone 2 Task List
+
+### M2.1 Activate Milestone 2 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 2 is the active
+  milestone and Milestone 1 remains recorded as complete;
+* audit existing `src/bam/header.rs`, `src/bam/reader.rs`, and
+  `src/bam/write.rs` header behavior against
+  `docs/roadmap/milestone-02-bam-header.md`;
+* record which existing tests already exercise M2 behavior and which gaps need
+  new tests;
+* run `cargo test`, `cargo test --test contract`, and the Sphinx build as the
+  clean M2 baseline.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 2 as active;
+* no M1 completion evidence is removed or weakened;
+* a baseline verification result is recorded in this task map;
+* M2 work starts from a clean or explicitly documented working tree.
+
+Completion evidence:
+
+* pending.
+
+### M2.2 Define Native Header Data Model
+
+Status: pending.
+
+Tasks:
+
+* audit and tighten the native types used for BAM magic, `l_text`, raw header
+  text, parsed SAM header records, and binary reference dictionary entries;
+* ensure negative lengths and values that do not fit BAM integer fields are
+  rejected before allocation or indexing;
+* keep unknown SAM-style header records representable without losing their raw
+  content;
+* document the stable internal representation expected by later `reheader`,
+  `merge`, checksum, and validation work.
+
+Acceptance criteria:
+
+* header structures preserve raw header text and parsed reference metadata;
+* reference dictionary entries retain name, length, and encounter-order index;
+* invalid signed lengths cannot cause large allocations or panics;
+* later command consumers do not need to parse BAM header bytes themselves.
+
+Completion evidence:
+
+* pending.
+
+### M2.3 Complete Native BAM Header Parsing
+
+Status: pending.
+
+Tasks:
+
+* parse BAM magic from the native BGZF-inflated stream;
+* parse and validate `l_text`;
+* parse SAM-style textual header records from the declared text span;
+* parse and validate `n_ref` and every binary reference dictionary entry;
+* detect truncated text, truncated reference names, missing NUL terminators,
+  truncated reference lengths, and trailing prefix inconsistencies with clear
+  `AppError` details.
+
+Acceptance criteria:
+
+* valid BAM headers parse without relying on `noodles`;
+* malformed or truncated header prefixes fail with specific errors;
+* tests cover empty headers, headers with references, headers with comments,
+  and headers with unknown record types;
+* parsing leaves the reader positioned at the first alignment record for later
+  scanner work.
+
+Completion evidence:
+
+* pending.
+
+### M2.4 Reconcile Textual And Binary Reference Metadata
+
+Status: pending.
+
+Tasks:
+
+* compare binary reference dictionary entries with textual `@SQ` records;
+* define the authoritative source for reference name, length, and order in JSON
+  output;
+* report mismatches without silently rewriting input semantics;
+* preserve duplicate or suspicious textual records as parseable metadata where
+  possible;
+* add tests for missing `@SQ`, extra `@SQ`, name mismatch, length mismatch, and
+  order mismatch cases.
+
+Acceptance criteria:
+
+* binary reference entries remain authoritative for BAM decoding;
+* textual `@SQ` metadata is retained and exposed for diagnostics;
+* mismatch behavior is deterministic and documented;
+* consumers can distinguish strict invalidity from non-fatal header warnings.
+
+Completion evidence:
+
+* pending.
+
+### M2.5 Implement Deterministic Header Serialization
+
+Status: pending.
+
+Tasks:
+
+* serialize native header payloads back to BAM header bytes deterministically;
+* preserve or intentionally normalize SAM-style textual header ordering
+  according to documented rules;
+* serialize the binary reference dictionary in encounter order;
+* add round-trip tests for parse-serialize-parse stability;
+* expose helper functions that existing BAM writer, checksum, and reheader
+  code can share.
+
+Acceptance criteria:
+
+* identical native header values produce byte-identical serialized headers;
+* serialized headers are accepted by the native parser;
+* reference names include exactly one required NUL terminator in the binary
+  dictionary;
+* no command duplicates header serialization logic outside the owned module.
+
+Completion evidence:
+
+* pending.
+
+### M2.6 Migrate `header` To The Native Codec
+
+Status: pending.
+
+Tasks:
+
+* route the production `header` command through the native BGZF plus BAM header
+  codec path;
+* ensure JSON output remains contract-compatible unless a deliberate contract
+  update is made in the same task;
+* add success and failure examples if native diagnostics alter public output;
+* update `README.md`, `docs/cli.md`, `spec/cli/commands.md`, JSON schemas, and
+  Sphinx docs if command semantics change.
+
+Acceptance criteria:
+
+* production `header` behavior is not backed by `noodles`;
+* existing header command contract tests pass;
+* native parse failures are surfaced through structured JSON errors;
+* user-facing docs describe the native header scope without implying full BAM
+  body validation.
+
+Completion evidence:
+
+* pending.
+
+### M2.7 Migrate `verify` To Native BGZF Plus Native Header
+
+Status: pending.
+
+Tasks:
+
+* replace shallow BAM magic-only verification with native BGZF plus native BAM
+  header validation appropriate for M2;
+* keep EOF marker reporting scoped to BGZF behavior;
+* distinguish BGZF container errors, BAM magic errors, and BAM header prefix
+  errors in JSON responses;
+* update examples, schemas, CLI docs, and Sphinx docs if `verify` payload or
+  failure semantics change.
+
+Acceptance criteria:
+
+* production `verify` uses only Bamana-native BGZF and BAM header code;
+* `verify` does not imply full alignment-record validation;
+* tests cover valid BAM, invalid BGZF, invalid BAM magic, invalid header text
+  length, and truncated reference dictionary cases;
+* contract tests continue to protect public `verify` behavior.
+
+Completion evidence:
+
+* pending.
+
+### M2.8 Add Header Oracle And Dependency Boundary Tests
+
+Status: pending.
+
+Tasks:
+
+* add native unit tests for edge-case BAM headers without using `noodles` in the
+  production path;
+* add oracle or differential tests that may use `noodles` only from tests,
+  fixtures, or compatibility helpers;
+* extend the dependency-boundary check if new header modules create additional
+  risk;
+* document the allowed test-only oracle surface and production prohibition.
+
+Acceptance criteria:
+
+* production `header` and `verify` paths remain free of `noodles`;
+* test-only oracle usage is clearly isolated;
+* malformed-header tests do not depend on external parsers for expected
+  failures;
+* dependency-boundary verification fails if production header code imports
+  `noodles`.
+
+Completion evidence:
+
+* pending.
+
+### M2.9 Add Header Microbenchmarks
+
+Status: pending.
+
+Tasks:
+
+* add a header parse latency microbenchmark;
+* add a header serialization microbenchmark;
+* add read-prefix or startup-cost timing that can compare `verify` and
+  `header` before and after M2 migration;
+* emit machine-readable benchmark results;
+* document local benchmark commands and result interpretation.
+
+Acceptance criteria:
+
+* benchmarks run without private data;
+* benchmark output can be archived under `benchmarks/results/` or an equivalent
+  documented path;
+* docs explain which timings measure header codec behavior versus full command
+  overhead;
+* benchmark hooks are included in M2 closeout evidence.
+
+Completion evidence:
+
+* pending.
+
+### M2.10 Close Milestone 2
+
+Status: pending.
+
+Tasks:
+
+* run all required verification commands;
+* run header microbenchmarks;
+* update technical Sphinx documentation;
+* update user-facing docs and CLI contracts affected by the final M2 behavior;
+* update `docs/roadmap/milestone-02-bam-header.md`,
+  `docs/roadmap/current_milestone.md`, and this task map with final completion
+  evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* `cargo test` passes;
+* `cargo test --test contract` passes;
+* Sphinx documentation builds successfully;
+* header microbenchmark hooks are runnable and documented;
+* production `verify` and `header` do not rely on `noodles`;
+* Milestone 2 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
