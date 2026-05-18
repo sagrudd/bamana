@@ -129,3 +129,17 @@ Any remaining production `noodles` usage must:
 * live in a clearly labeled compatibility boundary
 * carry a comment that the usage must not expand
 * be documented here
+* pass `tests/contract/dependency_boundary.rs`, which currently allows direct
+  production `noodles_*` references only in `src/ingest/cram.rs`
+
+## Removal criteria
+
+The `src/ingest/cram.rs` exception is temporary. It can be removed, narrowed,
+or redesigned when:
+
+* native CRAM support is staged as its own implementation effort;
+* CRAM compatibility is moved behind a narrower optional feature boundary;
+* CRAM ingestion is no longer included in the native-core package.
+
+Until one of those outcomes is chosen, the compatibility slice must not expand
+outside CRAM ingestion and reference-policy handling.

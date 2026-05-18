@@ -59,6 +59,27 @@ The current explicit exception is conservative CRAM ingestion support in
 That slice remains transitional and compatibility-oriented. It does not define
 the architecture for BAM, BGZF, or FASTQ core execution.
 
+The exception is narrow:
+
+* direct production `noodles_*` imports are allowed only in
+  `src/ingest/cram.rs`;
+* the usage must stay strictly within CRAM ingestion and reference-policy
+  compatibility;
+* it must not expand into BAM, BGZF, FASTQ, or command hot paths;
+* the boundary is enforced by
+  `tests/contract/dependency_boundary.rs`.
+
+### Removal criteria
+
+The CRAM exception should be removed or redesigned when one of these is true:
+
+* Bamana has a native CRAM compatibility plan and implementation;
+* CRAM support is moved behind a narrower optional compatibility feature;
+* the project decides to drop CRAM ingestion from the native-core package.
+
+Until then, CRAM compatibility remains explicitly transitional and must not be
+used as precedent for new production `noodles` usage.
+
 ## Dependency Review Rule
 
 Any new dependency added to hot-path code must justify:

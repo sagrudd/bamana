@@ -4,6 +4,7 @@ use std::{
 };
 
 pub mod cli_contract;
+pub mod dependency_boundary;
 pub mod golden_outputs;
 pub mod json_contract;
 pub mod support;

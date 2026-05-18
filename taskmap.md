@@ -312,7 +312,7 @@ Completion evidence:
 
 ### M1.9 Confirm Dependency Boundaries
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -326,6 +326,15 @@ Acceptance criteria:
 * production BAM/BGZF/FASTQ hot paths have no `noodles` dependency;
 * CRAM compatibility remains isolated;
 * future agents have a clear guardrail for dependency review.
+
+Completion evidence:
+
+* audited production `src/` usage and confirmed direct `noodles_*` references
+  are isolated to `src/ingest/cram.rs`;
+* added `tests/contract/dependency_boundary.rs` to fail if direct production
+  `noodles` usage appears outside the CRAM compatibility boundary;
+* updated dependency policy and the noodles demotion plan with the exact CRAM
+  exception, guardrail test, and removal criteria.
 
 ### M1.10 Close Milestone 1
 
