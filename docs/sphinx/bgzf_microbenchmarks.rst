@@ -38,3 +38,12 @@ The JSON result contains:
 Results conform to
 ``benchmarks/results/bgzf_microbench.schema.json`` and can be archived beside
 other benchmark result artifacts.
+
+Milestone 1 Closeout
+--------------------
+
+The Milestone 1 closeout used the ``small`` profile with one iteration and
+``--bamana-bin`` so the JSON included both substrate timings and command
+timings for ``verify`` and ``check_eof``. Longer local runs should increase
+``--iterations`` and use ``medium`` or ``large`` when comparing throughput
+changes.

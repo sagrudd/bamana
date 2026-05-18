@@ -14,7 +14,7 @@ level command behavior must not hide gaps in BGZF ownership.
 
 ## Current Completion State
 
-Status: incomplete.
+Status: complete.
 
 Known present pieces:
 
@@ -32,11 +32,17 @@ Known present pieces:
 * `noodles` usage is isolated to the CRAM compatibility module in production
   code.
 
-Known blockers before Milestone 1 can be closed:
+Milestone 1 closeout evidence:
 
-* M1.9 still needs the final dependency-boundary audit and guardrail;
-* M1.10 still needs the closing verification run, benchmark evidence, and final
-  milestone status update.
+* all M1.1 through M1.10 tasks are complete;
+* final clean-worktree `cargo test` passed with 116 library tests, 14 contract
+  tests, binary tests, and doc tests;
+* final clean-worktree `cargo test --test contract` passed with 14 contract
+  tests;
+* final clean-worktree Sphinx build passed for `docs/sphinx`;
+* final clean-worktree `bgzf_microbench --profile small --iterations 1
+  --bamana-bin target/debug/bamana` ran successfully and reported `ok_count: 1`
+  for both `verify` and `check_eof`.
 
 Command-surface scope:
 
@@ -301,7 +307,7 @@ Acceptance criteria:
 Completion evidence:
 
 * updated the task map completion state to reflect completed BGZF substrate
-  work and the remaining M1.9/M1.10 blockers;
+  work and the then-remaining M1.9/M1.10 closeout path;
 * added explicit command-surface scope boundaries to distinguish Milestone 1
   evidence from downstream first-slice command behavior;
 * updated the current milestone and Milestone 1 roadmap pages so the milestone
@@ -338,7 +344,7 @@ Completion evidence:
 
 ### M1.10 Close Milestone 1
 
-Status: blocked by M1.1 through M1.9.
+Status: complete.
 
 Tasks:
 
@@ -357,3 +363,20 @@ Acceptance criteria:
 * benchmark hooks are runnable and documented;
 * documentation is current;
 * Milestone 1 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* `cargo test` passed in a clean worktree from commit `cea705f` with this
+  closeout patch applied, with 116 library tests, 14 contract tests, binary
+  tests, and doc tests;
+* `cargo test --test contract` passed in the same clean worktree with 14
+  contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed in the
+  same clean worktree;
+* `cargo build --bin bamana --bin bgzf_microbench` passed;
+* `cargo run --bin bgzf_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out /tmp/bamana-m110-bgzf-small.json`
+  passed and reported `ok_count: 1` for both `verify` and `check_eof`;
+* roadmap and task map status now record Milestone 1 as complete while keeping
+  deferred BAM header, BAM record scanning, BAI/CSI random access, and broader
+  command migration work outside the milestone.

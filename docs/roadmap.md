@@ -41,6 +41,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 1: Native BGZF Core
 
+* status: complete
 * detail: [roadmap/milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
 * goal: own BGZF reading, writing, block handling, EOF checks, and virtual
   offset groundwork

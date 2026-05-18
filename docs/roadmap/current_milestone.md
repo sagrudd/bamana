@@ -1,6 +1,6 @@
 # Current Milestone
 
-## Active Milestone
+## Completed Milestone
 
 **Milestone 1: Native BGZF Core**
 
@@ -8,7 +8,7 @@ See:
 
 * [milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
 
-## Why This Is Current
+## Why This Was Current
 
 Native BGZF ownership is the physical substrate for BAM. It enables:
 
@@ -22,6 +22,21 @@ in the repository, but they are not evidence that the native core migration is
 complete. They should be read as consumers or early command slices layered on
 top of the substrate.
 
+## Completion Status
+
+Milestone 1 is complete. The closing evidence is recorded in:
+
+* [milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
+* [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
+
+Final clean-worktree checks passed:
+
+* `cargo test`
+* `cargo test --test contract`
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`
+* `cargo build --bin bamana --bin bgzf_microbench`
+* `cargo run --bin bgzf_microbench -- --profile small --iterations 1 --bamana-bin target/debug/bamana`
+
 ## What “Done” Means
 
 For contributors, Milestone 1 is done only when:
@@ -32,10 +47,7 @@ For contributors, Milestone 1 is done only when:
 * benchmark hooks for read, write, and EOF latency are defined and runnable
 * no production BGZF hot path depends on `noodles`
 
-Current remaining closure work is tracked in `taskmap.md`:
-
-* M1.9: confirm dependency boundaries and guardrails
-* M1.10: run final verification, benchmark evidence, and milestone closeout
+All of those closure criteria are now satisfied for Milestone 1.
 
 ## Command-Surface Boundary
 
@@ -55,3 +67,8 @@ where they directly exercise the BGZF substrate.
 
 Do not skip ahead to command-level rewrites that assume a mature native scanner
 or header codec before the BGZF substrate is clearly owned.
+
+## Next Milestone
+
+Milestone 2 is the native BAM header codec. It should build on the completed
+BGZF substrate rather than reopening Milestone 1 scope.

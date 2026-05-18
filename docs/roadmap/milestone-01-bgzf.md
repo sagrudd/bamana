@@ -1,5 +1,7 @@
 # Milestone 1: Native BGZF Core
 
+Status: complete.
+
 ## Technical Goal
 
 Implement Bamana-native BGZF reading and writing primitives sufficient for:
@@ -78,6 +80,26 @@ Disallowed:
 * Bamana can write valid BGZF output suitable for BAM-compatible payloads
 * tests exist for EOF detection and BGZF block parsing
 * no production BGZF hot path depends on `noodles`
+
+## Closeout Evidence
+
+Milestone 1 was closed after final verification in a clean worktree from commit
+`cea705f` with the closeout patch applied.
+
+Verification commands:
+
+* `cargo test`: passed with 116 library tests, 14 contract tests, binary tests,
+  and doc tests
+* `cargo test --test contract`: passed with 14 contract tests
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`: passed
+* `cargo build --bin bamana --bin bgzf_microbench`: passed
+* `cargo run --bin bgzf_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out /tmp/bamana-m110-bgzf-small.json`:
+  passed and reported `ok_count: 1` for both `verify` and `check_eof`
+
+The remaining production `noodles` exception is documented and guarded by
+`tests/contract/dependency_boundary.rs`; direct production `noodles_*` usage is
+allowed only in `src/ingest/cram.rs`.
 
 ## Current Module Boundary
 
