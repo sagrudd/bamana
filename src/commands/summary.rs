@@ -4,10 +4,9 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{HeaderPayload, parse_bam_header_from_reader},
+        header::HeaderPayload,
         index::{BaiIndexSummary, IndexKind, IndexResolution, parse_bai, resolve_index_for_bam},
-        reader::BamReader,
-        records::read_next_light_record,
+        scan::BamScanner,
         summary::{SummaryAccumulator, SummarySnapshot},
     },
     error::AppError,
@@ -233,21 +232,15 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         );
     }
 
-    let mut reader = match BamReader::open(&request.bam) {
-        Ok(reader) => reader,
-        Err(error) => {
-            return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
-        }
-    };
-    let header = match parse_bam_header_from_reader(&mut reader) {
-        Ok(header) => header,
+    let mut scanner = match BamScanner::open(&request.bam) {
+        Ok(scanner) => scanner,
         Err(error) => {
             return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
         }
     };
 
     let index_summary = if request.prefer_index {
-        match attempt_index_summary(&request.bam, header.header.references.len()) {
+        match attempt_index_summary(&request.bam, scanner.header().header.references.len()) {
             Ok(summary) => summary,
             Err(error) => {
                 return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
@@ -257,7 +250,7 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         None
     };
 
-    let scan_result = match scan_summary_records(&mut reader, &request) {
+    let scan_result = match scan_summary_records(&mut scanner, &request) {
         Ok(result) => result,
         Err(error) => {
             let payload = SummaryPayload {
@@ -289,7 +282,7 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         }
     };
 
-    let payload = build_payload(&header, index_summary, scan_result, &request);
+    let payload = build_payload(scanner.header(), index_summary, scan_result, &request);
     CommandResponse::success("summary", Some(request.bam.as_path()), payload)
 }
 
@@ -319,7 +312,7 @@ struct ScanResult {
 }
 
 fn scan_summary_records(
-    reader: &mut BamReader,
+    scanner: &mut BamScanner,
     request: &SummaryRequest,
 ) -> Result<ScanResult, String> {
     let mut accumulator = SummaryAccumulator::new(request.include_mapq_hist);
@@ -331,8 +324,8 @@ fn scan_summary_records(
     let mut reached_eof = false;
 
     while accumulator.snapshot().records_examined < record_limit {
-        match read_next_light_record(reader) {
-            Ok(Some(record)) => accumulator.observe(&record),
+        match scanner.next_record() {
+            Ok(Some(record)) => accumulator.observe_view(&record),
             Ok(None) => {
                 reached_eof = true;
                 break;
@@ -585,4 +578,95 @@ fn build_mapping_summary(
 
 fn fraction(value: u64, denominator: f64) -> Option<f64> {
     (denominator > 0.0).then_some(value as f64 / denominator)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use crate::bgzf::test_support::{
+        build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+    };
+
+    use super::{MappingStatus, SummaryMode, SummaryRequest, run};
+
+    #[test]
+    fn bounded_summary_uses_scanner_records() {
+        let bam_path = write_temp_file(
+            "summary-scanner-bounded",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 10, "read1", 0),
+                    build_light_record(-1, -1, "read2", 4),
+                ],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: false,
+            prefer_index: false,
+            include_mapq_hist: true,
+            include_flags: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        assert!(matches!(payload.mode, SummaryMode::BoundedScan));
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert_eq!(evidence.records_scanned, 1);
+        assert!(!evidence.full_file_scanned);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_examined, 1);
+        assert_eq!(counts.mapped_records, 1);
+        assert_eq!(counts.unmapped_records, 0);
+        let mapping = payload.mapping.expect("mapping summary should be present");
+        assert!(matches!(mapping.status, MappingStatus::Mapped));
+        assert!(payload.flag_categories.is_some());
+    }
+
+    #[test]
+    fn full_summary_reports_scanner_eof() {
+        let bam_path = write_temp_file(
+            "summary-scanner-full",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 10, "read1", 0),
+                    build_light_record(-1, -1, "read2", 4),
+                ],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: true,
+            prefer_index: false,
+            include_mapq_hist: false,
+            include_flags: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        assert!(matches!(payload.mode, SummaryMode::FullScan));
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert_eq!(evidence.records_scanned, 2);
+        assert!(evidence.full_file_scanned);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_total_known, Some(2));
+        assert_eq!(counts.mapped_records, 1);
+        assert_eq!(counts.unmapped_records, 1);
+        assert!(payload.flag_categories.is_none());
+    }
 }

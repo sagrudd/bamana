@@ -920,6 +920,12 @@ Known present pieces:
 * production `check_sort` now uses `BamScanner` and scanner-owned field helpers
   for record traversal while preserving existing bounded and strict scan
   behavior;
+* production `check_map` now preserves index-preferred behavior but routes
+  scan fallback record traversal through `BamScanner`;
+* production `summary` now routes bounded and full alignment-record scans
+  through `BamScanner` and `SummaryAccumulator::observe_view`;
+* production `check_tag` now routes aux lookup through `BamScanner` and
+  record-view aux helpers;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -927,18 +933,19 @@ Known present pieces:
   is derived from `RecordLayout` and is not yet a true selective scanner view;
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
-* `check_map`, `summary`, `check_tag`, `validate`, `inspect_duplication`,
-  `forensic_inspect`, and BAM-side `subsample` still perform record-facing work
-  through existing first-slice readers and helpers;
+* `validate`, `inspect_duplication`, `forensic_inspect`, and BAM-side
+  `subsample` still perform record-facing work through existing first-slice
+  readers and helpers;
 * dependency-boundary checks already prohibit production `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
-* remaining command consumers are not migrated onto a shared scanner substrate;
+* remaining validation, forensics, and BAM-side transform consumers are not
+  migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.7 through M3.10 remain outstanding.
+* M3.8 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1208,7 +1215,7 @@ Completion evidence:
 
 ### M3.7 Migrate `check_map`, `summary`, And `check_tag` Scanner Consumers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1229,7 +1236,16 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* routed scan-based `check_map` fallback behavior through `BamScanner` while
+  leaving usable BAI index summaries preferred;
+* routed production `summary` bounded and full scans through `BamScanner` and
+  scanner-owned field extraction via `SummaryAccumulator::observe_view`;
+* routed production `check_tag` aux traversal through `BamScanner` and
+  `record_aux_contains_tag`;
+* preserved the existing JSON payload contracts and diagnostics;
+* added command-level scanner-backed tests for `summary` and `check_tag`;
+* `cargo test commands::check_map`, `cargo test commands::summary`, and
+  `cargo test commands::check_tag` passed.
 
 ### M3.8 Migrate Validation And Forensics First-Slice Consumers
 

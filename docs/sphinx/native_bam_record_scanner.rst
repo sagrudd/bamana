@@ -113,8 +113,12 @@ comparison snapshot from ``BamRecordView`` and scanner-owned flag helpers while
 preserving bounded scans, strict scans, specialized-sort handling, JSON payloads,
 and user-facing caveats.
 
-Remaining first consumers, beginning with ``check_map``, ``summary``, and
-``check_tag``, still need to move onto the scanner.
+``check_map``, ``summary``, and ``check_tag`` now consume the scanner as well.
+``check_map`` preserves usable index summaries as the preferred evidence source
+and uses scanner traversal for fallback scans. ``summary`` observes
+``BamRecordView`` records for bounded and full scans. ``check_tag`` performs
+selected aux lookup through record-view aux helpers. Their JSON payloads remain
+unchanged.
 
 Boundaries
 ----------

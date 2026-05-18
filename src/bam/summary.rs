@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use crate::bam::records::LightAlignmentRecord;
+use crate::bam::{record::BamRecordView, records::LightAlignmentRecord};
 
 #[derive(Debug, Clone, Default)]
 pub struct SummarySnapshot {
@@ -45,6 +45,41 @@ impl SummaryAccumulator {
     }
 
     pub fn observe(&mut self, record: &LightAlignmentRecord) {
+        self.observe_fields(ObservedSummaryRecord {
+            ref_id: record.ref_id,
+            mapping_quality: record.mapping_quality,
+            is_unmapped: record.is_unmapped,
+            is_paired: record.is_paired,
+            is_proper_pair: record.is_proper_pair,
+            is_reverse: record.is_reverse,
+            is_secondary: record.is_secondary,
+            is_supplementary: record.is_supplementary,
+            is_qc_fail: record.is_qc_fail,
+            is_duplicate: record.is_duplicate,
+            is_read1: record.is_read1,
+            is_read2: record.is_read2,
+        });
+    }
+
+    pub fn observe_view(&mut self, record: &BamRecordView<'_>) {
+        let flags = record.flag_summary();
+        self.observe_fields(ObservedSummaryRecord {
+            ref_id: record.ref_id(),
+            mapping_quality: record.mapping_quality(),
+            is_unmapped: flags.is_unmapped,
+            is_paired: flags.is_paired,
+            is_proper_pair: flags.is_proper_pair,
+            is_reverse: flags.is_reverse,
+            is_secondary: flags.is_secondary,
+            is_supplementary: flags.is_supplementary,
+            is_qc_fail: flags.is_qc_fail,
+            is_duplicate: flags.is_duplicate,
+            is_read1: flags.is_read1,
+            is_read2: flags.is_read2,
+        });
+    }
+
+    fn observe_fields(&mut self, record: ObservedSummaryRecord) {
         self.snapshot.records_examined += 1;
 
         if record.is_secondary {
@@ -120,6 +155,22 @@ impl SummaryAccumulator {
     pub fn snapshot(&self) -> SummarySnapshot {
         self.snapshot.clone()
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ObservedSummaryRecord {
+    ref_id: i32,
+    mapping_quality: u8,
+    is_unmapped: bool,
+    is_paired: bool,
+    is_proper_pair: bool,
+    is_reverse: bool,
+    is_secondary: bool,
+    is_supplementary: bool,
+    is_qc_fail: bool,
+    is_duplicate: bool,
+    is_read1: bool,
+    is_read2: bool,
 }
 
 #[cfg(test)]

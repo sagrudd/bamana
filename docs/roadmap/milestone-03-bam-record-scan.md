@@ -177,9 +177,9 @@ payloads continue to fail with precise errors for truncated fields,
 unterminated strings, unsupported type codes, unsupported B-array subtypes,
 negative B-array counts, and array payload length overflows.
 
-This completes the scanner aux helper substrate. Command paths such as
-`check_tag`, read-group evidence, validation, and forensics still need to be
-migrated onto these helpers in M3.7 and M3.8.
+This completes the scanner aux helper substrate. `check_tag` now consumes these
+helpers through `BamScanner`; read-group evidence, validation, and forensics
+still need to be migrated in later Milestone 3 tasks.
 
 ## First Command Migration
 
@@ -189,8 +189,12 @@ snapshot from `BamRecordView` and scanner-owned flag helpers, and preserves the
 existing bounded scan, strict scan, specialized-sort, JSON payload, and semantic
 note behavior.
 
-Remaining command migrations start in M3.7 with `check_map`, `summary`, and
-`check_tag`.
+M3.7 migrated `check_map`, `summary`, and `check_tag` onto `BamScanner`.
+`check_map` still prefers usable index-derived evidence and uses the scanner
+for scan fallback. `summary` now scans bounded and full record windows through
+scanner-owned record views. `check_tag` now performs aux lookup through
+record-view aux helpers. These migrations preserve existing JSON payloads and
+diagnostic semantics.
 
 ## Benchmark Hooks
 

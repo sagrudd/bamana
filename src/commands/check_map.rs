@@ -2,10 +2,10 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     bam::{
-        header::{HeaderPayload, parse_bam_header_from_reader},
+        header::HeaderPayload,
         index::{BaiIndexSummary, IndexKind, IndexResolution, parse_bai, resolve_index_for_bam},
-        reader::BamReader,
-        records::{LightAlignmentRecord, read_next_light_record},
+        record::BamRecordView,
+        scan::BamScanner,
     },
     error::AppError,
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
@@ -124,9 +124,8 @@ pub fn run(request: CheckMapRequest) -> Result<CheckMapPayload, AppError> {
         });
     }
 
-    let mut reader = BamReader::open(&request.bam)?;
-    let header = parse_bam_header_from_reader(&mut reader)?;
-    let references_defined = header.header.references.len();
+    let mut scanner = BamScanner::open(&request.bam)?;
+    let references_defined = scanner.header().header.references.len();
 
     let (index_info, index_note, index_summary) = if request.prefer_index {
         attempt_index_summary(&request.bam, references_defined)?
@@ -144,7 +143,7 @@ pub fn run(request: CheckMapRequest) -> Result<CheckMapPayload, AppError> {
 
     if let Some(index_summary) = index_summary {
         return Ok(build_index_payload(
-            &header,
+            scanner.header(),
             index_info,
             index_summary,
             index_note,
@@ -152,7 +151,7 @@ pub fn run(request: CheckMapRequest) -> Result<CheckMapPayload, AppError> {
     }
 
     let (scan_state, reached_eof) = scan_mapping_records(
-        &mut reader,
+        &mut scanner,
         request.sample_records.max(1),
         request.full_scan,
     )?;
@@ -169,7 +168,7 @@ pub fn run(request: CheckMapRequest) -> Result<CheckMapPayload, AppError> {
     }
 
     Ok(build_scan_payload(
-        &header,
+        scanner.header(),
         index_info,
         index_note,
         scan_state,
@@ -321,7 +320,7 @@ fn build_index_payload(
 }
 
 fn scan_mapping_records(
-    reader: &mut BamReader,
+    scanner: &mut BamScanner,
     sample_records: usize,
     full_scan: bool,
 ) -> Result<(ScanState, bool), AppError> {
@@ -333,10 +332,10 @@ fn scan_mapping_records(
             break;
         }
 
-        match read_next_light_record(reader)? {
-            Some(record) => {
+        match scanner.next_record()? {
+            Some(record_view) => {
                 state.records_examined += 1;
-                update_scan_state(&mut state, &record);
+                update_scan_state(&mut state, &record_view);
             }
             None => {
                 reached_eof = true;
@@ -348,11 +347,12 @@ fn scan_mapping_records(
     Ok((state, reached_eof))
 }
 
-fn update_scan_state(state: &mut ScanState, record: &LightAlignmentRecord) {
-    let mapped = record.ref_id >= 0 && !record.is_unmapped;
-    let unmapped = record.is_unmapped || record.ref_id < 0;
-    let contradictory =
-        (record.ref_id >= 0 && record.is_unmapped) || (record.ref_id < 0 && !record.is_unmapped);
+fn update_scan_state(state: &mut ScanState, record: &BamRecordView<'_>) {
+    let flags = record.flag_summary();
+    let ref_id = record.ref_id();
+    let mapped = ref_id >= 0 && !flags.is_unmapped;
+    let unmapped = flags.is_unmapped || ref_id < 0;
+    let contradictory = (ref_id >= 0 && flags.is_unmapped) || (ref_id < 0 && !flags.is_unmapped);
 
     if contradictory {
         state.inconsistent_records_observed += 1;
@@ -360,15 +360,15 @@ fn update_scan_state(state: &mut ScanState, record: &LightAlignmentRecord) {
 
     if mapped {
         state.mapped_records_observed += 1;
-        if let Ok(index) = usize::try_from(record.ref_id) {
+        if let Ok(index) = usize::try_from(ref_id) {
             *state.mapped_per_reference.entry(index).or_insert(0) += 1;
         }
     }
 
     if unmapped {
         state.unmapped_records_observed += 1;
-        if record.ref_id >= 0 {
-            if let Ok(index) = usize::try_from(record.ref_id) {
+        if ref_id >= 0 {
+            if let Ok(index) = usize::try_from(ref_id) {
                 *state
                     .placed_unmapped_per_reference
                     .entry(index)

@@ -88,6 +88,12 @@ Known present pieces:
 * production `check_sort` uses `BamScanner` and scanner-owned field helpers for
   record traversal while preserving its existing bounded and strict scan
   behavior;
+* production `check_map` preserves its index-preferred behavior and uses
+  `BamScanner` for scan fallback record traversal;
+* production `summary` uses `BamScanner` for bounded and full record scans and
+  observes scanner-owned record views directly;
+* production `check_tag` uses `BamScanner` plus record-view aux helpers for
+  selected tag lookup;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -96,21 +102,21 @@ Known present pieces:
   `RecordLayout` path rather than a true selective scanner;
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
-* record-facing commands already exist, including `check_map`, `summary`,
-  `check_tag`, `validate`, `inspect_duplication`, `forensic_inspect`, and
-  BAM-side `subsample`;
+* remaining record-facing commands include `validate`, `inspect_duplication`,
+  `forensic_inspect`, and BAM-side `subsample`;
 * dependency-boundary tests already prohibit production `noodles` usage outside
   the CRAM compatibility exception.
 
 Known gaps:
 
-* remaining command consumers have not yet been migrated onto a shared scanner;
+* remaining validation, forensics, and BAM-side transform consumers have not yet
+  been migrated onto a shared scanner;
 * scanner oracle coverage and microbenchmarks are not yet present.
 
 First consumer order:
 
 1. `check_sort` complete;
-2. `check_map`, `summary`, and `check_tag`;
+2. `check_map`, `summary`, and `check_tag` complete;
 3. `validate`, `inspect_duplication`, and `forensic_inspect`;
 4. BAM-side `subsample` and other raw-record writers after scanner-owned raw
    record access or lossless `RecordLayout` bridging is available.
