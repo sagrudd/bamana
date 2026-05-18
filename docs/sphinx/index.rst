@@ -33,3 +33,4 @@ Build the site locally with:
    :caption: Technical Notes
 
    native_bam_header_codec
+   native_bam_record_scanner

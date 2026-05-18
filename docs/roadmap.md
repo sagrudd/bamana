@@ -49,6 +49,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 2: Native BAM Header Codec
 
+* status: complete
 * detail: [roadmap/milestone-02-bam-header.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-02-bam-header.md)
 * goal: own BAM magic, header text, binary references, and deterministic header
   serialization
@@ -56,6 +57,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 3: Native BAM Record Scanner
 
+* status: active
 * detail: [roadmap/milestone-03-bam-record-scan.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-03-bam-record-scan.md)
 * goal: own selective BAM record iteration and lightweight field extraction
 * commands enabled first: scan commands and BAM-side `subsample`
