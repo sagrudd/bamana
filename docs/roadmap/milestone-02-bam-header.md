@@ -1,5 +1,7 @@
 # Milestone 2: Native BAM Header Codec
 
+Status: complete as of 2026-05-18.
+
 ## Technical Goal
 
 Implement Bamana-native BAM header parsing and serialization for:
@@ -120,6 +122,24 @@ Disallowed:
   appropriate
 * `header_microbench` JSON output conforming to
   `benchmarks/results/header_microbench.schema.json`
+
+## Completion Evidence
+
+Milestone 2 closeout evidence is recorded in
+`taskmap.md`. The closeout run completed:
+
+* `cargo test`
+* `cargo test --test contract`
+* `cargo run --bin header_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out
+  /tmp/bamana-m2-close-header-small.json`
+* header microbenchmark JSON smoke validation
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`
+
+The final Milestone 2 scope is native BAM header ownership plus the `verify`
+and `header` command paths that consume it. Full BAM record scanning,
+BAI/CSI random access, and broad downstream command migration remain outside
+this milestone.
 
 ## Risks / Follow-Up
 

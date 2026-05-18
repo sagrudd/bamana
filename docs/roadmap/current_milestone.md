@@ -1,15 +1,15 @@
 # Current Milestone
 
-## Active Milestone
+## Milestone Status
 
-**Milestone 2: Native BAM Header Codec**
+**Milestone 2: Native BAM Header Codec** completed on 2026-05-18.
 
 See:
 
 * [milestone-02-bam-header.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-02-bam-header.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-## Why This Is Current
+## Why This Was Current
 
 Milestone 1 completed the native BGZF substrate. The next dependency layer is
 native BAM header ownership: BAM magic, `l_text`, textual SAM-style header
@@ -20,7 +20,7 @@ This milestone is intentionally smaller than full BAM record scanning. It
 should make `verify` and `header` depend on Bamana-native BGZF plus native BAM
 header parsing without implying full alignment-record validation.
 
-## Completed Milestone
+## Previously Completed Milestone
 
 **Milestone 1: Native BGZF Core**
 
@@ -41,7 +41,7 @@ The M1 closeout established:
 * dependency guardrails that keep production `noodles` usage isolated to CRAM
   compatibility.
 
-## Milestone 2 Baseline
+## Milestone 2 Completion State
 
 Known present pieces:
 
@@ -70,11 +70,25 @@ Known present pieces:
 
 Known gaps:
 
-* Milestone 2 closeout evidence still needs to be recorded.
+* none for Milestone 2 scope.
 
-## What “Done” Means
+Closeout evidence:
 
-For contributors, Milestone 2 is done only when:
+* all M2.1 through M2.10 tasks are complete;
+* `cargo test` passed with 151 library tests, 16 contract tests, 2
+  header-oracle integration tests, binary tests, and doc tests, with the
+  existing unused-variable warning in `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 16 contract tests;
+* `cargo run --bin header_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out
+  /tmp/bamana-m2-close-header-small.json` passed;
+* the header microbenchmark JSON smoke check confirmed parse latency,
+  serialization latency, and successful `verify`/`header` command timing rows;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
+
+## Completion Boundary
+
+Milestone 2 completion means:
 
 * BAM header text and binary reference dictionaries parse natively;
 * malformed and negative header lengths fail safely with structured errors;

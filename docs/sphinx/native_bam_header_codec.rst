@@ -1,8 +1,8 @@
 Native BAM Header Codec
 =======================
 
-Milestone 2 owns BAM header parsing and serialization above the native BGZF
-substrate.
+Milestone 2 is complete. Bamana owns BAM header parsing and serialization above
+the native BGZF substrate for the ``header`` and ``verify`` command paths.
 
 Header Model
 ------------
@@ -63,3 +63,11 @@ Native BAM header serialization is deterministic:
 
 Checksum code uses the shared native header checksum-domain serializer, so it
 does not duplicate header representation rules.
+
+Closeout Evidence
+-----------------
+
+Milestone 2 closeout evidence is recorded in ``taskmap.md``. The closeout run
+included ``cargo test``, ``cargo test --test contract``,
+``header_microbench`` with ``verify`` and ``header`` command timings, JSON
+smoke validation for the benchmark output, and a Sphinx HTML build.

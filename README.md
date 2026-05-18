@@ -385,10 +385,11 @@ cargo test
 
 ## Current Status
 
-The repository now contains a production-minded BAM header slice with shared
-JSON contracts, structured error handling, fast file probing, native BAM header
-parsing, and real BGZF EOF inspection. Full BAM validation and broader BAM
-operations will be implemented incrementally under the project charter in
+Milestone 2 is complete. The repository now contains a production-minded BAM
+header slice with shared JSON contracts, structured error handling, fast file
+probing, native BAM header parsing and serialization, header microbenchmarks,
+and real BGZF EOF inspection. Full BAM validation and broader BAM operations
+will be implemented incrementally under the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 
 ## Specification Layer

@@ -65,30 +65,40 @@ native header path.
 
 ## Milestone 2 Current State
 
-Status: active.
+Status: complete.
 
 Known present pieces:
 
-* Milestone 1 BGZF reading is complete and can inflate the first BAM member;
-* `src/bam/header.rs` already contains native first-slice header parsing
-  helpers;
-* `header` and `verify` exist as public commands and have JSON contracts;
+* Milestone 1 BGZF reading is complete and can feed native BAM header parsing;
+* `src/bam/header.rs` owns native BAM magic, `l_text`, SAM-style header text,
+  binary reference dictionary parsing, reconciliation diagnostics, and
+  deterministic serialization helpers;
+* `header` and `verify` route through native BGZF plus native BAM header paths
+  and have governed JSON contracts;
+* test-only header oracle coverage is isolated in `tests/header_oracle.rs`;
+* `header_microbench` provides runnable native header parse, serialization,
+  `verify`, and `header` timing hooks with machine-readable JSON output;
 * dependency-boundary checks already prevent production `noodles` usage outside
   the CRAM compatibility exception.
 
 Known gaps:
 
-* Milestone 2 does not yet have closeout evidence;
-* M2.10 remains outstanding.
+* none for Milestone 2 scope.
 
-Milestone 2 closeout evidence must include:
+Milestone 2 closeout evidence:
 
-* all M2.1 through M2.10 tasks complete;
-* `cargo test` passing;
-* `cargo test --test contract` passing;
-* Sphinx documentation building successfully;
-* header microbenchmarks runnable with machine-readable output;
-* roadmap and task-map status updated to record Milestone 2 completion.
+* all M2.1 through M2.10 tasks are complete;
+* closeout `cargo test` passed with 151 library tests, 16 contract
+  tests, 2 header-oracle integration tests, binary tests, and doc tests, with
+  the existing unused-variable warning in `src/forensics/forensic_inspect.rs`;
+* closeout `cargo test --test contract` passed with 16 contract
+  tests;
+* closeout Sphinx build passed for `docs/sphinx`;
+* closeout `header_microbench --profile small --iterations 1
+  --bamana-bin target/debug/bamana` ran successfully and reported `ok_count: 1`
+  for both `verify` and `header`;
+* the header microbenchmark JSON smoke check confirmed parse latency,
+  serialization latency, and command timings were emitted.
 
 Command-surface scope:
 
@@ -830,7 +840,7 @@ Completion evidence:
 
 ### M2.10 Close Milestone 2
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -854,4 +864,18 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* ran `cargo test`, which passed with 151 library tests, 16 contract tests, 2
+  header-oracle integration tests, binary tests, and doc tests, with the
+  existing unused-variable warning in `src/forensics/forensic_inspect.rs`;
+* ran `cargo test --test contract`, which passed with 16 contract tests;
+* ran `cargo run --bin header_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out
+  /tmp/bamana-m2-close-header-small.json`, which passed;
+* validated the header microbenchmark JSON smoke output, including
+  `header_parse_latency`, `header_serialization_latency`, and successful
+  `verify`/`header` command timing rows;
+* ran `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`, which
+  passed;
+* updated `docs/roadmap/milestone-02-bam-header.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 2 completion evidence.
