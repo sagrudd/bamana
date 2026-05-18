@@ -80,7 +80,7 @@ Known gaps:
 
 * Milestone 2 does not yet have completion evidence;
 * header parse and serialization microbenchmarks are not yet present;
-* M2.6 through M2.10 remain outstanding.
+* M2.7 through M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -657,7 +657,7 @@ Completion evidence:
 
 ### M2.6 Migrate `header` To The Native Codec
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -679,7 +679,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added a native BGZF streaming backend that can feed BAM header parsing across
+  BGZF member boundaries without using `noodles`;
+* routed `src/commands/header.rs` through `parse_bam_header_from_native_bgzf`;
+* added command tests proving `header` parses a multi-member native BGZF BAM
+  header and surfaces missing BAM magic as `invalid_header`;
+* kept the existing JSON response shape and schema unchanged because public
+  success and failure semantics did not change;
+* updated user-facing and Sphinx documentation to state that `header` validates
+  only native BGZF plus BAM header structure, not the BAM body;
+* `cargo test` passed with 141 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.7 Migrate `verify` To Native BGZF Plus Native Header
 

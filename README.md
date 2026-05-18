@@ -72,7 +72,7 @@ The current semantics are intentionally narrow:
 * `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
 * `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
-* `header` parses the BAM header only, including the binary reference dictionary and textual SAM-style header records
+* `header` parses the BAM header only through Bamana's native BGZF and BAM header codec, including the binary reference dictionary and textual SAM-style header records
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
@@ -195,11 +195,14 @@ cargo run -- unmap --bam aligned.bam --out aligned.unmapped.bam --dry-run
 cargo run -- benchmark --profile fastq_gz_enumerate --fastq reads.fastq.gz --report fastq-gz-enumerate.pdf --force
 ```
 
-`header` uses the binary BAM reference section as authoritative for reference
-names and lengths, and joins optional fields from textual `@SQ` records into the
+`header` uses Bamana's native BGZF stream reader and native BAM header codec.
+The binary BAM reference section is authoritative for reference names and
+lengths, and optional fields from textual `@SQ` records are joined into the
 structured JSON view when present. Non-fatal textual-vs-binary reference
 mismatches are reported in `header.reference_diagnostics`; they do not rewrite
-the binary reference dictionary used by downstream BAM decoding.
+the binary reference dictionary used by downstream BAM decoding. A successful
+`header` run does not imply that alignment records or the full BAM body are
+valid.
 
 `subsample` is Bamana's explicit selection command for BAM, FASTQ, and
 FASTQ.GZ inputs. The current slice supports seeded random Bernoulli-style

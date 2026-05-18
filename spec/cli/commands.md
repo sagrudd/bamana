@@ -499,11 +499,12 @@ Synopsis:
 `bamana header --bam <bamfile>`
 
 Semantics:
-Parses the BAM header only.
+Parses the BAM header only through Bamana's native BGZF stream reader and
+native BAM header codec.
 
 Does prove:
 The decompressed BAM header and binary reference dictionary were readable enough
- to parse.
+to parse.
 
 Does not prove:
 That alignment records are valid or that the full file body is readable.

@@ -11,6 +11,72 @@ use crate::{
     error::AppError,
 };
 
+pub struct NativeBgzfReader {
+    path: std::path::PathBuf,
+    file: File,
+    payload: Vec<u8>,
+    offset: usize,
+    eof: bool,
+}
+
+impl NativeBgzfReader {
+    pub fn open(path: &Path) -> Result<Self, AppError> {
+        let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+
+        Ok(Self {
+            path: path.to_path_buf(),
+            file,
+            payload: Vec::new(),
+            offset: 0,
+            eof: false,
+        })
+    }
+
+    pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize, AppError> {
+        if buffer.is_empty() {
+            return Ok(0);
+        }
+
+        while self.offset >= self.payload.len() {
+            if self.eof {
+                return Ok(0);
+            }
+            self.load_next_payload()?;
+        }
+
+        let available = self.payload.len() - self.offset;
+        let count = available.min(buffer.len());
+        buffer[..count].copy_from_slice(&self.payload[self.offset..self.offset + count]);
+        self.offset += count;
+        Ok(count)
+    }
+
+    fn load_next_payload(&mut self) -> Result<(), AppError> {
+        loop {
+            let Some(member) = read_bgzf_member(&mut self.file, &self.path)? else {
+                self.eof = true;
+                self.payload.clear();
+                self.offset = 0;
+                return Ok(());
+            };
+
+            if member == BGZF_EOF_MARKER {
+                self.eof = true;
+                self.payload.clear();
+                self.offset = 0;
+                return Ok(());
+            }
+
+            self.payload = decompress_member(&member, &self.path)?;
+            self.offset = 0;
+
+            if !self.payload.is_empty() {
+                return Ok(());
+            }
+        }
+    }
+}
+
 pub fn has_bgzf_eof(path: &Path) -> Result<bool, AppError> {
     let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     let file_len = file

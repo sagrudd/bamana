@@ -55,8 +55,8 @@ Known present pieces:
 * binary reference names, lengths, and encounter-order indexes are exposed;
 * `serialize_bam_header_payload` can emit BAM header bytes for current writer
   consumers;
-* `src/commands/header.rs` already routes the command through the native header
-  parser;
+* `src/commands/header.rs` routes the command through native BGZF streaming and
+  native BAM header parsing;
 * production dependency-boundary tests already prohibit direct `noodles` usage
   outside the CRAM compatibility exception.
 

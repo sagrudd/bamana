@@ -105,7 +105,8 @@ Disallowed:
 * malformed and negative lengths are detected safely
 * BAM header serialization is deterministic
 * textual and binary reference information are merged consistently
-* production `header` command does not rely on `noodles`
+* production `header` command uses native BGZF streaming plus native BAM header
+  parsing and does not rely on `noodles`
 * production `verify` uses native BGZF plus native header path only
 
 ## Benchmark Hooks

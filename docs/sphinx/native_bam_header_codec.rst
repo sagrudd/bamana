@@ -21,6 +21,15 @@ binary reference dictionary.
    Non-fatal warnings when textual ``@SQ`` records disagree with the binary
    dictionary.
 
+Header Command
+--------------
+
+``bamana header`` uses the native BGZF stream reader and native BAM header
+codec. A successful response proves that the container and header prefix,
+textual header, and binary reference dictionary were readable enough to parse.
+It does not prove that alignment records, EOF state, or the complete BAM body
+are valid.
+
 Serialization
 -------------
 

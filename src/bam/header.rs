@@ -180,6 +180,11 @@ pub fn parse_bam_header(path: &Path) -> Result<HeaderPayload, AppError> {
     parse_bam_header_from_reader(&mut reader)
 }
 
+pub fn parse_bam_header_from_native_bgzf(path: &Path) -> Result<HeaderPayload, AppError> {
+    let mut reader = BamReader::open_native_bgzf(path)?;
+    parse_bam_header_from_reader(&mut reader)
+}
+
 pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayload, AppError> {
     let magic = reader.read_magic()?;
     if &magic != BAM_MAGIC {

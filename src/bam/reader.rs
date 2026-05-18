@@ -6,11 +6,16 @@ use std::{
 
 use flate2::read::MultiGzDecoder;
 
-use crate::error::AppError;
+use crate::{bgzf::reader::NativeBgzfReader, error::AppError};
 
 pub struct BamReader {
     path: PathBuf,
-    decoder: MultiGzDecoder<BufReader<File>>,
+    backend: BamReaderBackend,
+}
+
+enum BamReaderBackend {
+    Gzip(MultiGzDecoder<BufReader<File>>),
+    NativeBgzf(NativeBgzfReader),
 }
 
 impl BamReader {
@@ -24,7 +29,16 @@ impl BamReader {
 
         Ok(Self {
             path: label.to_path_buf(),
-            decoder,
+            backend: BamReaderBackend::Gzip(decoder),
+        })
+    }
+
+    pub fn open_native_bgzf(path: &Path) -> Result<Self, AppError> {
+        let reader = NativeBgzfReader::open(path)?;
+
+        Ok(Self {
+            path: path.to_path_buf(),
+            backend: BamReaderBackend::NativeBgzf(reader),
         })
     }
 
@@ -52,23 +66,16 @@ impl BamReader {
 
     pub fn read_optional_i32_le(&mut self) -> Result<Option<i32>, AppError> {
         let mut bytes = [0_u8; 4];
-        match self.decoder.read(&mut bytes[..1]) {
+        match self.read_from_backend(&mut bytes[..1]) {
             Ok(0) => return Ok(None),
             Ok(_) => {}
-            Err(error) => return Err(AppError::from_io(&self.path, error)),
+            Err(error) => return Err(error),
         }
 
-        self.decoder.read_exact(&mut bytes[1..]).map_err(|error| {
-            if error.kind() == std::io::ErrorKind::UnexpectedEof {
-                AppError::TruncatedFile {
-                    path: self.path.clone(),
-                    detail: "BAM stream ended while reading the next record block size."
-                        .to_string(),
-                }
-            } else {
-                AppError::from_io(&self.path, error)
-            }
-        })?;
+        self.read_exact_into_with_context(
+            &mut bytes[1..],
+            "BAM stream ended while reading the next record block size.",
+        )?;
 
         Ok(Some(i32::from_le_bytes(bytes)))
     }
@@ -107,15 +114,29 @@ impl BamReader {
         buffer: &mut [u8],
         detail: &'static str,
     ) -> Result<(), AppError> {
-        self.decoder.read_exact(buffer).map_err(|error| {
-            if error.kind() == std::io::ErrorKind::UnexpectedEof {
-                AppError::TruncatedFile {
-                    path: self.path.clone(),
-                    detail: detail.to_string(),
+        let mut bytes_read = 0;
+        while bytes_read < buffer.len() {
+            match self.read_from_backend(&mut buffer[bytes_read..]) {
+                Ok(0) => {
+                    return Err(AppError::TruncatedFile {
+                        path: self.path.clone(),
+                        detail: detail.to_string(),
+                    });
                 }
-            } else {
-                AppError::from_io(&self.path, error)
+                Ok(count) => bytes_read += count,
+                Err(error) => return Err(error),
             }
-        })
+        }
+
+        Ok(())
+    }
+
+    fn read_from_backend(&mut self, buffer: &mut [u8]) -> Result<usize, AppError> {
+        match &mut self.backend {
+            BamReaderBackend::Gzip(decoder) => decoder
+                .read(buffer)
+                .map_err(|error| AppError::from_io(&self.path, error)),
+            BamReaderBackend::NativeBgzf(reader) => reader.read(buffer),
+        }
     }
 }

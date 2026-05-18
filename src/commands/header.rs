@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::{
-    bam::header::HeaderPayload,
+    bam::header::{HeaderPayload, parse_bam_header_from_native_bgzf},
     error::AppError,
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
 };
@@ -34,5 +34,64 @@ pub fn run(request: HeaderRequest) -> Result<HeaderResponse, AppError> {
         });
     }
 
-    crate::bam::header::parse_bam_header(&request.bam)
+    parse_bam_header_from_native_bgzf(&request.bam)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use crate::{
+        bgzf::{BGZF_EOF_MARKER, test_support},
+        error::AppError,
+    };
+
+    use super::{HeaderRequest, run};
+
+    #[test]
+    fn header_command_uses_native_bgzf_streaming_header_path() {
+        let header_text = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n";
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+        payload.extend_from_slice(header_text.as_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1\0");
+        payload.extend_from_slice(&100_i32.to_le_bytes());
+
+        let split_at = 12;
+        let mut bam = test_support::build_bgzf_member(&payload[..split_at]);
+        bam.extend_from_slice(&test_support::build_bgzf_member(&payload[split_at..]));
+        bam.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = test_support::write_temp_file("header-native-bgzf", "bam", &bam);
+
+        let response = run(HeaderRequest { bam: path.clone() })
+            .expect("header command should parse a multi-member native BGZF stream");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(response.header.raw_header_text, header_text);
+        assert_eq!(response.header.references.len(), 1);
+        assert_eq!(response.header.references[0].name, "chr1");
+        assert!(response.header.reference_diagnostics.is_empty());
+    }
+
+    #[test]
+    fn header_command_surfaces_native_header_parse_failures() {
+        let mut bam = test_support::build_bgzf_member(b"not-bam");
+        bam.extend_from_slice(&BGZF_EOF_MARKER);
+        let path =
+            test_support::write_temp_file("header-native-invalid-magic", "invalid.bam", &bam);
+
+        let error = run(HeaderRequest { bam: path.clone() })
+            .expect_err("missing BAM magic should be surfaced as a header parse error");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        match error {
+            AppError::InvalidHeader { detail, .. } => {
+                assert_eq!(detail, "Missing BAM magic in decompressed stream.");
+            }
+            other => panic!("expected invalid_header error, got {other:?}"),
+        }
+    }
 }

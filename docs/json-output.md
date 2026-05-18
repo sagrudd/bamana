@@ -47,7 +47,8 @@ See:
 
 ## `header`
 
-The `header` payload exposes the BAM header without implying alignment-record
+The `header` payload exposes the BAM header parsed through the native BGZF
+stream reader and native BAM header codec without implying alignment-record
 validation.
 
 Key concepts:
