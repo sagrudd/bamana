@@ -160,7 +160,7 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
         });
     }
 
-    let l_text = reader.read_i32_le()?;
+    let l_text = reader.read_i32_le_with_context("BAM stream ended while reading l_text.")?;
     if l_text < 0 {
         return Err(AppError::InvalidHeader {
             path: reader.path().to_path_buf(),
@@ -177,14 +177,17 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
         });
     }
 
-    let raw_header_text = String::from_utf8(reader.read_exact_vec(l_text)?).map_err(|error| {
-        AppError::InvalidHeader {
-            path: reader.path().to_path_buf(),
-            detail: format!("BAM header text is not valid UTF-8: {error}"),
-        }
+    let raw_header_text = String::from_utf8(
+        reader
+            .read_exact_vec_with_context(l_text, "BAM stream ended while reading header text.")?,
+    )
+    .map_err(|error| AppError::InvalidHeader {
+        path: reader.path().to_path_buf(),
+        detail: format!("BAM header text is not valid UTF-8: {error}"),
     })?;
 
-    let n_ref = reader.read_i32_le()?;
+    let n_ref =
+        reader.read_i32_le_with_context("BAM stream ended while reading reference count.")?;
     if n_ref < 0 {
         return Err(AppError::InvalidHeader {
             path: reader.path().to_path_buf(),
@@ -203,7 +206,8 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
 
     let mut binary_references = Vec::with_capacity(n_ref);
     for _ in 0..n_ref {
-        let l_name = reader.read_i32_le()?;
+        let l_name = reader
+            .read_i32_le_with_context("BAM stream ended while reading reference name length.")?;
         if l_name <= 0 {
             return Err(AppError::InvalidHeader {
                 path: reader.path().to_path_buf(),
@@ -220,13 +224,28 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
             });
         }
 
-        let name_bytes = reader.read_exact_vec(l_name)?;
+        let name_bytes = reader.read_exact_vec_with_context(
+            l_name,
+            "BAM stream ended while reading reference name.",
+        )?;
         let Some((&0, name_without_nul)) = name_bytes.split_last() else {
             return Err(AppError::InvalidHeader {
                 path: reader.path().to_path_buf(),
                 detail: "BAM reference name was not NUL-terminated.".to_string(),
             });
         };
+        if name_without_nul.is_empty() {
+            return Err(AppError::InvalidHeader {
+                path: reader.path().to_path_buf(),
+                detail: "BAM reference name was empty.".to_string(),
+            });
+        }
+        if name_without_nul.contains(&0) {
+            return Err(AppError::InvalidHeader {
+                path: reader.path().to_path_buf(),
+                detail: "BAM reference name contained an interior NUL byte.".to_string(),
+            });
+        }
 
         let name = String::from_utf8(name_without_nul.to_vec()).map_err(|error| {
             AppError::InvalidHeader {
@@ -235,7 +254,8 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
             }
         })?;
 
-        let l_ref = reader.read_i32_le()?;
+        let l_ref =
+            reader.read_i32_le_with_context("BAM stream ended while reading reference length.")?;
         if l_ref < 0 {
             return Err(AppError::InvalidHeader {
                 path: reader.path().to_path_buf(),
@@ -804,12 +824,62 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::{
-        ReferenceHeaderFields, ReferenceRecord, parse_bam_header, serialize_bam_header_payload,
+        ReferenceHeaderFields, ReferenceRecord, parse_bam_header, parse_bam_header_from_reader,
+        serialize_bam_header_payload,
     };
     use crate::{
+        bam::{reader::BamReader, records::read_next_record_layout},
+        bgzf::{BGZF_EOF_MARKER, test_support::build_bgzf_member},
         error::AppError,
-        formats::bgzf::test_support::{build_bam_file_with_header, write_temp_file},
+        formats::bgzf::test_support::{
+            build_bam_file_with_header, build_bam_file_with_header_and_records, build_light_record,
+            write_temp_file,
+        },
     };
+
+    fn build_raw_bam_payload(header_bytes: impl AsRef<[u8]>) -> Vec<u8> {
+        let mut bytes = build_bgzf_member(header_bytes.as_ref());
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        bytes
+    }
+
+    fn assert_truncated_detail(error: AppError, expected: &str) {
+        match error {
+            AppError::TruncatedFile { detail, .. } => {
+                assert!(
+                    detail.contains(expected),
+                    "expected detail to contain {expected:?}, got {detail:?}"
+                );
+            }
+            other => panic!("expected truncated file error, got {other:?}"),
+        }
+    }
+
+    fn assert_invalid_header_detail(error: AppError, expected: &str) {
+        match error {
+            AppError::InvalidHeader { detail, .. } => {
+                assert!(
+                    detail.contains(expected),
+                    "expected detail to contain {expected:?}, got {detail:?}"
+                );
+            }
+            other => panic!("expected invalid header error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_empty_header_without_references() {
+        let bytes = build_bam_file_with_header("", &[]);
+        let path = write_temp_file("header-empty", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("empty BAM header should parse");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_eq!(payload.format, "BAM");
+        assert!(payload.header.raw_header_text.is_empty());
+        assert!(payload.header.references.is_empty());
+        assert!(payload.header.other_header_records.is_empty());
+    }
 
     #[test]
     fn parses_binary_and_text_header_sections() {
@@ -875,6 +945,146 @@ mod tests {
 
         assert_eq!(payload.header.references[0].length, 456);
         assert_eq!(payload.header.references[0].text_header_length, Some(123));
+    }
+
+    #[test]
+    fn parser_leaves_reader_at_first_alignment_record() {
+        let record = build_light_record(0, 42, "read1", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100\n",
+            &[("chr1", 100)],
+            &[record],
+        );
+        let path = write_temp_file("header-reader-position", "bam", &bytes);
+        let mut reader = BamReader::open(&path).expect("BAM should open");
+
+        let header = parse_bam_header_from_reader(&mut reader).expect("header should parse");
+        let record = read_next_record_layout(&mut reader)
+            .expect("record read should succeed")
+            .expect("record should exist after header");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_eq!(header.header.references[0].name, "chr1");
+        assert_eq!(record.read_name, "read1");
+        assert_eq!(record.pos, 42);
+    }
+
+    #[test]
+    fn reports_truncated_header_text_with_specific_context() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&8_i32.to_le_bytes());
+        payload.extend_from_slice(b"@HD\n");
+        let path = write_temp_file(
+            "header-truncated-text",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("truncated text should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_truncated_detail(error, "header text");
+    }
+
+    #[test]
+    fn reports_truncated_reference_count_with_specific_context() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-truncated-nref",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("truncated n_ref should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_truncated_detail(error, "reference count");
+    }
+
+    #[test]
+    fn reports_truncated_reference_name_with_specific_context() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr");
+        let path = write_temp_file(
+            "header-truncated-reference-name",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("truncated reference name should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_truncated_detail(error, "reference name");
+    }
+
+    #[test]
+    fn rejects_reference_name_without_nul_terminator() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&4_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1");
+        payload.extend_from_slice(&10_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-reference-missing-nul",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("missing NUL should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "NUL-terminated");
+    }
+
+    #[test]
+    fn rejects_reference_name_with_interior_nul() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&6_i32.to_le_bytes());
+        payload.extend_from_slice(b"ch\0r1\0");
+        payload.extend_from_slice(&10_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-reference-interior-nul",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("interior NUL should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "interior NUL");
+    }
+
+    #[test]
+    fn reports_truncated_reference_length_with_specific_context() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1\0");
+        payload.extend_from_slice(&10_i16.to_le_bytes());
+        let path = write_temp_file(
+            "header-truncated-reference-length",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("truncated reference length should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_truncated_detail(error, "reference length");
     }
 
     #[test]

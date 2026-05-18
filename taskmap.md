@@ -532,7 +532,7 @@ Completion evidence:
 
 ### M2.3 Complete Native BAM Header Parsing
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -555,7 +555,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added contextual native BAM reader helpers so header parsing can report which
+  header-prefix field was truncated instead of returning only a generic short
+  read;
+* updated native header parsing to use field-specific reads for `l_text`,
+  header text, `n_ref`, reference name length, reference name bytes, and
+  reference length;
+* tightened reference-name validation to reject empty names and interior NUL
+  bytes in addition to missing NUL terminators;
+* added tests for empty BAM headers, rich headers with references/comments and
+  unknown records, binary-reference preservation, parser positioning at the
+  first alignment record, truncated header text, truncated reference count,
+  truncated reference name, missing NUL terminator, interior NUL bytes, and
+  truncated reference length;
+* `cargo test` passed with 129 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 14 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.4 Reconcile Textual And Binary Reference Metadata
 

@@ -44,6 +44,12 @@ impl BamReader {
         Ok(i32::from_le_bytes(bytes))
     }
 
+    pub fn read_i32_le_with_context(&mut self, detail: &'static str) -> Result<i32, AppError> {
+        let mut bytes = [0_u8; 4];
+        self.read_exact_into_with_context(&mut bytes, detail)?;
+        Ok(i32::from_le_bytes(bytes))
+    }
+
     pub fn read_optional_i32_le(&mut self) -> Result<Option<i32>, AppError> {
         let mut bytes = [0_u8; 4];
         match self.decoder.read(&mut bytes[..1]) {
@@ -79,13 +85,33 @@ impl BamReader {
         Ok(buffer)
     }
 
+    pub fn read_exact_vec_with_context(
+        &mut self,
+        len: usize,
+        detail: &'static str,
+    ) -> Result<Vec<u8>, AppError> {
+        let mut buffer = vec![0_u8; len];
+        self.read_exact_into_with_context(&mut buffer, detail)?;
+        Ok(buffer)
+    }
+
     fn read_exact_into(&mut self, buffer: &mut [u8]) -> Result<(), AppError> {
+        self.read_exact_into_with_context(
+            buffer,
+            "BAM stream ended before the expected number of bytes were available.",
+        )
+    }
+
+    fn read_exact_into_with_context(
+        &mut self,
+        buffer: &mut [u8],
+        detail: &'static str,
+    ) -> Result<(), AppError> {
         self.decoder.read_exact(buffer).map_err(|error| {
             if error.kind() == std::io::ErrorKind::UnexpectedEof {
                 AppError::TruncatedFile {
                     path: self.path.clone(),
-                    detail: "BAM stream ended before the expected number of bytes were available."
-                        .to_string(),
+                    detail: detail.to_string(),
                 }
             } else {
                 AppError::from_io(&self.path, error)
