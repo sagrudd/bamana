@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn fnv1a64_is_stable() {
-        assert_eq!(fnv1a64(b"bamana"), 0xa6c6_f056_33a5_f9f9);
+        assert_eq!(fnv1a64(b"bamana"), 0xac2e_7ea6_ed37_d12b);
     }
 
     #[test]

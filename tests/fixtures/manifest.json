@@ -800,7 +800,7 @@
       "planned_status": "present",
       "primary_commands": ["consume"],
       "secondary_commands": [],
-      "generated": false,
+      "generated": true,
       "source_fixture_ids": [],
       "regeneration_strategy": "hand_authored_synthetic_reference_fasta",
       "generation_script": "tests/fixtures/source/generate_tiny_cram_fixture.sh",

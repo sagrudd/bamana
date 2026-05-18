@@ -1,0 +1,25 @@
+{
+  "ok": false,
+  "command": "forensic_inspect",
+  "path": "broken.bam",
+  "data": {
+    "format": "BAM",
+    "scopes": {
+      "header": true,
+      "read_groups": true,
+      "program_chain": true,
+      "read_names": true,
+      "tags": false,
+      "duplication_hallmarks": true
+    },
+    "notes": [
+      "Forensic inspection did not complete cleanly enough to support a stable provenance assessment."
+    ]
+  },
+  "error": {
+    "code": "parse_uncertainty",
+    "message": "The requested assessment could not be completed reliably from the available evidence.",
+    "detail": "Input parsing failed before stable provenance findings could be established.",
+    "hint": "Run bamana verify and, when available, bamana validate."
+  }
+}

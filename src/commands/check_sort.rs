@@ -299,6 +299,30 @@ fn classify_observed_sort(
     let query_possible = scan_state.query_lex_possible || scan_state.query_natural_possible;
     let declared_order = declared_sort.so.as_deref();
 
+    match declared_order {
+        Some("coordinate") if !scan_state.coordinate_possible => {
+            return ObservedSortInfo {
+                order: ObservedOrder::Unsorted,
+                sub_order: specialized_mode.map(ToOwned::to_owned),
+                appears_sorted: Some(false),
+                records_examined: scan_state.records_examined,
+                first_violation: scan_state.coordinate_violation.clone(),
+                evidence_strength: EvidenceStrength::Strong,
+            };
+        }
+        Some("queryname") if !query_possible => {
+            return ObservedSortInfo {
+                order: ObservedOrder::Unsorted,
+                sub_order: observed_query_suborder(scan_state),
+                appears_sorted: Some(false),
+                records_examined: scan_state.records_examined,
+                first_violation: earliest_query_violation(scan_state),
+                evidence_strength: EvidenceStrength::Strong,
+            };
+        }
+        _ => {}
+    }
+
     if scan_state.coordinate_possible && !query_possible {
         return ObservedSortInfo {
             order: ObservedOrder::Coordinate,
@@ -412,6 +436,17 @@ fn observed_query_suborder(scan_state: &ScanState) -> Option<String> {
 fn earliest_violation(scan_state: &ScanState) -> Option<FirstViolation> {
     [
         scan_state.coordinate_violation.as_ref(),
+        scan_state.query_lex_violation.as_ref(),
+        scan_state.query_natural_violation.as_ref(),
+    ]
+    .into_iter()
+    .flatten()
+    .min_by_key(|violation| violation.record_index)
+    .cloned()
+}
+
+fn earliest_query_violation(scan_state: &ScanState) -> Option<FirstViolation> {
+    [
         scan_state.query_lex_violation.as_ref(),
         scan_state.query_natural_violation.as_ref(),
     ]
