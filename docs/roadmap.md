@@ -87,10 +87,6 @@ This order is retained because it matches the dependency chain of the runtime:
 * commands enabled first: `check_eof`, `check_sort`, `check_map`, `summary`,
   `check_tag`, `validate`
 
-## Later Waves
-
-Later migration waves should follow after Milestone 7.
-
 ### Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
 * status: planned
@@ -100,18 +96,13 @@ Later migration waves should follow after Milestone 7.
 * commands enabled first: `reheader`, `annotate_rg`, `inspect_duplication`,
   `deduplicate`, `forensic_inspect`
 
-### Wave 4
+### Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands
 
-Primary command targets:
-
-* `sort`
-* `merge`
-* `explode`
-* `checksum`
-* `consume`
-
-These are the larger transform and ingest families that depend on the earlier
-substrate work and benefit most from benchmark-driven optimization.
+* status: planned
+* detail: [roadmap/milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
+* goal: harden large native transform, checksum, sharding, and ingest command
+  paths
+* commands enabled first: `sort`, `merge`, `explode`, `checksum`, `consume`
 
 CRAM remains explicitly staged later and must not derail the BAM/FASTQ native
 core sequence.

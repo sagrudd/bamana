@@ -13,7 +13,9 @@ FASTQ / FASTQ.GZ Parser milestone described in
 Inspection And Validation Commands milestone described in
 `docs/roadmap/milestone-06-inspection-validation.md`. Milestone 7 is the
 Native Mutation, Remediation, And Forensics Commands milestone described in
-`docs/roadmap/milestone-07-mutation-forensics.md`.
+`docs/roadmap/milestone-07-mutation-forensics.md`. Milestone 8 is the Native
+Transform, Checksum, Explode, And Ingest Commands milestone described in
+`docs/roadmap/milestone-08-transform-ingest.md`.
 
 ## Milestone 1 Definition
 
@@ -2748,6 +2750,368 @@ Acceptance criteria:
 * production `noodles` usage remains isolated to documented CRAM
   compatibility, tests, oracles, and fixtures;
 * Milestone 7 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 8 Definition
+
+Milestone 8 is complete only when Bamana's large transform, checksum, explode,
+and ingest command wave is hardened on native substrates. The milestone covers
+`sort`, `merge`, `explode`, `checksum`, and `consume`. It follows the mutation
+and forensics wave because these commands have the largest operational blast
+radius: they reorder records, combine files, split files, define verification
+domains, or normalize heterogeneous inputs into BAM outputs.
+
+## Milestone 8 Planned State
+
+Status: planned. Milestone 8 should not become active until Milestone 7 has
+closed, because the earlier command waves should establish stable native
+reader, writer, checksum, dependency-boundary, and benchmark conventions.
+
+Known present pieces:
+
+* `sort` already rewrites BAM through `src/bam/sort.rs`, supports coordinate
+  and queryname ordering, updates `@HD` sort metadata, writes BAM through the
+  native BGZF writer, and can request canonical checksum verification;
+* `merge` already combines multiple BAM inputs, applies conservative header
+  compatibility checks, supports input-order and sorted output modes, writes
+  BAM through the native BGZF writer, and can request canonical checksum
+  verification;
+* `checksum` already exposes deterministic header and record checksum domains,
+  including order-sensitive and order-insensitive modes plus tag and primary
+  record filters;
+* `explode` already supports BAM, SAM, and FASTQ.GZ inputs, uses
+  `FASTQ.GZI` planning for FASTQ.GZ shards, and writes contiguous output
+  shards while preserving encounter order within each shard;
+* `consume` already performs discovery, format classification, mixed-format
+  policy enforcement, FASTQ/SAM/BAM normalization, explicit CRAM reference
+  policy handling, threaded FASTQ.GZ import, and dry-run reporting;
+* native BGZF, header, scanner, FASTQ, writer, and `FASTQ.GZI` substrates are
+  planned to be complete before M8 activation.
+
+Known gaps:
+
+* `sort`, `merge`, `checksum`, `explode`, and BAM-side `consume` still use
+  older `BamReader::open`, `parse_bam_header_from_reader`, and
+  `read_next_record_layout` paths in several places rather than a
+  scanner-owned raw-record or native writer bridge;
+* in-memory first-slice strategies remain explicit but need M8 evidence around
+  limits, user-facing caveats, and benchmark interpretation;
+* `consume` checksum verification remains planned in the current slice and
+  needs either implementation or precise M8 deferral language;
+* `explode` shard planning needs a full M8 audit across BAM, SAM, and
+  FASTQ.GZ, especially around checksums, index metadata, and exact guarantees;
+* command contracts and examples need a fresh pass for transform safety,
+  ordering semantics, checksum domains, shard boundaries, ingest policy, CRAM
+  compatibility boundaries, and deferred index behavior;
+* command-level benchmark smoke evidence is not yet recorded for the full M8
+  command set;
+* dependency-boundary tests do not yet name `sort`, `merge`, `explode`,
+  `checksum`, and `consume` as one protected milestone set.
+
+Milestone 8 closeout evidence must include:
+
+* all M8.1 through M8.10 tasks complete;
+* `sort` documented and tested as native BAM ordering and rewriting with
+  explicit checksum/index caveats;
+* `merge` documented and tested as native BAM merging with explicit header
+  compatibility and ordering semantics;
+* `checksum` documented and tested as deterministic native header and record
+  checksum domains;
+* `explode` documented and tested as native BAM/SAM/FASTQ.GZ sharding with
+  explicit shard-boundary guarantees;
+* `consume` documented and tested as native discovery, policy, and
+  normalization with CRAM compatibility isolated;
+* command JSON contracts remaining stable or deliberately versioned;
+* command-level benchmark or smoke benchmark evidence for the M8 command set;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 8 evidence is limited to large transform, checksum, explode, and
+  ingest commands: `sort`, `merge`, `explode`, `checksum`, and `consume`.
+* Native CRAM parsing, BAI/CSI index writing, broad external comparator parity,
+  and external-memory sort/merge remain later work unless a specific M8 task
+  explicitly includes them.
+
+## Milestone 8 Task List
+
+### M8.1 Activate Milestone 8 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 8 is the active
+  milestone only after Milestone 7 is complete;
+* update roadmap/task-map status so Milestones 1 through 7 remain recorded
+  with their correct completion state;
+* audit `sort`, `merge`, `explode`, `checksum`, and `consume` command
+  implementations, helper modules, tests, contracts, examples, and docs;
+* record which command paths already use native BGZF, header, scanner, FASTQ,
+  `FASTQ.GZI`, writer, and checksum primitives and which still need hardening;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 8 as active only when M7 is
+  closed;
+* the task map records present M8 command evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contract commands remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M8.2 Freeze Transform, Checksum, Explode, And Ingest Contracts
+
+Status: pending.
+
+Tasks:
+
+* audit JSON schemas and success/failure examples for `sort`, `merge`,
+  `explode`, `checksum`, and `consume`;
+* confirm CLI documentation describes ordering semantics, checksum domains,
+  shard guarantees, ingest policy, dry-run behavior, CRAM compatibility, and
+  deferred index behavior accurately;
+* add or update fixtures for sorted BAMs, merge compatibility, shard planning,
+  checksum filters, FASTQ.GZ `FASTQ.GZI` planning, and mixed-format ingest
+  where gaps exist;
+* record any intentional contract changes before implementation hardening.
+
+Acceptance criteria:
+
+* M8 command schemas and examples exist and parse;
+* contract tests fail if governed M8 command documentation, schemas, or
+  examples disappear;
+* transform, checksum, shard, and ingest claims are documented without
+  overclaiming.
+
+Completion evidence:
+
+* pending.
+
+### M8.3 Harden `sort` Native Ordering And Rewrite Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `sort` use of native header parsing, record loading, ordering,
+  serialization, BGZF writing, checksum verification, and index caveats;
+* migrate older BAM reader/layout paths to scanner-owned raw-record or native
+  writer bridges where behavior can be preserved;
+* strengthen tests for coordinate order, queryname natural and lexicographical
+  order, unmapped placement, reverse/tie ordering, header sort metadata,
+  force/overwrite behavior, checksum verification, and index deferral where
+  needed;
+* ensure docs state memory and first-slice limitations honestly;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `sort` uses native BAM primitives for supported ordering and writing paths;
+* ordering semantics are deterministic and test-covered;
+* checksum and index claims are only made where actually performed.
+
+Completion evidence:
+
+* pending.
+
+### M8.4 Harden `merge` Native Compatibility And Ordering Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `merge` use of native header parsing, compatibility checks, record
+  loading, ordering, serialization, BGZF writing, and checksum verification;
+* migrate older BAM reader/layout paths to scanner-owned raw-record or native
+  writer bridges where behavior can be preserved;
+* strengthen tests for compatible headers, incompatible headers, input-order
+  merge, coordinate merge, queryname merge, record counts, checksum
+  verification, force/overwrite behavior, and index deferral where needed;
+* ensure docs state that merge validity is limited to parsed and checked
+  inputs;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `merge` uses native BAM primitives for supported merge and writing paths;
+* header compatibility and output ordering semantics are test-covered;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M8.5 Harden `checksum` Native Domain Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit checksum modes, algorithms, header serialization domain, record
+  serialization domain, canonical order-insensitive behavior, filters, and tag
+  exclusions;
+* migrate older BAM reader/layout paths to scanner-owned record or raw-record
+  helpers where checksum semantics can be preserved;
+* strengthen tests for raw record order, canonical record order, header-only,
+  payload, all modes, mapped-only, primary-only, tag exclusion, duplicate
+  multiplicity, and malformed inputs where needed;
+* ensure docs state exactly what semantic equivalence each checksum mode does
+  and does not imply;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* checksum domains are deterministic and documented;
+* filters and excluded tags are part of the reported checksum definition;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M8.6 Harden `explode` Native Sharding Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit BAM, SAM, and FASTQ.GZ `explode` paths, including header handling,
+  record counting, shard planning, FASTQ.GZ `FASTQ.GZI` reuse/creation,
+  compression, output naming, checksum metadata, and force behavior;
+* migrate older BAM reader/layout paths to scanner-owned raw-record or native
+  writer bridges where behavior can be preserved;
+* strengthen tests for BAM shards, SAM shards, FASTQ.GZ shards, empty inputs,
+  uneven shard sizes, too many shards, `FASTQ.GZI` planning, output collision,
+  and encounter-order preservation where needed;
+* ensure docs state shard boundary guarantees and limitations precisely;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `explode` preserves encounter order within each shard for supported formats;
+* FASTQ.GZ shard planning uses documented `FASTQ.GZI` behavior;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M8.7 Harden `consume` Native Ingest And Policy Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit discovery, format probing, mixed-format policy, alignment versus
+  unmapped modes, FASTQ/FASTQ.GZ import, SAM import, BAM pass-through,
+  sorting, output writing, dry-run, thread handling, and CRAM reference policy;
+* migrate older BAM reader/layout paths to scanner-owned raw-record or native
+  writer bridges where behavior can be preserved;
+* decide whether checksum verification is implemented in M8 or explicitly
+  remains deferred with precise payload notes;
+* strengthen tests for directories, recursive discovery, include/exclude
+  filters if implemented, mixed-format rejection, FASTQ.GZ parallel import,
+  indexed FASTQ.GZ import, BAM/SAM alignment mode, CRAM policy, dry-run, and
+  force/overwrite behavior where needed;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `consume` policy decisions are explicit and test-covered;
+* native FASTQ/SAM/BAM ingest paths remain separate from CRAM compatibility;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M8.8 Strengthen M8 Cross-Command Output Safety
+
+Status: pending.
+
+Tasks:
+
+* audit temp-file, atomic rename, overwrite, force, dry-run, checksum
+  verification, index creation, and cleanup behavior across `sort`, `merge`,
+  `explode`, and `consume`;
+* ensure commands never report written outputs before writes and verification
+  steps complete;
+* ensure failure paths include useful path context and avoid misleading success
+  payloads;
+* add focused tests for output collision, write failure, no-output-on-failure,
+  and cleanup behavior where practical.
+
+Acceptance criteria:
+
+* transform and ingest commands have consistent write-safety behavior;
+* dry-run behavior is side-effect bounded;
+* checksum/index payloads match actual work performed.
+
+Completion evidence:
+
+* pending.
+
+### M8.9 Strengthen M8 Dependency Boundaries And Benchmarks
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name the M8 command set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* add or formalize command-level benchmark hooks for `sort`, `merge`,
+  `explode`, `checksum`, and `consume`;
+* record benchmark interpretation notes that distinguish command startup,
+  full-record materialization, sorting cost, merge cost, compression cost,
+  checksum domains, shard planning, ingest normalization, and CRAM
+  compatibility behavior.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the M8 command set;
+* every M8 command has runnable smoke benchmark or timing evidence;
+* benchmark notes are documented and do not imply comparator parity where none
+  exists.
+
+Completion evidence:
+
+* pending.
+
+### M8.10 Close Milestone 8
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run M8 command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-08-transform-ingest.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 8 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M8.1 through M8.10 tasks are complete;
+* `sort`, `merge`, `explode`, `checksum`, and `consume` are documented with
+  native transform/checksum/explode/ingest evidence;
+* full tests, contract tests, Sphinx, and M8 command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 8 completion evidence is recorded in the repository.
 
 Completion evidence:
 
