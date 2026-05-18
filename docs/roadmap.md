@@ -113,6 +113,15 @@ This order is retained because it matches the dependency chain of the runtime:
 * commands enabled first: `index`, `check_index`, indexed `check_map`,
   indexed `summary`
 
+### Milestone 10: Native Indexed Region Workflows
+
+* status: planned
+* detail: [roadmap/milestone-10-indexed-region-workflows.md](roadmap/milestone-10-indexed-region-workflows.md)
+* goal: turn native BAM index and random-access substrates into bounded
+  indexed-region workflows
+* commands enabled first: region-aware `check_map`, region-aware `summary`,
+  future indexed region selection command if promoted
+
 CRAM remains explicitly staged later and must not derail the BAM/FASTQ native
 core sequence.
 

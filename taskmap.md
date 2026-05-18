@@ -17,7 +17,9 @@ Native Mutation, Remediation, And Forensics Commands milestone described in
 Transform, Checksum, Explode, And Ingest Commands milestone described in
 `docs/roadmap/milestone-08-transform-ingest.md`. Milestone 9 is the Native BAM
 Index And Random Access milestone described in
-`docs/roadmap/milestone-09-bam-index-random-access.md`.
+`docs/roadmap/milestone-09-bam-index-random-access.md`. Milestone 10 is the
+Native Indexed Region Workflows milestone described in
+`docs/roadmap/milestone-10-indexed-region-workflows.md`.
 
 ## Milestone 1 Definition
 
@@ -3462,6 +3464,362 @@ Acceptance criteria:
 * production `noodles` usage remains isolated to documented CRAM
   compatibility, tests, oracles, and fixtures;
 * Milestone 9 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 10 Definition
+
+Milestone 10 is complete only when Bamana turns the Milestone 9 BAM index and
+random-access substrate into bounded, user-visible indexed-region workflows.
+The milestone covers region syntax and interval normalization, validated-index
+chunk planning, random-access retrieval evidence, region-aware `check_map` and
+`summary` behavior, and any first public indexed-region command or flag that is
+explicitly promoted into the CLI contract.
+
+## Milestone 10 Planned State
+
+Status: planned. Milestone 10 should not become active until Milestone 9 has
+closed, because region workflows must rely on real native BAI/CSI validation,
+correct virtual offsets, and proved random-access helpers rather than shallow
+sidecar discovery.
+
+Known present pieces:
+
+* Milestone 1 introduced `VirtualOffset` groundwork for later random-access
+  paths;
+* Milestone 3 introduced native BAM record scanning and borrowed record views;
+* Milestone 6 established native `check_map` and `summary` inspection payloads;
+* Milestone 9 is planned to provide native BAM index writing, deeper index
+  validation, and minimal random-access reader helpers;
+* `check_map` and `summary` already have index-aware evidence paths, but those
+  paths are not region-scoped public workflows;
+* the fixture plan already names valid coordinate BAM and adjacent BAI fixtures
+  as important index-backed evidence.
+
+Known gaps:
+
+* no public region syntax or interval normalization contract exists yet;
+* no region-file contract exists for BED-like or line-oriented interval input;
+* random-access chunk planning has not yet been promoted into command behavior;
+* overlapping-region, duplicate-region, and multi-reference semantics are not
+  specified;
+* region-aware `check_map` and `summary` payloads do not yet distinguish
+  requested-region scope from whole-file scope;
+* no first public indexed-region command or flag has been frozen in CLI docs,
+  JSON schemas, examples, or contract tests;
+* benchmark evidence does not yet compare indexed region lookup with scan
+  fallback behavior;
+* CSI large-reference behavior and unsupported-index fallback policy remain
+  dependent on the M9 CSI decision.
+
+Milestone 10 closeout evidence must include:
+
+* all M10.1 through M10.10 tasks complete;
+* region syntax and optional region-file syntax documented as supported,
+  rejected, or explicitly deferred;
+* interval normalization tested for reference names, coordinate bases,
+  inclusivity, empty intervals, unknown references, and out-of-range intervals;
+* indexed chunk planning tested against validated BAI or scoped CSI fixtures;
+* region-aware `check_map` and `summary` evidence documented as distinct from
+  whole-file evidence;
+* any new public command or flag covered by schemas, examples, Sphinx docs,
+  CLI docs, and contract tests;
+* indexed versus scan fallback benchmark or smoke benchmark evidence recorded;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 10 evidence is limited to BAM indexed-region workflows above the
+  native index and random-access substrate.
+* Native CRAM parsing, CRAM indexed queries, broad external comparator parity,
+  pileup/genotyping semantics, and biological interpretation remain later work
+  unless a specific M10 task explicitly adds them.
+
+## Milestone 10 Task List
+
+### M10.1 Activate Milestone 10 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 10 is the active
+  milestone only after Milestone 9 is complete;
+* update roadmap/task-map status so Milestones 1 through 9 remain recorded
+  with their correct completion state;
+* audit M9 outputs for BAI/CSI validation depth, virtual-offset capture,
+  random-access helper limits, and index-aware consumer behavior;
+* audit `src/commands/check_map.rs`, `src/commands/summary.rs`,
+  `src/bam/index.rs`, `src/bam/scan.rs`, `src/bgzf/reader.rs`, and fixture
+  plans for region-workflow readiness;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 10 as active only when M9 is
+  closed;
+* the task map records present M10 indexed-region evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contract commands, including `benchmark`, `fastq`, and `unmap`,
+  remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M10.2 Define Region Syntax And Interval Normalization
+
+Status: pending.
+
+Tasks:
+
+* define the supported region string grammar, including reference names,
+  coordinate base, interval inclusivity, whole-reference requests, and multiple
+  region handling;
+* define how reference names are resolved against the BAM header dictionary;
+* reject empty, reversed, out-of-range, unknown-reference, and ambiguous
+  intervals with structured errors;
+* decide whether BED-like region files are in scope for M10 or explicitly
+  deferred;
+* document examples and non-goals before wiring region syntax into public
+  command behavior.
+
+Acceptance criteria:
+
+* region parsing is deterministic and documented;
+* interval normalization tests cover coordinate bases, inclusivity,
+  whole-reference requests, unknown references, and invalid intervals;
+* unsupported region-file behavior is either implemented to contract or
+  rejected with a precise error.
+
+Completion evidence:
+
+* pending.
+
+### M10.3 Freeze Region Workflow Contracts And Fixtures
+
+Status: pending.
+
+Tasks:
+
+* decide which command surfaces first expose indexed-region behavior, such as
+  region-aware `check_map`, region-aware `summary`, or a new indexed selection
+  command;
+* update JSON schemas and examples for any command or flag promoted into the
+  public contract;
+* add or update fixtures for single-region, multi-region, overlapping-region,
+  unknown-reference, empty-region, stale-index, missing-index, and unsupported
+  index scenarios;
+* update CLI docs, README command notes, Sphinx docs, and fixture plans before
+  implementation claims are made.
+
+Acceptance criteria:
+
+* every promoted public region command or flag has schema, example, and docs
+  coverage;
+* fixture plans distinguish indexed success, scan fallback, and precise
+  rejection scenarios;
+* public contract tests fail if governed region workflow docs, schemas, or
+  examples disappear.
+
+Completion evidence:
+
+* pending.
+
+### M10.4 Implement Indexed Chunk Planning
+
+Status: pending.
+
+Tasks:
+
+* convert normalized intervals into candidate BAI or scoped CSI bins;
+* collect and coalesce candidate chunks using validated index data from M9;
+* preserve enough provenance to explain which index and references informed
+  each plan;
+* reject unsupported index kinds, stale sidecars, incompatible references, and
+  impossible virtual offsets before any region workflow claims indexed
+  evidence;
+* add unit tests for bin lookup, chunk coalescing, multi-reference planning,
+  and no-hit intervals.
+
+Acceptance criteria:
+
+* chunk plans are deterministic for the same BAM, index, and requested regions;
+* plans consume validated index summaries rather than shallow index detection;
+* chunk planning errors are structured and useful.
+
+Completion evidence:
+
+* pending.
+
+### M10.5 Implement Region-Bounded Random-Access Traversal
+
+Status: pending.
+
+Tasks:
+
+* use M9 random-access helpers to traverse records from planned chunks;
+* filter retrieved records against normalized intervals to account for broad
+  bins and overlapping chunks;
+* define and implement duplicate-record handling for overlapping regions;
+* keep scan fallback native and explicit when no usable index is available;
+* add tests that prove indexed traversal returns the expected records and does
+  not double-count overlapping chunks unless the contract explicitly says so.
+
+Acceptance criteria:
+
+* indexed traversal returns records that overlap the requested intervals under
+  the documented semantics;
+* random-access traversal uses `VirtualOffset` values rather than raw byte
+  offsets;
+* fallback behavior is documented and visible in command payloads.
+
+Completion evidence:
+
+* pending.
+
+### M10.6 Add Region-Aware `check_map`
+
+Status: pending.
+
+Tasks:
+
+* add region request handling to `check_map` only after M10.2 through M10.5
+  have stable substrate behavior;
+* report requested regions, normalized intervals, evidence source, index path,
+  fallback mode, and scan limits in the payload;
+* ensure region-scoped totals cannot be confused with whole-file totals;
+* add tests for indexed success, scan fallback, unknown reference, empty
+  interval, overlapping intervals, and stale-index rejection or fallback.
+
+Acceptance criteria:
+
+* `check_map` can report mapping evidence for requested BAM regions when a
+  usable index is present;
+* region-scoped payload fields are explicit and do not reuse whole-file names
+  ambiguously;
+* unsupported region requests fail deterministically.
+
+Completion evidence:
+
+* pending.
+
+### M10.7 Add Region-Aware `summary`
+
+Status: pending.
+
+Tasks:
+
+* add region request handling to `summary` only after M10.2 through M10.5 have
+  stable substrate behavior;
+* report requested regions, normalized intervals, evidence source, index path,
+  fallback mode, and scan limits in the payload;
+* decide which summary fields are meaningful for region scope and which remain
+  whole-file only;
+* add tests for indexed success, scan fallback, MAPQ/flag options, overlapping
+  intervals, unknown reference, empty interval, and stale-index behavior.
+
+Acceptance criteria:
+
+* `summary` can report region-scoped operational evidence without implying
+  whole-file validation;
+* whole-file-only fields are omitted, marked as whole-file, or documented
+  clearly;
+* unsupported region requests fail deterministically.
+
+Completion evidence:
+
+* pending.
+
+### M10.8 Decide And Implement First Indexed Selection Surface
+
+Status: pending.
+
+Tasks:
+
+* decide whether M10 promotes a new public indexed region selection command,
+  extends an existing command, or deliberately defers selection to a later
+  milestone;
+* if promoted, define output semantics, header preservation, record ordering,
+  duplicate-region behavior, index invalidation or regeneration notes, and
+  write-safety behavior;
+* if deferred, document the precise reason and the substrate evidence that
+  remains ready for later selection work;
+* update schemas, examples, CLI docs, README, Sphinx docs, and fixtures for the
+  chosen decision.
+
+Acceptance criteria:
+
+* the first indexed selection surface is either implemented to a public
+  contract or explicitly deferred with a precise rationale;
+* no command claims region selection support unless output behavior and
+  write-safety semantics are documented and tested;
+* public contract command coverage remains stable.
+
+Completion evidence:
+
+* pending.
+
+### M10.9 Strengthen M10 Dependency Boundaries And Benchmarks
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name the M10 indexed-region command and
+  substrate set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* add or formalize command-level benchmark hooks for indexed-region
+  `check_map`, indexed-region `summary`, chunk planning, random-access
+  traversal, and scan fallback;
+* record benchmark interpretation notes that distinguish index lookup,
+  random-access traversal, region filtering, scan fallback, and command startup
+  costs.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the M10 command and substrate
+  set;
+* every promoted M10 command path has runnable smoke benchmark or timing
+  evidence;
+* benchmark notes do not imply broad comparator parity, native CRAM indexed
+  queries, or biological interpretation.
+
+Completion evidence:
+
+* pending.
+
+### M10.10 Close Milestone 10
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run M10 command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-10-indexed-region-workflows.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 10 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M10.1 through M10.10 tasks are complete;
+* region syntax, chunk planning, random-access traversal, and promoted
+  region-aware command surfaces are documented with native BAM indexed-region
+  evidence;
+* full tests, contract tests, Sphinx, and M10 command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 10 completion evidence is recorded in the repository.
 
 Completion evidence:
 
