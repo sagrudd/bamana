@@ -112,7 +112,8 @@ Known present pieces:
   `flate2::read::MultiGzDecoder`, including concatenated gzip-member support
   and structured I/O errors for corrupt or truncated gzip streams;
 * the current writer emits plain FASTQ or gzip-compressed FASTQ according to
-  the output extension;
+  the output extension, preserves record header/plus-line content, emits LF
+  line endings, and finalizes gzip output before returning success;
 * `enumerate`, FASTQ-side `subsample`, `consume`, `inspect_duplication`,
   `deduplicate`, and FASTQ.GZ `explode` already consume native FASTQ helpers
   in some form.
@@ -123,8 +124,6 @@ Known gaps:
   field-only streaming integration remains future work even though
   `FastqRecordView` exists for borrowed access when line storage is already
   available;
-* writer behavior needs a clear contract for line endings, gzip finalization,
-  flushing, and round-trip guarantees;
 * command consumers need to be audited and migrated to a stable Milestone 4
   parser/writer API;
 * FASTQ parser/writer benchmark smoke evidence has not yet been recorded.

@@ -1463,8 +1463,9 @@ Known gaps:
   available;
 * gzip behavior is extension-driven and uses `MultiGzDecoder` with documented
   single-member and concatenated multi-member FASTQ.GZ semantics;
-* writer behavior exists but needs a clearer contract for line endings,
-  finishing/flushing, gzip output, and round-trip validation;
+* writer behavior preserves owned record content, uses LF line endings,
+  selects gzip output from the final `.gz` extension, and finalizes or flushes
+  output before returning success;
 * command consumers share helpers but have not been audited against a stable
   Milestone 4 reader/writer API;
 * FASTQ microbenchmark hooks are present in the broader benchmark framework,
@@ -1726,7 +1727,7 @@ Completion evidence:
 
 ### M4.6 Complete FASTQ Writer And Round-Trip Guarantees
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1746,7 +1747,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* tightened `FastqWriter::finish` so plain output is flushed and gzip output is
+  finalized and the wrapped buffered file flushed before success is reported;
+* added plain FASTQ writer round-trip coverage proving owned record content,
+  raw header comments, plus-line comments, and LF line endings are preserved;
+* added gzip FASTQ writer round-trip coverage proving extension-selected gzip
+  output has gzip framing, can be counted and parsed immediately after
+  `finish`, and preserves records;
+* added extension-policy coverage proving only the final `.gz` extension,
+  case-insensitively, selects gzip output;
+* added practical structured write-error coverage for writer creation failures
+  with output path context;
+* documented writer line-ending, preservation, extension-selection, flushing,
+  gzip finalization, and structured error semantics in
+  `docs/sphinx/native_fastq_core.rst`.
 
 ### M4.7 Migrate FASTQ-Side `subsample` And `enumerate` Consumers
 

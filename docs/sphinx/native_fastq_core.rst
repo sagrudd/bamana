@@ -62,9 +62,19 @@ truncate record counts.
 
 ``FASTQ.GZI`` sidecar construction uses the same multi-member gzip decoder
 policy and remains compatible with indexed ``enumerate``, ``consume``, and
-``explode`` paths. The writer emits line-oriented FASTQ records and chooses
-gzip output from the output filename extension. Later M4 tasks harden
-round-trip guarantees and command-consumer audits; the current contract
-establishes module ownership, record ownership, borrowed field access,
-centralized FASTQ identity bytes, and auditable gzip member semantics without
-changing command behavior.
+``explode`` paths.
+
+The writer emits exactly four LF-terminated lines for each owned
+``FastqRecord``: raw header line, sequence, preserved plus line, and quality.
+It does not rewrite header comments or plus-line comments. Output compression is
+selected by the final filename extension, matching reader behavior: paths
+ending in ``.gz`` case-insensitively are written as gzip streams and all other
+paths are written as plain FASTQ. ``FastqWriter::finish`` flushes plain output
+and finalizes and flushes gzip output before returning success. Writer creation,
+record writes, flushing, and gzip finalization failures are reported as
+structured write errors with the output path.
+
+Later M4 tasks harden command-consumer audits; the current contract establishes
+module ownership, record ownership, borrowed field access, centralized FASTQ
+identity bytes, auditable gzip member semantics, and writer round-trip
+guarantees without changing command behavior.
