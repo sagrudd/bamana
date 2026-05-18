@@ -1415,7 +1415,7 @@ integration, command consumer migration, and benchmark hooks.
 
 ## Milestone 4 Current State
 
-Status: active.
+Status: complete.
 
 Known present pieces:
 
@@ -1469,8 +1469,8 @@ Known gaps:
 * selected command consumers are audited against the stable Milestone 4
   reader/writer API, while richer command-specific FASTQ behavior remains
   deferred to later command-migration work;
-* FASTQ microbenchmark hooks are present through `fastq_microbench`, but M4.10
-  still needs closeout smoke-run evidence recorded in the milestone task map.
+* FASTQ microbenchmark hooks are present through `fastq_microbench`, and M4.10
+  records closeout smoke-run evidence.
 
 Milestone 4 closeout evidence must include:
 
@@ -1913,7 +1913,7 @@ Completion evidence:
 
 ### M4.10 Close Milestone 4
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1936,7 +1936,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* all M4.1 through M4.10 tasks are marked complete;
+* `cargo test` passed with 207 library/unit tests, binary tests, 20 contract
+  tests, 2 header-oracle tests, and doc tests;
+* `cargo test --test contract` passed with 20 contract tests, including FASTQ
+  dependency-boundary and oracle-policy checks;
+* `cargo run --bin fastq_microbench -- --profile small --iterations 1` passed,
+  and a JSON smoke check verified the benchmark name, profile, iteration count,
+  1,024 generated records, and the expected parser/writer result keys;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed;
+* updated `docs/roadmap/milestone-04-fastq.md` with final M4 closeout
+  evidence, scope, verification commands, and deferred follow-up boundaries;
+* updated `docs/roadmap/current_milestone.md` so Milestone 5 is active and
+  Milestone 4 remains recorded as complete;
+* updated `docs/roadmap.md` so Milestone 4 is complete and Milestone 5 is
+  active;
+* updated README status text and Sphinx FASTQ benchmark/native-core technical
+  notes with M4 completion evidence.
 
 ## Milestone 5 Definition
 
@@ -1948,11 +1964,10 @@ Milestone 2 header ownership. `subsample` is the first stronger end-to-end
 proof across native BAM scanning, native FASTQ parsing, deterministic/random
 selection, and native serialization or pass-through writing.
 
-## Milestone 5 Planned State
+## Milestone 5 Current State
 
-Status: planned. Milestone 5 should not become active until Milestone 4 has
-closed, because full `subsample` coverage depends on the stable native
-FASTQ/FASTQ.GZ parser and writer APIs from Milestone 4.
+Status: active. Milestone 5 became active after Milestone 4 closed with stable
+native FASTQ/FASTQ.GZ parser and writer APIs.
 
 Known present pieces:
 
@@ -1960,8 +1975,7 @@ Known present pieces:
 * Milestone 2 native BAM header codec is complete;
 * Milestone 3 native BAM record scanner is complete for selected
   scanner-compatible consumers;
-* Milestone 4 is active and is expected to stabilize the FASTQ parser/writer
-  APIs needed by FASTQ-side `subsample`;
+* Milestone 4 native FASTQ/FASTQ.GZ parser and writer APIs are complete;
 * production `verify` already routes through native BGZF probing plus
   `parse_bam_header_from_native_bgzf`;
 * production `header` already routes through native BGZF probing plus
@@ -1976,8 +1990,9 @@ Known gaps:
 * BAM-side `subsample` still uses `BamReader::open` and
   `read_next_record_layout` rather than the native scanner or a scanner-owned
   raw-record bridge;
-* FASTQ-side `subsample` still depends on the current monolithic FASTQ helpers
-  rather than the stable Milestone 4 reader/writer API;
+* FASTQ-side `subsample` already uses the stable Milestone 4 reader/writer API,
+  but that evidence still needs to be recorded in the M5 proof-command
+  migration narrative;
 * command-level benchmark deltas for `verify`, `header`, and `subsample` are
   not yet recorded as M5 evidence;
 * dependency-boundary tests do not yet name the full M5 proof-command set as a

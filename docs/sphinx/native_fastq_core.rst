@@ -119,3 +119,12 @@ command-consumer hot paths are protected by dependency-boundary contract tests.
 plain FASTQ and FASTQ.GZ. It generates deterministic synthetic fixtures,
 requires no private data, and emits JSON conforming to
 ``benchmarks/results/fastq_microbench.schema.json``.
+
+Milestone 4 Closeout
+--------------------
+
+Milestone 4 closed with the native FASTQ core, selected command-consumer
+migrations, dependency-boundary checks, and FASTQ parser/writer benchmark smoke
+coverage in place. The closeout verification ran the full Rust test suite,
+contract tests, Sphinx build, and ``fastq_microbench --profile small
+--iterations 1`` with a JSON smoke check.

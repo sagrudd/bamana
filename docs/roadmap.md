@@ -64,7 +64,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 4: Native FASTQ / FASTQ.GZ Parser
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-04-fastq.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-04-fastq.md)
 * goal: own FASTQ and FASTQ.GZ parsing and writing for ingest and transform
   paths
@@ -73,7 +73,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 5: Command Migration Off `noodles`
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * goal: prove the substrate is real by migrating `verify`, `header`, and
   `subsample` in that order

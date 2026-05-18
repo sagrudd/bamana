@@ -57,9 +57,8 @@ other benchmark result artifacts.
 Milestone 4 Closeout
 --------------------
 
-The Milestone 4 closeout should run the ``small`` profile with at least one
-iteration and a JSON smoke check. The smoke check should verify the benchmark
-name, selected profile, iteration count, generated record count, and expected
-result keys. Longer local runs should increase ``--iterations`` and use
-``medium`` or ``large`` when comparing FASTQ parser or writer throughput across
-changes.
+The Milestone 4 closeout ran the ``small`` profile with one iteration and a
+JSON smoke check. The smoke check verified the benchmark name, selected
+profile, iteration count, 1,024 generated records, and the expected result
+keys. Longer local runs should increase ``--iterations`` and use ``medium`` or
+``large`` when comparing FASTQ parser or writer throughput across changes.
