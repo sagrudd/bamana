@@ -900,8 +900,13 @@ Known present pieces:
 * Milestone 1 native BGZF reading is complete and can feed BAM payload bytes;
 * Milestone 2 native BAM header parsing is complete and can position readers at
   the first alignment record;
-* `src/bam/records.rs` contains current record layout helpers and richer
-  record decoding pieces used by existing commands;
+* `src/bam/records.rs` contains the current central record bridge through
+  `read_next_record_layout`, which performs bounded layout checks and
+  materializes read name, CIGAR, sequence, quality, and aux sections;
+* `LightAlignmentRecord` already exposes many field-only command inputs, but it
+  is derived from `RecordLayout` and is not yet a true selective scanner view;
+* `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
+  materialized aux bytes;
 * `check_sort`, `check_map`, `summary`, `check_tag`, `validate`,
   `inspect_duplication`, `forensic_inspect`, and BAM-side `subsample` already
   perform record-facing work through existing first-slice readers and helpers;
@@ -914,10 +919,12 @@ Known gaps:
 * no stable lightweight record-view contract owns core fields and aux
   boundaries;
 * skip-oriented selective field extraction is not centralized;
+* record-scanning consumers generally use the transitional `BamReader::open`
+  gzip backend today rather than requiring the native BGZF backend;
 * command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.1 through M3.10 remain outstanding.
+* M3.2 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -941,7 +948,7 @@ Command-surface scope:
 
 ### M3.1 Activate Milestone 3 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -964,7 +971,28 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* updated `docs/roadmap/current_milestone.md` so Milestone 3 is active and
+  Milestones 1 and 2 remain recorded as complete;
+* updated README and Sphinx documentation to describe the active scanner scope
+  and boundary without claiming full BAM validation or command-wide migration;
+* audited `src/bam/records.rs` and recorded that `read_next_record_layout`
+  currently validates core layout and materializes read name, CIGAR, sequence,
+  quality, and aux bytes into `RecordLayout`;
+* recorded that `read_next_light_record` derives `LightAlignmentRecord` from
+  the full layout path, so current field-only consumers still pay for full
+  materialization;
+* audited `src/bam/reader.rs` and recorded that record consumers generally use
+  the transitional `BamReader::open` gzip backend while a native BGZF backend
+  is already available for the scanner substrate;
+* audited first record-scanning consumers and recorded the migration order:
+  `check_sort`; then `check_map`, `summary`, and `check_tag`; then
+  `validate`, `inspect_duplication`, and `forensic_inspect`; then BAM-side
+  `subsample` and other raw-record writers after scanner raw-record access or
+  lossless `RecordLayout` bridging is available;
+* updated `docs/roadmap/milestone-03-bam-record-scan.md` with the baseline
+  audit, first consumer order, and explicit gaps before scanner code is
+  introduced;
+* no runtime behavior changes were made.
 
 ### M3.2 Define Lightweight Record View Contract
 

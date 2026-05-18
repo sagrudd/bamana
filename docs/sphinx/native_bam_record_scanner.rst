@@ -23,6 +23,27 @@ The first command beneficiaries are ``check_sort``, ``check_map``,
 ``summary``, ``check_tag``, ``validate``, ``inspect_duplication``,
 ``forensic_inspect``, and BAM-side ``subsample``.
 
+Baseline
+--------
+
+The current record bridge is ``src/bam/records.rs``. It validates the BAM core
+layout and variable-section lengths, then materializes read name, CIGAR bytes,
+sequence bytes, quality bytes, and aux bytes into ``RecordLayout``.
+``LightAlignmentRecord`` already exposes the fields needed by some scan
+commands, but it is derived from that fully materialized layout. It is therefore
+a convenience view, not the final selective scanner.
+
+``src/bam/tags.rs`` already provides bounded auxiliary-field traversal and tag
+lookup over materialized aux bytes. Milestone 3 should keep the bounded
+traversal behavior while moving it onto scanner-owned aux slices or ranges.
+
+The first migration target is ``check_sort``, followed by ``check_map``,
+``summary``, and ``check_tag``. Validation and forensics paths come after those
+because they mix lightweight record fields with aux traversal and sometimes
+sequence or quality decoding. Raw-record writers and transformers should move
+after the scanner exposes raw record access or a lossless bridge back to richer
+record layouts.
+
 Boundaries
 ----------
 

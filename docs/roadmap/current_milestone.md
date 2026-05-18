@@ -68,8 +68,14 @@ Known present pieces:
 
 * native BGZF reading can feed BAM payload bytes;
 * native BAM header parsing can position readers at the first alignment record;
-* `src/bam/records.rs` contains current record layout helpers and richer
-  record decoding pieces used by existing commands;
+* `src/bam/records.rs` contains the current central record bridge through
+  `read_next_record_layout`, which performs bounded layout checks and
+  materializes read name, CIGAR, sequence, quality, and aux sections;
+* `LightAlignmentRecord` already exposes field-only record information for
+  several commands, but it is derived from the fully materialized
+  `RecordLayout` path rather than a true selective scanner;
+* `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
+  materialized aux bytes;
 * record-facing commands already exist, including `check_sort`, `check_map`,
   `summary`, `check_tag`, `validate`, `inspect_duplication`,
   `forensic_inspect`, and BAM-side `subsample`;
@@ -84,7 +90,17 @@ Known gaps:
 * skip-oriented field extraction is not centralized;
 * aux-region traversal for selected tag lookup is not yet a scanner-owned API;
 * first command consumers have not yet been migrated onto a shared scanner;
+* record-scanning consumers generally use the transitional `BamReader::open`
+  gzip backend today rather than requiring the native BGZF backend;
 * scanner oracle coverage and microbenchmarks are not yet present.
+
+First consumer order:
+
+1. `check_sort`;
+2. `check_map`, `summary`, and `check_tag`;
+3. `validate`, `inspect_duplication`, and `forensic_inspect`;
+4. BAM-side `subsample` and other raw-record writers after scanner-owned raw
+   record access or lossless `RecordLayout` bridging is available.
 
 ## Completion Boundary
 
