@@ -56,7 +56,8 @@ beside other benchmark result artifacts.
 Milestone 3 Closeout
 --------------------
 
-The Milestone 3 closeout should run the ``small`` profile with one iteration
-and ``--bamana-bin`` so the JSON includes both scanner timings and migrated
-command timings. Longer local runs should increase ``--iterations`` and use
-``medium`` or ``large`` when comparing scanner throughput across changes.
+The Milestone 3 closeout ran the ``small`` profile with one iteration and a
+JSON smoke check. The smoke check verified the selected profile, iteration
+count, 1,024 generated records, and the expected result schema. Longer local
+runs should increase ``--iterations`` and use ``medium`` or ``large`` when
+comparing scanner throughput across changes.

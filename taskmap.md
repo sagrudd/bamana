@@ -893,7 +893,7 @@ currently need record scans.
 
 ## Milestone 3 Current State
 
-Status: active.
+Status: complete.
 
 Known present pieces:
 
@@ -949,27 +949,34 @@ Known present pieces:
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
 * BAM-side `subsample` and writer-heavy transform paths still perform
-  record-facing work through existing first-slice readers and helpers;
+  record-facing work through existing first-slice readers and helpers, which
+  is downstream command-migration work rather than Milestone 3 scanner
+  substrate work;
 * dependency-boundary checks already prohibit production `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
 * remaining BAM-side transform consumers are not migrated onto a shared scanner
-  substrate;
+  substrate where command behavior needs owned records or writer-heavy
+  serialization;
 * richer decode and lossless serialization paths still use `RecordLayout` where
-  command behavior needs owned sequence, quality, aux, or whole-record bytes;
-* M3.10 remains outstanding.
+  command behavior needs owned sequence, quality, aux, or whole-record bytes.
 
-Milestone 3 closeout evidence must include:
+Milestone 3 closeout evidence:
 
-* all M3.1 through M3.10 tasks complete;
-* `cargo test` passing;
-* `cargo test --test contract` passing;
-* Sphinx documentation building successfully;
-* scanner microbenchmarks runnable with machine-readable output;
-* selected first command consumers documented as using the native scanner;
-* roadmap and task-map status updated to record Milestone 3 completion.
+* all M3.1 through M3.10 tasks are complete;
+* closeout `cargo test` passed with 180 library tests, 18 contract tests, 2
+  header-oracle integration tests, binary tests, and doc tests;
+* closeout `cargo test --test contract` passed with 18 contract tests;
+* closeout Sphinx build passed for `docs/sphinx`;
+* closeout `cargo run --bin scanner_microbench -- --profile small --iterations
+  1` passed, and the JSON smoke check verified the small profile, one
+  iteration, 1,024 generated records, and the expected result schema;
+* selected first command consumers documented as using the native scanner are
+  `check_sort`, `check_map`, `summary`, `check_tag`, `validate`,
+  `inspect_duplication`, and `forensic_inspect`;
+* roadmap and task-map status now record Milestone 3 completion.
 
 Command-surface scope:
 
@@ -1345,7 +1352,7 @@ Completion evidence:
 
 ### M3.10 Close Milestone 3
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1368,4 +1375,16 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* `cargo test` passed with 180 library tests, 18 contract tests, 2
+  header-oracle integration tests, binary tests, and doc tests;
+* `cargo test --test contract` passed with 18 contract tests;
+* `cargo run --bin scanner_microbench -- --profile small --iterations 1`
+  passed, and a JSON smoke check verified the benchmark profile, iteration
+  count, 1,024 generated records, and expected result schema;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed;
+* updated `docs/roadmap/milestone-03-bam-record-scan.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 3 completion evidence;
+* selected scanner consumers are documented as `check_sort`, `check_map`,
+  `summary`, `check_tag`, `validate`, `inspect_duplication`, and
+  `forensic_inspect`.

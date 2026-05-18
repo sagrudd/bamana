@@ -385,24 +385,21 @@ cargo test
 
 ## Current Status
 
-Milestone 2 is complete and Milestone 3 is active. The repository now contains
-a production-minded BAM header slice with shared JSON contracts, structured
-error handling, fast file probing, native BAM header parsing and serialization,
-header microbenchmarks, and real BGZF EOF inspection. The active Milestone 3
-work is the native BAM record scanner: `BamRecordView` now defines the borrowed
-record-view contract, and `BamScanner` now provides the native BGZF/header
-record iteration substrate. Scanner-facing helpers now centralize common flag,
-coordinate, MAPQ, read-name, sequence-length, section-range, and skip-offset
-access. Record-view aux helpers now provide bounded traversal, selected tag
-lookup, tag counting, tag-key collection, and string tag extraction without
-materializing richer record layouts. `check_sort` now consumes the native
-scanner; `check_map`, `summary`, and `check_tag` now share the scanner for
-their record-traversal paths while preserving existing JSON contracts.
-`validate`, `inspect_duplication`, and `forensic_inspect` now use the scanner
-for scanner-compatible BAM body scans. `scanner_microbench` now provides
-records-per-second and selective field-extraction JSON benchmarks for the native
-scanner. Full BAM semantic validation, BAI/CSI random access, native CRAM
-scanning, and broader BAM operations remain incremental downstream work under
+Milestone 3 is complete. The repository now contains a production-minded native
+BAM stack with shared JSON contracts, structured error handling, fast file
+probing, native BGZF reading and writing, native BAM header parsing and
+serialization, header microbenchmarks, real BGZF EOF inspection, and a native
+BAM record scanner. `BamRecordView` defines the borrowed record-view contract,
+and `BamScanner` provides the native BGZF/header record iteration substrate.
+Scanner-facing helpers centralize common flag, coordinate, MAPQ, read-name,
+sequence-length, section-range, skip-offset, and selected aux-tag access without
+materializing richer record layouts. `check_sort`, `check_map`, `summary`,
+`check_tag`, `validate`, `inspect_duplication`, and `forensic_inspect` now use
+the scanner for scanner-compatible record traversal while preserving existing
+JSON contracts. `scanner_microbench` provides records-per-second and selective
+field-extraction JSON benchmarks for the native scanner. Full BAM semantic
+validation, BAI/CSI random access, native CRAM scanning, writer-heavy BAM
+transforms, and broader BAM operations remain incremental downstream work under
 the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 

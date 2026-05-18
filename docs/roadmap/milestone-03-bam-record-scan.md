@@ -13,9 +13,9 @@ Implement a Bamana-native selective BAM record scanner that can:
 
 Primary ownership:
 
-* future `src/bam/record.rs`
-* future `src/bam/fields.rs`
-* future `src/bam/scan.rs`
+* `src/bam/record.rs`
+* `src/bam/scan.rs`
+* scanner-facing helpers in `src/bam/tags.rs`
 * `src/bam/reader.rs`
 * existing `src/bam/records.rs` as the current bridge into richer layouts
 
@@ -177,9 +177,10 @@ payloads continue to fail with precise errors for truncated fields,
 unterminated strings, unsupported type codes, unsupported B-array subtypes,
 negative B-array counts, and array payload length overflows.
 
-This completes the scanner aux helper substrate. `check_tag` now consumes these
-helpers through `BamScanner`; read-group evidence, validation, and forensics
-still need to be migrated in later Milestone 3 tasks.
+This completes the scanner aux helper substrate. `check_tag`, read-group
+evidence, validation, and forensics now consume these helpers through
+`BamScanner` where their first-slice behavior fits the lightweight scanner
+view.
 
 ## First Command Migration
 
@@ -219,6 +220,24 @@ to `benchmarks/results/scanner_microbench.schema.json`.
 * selective field extraction microbenchmark
 * compare scanner throughput against the earlier implementation
 * rerun `summary`, `check_sort`, and `check_map` timing after adoption
+
+## Milestone 3 Closeout
+
+M3.10 closed Milestone 3 on 2026-05-18. The closeout run completed:
+
+* `cargo test`, with 180 library tests, 18 contract tests, 2 header-oracle
+  integration tests, binary tests, and doc tests passing;
+* `cargo test --test contract`, with 18 contract tests passing;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`;
+* `cargo run --bin scanner_microbench -- --profile small --iterations 1`, with
+  the JSON smoke check verifying the small profile, one iteration, 1,024
+  generated records, and the expected result schema.
+
+The selected scanner consumers recorded for milestone completion are
+`check_sort`, `check_map`, `summary`, `check_tag`, `validate`,
+`inspect_duplication`, and `forensic_inspect`. Production scanner and migrated
+record hot paths remain protected from direct `noodles` imports by
+dependency-boundary tests.
 
 ## Risks / Follow-Up
 

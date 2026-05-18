@@ -2,7 +2,7 @@
 
 ## Milestone Status
 
-**Milestone 3: Native BAM Record Scanner** is active as of 2026-05-18.
+**Milestone 3: Native BAM Record Scanner** is complete as of 2026-05-18.
 
 See:
 
@@ -12,15 +12,16 @@ See:
 ## Why This Is Current
 
 Milestone 1 completed the native BGZF substrate. Milestone 2 completed native
-BAM header parsing and deterministic header serialization. The next dependency
-layer is selective native BAM record scanning: iterating alignment records,
-exposing lightweight field views, safely skipping unneeded variable sections,
-and supporting selected aux-tag traversal without full generic decode.
+BAM header parsing and deterministic header serialization. Milestone 3
+completed the next dependency layer: selective native BAM record scanning that
+iterates alignment records, exposes lightweight field views, safely skips
+unneeded variable sections, and supports selected aux-tag traversal without
+full generic decode.
 
 This milestone is intentionally smaller than full BAM semantic validation,
-BAI/CSI random access, native CRAM scanning, or broad command parity. It should
-make the first record-scanning command paths depend on Bamana-native BGZF,
-native BAM headers, and a shared native scanner without implying that every BAM
+BAI/CSI random access, native CRAM scanning, or broad command parity. It makes
+the first record-scanning command paths depend on Bamana-native BGZF, native
+BAM headers, and a shared native scanner without implying that every BAM
 operation has migrated.
 
 ## Previously Completed Milestones
@@ -62,7 +63,7 @@ Milestone 1 and 2 completion evidence remains recorded in:
 
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-## Milestone 3 Current State
+## Milestone 3 Completed State
 
 Known present pieces:
 
@@ -122,10 +123,20 @@ Known present pieces:
 Known gaps:
 
 * remaining BAM-side transform consumers have not yet been migrated onto a
-  shared scanner;
+  shared scanner where command behavior needs owned records or writer-heavy
+  serialization;
 * richer decode and lossless serialization paths still use `RecordLayout` where
-  command behavior needs owned sequence, quality, aux, or whole-record bytes;
-* Milestone 3 closeout remains to run and record final evidence.
+  command behavior needs owned sequence, quality, aux, or whole-record bytes.
+
+Completed evidence:
+
+* `cargo test` passed with 180 library tests, 18 contract tests, 2
+  header-oracle integration tests, binary tests, and doc tests;
+* `cargo test --test contract` passed with 18 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed;
+* `cargo run --bin scanner_microbench -- --profile small --iterations 1`
+  passed, and the JSON smoke check verified the small profile, one iteration,
+  1,024 generated records, and the expected result schema.
 
 First consumer order:
 
@@ -139,7 +150,7 @@ First consumer order:
 
 ## Completion Boundary
 
-Milestone 3 completion will mean:
+Milestone 3 completion means:
 
 * BAM alignment records can be iterated natively without a full generic decode;
 * lightweight record views expose at least `refID`, `pos`, flags, MAPQ, read

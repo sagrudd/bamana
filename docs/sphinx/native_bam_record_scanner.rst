@@ -1,8 +1,9 @@
 Native BAM Record Scanner
 =========================
 
-Milestone 3 is active. Bamana's next native-core layer is a selective BAM
-record scanner built above the native BGZF reader and native BAM header codec.
+Milestone 3 is complete. Bamana's native-core stack now includes a selective
+BAM record scanner built above the native BGZF reader and native BAM header
+codec.
 
 Scope
 -----
@@ -19,9 +20,10 @@ The scanner milestone is responsible for:
 * migrating selected record-scanning command consumers onto shared scanner
   primitives.
 
-The first command beneficiaries are ``check_sort``, ``check_map``,
-``summary``, ``check_tag``, ``validate``, ``inspect_duplication``,
-``forensic_inspect``, and BAM-side ``subsample``.
+The completed first command beneficiaries are ``check_sort``, ``check_map``,
+``summary``, ``check_tag``, ``validate``, ``inspect_duplication``, and
+``forensic_inspect``. BAM-side ``subsample`` and writer-heavy transforms remain
+downstream where command behavior needs owned records or serialization.
 
 Baseline
 --------
@@ -33,9 +35,10 @@ sequence bytes, quality bytes, and aux bytes into ``RecordLayout``.
 commands, but it is derived from that fully materialized layout. It is therefore
 a convenience view, not the final selective scanner.
 
-``src/bam/tags.rs`` already provides bounded auxiliary-field traversal and tag
-lookup over materialized aux bytes. Milestone 3 should keep the bounded
-traversal behavior while moving it onto scanner-owned aux slices or ranges.
+``src/bam/tags.rs`` provides bounded auxiliary-field traversal and tag lookup
+over scanner-owned aux slices as well as materialized aux bytes. Milestone 3
+kept the bounded traversal behavior while adding scanner-facing helpers over
+``BamRecordView::aux_bytes``.
 
 The first migration target is ``check_sort``, followed by ``check_map``,
 ``summary``, and ``check_tag``. Validation and forensics paths come after those
@@ -70,9 +73,10 @@ than the BAM core, truncated block-size prefixes, truncated record payloads, and
 record-view parse failures are surfaced as structured errors with input path
 context.
 
-This loop is the scanner substrate, not command migration. Later milestone
-tasks should centralize selective field helpers, move auxiliary traversal onto
-scanner-owned ranges, and migrate command consumers onto ``BamScanner``.
+This loop is the scanner substrate. M3.4 through M3.9 centralized selective
+field helpers, moved auxiliary traversal onto scanner-owned ranges, migrated
+the selected first command consumers onto ``BamScanner``, and added scanner
+tests plus microbenchmark hooks.
 
 Selective Field Helpers
 -----------------------
@@ -102,8 +106,8 @@ aux payloads fail with precise parse errors instead of being silently truncated
 or over-read.
 
 Command paths such as ``check_tag``, read-group evidence, validation, and
-forensics still need to move onto these scanner-owned helpers in later M3
-tasks.
+forensics now use these scanner-owned helpers where their first-slice behavior
+fits the lightweight view.
 
 First Command Migration
 -----------------------
@@ -147,8 +151,19 @@ production code remains native.
 Task Tracking
 -------------
 
-The active task list is maintained in ``taskmap.md`` as M3.1 through M3.10.
-Closeout evidence must include passing full tests, passing contract tests,
-passing Sphinx documentation, runnable scanner microbenchmarks with
-machine-readable output, and recorded command-migration evidence for the first
-scanner consumers.
+The Milestone 3 task list is maintained in ``taskmap.md`` as M3.1 through
+M3.10. Closeout evidence is recorded there and includes passing full tests,
+passing contract tests, passing Sphinx documentation, a runnable scanner
+microbenchmark smoke profile with machine-readable output, and recorded
+command-migration evidence for the first scanner consumers.
+
+Closeout Evidence
+-----------------
+
+M3.10 closed Milestone 3 on 2026-05-18. The closeout run completed ``cargo
+test`` with 180 library tests, 18 contract tests, 2 header-oracle integration
+tests, binary tests, and doc tests passing; ``cargo test --test contract`` with
+18 contract tests passing; the Sphinx HTML build; and
+``scanner_microbench --profile small --iterations 1`` with a JSON smoke check
+verifying the small profile, one iteration, 1,024 generated records, and the
+expected result schema.
