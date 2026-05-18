@@ -78,6 +78,11 @@ The native BGZF substrate is split by responsibility:
 continue to import `BgzfWriter` through `bam::write` while the implementation
 itself is owned by `src/bgzf/writer.rs`.
 
+Reader coverage now separates BGZF container/member handling, EOF-marker
+presence, first-member BAM magic, and first-member payload validity. Truncated
+headers, truncated declared payloads, and invalid gzip footer metadata retain
+specific error detail for JSON command failures.
+
 ## Benchmark Hooks
 
 * BGZF read throughput microbenchmark

@@ -173,7 +173,7 @@ Completion evidence:
 
 ### M1.5 Strengthen BGZF Reader Tests
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -192,6 +192,19 @@ Acceptance criteria:
   BAM magic, and full payload validity;
 * error responses preserve enough detail for JSON command failures;
 * tests are native and do not depend on `noodles` for the production path.
+
+Completion evidence:
+
+* added native reader tests for valid single-block and multi-block BGZF streams;
+* added explicit truncated fixed-header, truncated extra-header, and truncated
+  compressed-payload tests;
+* added invalid CRC/size metadata coverage through the native inflate path;
+* added tests proving BAM magic detection is scoped to the first inflated
+  member;
+* added tests proving BGZF EOF marker detection is independent from BAM magic
+  and first-member payload validity;
+* tightened reader truncation errors so JSON failures keep BGZF-specific
+  details.
 
 ### M1.6 Strengthen BGZF Writer Tests
 
