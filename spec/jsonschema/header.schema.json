@@ -80,6 +80,34 @@
         "raw_line": { "type": "string" }
       }
     },
+    "referenceDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "severity", "message"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "duplicate_text_sq",
+            "extra_text_sq",
+            "missing_text_sq",
+            "reference_length_mismatch",
+            "reference_name_mismatch",
+            "reference_order_mismatch",
+            "text_sq_missing_length",
+            "text_sq_missing_name"
+          ]
+        },
+        "severity": { "type": "string", "enum": ["warning"] },
+        "binary_index": { "type": "integer", "minimum": 0 },
+        "binary_name": { "type": "string" },
+        "binary_length": { "type": "integer", "minimum": 0 },
+        "text_index": { "type": "integer", "minimum": 0 },
+        "text_name": { "type": "string" },
+        "text_length": { "type": "integer", "minimum": 0 },
+        "message": { "type": "string" }
+      }
+    },
     "data": {
       "type": "object",
       "additionalProperties": false,
@@ -93,6 +121,7 @@
             "raw_header_text",
             "hd",
             "references",
+            "reference_diagnostics",
             "read_groups",
             "programs",
             "comments",
@@ -104,6 +133,10 @@
             "references": {
               "type": "array",
               "items": { "$ref": "#/$defs/reference" }
+            },
+            "reference_diagnostics": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/referenceDiagnostic" }
             },
             "read_groups": {
               "type": "array",

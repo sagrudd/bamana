@@ -79,12 +79,9 @@ Known present pieces:
 Known gaps:
 
 * Milestone 2 does not yet have completion evidence;
-* the current header codec has not been audited against the full M2 acceptance
-  criteria;
-* malformed-length, reference-dictionary reconciliation, and deterministic
-  reserialization behavior need explicit milestone tests;
+* deterministic reserialization behavior needs explicit milestone tests;
 * header parse and serialization microbenchmarks are not yet present;
-* M2.2 through M2.10 remain outstanding.
+* M2.5 through M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -576,7 +573,7 @@ Completion evidence:
 
 ### M2.4 Reconcile Textual And Binary Reference Metadata
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -598,7 +595,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `header.reference_diagnostics` to the native header model and public
+  JSON contract so non-fatal textual `@SQ` reconciliation issues are explicit;
+* kept `header.references` binary-authoritative for BAM decoding while
+  retaining textual `@SQ` metadata and mismatch details for diagnostics;
+* added deterministic diagnostics for missing textual `@SQ` records, extra
+  textual `@SQ` records, duplicate textual `@SQ` records, same-index name
+  mismatches, order mismatches, length mismatches, and malformed textual `@SQ`
+  records without `SN` or parseable `LN`;
+* updated the header JSON schema, canonical header success example,
+  user-facing CLI docs, JSON-output docs, README, and Milestone 2 roadmap to
+  describe reference reconciliation semantics;
+* added native tests for missing `@SQ`, extra `@SQ`, name mismatch, length
+  mismatch, order mismatch, and duplicate textual `@SQ` cases;
+* `cargo test` passed with 136 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 14 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.5 Implement Deterministic Header Serialization
 

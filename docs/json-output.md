@@ -45,6 +45,22 @@ See:
 * [spec/contracts/versioning.md](/Users/stephen/Projects/bamana/spec/contracts/versioning.md)
 * [spec/contracts/compatibility.md](/Users/stephen/Projects/bamana/spec/contracts/compatibility.md)
 
+## `header`
+
+The `header` payload exposes the BAM header without implying alignment-record
+validation.
+
+Key concepts:
+
+* `raw_header_text` preserves the SAM-style text declared in the BAM header
+* `references` is the binary reference dictionary and is authoritative for BAM
+  decoding
+* `reference_diagnostics` reports non-fatal textual `@SQ` mismatches such as
+  missing, extra, duplicate, reordered, name-mismatched, or length-mismatched
+  records
+* `read_groups`, `programs`, `comments`, and `other_header_records` preserve
+  parsed textual metadata for downstream inspection
+
 ## `consume`
 
 The `consume` payload introduces an ingestion-oriented contract layer in

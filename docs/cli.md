@@ -73,6 +73,11 @@ from the output header and strips reference-bound alignment state from each
 record while preserving non-mapping auxiliary metadata. `--dry-run` is a
 first-class planning path and reports record counts without writing output.
 
+`header` parses the BAM header without scanning alignment records. The binary
+reference dictionary is authoritative for reference names, lengths, and order;
+textual `@SQ` mismatches are reported as non-fatal
+`header.reference_diagnostics` entries.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

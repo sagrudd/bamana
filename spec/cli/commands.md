@@ -509,8 +509,12 @@ Does not prove:
 That alignment records are valid or that the full file body is readable.
 
 Key output concepts:
-`header.raw_header_text`, `header.hd`, `header.references`, `read_groups`,
-`programs`, `comments`, `other_header_records`.
+`header.raw_header_text`, `header.hd`, `header.references`,
+`header.reference_diagnostics`, `read_groups`, `programs`, `comments`,
+`other_header_records`. `header.references` is the binary reference dictionary
+and remains authoritative for BAM decoding; `header.reference_diagnostics`
+reports non-fatal textual `@SQ` mismatches such as missing, extra, duplicate,
+reordered, name-mismatched, or length-mismatched records.
 
 ## `check_sort`
 

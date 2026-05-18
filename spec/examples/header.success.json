@@ -23,10 +23,10 @@
             "AS": null,
             "SP": null,
             "TP": null
-          },
-          "text_header_length": 248956422
+          }
         }
       ],
+      "reference_diagnostics": [],
       "read_groups": [],
       "programs": [],
       "comments": [],

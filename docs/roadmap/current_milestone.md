@@ -62,11 +62,6 @@ Known present pieces:
 
 Known gaps:
 
-* the header data model still needs an M2-specific tightening pass;
-* malformed-length and truncated-prefix tests need to be expanded around the
-  full M2 acceptance criteria;
-* textual `@SQ` versus binary reference dictionary reconciliation needs explicit
-  documented semantics and tests;
 * deterministic parse-serialize-parse behavior needs direct tests;
 * `verify` still needs to be raised from shallow BAM magic checking to the
   native BGZF plus native header validation expected by M2;

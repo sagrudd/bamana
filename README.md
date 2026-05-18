@@ -197,7 +197,9 @@ cargo run -- benchmark --profile fastq_gz_enumerate --fastq reads.fastq.gz --rep
 
 `header` uses the binary BAM reference section as authoritative for reference
 names and lengths, and joins optional fields from textual `@SQ` records into the
-structured JSON view when present.
+structured JSON view when present. Non-fatal textual-vs-binary reference
+mismatches are reported in `header.reference_diagnostics`; they do not rewrite
+the binary reference dictionary used by downstream BAM decoding.
 
 `subsample` is Bamana's explicit selection command for BAM, FASTQ, and
 FASTQ.GZ inputs. The current slice supports seeded random Bernoulli-style

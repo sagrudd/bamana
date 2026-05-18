@@ -33,6 +33,7 @@ pub struct BamHeaderView {
     pub raw_header_text: String,
     pub hd: HdRecord,
     pub references: Vec<ReferenceRecord>,
+    pub reference_diagnostics: Vec<ReferenceDiagnostic>,
     pub read_groups: Vec<ReadGroupRecord>,
     pub programs: Vec<ProgramRecord>,
     pub comments: Vec<String>,
@@ -75,6 +76,25 @@ pub struct ReferenceRecord {
     /// Textual `@SQ` `LN` when it disagrees with the binary length.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_header_length: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ReferenceDiagnostic {
+    pub kind: &'static str,
+    pub severity: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_index: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_length: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_index: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_length: Option<u32>,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -133,6 +153,7 @@ struct BinaryReference {
 struct ParsedSamHeader {
     hd: HdRecord,
     sq: HashMap<String, SamSqRecord>,
+    sq_records: Vec<TextSqRecord>,
     sq_order: Vec<String>,
     read_groups: Vec<ReadGroupRecord>,
     programs: Vec<ProgramRecord>,
@@ -144,6 +165,14 @@ struct ParsedSamHeader {
 struct SamSqRecord {
     length: Option<u32>,
     fields: ReferenceHeaderFields,
+}
+
+#[derive(Debug, Clone)]
+struct TextSqRecord {
+    index: usize,
+    name: Option<String>,
+    length: Option<u32>,
+    raw_line: String,
 }
 
 pub fn parse_bam_header(path: &Path) -> Result<HeaderPayload, AppError> {
@@ -270,6 +299,7 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
     }
 
     let sam_header = parse_sam_header_text_impl(&raw_header_text);
+    let reference_diagnostics = reconcile_reference_diagnostics(&binary_references, &sam_header);
     let references = merge_references(binary_references, &sam_header.sq);
 
     Ok(HeaderPayload {
@@ -278,6 +308,7 @@ pub fn parse_bam_header_from_reader(reader: &mut BamReader) -> Result<HeaderPayl
             raw_header_text,
             hd: sam_header.hd,
             references,
+            reference_diagnostics,
             read_groups: sam_header.read_groups,
             programs: sam_header.programs,
             comments: sam_header.comments,
@@ -365,19 +396,21 @@ pub fn parse_sam_header_text_with_references(
     validate_unique_read_groups(&parsed.read_groups)?;
     validate_unique_programs(&parsed.programs)?;
 
-    let binary_references = references
+    let binary_references: Vec<BinaryReference> = references
         .iter()
         .map(|reference| BinaryReference {
             name: reference.name.clone(),
             length: reference.length,
         })
         .collect();
+    let reference_diagnostics = reconcile_reference_diagnostics(&binary_references, &parsed);
     let merged_references = merge_references(binary_references, &parsed.sq);
 
     Ok(BamHeaderView {
         raw_header_text: normalized,
         hd: parsed.hd,
         references: merged_references,
+        reference_diagnostics,
         read_groups: parsed.read_groups,
         programs: parsed.programs,
         comments: parsed.comments,
@@ -579,9 +612,16 @@ fn parse_sam_header_text_impl(raw_header_text: &str) -> ParsedSamHeader {
                         _ => {}
                     }
                 }
+                let record = TextSqRecord {
+                    index: parsed.sq_records.len(),
+                    name: name.clone(),
+                    length: sq.length,
+                    raw_line: line.to_string(),
+                };
+                parsed.sq_records.push(record);
                 if let Some(name) = name {
                     parsed.sq_order.push(name.clone());
-                    parsed.sq.insert(name, sq);
+                    parsed.sq.entry(name).or_insert(sq);
                 }
             }
             "@RG" => {
@@ -789,6 +829,193 @@ fn checked_bam_i32_from_u32(path: &Path, field: &str, value: u32) -> Result<i32,
     Ok(value as i32)
 }
 
+fn reconcile_reference_diagnostics(
+    binary_references: &[BinaryReference],
+    parsed: &ParsedSamHeader,
+) -> Vec<ReferenceDiagnostic> {
+    let mut diagnostics = Vec::new();
+    let mut binary_by_name = HashMap::new();
+    for (index, reference) in binary_references.iter().enumerate() {
+        binary_by_name.insert(reference.name.as_str(), (index, reference.length));
+    }
+
+    let mut text_indexes_by_name: HashMap<&str, Vec<usize>> = HashMap::new();
+    for text_record in &parsed.sq_records {
+        if let Some(name) = text_record.name.as_deref() {
+            text_indexes_by_name
+                .entry(name)
+                .or_default()
+                .push(text_record.index);
+        } else {
+            diagnostics.push(ReferenceDiagnostic {
+                kind: "text_sq_missing_name",
+                severity: "warning",
+                binary_index: None,
+                binary_name: None,
+                binary_length: None,
+                text_index: Some(text_record.index),
+                text_name: None,
+                text_length: text_record.length,
+                message: format!(
+                    "Textual @SQ record at index {} does not contain an SN field: {}",
+                    text_record.index, text_record.raw_line
+                ),
+            });
+        }
+    }
+
+    for (name, indexes) in &text_indexes_by_name {
+        if indexes.len() > 1 {
+            diagnostics.push(ReferenceDiagnostic {
+                kind: "duplicate_text_sq",
+                severity: "warning",
+                binary_index: binary_by_name.get(name).map(|(index, _)| *index),
+                binary_name: Some((*name).to_string()),
+                binary_length: binary_by_name.get(name).map(|(_, length)| *length),
+                text_index: indexes.first().copied(),
+                text_name: Some((*name).to_string()),
+                text_length: indexes
+                    .first()
+                    .and_then(|index| parsed.sq_records.get(*index))
+                    .and_then(|record| record.length),
+                message: format!(
+                    "Textual header contains duplicate @SQ records for {name} at indexes {}.",
+                    format_usize_list(indexes)
+                ),
+            });
+        }
+    }
+
+    for (binary_index, binary_reference) in binary_references.iter().enumerate() {
+        let text_indexes = text_indexes_by_name.get(binary_reference.name.as_str());
+        match text_indexes.and_then(|indexes| indexes.first()).copied() {
+            Some(text_index) => {
+                let text_record = &parsed.sq_records[text_index];
+                if text_index != binary_index {
+                    diagnostics.push(ReferenceDiagnostic {
+                        kind: "reference_order_mismatch",
+                        severity: "warning",
+                        binary_index: Some(binary_index),
+                        binary_name: Some(binary_reference.name.clone()),
+                        binary_length: Some(binary_reference.length),
+                        text_index: Some(text_index),
+                        text_name: text_record.name.clone(),
+                        text_length: text_record.length,
+                        message: format!(
+                            "Binary reference {} appears at index {binary_index}, but the matching textual @SQ record appears at index {text_index}.",
+                            binary_reference.name
+                        ),
+                    });
+                }
+
+                match text_record.length {
+                    Some(text_length) if text_length != binary_reference.length => {
+                        diagnostics.push(ReferenceDiagnostic {
+                            kind: "reference_length_mismatch",
+                            severity: "warning",
+                            binary_index: Some(binary_index),
+                            binary_name: Some(binary_reference.name.clone()),
+                            binary_length: Some(binary_reference.length),
+                            text_index: Some(text_index),
+                            text_name: text_record.name.clone(),
+                            text_length: Some(text_length),
+                            message: format!(
+                                "Binary reference {} has length {}, but the textual @SQ LN is {text_length}.",
+                                binary_reference.name, binary_reference.length
+                            ),
+                        });
+                    }
+                    None => diagnostics.push(ReferenceDiagnostic {
+                        kind: "text_sq_missing_length",
+                        severity: "warning",
+                        binary_index: Some(binary_index),
+                        binary_name: Some(binary_reference.name.clone()),
+                        binary_length: Some(binary_reference.length),
+                        text_index: Some(text_index),
+                        text_name: text_record.name.clone(),
+                        text_length: None,
+                        message: format!(
+                            "Textual @SQ record for {} does not contain a parseable LN field.",
+                            binary_reference.name
+                        ),
+                    }),
+                    _ => {}
+                }
+            }
+            None => diagnostics.push(ReferenceDiagnostic {
+                kind: "missing_text_sq",
+                severity: "warning",
+                binary_index: Some(binary_index),
+                binary_name: Some(binary_reference.name.clone()),
+                binary_length: Some(binary_reference.length),
+                text_index: None,
+                text_name: None,
+                text_length: None,
+                message: format!(
+                    "Binary reference {} at index {binary_index} has no matching textual @SQ record.",
+                    binary_reference.name
+                ),
+            }),
+        }
+
+        if let Some(text_record) = parsed.sq_records.get(binary_index) {
+            if text_record.name.as_deref() != Some(binary_reference.name.as_str()) {
+                diagnostics.push(ReferenceDiagnostic {
+                    kind: "reference_name_mismatch",
+                    severity: "warning",
+                    binary_index: Some(binary_index),
+                    binary_name: Some(binary_reference.name.clone()),
+                    binary_length: Some(binary_reference.length),
+                    text_index: Some(text_record.index),
+                    text_name: text_record.name.clone(),
+                    text_length: text_record.length,
+                    message: format!(
+                        "Binary reference index {binary_index} is {}, but textual @SQ index {} is {}.",
+                        binary_reference.name,
+                        text_record.index,
+                        text_record
+                            .name
+                            .as_deref()
+                            .unwrap_or("<missing SN>")
+                    ),
+                });
+            }
+        }
+    }
+
+    for text_record in &parsed.sq_records {
+        let Some(text_name) = text_record.name.as_deref() else {
+            continue;
+        };
+        if !binary_by_name.contains_key(text_name) {
+            diagnostics.push(ReferenceDiagnostic {
+                kind: "extra_text_sq",
+                severity: "warning",
+                binary_index: None,
+                binary_name: None,
+                binary_length: None,
+                text_index: Some(text_record.index),
+                text_name: Some(text_name.to_string()),
+                text_length: text_record.length,
+                message: format!(
+                    "Textual @SQ record {text_name} at index {} has no matching binary reference.",
+                    text_record.index
+                ),
+            });
+        }
+    }
+
+    diagnostics
+}
+
+fn format_usize_list(values: &[usize]) -> String {
+    values
+        .iter()
+        .map(|value| value.to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 fn merge_references(
     binary_references: Vec<BinaryReference>,
     sq_map: &HashMap<String, SamSqRecord>,
@@ -867,6 +1094,15 @@ mod tests {
         }
     }
 
+    fn diagnostic_kinds(payload: &super::HeaderPayload) -> Vec<&str> {
+        payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.kind)
+            .collect()
+    }
+
     #[test]
     fn parses_empty_header_without_references() {
         let bytes = build_bam_file_with_header("", &[]);
@@ -878,6 +1114,7 @@ mod tests {
         assert_eq!(payload.format, "BAM");
         assert!(payload.header.raw_header_text.is_empty());
         assert!(payload.header.references.is_empty());
+        assert!(payload.header.reference_diagnostics.is_empty());
         assert!(payload.header.other_header_records.is_empty());
     }
 
@@ -913,6 +1150,7 @@ mod tests {
         assert_eq!(payload.header.references[1].name, "chr2");
         assert_eq!(payload.header.references[1].length, 242_193_529);
         assert_eq!(payload.header.references[1].index, 1);
+        assert!(payload.header.reference_diagnostics.is_empty());
         assert_eq!(
             payload.header.references[0].header_fields.m5.as_deref(),
             Some("abc123")
@@ -945,6 +1183,137 @@ mod tests {
 
         assert_eq!(payload.header.references[0].length, 456);
         assert_eq!(payload.header.references[0].text_header_length, Some(123));
+        assert!(diagnostic_kinds(&payload).contains(&"reference_length_mismatch"));
+        let diagnostic = payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == "reference_length_mismatch")
+            .expect("length mismatch diagnostic should be present");
+        assert_eq!(diagnostic.binary_length, Some(456));
+        assert_eq!(diagnostic.text_length, Some(123));
+    }
+
+    #[test]
+    fn reports_missing_text_sq_without_rewriting_binary_reference() {
+        let bytes = build_bam_file_with_header("@HD\tVN:1.6\n", &[("chr1", 100)]);
+        let path = write_temp_file("header-missing-text-sq", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_eq!(payload.header.references[0].name, "chr1");
+        assert_eq!(payload.header.references[0].length, 100);
+        assert!(diagnostic_kinds(&payload).contains(&"missing_text_sq"));
+    }
+
+    #[test]
+    fn reports_extra_text_sq_record() {
+        let header_text = "@SQ\tSN:chr1\tLN:100\n@SQ\tSN:chr2\tLN:200\n";
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100)]);
+        let path = write_temp_file("header-extra-text-sq", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_eq!(payload.header.references.len(), 1);
+        let diagnostic = payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == "extra_text_sq")
+            .expect("extra @SQ diagnostic should be present");
+        assert_eq!(diagnostic.text_name.as_deref(), Some("chr2"));
+        assert_eq!(diagnostic.text_index, Some(1));
+    }
+
+    #[test]
+    fn reports_name_mismatch_at_same_reference_index() {
+        let header_text = "@SQ\tSN:chr2\tLN:100\n";
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100)]);
+        let path = write_temp_file("header-name-mismatch", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        let kinds = diagnostic_kinds(&payload);
+        assert!(kinds.contains(&"reference_name_mismatch"));
+        assert!(kinds.contains(&"missing_text_sq"));
+        assert!(kinds.contains(&"extra_text_sq"));
+        assert_eq!(payload.header.references[0].name, "chr1");
+    }
+
+    #[test]
+    fn reports_text_sq_order_mismatch() {
+        let header_text = "@SQ\tSN:chr2\tLN:200\n@SQ\tSN:chr1\tLN:100\n";
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100), ("chr2", 200)]);
+        let path = write_temp_file("header-order-mismatch", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        let kinds = diagnostic_kinds(&payload);
+        assert!(kinds.contains(&"reference_order_mismatch"));
+        assert!(kinds.contains(&"reference_name_mismatch"));
+        assert_eq!(payload.header.references[0].name, "chr1");
+        assert_eq!(payload.header.references[1].name, "chr2");
+    }
+
+    #[test]
+    fn reports_duplicate_text_sq_records() {
+        let header_text = "@SQ\tSN:chr1\tLN:100\n@SQ\tSN:chr1\tLN:100\n";
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100)]);
+        let path = write_temp_file("header-duplicate-text-sq", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        let diagnostic = payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == "duplicate_text_sq")
+            .expect("duplicate @SQ diagnostic should be present");
+        assert_eq!(diagnostic.text_name.as_deref(), Some("chr1"));
+        assert!(diagnostic.message.contains("0, 1"));
+    }
+
+    #[test]
+    fn reports_text_sq_records_without_names() {
+        let header_text = "@SQ\tLN:100\n";
+        let bytes = build_bam_file_with_header(header_text, &[]);
+        let path = write_temp_file("header-text-sq-missing-name", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        let diagnostic = payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == "text_sq_missing_name")
+            .expect("missing SN diagnostic should be present");
+        assert_eq!(diagnostic.text_index, Some(0));
+        assert!(diagnostic.message.contains("@SQ"));
+    }
+
+    #[test]
+    fn reports_text_sq_records_without_parseable_lengths() {
+        let header_text = "@SQ\tSN:chr1\n";
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100)]);
+        let path = write_temp_file("header-text-sq-missing-length", "bam", &bytes);
+
+        let payload = parse_bam_header(&path).expect("header should parse with warning");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        let diagnostic = payload
+            .header
+            .reference_diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == "text_sq_missing_length")
+            .expect("missing LN diagnostic should be present");
+        assert_eq!(diagnostic.binary_name.as_deref(), Some("chr1"));
+        assert_eq!(diagnostic.text_index, Some(0));
     }
 
     #[test]

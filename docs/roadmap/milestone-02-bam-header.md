@@ -37,6 +37,13 @@ order index. Parsed textual `@SQ` metadata is retained as diagnostic and
 user-facing metadata, including a `text_header_length` value when the textual
 `LN` disagrees with the binary dictionary.
 
+Reference reconciliation is non-destructive. Mismatches between textual `@SQ`
+records and the binary dictionary are reported as warning diagnostics rather
+than silently rewriting either view. Diagnostics cover missing, extra,
+duplicate, reordered, name-mismatched, length-mismatched, and malformed textual
+`@SQ` records. The binary dictionary remains authoritative for downstream BAM
+decoding.
+
 Unknown SAM-style header records remain representable through their raw line so
 later commands can avoid lossy parsing. Writer consumers must serialize through
 the native header module rather than casting or assembling BAM header bytes
