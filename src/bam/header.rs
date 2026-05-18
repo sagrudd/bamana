@@ -378,6 +378,24 @@ pub fn serialize_bam_header_payload(
     Ok(payload)
 }
 
+pub fn serialize_bam_header_view_payload(
+    path: &Path,
+    header: &BamHeaderView,
+) -> Result<Vec<u8>, AppError> {
+    serialize_bam_header_payload(path, &header.raw_header_text, &header.references)
+}
+
+pub fn serialize_bam_header_checksum_domain(header: &HeaderPayload) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    write_len_prefixed(&mut bytes, header.header.raw_header_text.as_bytes());
+    bytes.extend_from_slice(&(header.header.references.len() as u32).to_le_bytes());
+    for reference in &header.header.references {
+        write_len_prefixed(&mut bytes, reference.name.as_bytes());
+        bytes.extend_from_slice(&reference.length.to_le_bytes());
+    }
+    bytes
+}
+
 pub fn parse_sam_header_text_with_references(
     raw_header_text: &str,
     references: &[ReferenceRecord],
@@ -1016,6 +1034,11 @@ fn format_usize_list(values: &[usize]) -> String {
         .join(", ")
 }
 
+fn write_len_prefixed(target: &mut Vec<u8>, bytes: &[u8]) {
+    target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
+    target.extend_from_slice(bytes);
+}
+
 fn merge_references(
     binary_references: Vec<BinaryReference>,
     sq_map: &HashMap<String, SamSqRecord>,
@@ -1052,7 +1075,8 @@ mod tests {
 
     use super::{
         ReferenceHeaderFields, ReferenceRecord, parse_bam_header, parse_bam_header_from_reader,
-        serialize_bam_header_payload,
+        serialize_bam_header_checksum_domain, serialize_bam_header_payload,
+        serialize_bam_header_view_payload,
     };
     use crate::{
         bam::{reader::BamReader, records::read_next_record_layout},
@@ -1314,6 +1338,91 @@ mod tests {
             .expect("missing LN diagnostic should be present");
         assert_eq!(diagnostic.binary_name.as_deref(), Some("chr1"));
         assert_eq!(diagnostic.text_index, Some(0));
+    }
+
+    #[test]
+    fn bam_header_view_serialization_is_deterministic_and_parseable() {
+        let header_text = concat!(
+            "@HD\tVN:1.6\tSO:coordinate\n",
+            "@SQ\tSN:chr1\tLN:100\tM5:abc\n",
+            "@SQ\tSN:chr2\tLN:200\tUR:file://ref.fa\n",
+            "@CO\tdeterministic serialization\n"
+        );
+        let bytes = build_bam_file_with_header(header_text, &[("chr1", 100), ("chr2", 200)]);
+        let path = write_temp_file("header-deterministic-source", "bam", &bytes);
+        let parsed = parse_bam_header(&path).expect("source header should parse");
+
+        let first = serialize_bam_header_view_payload(&path, &parsed.header)
+            .expect("header view should serialize");
+        let second = serialize_bam_header_view_payload(&path, &parsed.header)
+            .expect("header view should serialize repeatedly");
+        assert_eq!(first, second);
+
+        let reserialized_path = write_temp_file(
+            "header-deterministic-reserialized",
+            "bam",
+            &build_raw_bam_payload(&first),
+        );
+        let reparsed =
+            parse_bam_header(&reserialized_path).expect("serialized header should parse");
+        fs::remove_file(path).expect("fixture should be removed");
+        fs::remove_file(reserialized_path).expect("fixture should be removed");
+
+        assert_eq!(
+            reparsed.header.raw_header_text,
+            parsed.header.raw_header_text
+        );
+        assert_eq!(reparsed.header.references.len(), 2);
+        assert_eq!(reparsed.header.references[0].name, "chr1");
+        assert_eq!(reparsed.header.references[0].length, 100);
+        assert_eq!(reparsed.header.references[1].name, "chr2");
+        assert_eq!(reparsed.header.references[1].length, 200);
+        assert!(reparsed.header.reference_diagnostics.is_empty());
+    }
+
+    #[test]
+    fn serialized_binary_references_have_exactly_one_nul_terminator() {
+        let header_text = "@SQ\tSN:chr1\tLN:100\n";
+        let reference = ReferenceRecord {
+            name: "chr1".to_string(),
+            length: 100,
+            index: 0,
+            header_fields: ReferenceHeaderFields::default(),
+            text_header_length: None,
+        };
+        let payload = serialize_bam_header_payload(
+            Path::new("header-nul-terminator.bam"),
+            header_text,
+            &[reference],
+        )
+        .expect("header should serialize");
+
+        let mut offset = 4;
+        offset += 4;
+        offset += header_text.len();
+        let n_ref = i32::from_le_bytes(payload[offset..offset + 4].try_into().unwrap());
+        offset += 4;
+        let l_name = i32::from_le_bytes(payload[offset..offset + 4].try_into().unwrap());
+        offset += 4;
+        let name_bytes = &payload[offset..offset + l_name as usize];
+
+        assert_eq!(n_ref, 1);
+        assert_eq!(l_name, 5);
+        assert_eq!(name_bytes, b"chr1\0");
+        assert_eq!(name_bytes.iter().filter(|byte| **byte == 0).count(), 1);
+    }
+
+    #[test]
+    fn checksum_header_domain_serialization_is_deterministic() {
+        let bytes = build_bam_file_with_header("@SQ\tSN:chr1\tLN:100\n", &[("chr1", 100)]);
+        let path = write_temp_file("header-checksum-domain", "bam", &bytes);
+        let parsed = parse_bam_header(&path).expect("header should parse");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_eq!(
+            serialize_bam_header_checksum_domain(&parsed),
+            serialize_bam_header_checksum_domain(&parsed)
+        );
     }
 
     #[test]

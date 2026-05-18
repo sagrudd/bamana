@@ -79,9 +79,8 @@ Known present pieces:
 Known gaps:
 
 * Milestone 2 does not yet have completion evidence;
-* deterministic reserialization behavior needs explicit milestone tests;
 * header parse and serialization microbenchmarks are not yet present;
-* M2.5 through M2.10 remain outstanding.
+* M2.6 through M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -616,7 +615,7 @@ Completion evidence:
 
 ### M2.5 Implement Deterministic Header Serialization
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -638,7 +637,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `serialize_bam_header_view_payload` so native header views can be
+  serialized through the owned BAM header module without command consumers
+  assembling BAM header bytes themselves;
+* added `serialize_bam_header_checksum_domain` and migrated checksum code away
+  from its private header-domain serializer;
+* documented deterministic serialization rules in the Milestone 2 roadmap and
+  Sphinx technical notes;
+* added parse-serialize-parse tests proving native header view serialization is
+  byte-stable across repeated calls and accepted by the native parser;
+* added tests proving binary reference names are emitted with exactly one NUL
+  terminator and binary references remain in encounter order;
+* added tests proving checksum-domain header serialization is deterministic;
+* `cargo test` passed with 139 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 14 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.6 Migrate `header` To The Native Codec
 

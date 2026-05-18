@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{HeaderPayload, parse_bam_header_from_reader},
+        header::{parse_bam_header_from_reader, serialize_bam_header_checksum_domain},
         reader::BamReader,
         records::{RecordLayout, read_next_record_layout},
         tags::serialize_filtered_aux,
@@ -74,7 +74,7 @@ pub fn compute_checksums(
 ) -> Result<ChecksumPayload, AppError> {
     let mut reader = BamReader::open(path)?;
     let header = parse_bam_header_from_reader(&mut reader)?;
-    let header_bytes = serialize_header(&header);
+    let header_bytes = serialize_bam_header_checksum_domain(&header);
 
     let requested_modes = requested_modes(options.mode);
     let needs_record_scan = requested_modes
@@ -302,17 +302,6 @@ pub(crate) fn serialize_record(
     write_len_prefixed(&mut bytes, &record.quality_bytes);
     write_len_prefixed(&mut bytes, &filtered_aux);
     Ok(bytes)
-}
-
-fn serialize_header(header: &HeaderPayload) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    write_len_prefixed(&mut bytes, header.header.raw_header_text.as_bytes());
-    bytes.extend_from_slice(&(header.header.references.len() as u32).to_le_bytes());
-    for reference in &header.header.references {
-        write_len_prefixed(&mut bytes, reference.name.as_bytes());
-        bytes.extend_from_slice(&reference.length.to_le_bytes());
-    }
-    bytes
 }
 
 fn write_len_prefixed(target: &mut Vec<u8>, bytes: &[u8]) {

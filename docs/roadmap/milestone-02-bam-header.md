@@ -50,6 +50,24 @@ the native header module rather than casting or assembling BAM header bytes
 themselves; values that do not fit BAM signed 32-bit fields must fail before
 bytes are emitted.
 
+## Deterministic Serialization Rules
+
+BAM header payload serialization is deterministic:
+
+* the emitted payload starts with the BAM magic bytes;
+* `l_text` is the byte length of the selected SAM-style header text;
+* SAM-style header text is emitted exactly as supplied by the native header
+  view or command-specific header mutation helper;
+* `n_ref` is the binary reference count;
+* binary references are emitted in encounter-order index order;
+* every binary reference name is emitted with exactly one required NUL
+  terminator;
+* every length and count is checked before serialization to ensure it fits the
+  BAM signed 32-bit fields.
+
+Checksum-domain header serialization is also centralized in the native header
+module so checksum code does not duplicate the header representation rules.
+
 ## Dependencies / Prerequisites
 
 Depends on:

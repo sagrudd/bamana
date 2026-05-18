@@ -26,3 +26,9 @@ Build the site locally with:
    :caption: Public CLI Commands
 
    public_commands
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Technical Notes
+
+   native_bam_header_codec

@@ -62,7 +62,6 @@ Known present pieces:
 
 Known gaps:
 
-* deterministic parse-serialize-parse behavior needs direct tests;
 * `verify` still needs to be raised from shallow BAM magic checking to the
   native BGZF plus native header validation expected by M2;
 * header parse and serialization microbenchmarks are not yet present.
