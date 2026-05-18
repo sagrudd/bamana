@@ -7,7 +7,9 @@ milestone described in `docs/roadmap/milestone-02-bam-header.md`. Milestone 3
 is the Native BAM Record Scanner milestone described in
 `docs/roadmap/milestone-03-bam-record-scan.md`. Milestone 4 is the Native
 FASTQ / FASTQ.GZ Parser milestone described in
-`docs/roadmap/milestone-04-fastq.md`.
+`docs/roadmap/milestone-04-fastq.md`. Milestone 5 is the Command Migration Off
+`noodles` milestone described in
+`docs/roadmap/milestone-05-command-migration.md`.
 
 ## Milestone 1 Definition
 
@@ -1738,6 +1740,339 @@ Acceptance criteria:
 * command consumer evidence is recorded for the selected FASTQ command paths;
 * production FASTQ hot paths remain Bamana-native;
 * Milestone 4 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 5 Definition
+
+Milestone 5 is complete only when the first proof commands have explicit
+native-substrate evidence and no production `noodles` hot-path dependency.
+The milestone covers `verify`, `header`, and `subsample` in that order.
+`verify` and `header` are the proof commands for Milestone 1 BGZF plus
+Milestone 2 header ownership. `subsample` is the first stronger end-to-end
+proof across native BAM scanning, native FASTQ parsing, deterministic/random
+selection, and native serialization or pass-through writing.
+
+## Milestone 5 Planned State
+
+Status: planned. Milestone 5 should not become active until Milestone 4 has
+closed, because full `subsample` coverage depends on the stable native
+FASTQ/FASTQ.GZ parser and writer APIs from Milestone 4.
+
+Known present pieces:
+
+* Milestone 1 native BGZF substrate is complete;
+* Milestone 2 native BAM header codec is complete;
+* Milestone 3 native BAM record scanner is complete for selected
+  scanner-compatible consumers;
+* Milestone 4 is active and is expected to stabilize the FASTQ parser/writer
+  APIs needed by FASTQ-side `subsample`;
+* production `verify` already routes through native BGZF probing plus
+  `parse_bam_header_from_native_bgzf`;
+* production `header` already routes through native BGZF probing plus
+  `parse_bam_header_from_native_bgzf`;
+* contract dependency-boundary tests already protect production native header,
+  verify, scanner, and migrated hot paths from direct `noodles` imports;
+* production `subsample` already has governed JSON contracts for BAM, FASTQ,
+  and FASTQ.GZ inputs and explicit deterministic/random selection policies.
+
+Known gaps:
+
+* BAM-side `subsample` still uses `BamReader::open` and
+  `read_next_record_layout` rather than the native scanner or a scanner-owned
+  raw-record bridge;
+* FASTQ-side `subsample` still depends on the current monolithic FASTQ helpers
+  rather than the stable Milestone 4 reader/writer API;
+* command-level benchmark deltas for `verify`, `header`, and `subsample` are
+  not yet recorded as M5 evidence;
+* dependency-boundary tests do not yet name the full M5 proof-command set as a
+  single governed migration boundary;
+* post-migration differential and fixture evidence for `subsample` across BAM,
+  FASTQ, and FASTQ.GZ remains to be collected.
+
+Milestone 5 closeout evidence must include:
+
+* all M5.1 through M5.10 tasks complete;
+* `verify` documented and tested as native BGZF plus native BAM header only;
+* `header` documented and tested as native BAM header codec only;
+* `subsample` documented and tested as using native BAM scanning and native
+  FASTQ parsing/writing for its governed input formats;
+* command JSON contracts remaining stable or deliberately versioned;
+* differential, fixture, and contract tests passing for the migrated command
+  paths;
+* command-level benchmark evidence recorded for `verify`, `header`, and
+  `subsample`;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 5 evidence is limited to the proof-command migration set:
+  `verify`, `header`, and `subsample`.
+* Later command families such as `reheader`, `annotate_rg`,
+  `inspect_duplication`, `deduplicate`, `forensic_inspect`, `sort`, `merge`,
+  `explode`, `checksum`, and `consume` remain later waves unless a specific M5
+  task explicitly includes them.
+
+## Milestone 5 Task List
+
+### M5.1 Activate Milestone 5 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 5 is the active
+  milestone only after Milestone 4 is complete;
+* update roadmap/task-map status so Milestones 1 through 4 remain recorded
+  with their correct completion state;
+* audit `src/commands/verify.rs`, `src/commands/header.rs`,
+  `src/commands/subsample.rs`, dependency-boundary tests, command contracts,
+  and benchmark hooks;
+* record which proof-command paths are already native and which still need
+  migration;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 5 as active only when M4 is
+  closed;
+* the task map records present proof-command evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contracts for `benchmark`, `fastq`, and `unmap` remain protected.
+
+Completion evidence:
+
+* pending.
+
+### M5.2 Freeze Proof-Command Contracts And Fixtures
+
+Status: pending.
+
+Tasks:
+
+* audit JSON schemas and success/failure examples for `verify`, `header`, and
+  `subsample`;
+* confirm CLI documentation describes the exact supported behavior for the
+  proof commands;
+* add or update fixtures for BAM, FASTQ, and FASTQ.GZ `subsample` coverage
+  where gaps exist;
+* record any intentional contract changes before migration work begins.
+
+Acceptance criteria:
+
+* proof-command schemas and examples exist and parse;
+* contract tests fail if the governed proof-command documentation, schemas, or
+  examples disappear;
+* migration work has a stable before/after contract baseline.
+
+Completion evidence:
+
+* pending.
+
+### M5.3 Confirm And Harden `verify` Native Migration
+
+Status: pending.
+
+Tasks:
+
+* confirm production `verify` uses native BGZF probing and native BAM header
+  parsing only;
+* add focused tests for valid BGZF BAM headers and representative malformed
+  header failures if gaps remain;
+* ensure `verify` documentation states that it is header-level verification,
+  not full BAM payload validation or EOF checking;
+* record command-level benchmark timing for `verify` where the benchmark
+  framework supports it.
+
+Acceptance criteria:
+
+* `verify` has no production `noodles` dependency;
+* `verify` checks remain limited and documented;
+* JSON contracts remain stable;
+* relevant command, contract, and dependency-boundary tests pass.
+
+Completion evidence:
+
+* pending.
+
+### M5.4 Confirm And Harden `header` Native Migration
+
+Status: pending.
+
+Tasks:
+
+* confirm production `header` uses the native BAM header codec only;
+* add focused tests for multi-member BGZF header parsing and malformed header
+  failures if gaps remain;
+* ensure `header` documentation preserves the boundary between header parsing
+  and alignment-record validation;
+* record command-level benchmark timing for `header` where the benchmark
+  framework supports it.
+
+Acceptance criteria:
+
+* `header` has no production `noodles` dependency;
+* `header` remains a header-only command;
+* JSON contracts remain stable;
+* relevant command, contract, and dependency-boundary tests pass.
+
+Completion evidence:
+
+* pending.
+
+### M5.5 Migrate BAM-Side `subsample` To Native Scanner Or Raw-Record Bridge
+
+Status: pending.
+
+Tasks:
+
+* replace BAM-side `subsample` use of `BamReader::open` and
+  `read_next_record_layout` where practical with `BamScanner` or an explicit
+  scanner-owned raw-record bridge;
+* preserve deterministic and random selection semantics;
+* preserve mapped-only and primary-only filtering semantics;
+* preserve output record order and BAM serialization behavior;
+* document any richer decode or serialization path that remains deliberately
+  outside the M5 proof boundary.
+
+Acceptance criteria:
+
+* BAM-side `subsample` record traversal no longer depends on the older
+  transitional reader path unless a documented bridge remains necessary;
+* output BAM remains valid for covered fixtures;
+* JSON contracts remain stable or are deliberately versioned;
+* command tests cover representative random, deterministic, mapped-only, and
+  primary-only paths.
+
+Completion evidence:
+
+* pending.
+
+### M5.6 Migrate FASTQ-Side `subsample` To Milestone 4 APIs
+
+Status: pending.
+
+Tasks:
+
+* route FASTQ and FASTQ.GZ `subsample` through the stable M4 reader/writer
+  APIs;
+* preserve deterministic and random selection semantics;
+* preserve identity modes that are valid for raw-read inputs;
+* preserve output compression behavior for FASTQ.GZ outputs;
+* ensure invalid BAM-only flags remain rejected for FASTQ inputs.
+
+Acceptance criteria:
+
+* FASTQ-side `subsample` consumes the stable native FASTQ parser/writer core;
+* output FASTQ and FASTQ.GZ records preserve encounter order of retained
+  records;
+* JSON contracts remain stable or are deliberately versioned;
+* command tests cover plain FASTQ and FASTQ.GZ paths.
+
+Completion evidence:
+
+* pending.
+
+### M5.7 Strengthen M5 Dependency Boundaries
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name `verify`, `header`, and
+  `subsample` as the M5 proof-command migration set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* document any test-only oracle usage for proof commands;
+* fail tests if `noodles` is reintroduced into proof-command hot paths.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect all three proof commands;
+* any oracle usage is test-only and documented;
+* production CRAM compatibility remains the only direct production `noodles`
+  exception.
+
+Completion evidence:
+
+* pending.
+
+### M5.8 Add Differential And Fixture Coverage For `subsample`
+
+Status: pending.
+
+Tasks:
+
+* add or strengthen BAM `subsample` fixture coverage for deterministic and
+  seeded-random selection;
+* add or strengthen FASTQ and FASTQ.GZ `subsample` fixture coverage;
+* add differential or checksum-style evidence proving retained records and
+  encounter order are stable for covered inputs;
+* ensure failure examples cover unsupported format, invalid fraction, and
+  invalid filter combinations.
+
+Acceptance criteria:
+
+* `subsample` migration has fixture evidence across BAM, FASTQ, and FASTQ.GZ;
+* retained record order and selection metadata are test-covered;
+* governed examples remain stable.
+
+Completion evidence:
+
+* pending.
+
+### M5.9 Add Proof-Command Benchmark Evidence
+
+Status: pending.
+
+Tasks:
+
+* add or formalize benchmark hooks for `verify`;
+* add or formalize benchmark hooks for `header`;
+* add or formalize benchmark hooks for BAM, FASTQ, and FASTQ.GZ `subsample`;
+* record before/after or current native command-level deltas where practical;
+* document benchmark interpretation and any unsupported comparator scope.
+
+Acceptance criteria:
+
+* each proof command has runnable benchmark or smoke benchmark coverage;
+* benchmark output is machine-readable or archived through the existing
+  benchmark framework;
+* benchmark notes distinguish command-level timing from substrate-only timing.
+
+Completion evidence:
+
+* pending.
+
+### M5.10 Close Milestone 5
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run proof-command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-05-command-migration.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 5 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M5.1 through M5.10 tasks are complete;
+* `verify`, `header`, and `subsample` are documented with native proof-command
+  evidence;
+* full tests, contract tests, Sphinx, and proof-command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 5 completion evidence is recorded in the repository.
 
 Completion evidence:
 
