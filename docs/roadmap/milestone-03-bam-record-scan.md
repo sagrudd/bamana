@@ -205,8 +205,16 @@ writer-heavy transform paths and behavior that requires owned whole-record
 serialization continue to use `RecordLayout` until later tasks explicitly move
 them.
 
+M3.9 added native scanner malformed-record tests, scanner differential coverage
+against Bamana's owned `RecordLayout` bridge, explicit dependency-boundary
+coverage for scanner and migrated record hot paths, and `scanner_microbench`.
+The benchmark generates deterministic local fixtures and reports
+records-per-second plus selective field-extraction throughput as JSON conforming
+to `benchmarks/results/scanner_microbench.schema.json`.
+
 ## Benchmark Hooks
 
+* `scanner_microbench --profile small --iterations 1`
 * records-per-second BAM scanner microbenchmark
 * selective field extraction microbenchmark
 * compare scanner throughput against the earlier implementation

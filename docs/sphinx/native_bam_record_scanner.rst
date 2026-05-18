@@ -127,6 +127,12 @@ record sections for read names, sequences, qualities, RG evidence, and aux-tag
 regime evidence. Writer-heavy transforms and paths that need owned whole-record
 serialization remain on ``RecordLayout`` until later work moves them.
 
+M3.9 added scanner-owned malformed-record tests, native differential coverage
+against Bamana's ``RecordLayout`` bridge, dependency-boundary checks for scanner
+and migrated hot paths, and ``scanner_microbench``. The benchmark emits JSON
+with record scan throughput and selective field extraction throughput; see
+``scanner_microbenchmarks`` for commands and schema details.
+
 Boundaries
 ----------
 

@@ -40,3 +40,13 @@ Malformed-header failure expectations must stay in native unit tests and must
 not depend on an external parser. Differential tests may explain where another
 parser is stricter or more permissive, but the expected Bamana behavior remains
 owned by the native header codec.
+
+## Native Scanner Oracle Boundary
+
+Milestone 3 scanner expectations follow the same boundary.
+Malformed-record failure expectations must stay in Bamana-native scanner and record-view tests;
+they must not depend on `noodles` or another external parser to define the
+expected error. Differential scanner checks may compare native scanner views
+against Bamana's owned `RecordLayout` bridge or a clearly labelled test-only
+oracle, but production scanner and migrated record hot paths must remain free of
+direct `noodles` imports.

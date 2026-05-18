@@ -100,6 +100,12 @@ Known present pieces:
   and record-view RG extraction for BAM body scans;
 * `forensic_inspect` uses `BamScanner` for BAM body evidence across read-group,
   read-name regime, aux-tag regime, and duplication-hallmark checks;
+* native scanner malformed-record tests cover scanner-owned expected failures
+  without external parser dependency;
+* dependency-boundary tests explicitly protect the scanner substrate and
+  migrated record hot paths from direct `noodles` imports;
+* `scanner_microbench` provides records-per-second and selective
+  field-extraction microbenchmarks with machine-readable JSON output;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -119,14 +125,16 @@ Known gaps:
   shared scanner;
 * richer decode and lossless serialization paths still use `RecordLayout` where
   command behavior needs owned sequence, quality, aux, or whole-record bytes;
-* scanner oracle coverage and microbenchmarks are not yet present.
+* Milestone 3 closeout remains to run and record final evidence.
 
 First consumer order:
 
 1. `check_sort` complete;
 2. `check_map`, `summary`, and `check_tag` complete;
 3. `validate`, `inspect_duplication`, and `forensic_inspect` complete;
-4. BAM-side `subsample` and other raw-record writers after scanner-owned raw
+4. scanner malformed-record tests, dependency boundaries, and microbenchmarks
+   complete;
+5. BAM-side `subsample` and other raw-record writers after scanner-owned raw
    record access or lossless `RecordLayout` bridging is available.
 
 ## Completion Boundary

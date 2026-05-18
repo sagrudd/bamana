@@ -267,6 +267,134 @@ mod tests {
         std::fs::remove_file(path).expect("fixture should be removable");
     }
 
+    #[test]
+    fn rejects_record_with_variable_sections_beyond_block_size() {
+        let mut payload = minimal_record_payload(0, 1, 0, 0, 8, b"read1\0");
+        let block_size = payload.len() as i32;
+        let mut tail = Vec::new();
+        tail.extend_from_slice(&block_size.to_le_bytes());
+        tail.append(&mut payload);
+        let bytes = build_bam_with_raw_tail(&tail);
+        let path = write_temp_file("scanner-variable-overflow", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let error = scanner
+            .next_record()
+            .expect_err("variable section overflow should be rejected");
+
+        let json_error = error.to_json_error();
+        assert_eq!(json_error.code, "invalid_record");
+        assert!(
+            json_error
+                .detail
+                .is_some_and(|detail| detail.contains("needs at least"))
+        );
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn rejects_record_with_unterminated_read_name() {
+        let mut payload = minimal_record_payload(0, 1, 0, 0, 6, b"read1!");
+        let block_size = payload.len() as i32;
+        let mut tail = Vec::new();
+        tail.extend_from_slice(&block_size.to_le_bytes());
+        tail.append(&mut payload);
+        let bytes = build_bam_with_raw_tail(&tail);
+        let path = write_temp_file("scanner-unterminated-read-name", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let error = scanner
+            .next_record()
+            .expect_err("unterminated read name should be rejected");
+
+        let json_error = error.to_json_error();
+        assert_eq!(json_error.code, "invalid_record");
+        assert!(
+            json_error
+                .detail
+                .is_some_and(|detail| detail.contains("NUL-terminated"))
+        );
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn rejects_record_with_negative_sequence_length() {
+        let mut payload = minimal_record_payload(0, 1, 0, -1, 6, b"read1\0");
+        let block_size = payload.len() as i32;
+        let mut tail = Vec::new();
+        tail.extend_from_slice(&block_size.to_le_bytes());
+        tail.append(&mut payload);
+        let bytes = build_bam_with_raw_tail(&tail);
+        let path = write_temp_file("scanner-negative-sequence-length", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let error = scanner
+            .next_record()
+            .expect_err("negative sequence length should be rejected");
+
+        let json_error = error.to_json_error();
+        assert_eq!(json_error.code, "invalid_record");
+        assert!(
+            json_error
+                .detail
+                .is_some_and(|detail| detail.contains("sequence length"))
+        );
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn scanner_view_matches_owned_layout_for_valid_record() {
+        let record = build_light_record(0, 7, "read1", 0x10);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[record],
+        );
+        let path = write_temp_file("scanner-layout-differential", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let view = scanner
+            .next_record()
+            .expect("scanner should succeed")
+            .expect("record should be present");
+        let layout = view.to_record_layout();
+
+        assert_eq!(view.block_size(), layout.block_size);
+        assert_eq!(view.ref_id(), layout.ref_id);
+        assert_eq!(view.pos(), layout.pos);
+        assert_eq!(view.flags(), layout.flags);
+        assert_eq!(view.mapping_quality(), layout.mapping_quality);
+        assert_eq!(view.read_name(), layout.read_name);
+        assert_eq!(view.cigar_bytes(), layout.cigar_bytes);
+        assert_eq!(view.sequence_bytes(), layout.sequence_bytes);
+        assert_eq!(view.quality_bytes(), layout.quality_bytes);
+        assert_eq!(view.aux_bytes(), layout.aux_bytes);
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    fn minimal_record_payload(
+        ref_id: i32,
+        pos: i32,
+        flags: u16,
+        sequence_len: i32,
+        read_name_len: u32,
+        variable: &[u8],
+    ) -> Vec<u8> {
+        let bin_mq_nl = read_name_len;
+        let flag_nc = (flags as u32) << 16;
+        let mut payload = Vec::with_capacity(32 + variable.len());
+        payload.extend_from_slice(&ref_id.to_le_bytes());
+        payload.extend_from_slice(&pos.to_le_bytes());
+        payload.extend_from_slice(&bin_mq_nl.to_le_bytes());
+        payload.extend_from_slice(&flag_nc.to_le_bytes());
+        payload.extend_from_slice(&sequence_len.to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(variable);
+        payload
+    }
+
     fn build_bam_with_raw_tail(tail: &[u8]) -> Vec<u8> {
         let header_text = "@SQ\tSN:chr1\tLN:10\n";
         let mut payload = Vec::new();

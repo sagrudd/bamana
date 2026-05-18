@@ -932,6 +932,15 @@ Known present pieces:
   record sections for sequence, quality, read-name, and selected RG evidence;
 * `forensic_inspect` BAM body scanning now uses `BamScanner` for read-group,
   read-name regime, aux-tag regime, and duplication-hallmark evidence;
+* scanner malformed-record coverage is native and includes variable-section
+  overflow, unterminated read-name, negative sequence-length, truncated payload,
+  negative block-size, and short block-size failures;
+* scanner differential coverage compares `BamRecordView` against Bamana's owned
+  `RecordLayout` bridge on valid records without using an external parser;
+* dependency-boundary tests now explicitly protect the scanner substrate and
+  migrated record hot paths from direct `noodles` imports;
+* `scanner_microbench` provides runnable records-per-second and selective field
+  extraction benchmark hooks with machine-readable JSON output;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -950,9 +959,7 @@ Known gaps:
   substrate;
 * richer decode and lossless serialization paths still use `RecordLayout` where
   command behavior needs owned sequence, quality, aux, or whole-record bytes;
-* scanner oracle coverage and malformed-record tests are not yet isolated;
-* scanner microbenchmarks are not yet present;
-* M3.9 through M3.10 remain outstanding.
+* M3.10 remains outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1294,7 +1301,7 @@ Completion evidence:
 
 ### M3.9 Add Scanner Oracle, Dependency Boundary, And Microbenchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1318,7 +1325,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added native malformed scanner tests for variable-section overflow,
+  unterminated read names, negative sequence lengths, truncated payloads,
+  truncated block sizes, negative block sizes, and short block sizes;
+* added a native scanner differential test comparing `BamRecordView` to the
+  owned `RecordLayout` bridge for a valid record;
+* extended dependency-boundary contract tests to protect scanner and migrated
+  record hot paths from direct `noodles` imports;
+* documented the scanner oracle boundary in `docs/testing-oracles.md`;
+* added `scanner_microbench` with records-per-second and selective
+  field-extraction measurements;
+* added `benchmarks/results/scanner_microbench.schema.json` and Sphinx
+  benchmark documentation;
+* `cargo build --bin scanner_microbench` passed;
+* `cargo test bam::scan` passed;
+* `cargo test dependency_boundary --test contract` passed;
+* `cargo run --bin scanner_microbench -- --profile small --iterations 1`
+  passed and emitted benchmark JSON.
 
 ### M3.10 Close Milestone 3
 

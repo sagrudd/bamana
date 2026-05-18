@@ -73,6 +73,44 @@ fn native_header_and_verify_paths_do_not_import_noodles() {
 }
 
 #[test]
+fn scanner_and_migrated_hot_paths_do_not_import_noodles() {
+    let protected_paths = [
+        "src/bam/record.rs",
+        "src/bam/scan.rs",
+        "src/bam/tags.rs",
+        "src/bam/summary.rs",
+        "src/bam/validate.rs",
+        "src/commands/check_map.rs",
+        "src/commands/check_sort.rs",
+        "src/commands/check_tag.rs",
+        "src/commands/summary.rs",
+        "src/forensics/duplication.rs",
+        "src/forensics/forensic_inspect.rs",
+    ];
+    let mut violations = Vec::new();
+
+    for relative in protected_paths {
+        let path = repo_root().join(relative);
+        for (line_number, line) in read_utf8(&path).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                continue;
+            }
+
+            if contains_direct_noodles_reference(trimmed) {
+                violations.push(format!("{relative}:{}: {line}", line_number + 1));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "native scanner and migrated BAM record hot paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn cram_compatibility_exception_is_documented_with_removal_criteria() {
     let policy = read_utf8(&docs_dir().join("dependency-policy.md"));
     let demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
@@ -115,6 +153,23 @@ fn header_oracle_surface_is_documented_as_test_only() {
         assert!(
             oracle_policy.contains(required),
             "testing oracle policy is missing header-oracle boundary language: {required}"
+        );
+    }
+}
+
+#[test]
+fn scanner_oracle_surface_is_documented_as_native_first() {
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+
+    for required in [
+        "Native Scanner Oracle Boundary",
+        "Malformed-record failure expectations",
+        "RecordLayout",
+        "production scanner and migrated record hot paths",
+    ] {
+        assert!(
+            oracle_policy.contains(required),
+            "testing oracle policy is missing scanner-oracle boundary language: {required}"
         );
     }
 }

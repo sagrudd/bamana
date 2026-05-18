@@ -29,6 +29,7 @@ Contracts:
 * [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy per-run row contract
 * [bgzf_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/bgzf_microbench.schema.json): native BGZF microbenchmark JSON contract
 * [header_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/header_microbench.schema.json): native BAM header microbenchmark JSON contract
+* [scanner_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/scanner_microbench.schema.json): native BAM scanner microbenchmark JSON contract
 * [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
 * [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical `tool` and `workflow_variant` values
 * [support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md): support and capability reporting contract
