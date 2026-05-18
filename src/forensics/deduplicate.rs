@@ -923,6 +923,7 @@ mod tests {
             },
             write::{BgzfWriter, serialize_record_layout},
         },
+        fastq::{open_fastq_reader, read_next_fastq_record},
         forensics::duplication::DuplicationIdentityMode,
     };
 
@@ -981,7 +982,14 @@ mod tests {
 
         let payload =
             execute(&base_config(&input, &output, false)).expect("applied dedup should succeed");
-        let contents = fs::read_to_string(&output).expect("output should be readable");
+        let mut reader = open_fastq_reader(&output).expect("output should open through reader");
+        let first = read_next_fastq_record(&mut reader, &output)
+            .expect("first retained record should parse")
+            .expect("first retained record should exist");
+        let second = read_next_fastq_record(&mut reader, &output)
+            .expect("second retained record should parse")
+            .expect("second retained record should exist");
+        let eof = read_next_fastq_record(&mut reader, &output).expect("EOF should be clean");
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("output should be removable");
 
@@ -998,7 +1006,13 @@ mod tests {
                 .and_then(|summary| summary.records_removed),
             Some(2)
         );
-        assert_eq!(contents, "@r1 a\nACGT\n+\n!!!!\n@r2 b\nTGCA\n+\n####\n");
+        assert_eq!(first.raw_header_line, "@r1 a");
+        assert_eq!(first.sequence, "ACGT");
+        assert_eq!(first.quality, "!!!!");
+        assert_eq!(second.raw_header_line, "@r2 b");
+        assert_eq!(second.sequence, "TGCA");
+        assert_eq!(second.quality, "####");
+        assert!(eof.is_none());
     }
 
     #[test]

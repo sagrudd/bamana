@@ -702,7 +702,9 @@ impl AppErrorDetail for AppError {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf};
+    use std::{fs, io::Write, path::PathBuf};
+
+    use flate2::{Compression, write::GzEncoder};
 
     use crate::{
         bam::{
@@ -758,6 +760,43 @@ mod tests {
                     .as_ref()
                     .map(|range| (range.start, range.end))
                     == Some((3, 4))
+        }));
+    }
+
+    #[test]
+    fn detects_whole_file_append_in_fastq_gz_through_stable_reader() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-fastq-gz-{}.fastq.gz",
+            std::process::id()
+        ));
+        let file = fs::File::create(&path).expect("gzip fixture should create");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        encoder
+            .write_all(
+                b"@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n",
+            )
+            .expect("gzip fixture should write");
+        encoder.finish().expect("gzip fixture should finish");
+
+        let payload = inspect_path(
+            &path,
+            DetectedFormat::FastqGz,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect("inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(payload.scan_mode, Some(DuplicationScanMode::Full)));
+        let findings = payload.findings.expect("findings should be present");
+        assert!(findings.iter().any(|finding| {
+            finding.finding_type == DuplicationFindingType::WholeFileAppendDuplicate
+                && finding.record_range_1.as_ref().map(range_tuple) == Some((1, 2))
+                && finding.record_range_2.as_ref().map(range_tuple) == Some((3, 4))
         }));
     }
 

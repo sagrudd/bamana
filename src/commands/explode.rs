@@ -19,7 +19,10 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
-    fastq::{FastqRecord, open_fastq_reader_with_label, read_next_fastq_record, resolved_threads},
+    fastq::{
+        FastqRecord, open_fastq_reader_with_label, read_next_fastq_record, resolved_threads,
+        write_fastq_record_to,
+    },
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
     ingest::sam::count_sam_records,
     json::CommandResponse,
@@ -878,14 +881,7 @@ fn write_ready_fastq_batches(
 fn compress_fastq_batch(records: &[FastqRecord], path: &Path) -> Result<Vec<u8>, AppError> {
     let mut payload = Vec::new();
     for record in records {
-        payload.extend_from_slice(record.raw_header_line.as_bytes());
-        payload.extend_from_slice(b"\n");
-        payload.extend_from_slice(record.sequence.as_bytes());
-        payload.extend_from_slice(b"\n");
-        payload.extend_from_slice(record.plus_line.as_bytes());
-        payload.extend_from_slice(b"\n");
-        payload.extend_from_slice(record.quality.as_bytes());
-        payload.extend_from_slice(b"\n");
+        write_fastq_record_to(&mut payload, record, path)?;
     }
 
     let mut encoder = GzBuilder::new().write(Vec::new(), Compression::fast());
@@ -934,6 +930,7 @@ mod tests {
     use crate::{
         bam::{header::parse_bam_header, index::IndexKind},
         commands::explode::{ExplodeRequest, run_impl},
+        fastq::{count_fastq_records, open_fastq_reader, read_next_fastq_record},
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -971,6 +968,25 @@ mod tests {
         assert_eq!(payload.format, "FASTQ.GZ");
         assert_eq!(payload.outputs.len(), 3);
         assert!(payload.index.kind == IndexKind::Gzi);
+        assert_eq!(
+            payload
+                .outputs
+                .iter()
+                .map(|output| output.records_written)
+                .sum::<u64>(),
+            12
+        );
+        for output in &payload.outputs {
+            let path = Path::new(&output.path);
+            let count = count_fastq_records(path).expect("shard should count through reader");
+            let mut reader = open_fastq_reader(path).expect("shard should open through reader");
+            let first_record = read_next_fastq_record(&mut reader, path)
+                .expect("shard should parse through reader")
+                .expect("shard should contain records");
+            assert_eq!(count, output.records_written);
+            assert!(first_record.raw_header_line.starts_with("@read"));
+            assert_eq!(first_record.sequence, "ACGT");
+        }
 
         fs::remove_file(&input).expect("fixture should remove");
         for output in &payload.outputs {

@@ -94,3 +94,15 @@ FASTQ-side ``subsample`` streams records through ``open_fastq_reader`` and
 temporary path preserves the final ``.gz`` writer policy case-insensitively so
 ``.fastq.gz`` and ``.FASTQ.GZ`` outputs both use gzip compression before being
 renamed into place.
+
+Unmapped ``consume`` imports use ``open_fastq_reader_with_label`` and
+``read_next_fastq_record`` through the FASTQ-to-unmapped-BAM facade. Threaded
+FASTQ.GZ import keeps logical input labels for structured errors and can use
+``FASTQ.GZI`` totals to size worker batches without changing record semantics.
+
+``inspect_duplication`` scans FASTQ and FASTQ.GZ with the same reader facade.
+``deduplicate`` loads FASTQ records with the stable reader and writes retained
+FASTQ records with ``write_fastq_records``. FASTQ.GZ ``explode`` uses
+``FASTQ.GZI`` for shard planning, reads records through the stable reader, and
+serializes each compressed shard batch through the shared writer record-line
+helper before emitting concatenated gzip members.

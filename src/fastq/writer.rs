@@ -19,6 +19,24 @@ pub fn write_fastq_records(path: &Path, records: &[FastqRecord]) -> Result<(), A
     Ok(())
 }
 
+pub fn write_fastq_record_to<W: Write>(
+    writer: &mut W,
+    record: &FastqRecord,
+    path: &Path,
+) -> Result<(), AppError> {
+    for line in record.view().lines() {
+        writer
+            .write_all(line.as_bytes())
+            .and_then(|()| writer.write_all(b"\n"))
+            .map_err(|error| AppError::WriteError {
+                path: path.to_path_buf(),
+                message: error.to_string(),
+            })?;
+    }
+
+    Ok(())
+}
+
 pub struct FastqWriter {
     path: PathBuf,
     inner: FastqWriterInner,
@@ -49,12 +67,10 @@ impl FastqWriter {
     }
 
     pub fn write_record(&mut self, record: &FastqRecord) -> Result<(), AppError> {
-        for line in record.view().lines() {
-            self.write_all(line.as_bytes())?;
-            self.write_all(b"\n")?;
+        match &mut self.inner {
+            FastqWriterInner::Plain(writer) => write_fastq_record_to(writer, record, &self.path),
+            FastqWriterInner::Gzip(encoder) => write_fastq_record_to(encoder, record, &self.path),
         }
-
-        Ok(())
     }
 
     pub fn finish(self) -> Result<(), AppError> {
@@ -79,17 +95,6 @@ impl FastqWriter {
                     })
             }
         }
-    }
-
-    fn write_all(&mut self, bytes: &[u8]) -> Result<(), AppError> {
-        match &mut self.inner {
-            FastqWriterInner::Plain(writer) => writer.write_all(bytes),
-            FastqWriterInner::Gzip(encoder) => encoder.write_all(bytes),
-        }
-        .map_err(|error| AppError::WriteError {
-            path: self.path.clone(),
-            message: error.to_string(),
-        })
     }
 }
 

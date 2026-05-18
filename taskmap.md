@@ -1466,9 +1466,9 @@ Known gaps:
 * writer behavior preserves owned record content, uses LF line endings,
   selects gzip output from the final `.gz` extension, and finalizes or flushes
   output before returning success;
-* `enumerate` and FASTQ-side `subsample` are audited against the stable
-  Milestone 4 reader/writer API, while remaining command consumers still need
-  audit and migration;
+* selected command consumers are audited against the stable Milestone 4
+  reader/writer API, while richer command-specific FASTQ behavior remains
+  deferred to later command-migration work;
 * FASTQ microbenchmark hooks are present in the broader benchmark framework,
   but a small native parser/writer smoke benchmark and closeout evidence are
   not yet recorded in the milestone task map.
@@ -1808,7 +1808,7 @@ Completion evidence:
 
 ### M4.8 Migrate `consume`, Duplication, Deduplication, And Shard Consumers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1832,7 +1832,30 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited unmapped `consume` and confirmed FASTQ/FASTQ.GZ imports use
+  `open_fastq_reader_with_label`, `read_next_fastq_record`, logical input
+  labels, threaded FASTQ.GZ conversion, and optional `FASTQ.GZI` totals for
+  indexed worker-batch sizing;
+* audited `inspect_duplication` and confirmed FASTQ/FASTQ.GZ scans use the
+  stable reader API with parse failures mapped to `ParseUncertainty`;
+* audited `deduplicate` and confirmed FASTQ/FASTQ.GZ load paths use the stable
+  reader while applied writes use `write_fastq_records`;
+* added the public `write_fastq_record_to` helper so command-specific FASTQ
+  batch serializers can share the writer line contract without creating a file
+  writer;
+* routed FASTQ.GZ `explode` batch serialization through `write_fastq_record_to`
+  while preserving `FASTQ.GZI` shard planning and concatenated gzip-member
+  output;
+* strengthened the FASTQ.GZ `explode` test to count and parse each shard
+  through the stable reader and verify shard totals;
+* strengthened the applied FASTQ `deduplicate` test to parse retained output
+  through the stable reader instead of checking raw text only;
+* added FASTQ.GZ `inspect_duplication` coverage through the stable reader path;
+* retained existing indexed and threaded FASTQ.GZ `consume` tests:
+  `unmapped_consume_uses_indexed_fastq_gz_input` and
+  `unmapped_consume_parallelizes_multiple_fastq_gz_inputs`;
+* documented the selected command-consumer boundaries and deferred richer
+  command-specific behavior in `docs/sphinx/native_fastq_core.rst`.
 
 ### M4.9 Add FASTQ Oracle, Dependency Boundary, And Microbenchmarks
 

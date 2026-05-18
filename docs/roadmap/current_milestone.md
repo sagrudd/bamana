@@ -119,7 +119,8 @@ Known present pieces:
 * FASTQ-side `subsample` uses the stable FASTQ reader, record identity, gzip
   extension policy, and writer facade while preserving existing JSON payloads;
 * `consume`, `inspect_duplication`, `deduplicate`, and FASTQ.GZ `explode`
-  already consume native FASTQ helpers in some form.
+  use the stable FASTQ reader/writer primitives, preserve logical labels where
+  needed, and keep `FASTQ.GZI`-guided consume/explode behavior covered;
 
 Known gaps:
 
@@ -127,8 +128,8 @@ Known gaps:
   field-only streaming integration remains future work even though
   `FastqRecordView` exists for borrowed access when line storage is already
   available;
-* remaining command consumers need to be audited and migrated to a stable
-  Milestone 4 parser/writer API;
+* richer command-specific FASTQ behavior beyond the selected M4 consumers
+  remains deferred to later command-migration work;
 * FASTQ parser/writer benchmark smoke evidence has not yet been recorded.
 
 First consumer order:

@@ -16,7 +16,7 @@ pub use unmapped::{
     read_fastq_as_unmapped_records, read_fastq_as_unmapped_records_threaded_with_label,
     read_fastq_as_unmapped_records_with_label,
 };
-pub use writer::{FastqWriter, write_fastq_records};
+pub use writer::{FastqWriter, write_fastq_record_to, write_fastq_records};
 
 #[cfg(test)]
 mod tests {
