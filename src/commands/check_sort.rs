@@ -3,11 +3,7 @@ use std::{cmp::Ordering, path::PathBuf};
 use serde::Serialize;
 
 use crate::{
-    bam::{
-        header::{HeaderPayload, parse_bam_header_from_reader},
-        reader::BamReader,
-        records::{LightAlignmentRecord, read_next_light_record},
-    },
+    bam::{header::HeaderPayload, record::BamRecordView, scan::BamScanner},
     error::AppError,
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
 };
@@ -85,7 +81,7 @@ pub enum ObservedOrder {
 
 #[derive(Debug, Default)]
 struct ScanState {
-    previous: Option<LightAlignmentRecord>,
+    previous: Option<SortRecord>,
     coordinate_possible: bool,
     query_lex_possible: bool,
     query_natural_possible: bool,
@@ -93,6 +89,19 @@ struct ScanState {
     coordinate_violation: Option<FirstViolation>,
     query_lex_violation: Option<FirstViolation>,
     query_natural_violation: Option<FirstViolation>,
+}
+
+#[derive(Debug, Clone)]
+struct SortRecord {
+    ref_id: i32,
+    pos: i32,
+    flags: u16,
+    read_name: String,
+    is_reverse: bool,
+    is_secondary: bool,
+    is_supplementary: bool,
+    is_read1: bool,
+    is_read2: bool,
 }
 
 pub fn run(request: CheckSortRequest) -> Result<CheckSortPayload, AppError> {
@@ -116,13 +125,12 @@ pub fn run(request: CheckSortRequest) -> Result<CheckSortPayload, AppError> {
         });
     }
 
-    let mut reader = BamReader::open(&request.bam)?;
-    let header = parse_bam_header_from_reader(&mut reader)?;
-    let declared_sort = extract_declared_sort(&header);
+    let mut scanner = BamScanner::open(&request.bam)?;
+    let declared_sort = extract_declared_sort(scanner.header());
     let specialized_mode = declared_specialized_mode(&declared_sort);
 
     let (scan_state, reached_eof) = scan_records(
-        &mut reader,
+        &mut scanner,
         request.sample_records.max(1),
         request.strict,
         specialized_mode.is_some(),
@@ -157,7 +165,7 @@ pub fn run(request: CheckSortRequest) -> Result<CheckSortPayload, AppError> {
 }
 
 fn scan_records(
-    reader: &mut BamReader,
+    scanner: &mut BamScanner,
     sample_records: usize,
     strict: bool,
     specialized_declared: bool,
@@ -175,8 +183,9 @@ fn scan_records(
             break;
         }
 
-        match read_next_light_record(reader)? {
-            Some(record) => {
+        match scanner.next_record()? {
+            Some(record_view) => {
+                let record = SortRecord::from_view(&record_view);
                 state.records_examined += 1;
                 let record_index = state.records_examined;
 
@@ -233,6 +242,23 @@ fn scan_records(
     }
 
     Ok((state, reached_eof))
+}
+
+impl SortRecord {
+    fn from_view(record: &BamRecordView<'_>) -> Self {
+        let flags = record.flag_summary();
+        Self {
+            ref_id: record.ref_id(),
+            pos: record.pos(),
+            flags: flags.raw,
+            read_name: record.read_name().to_string(),
+            is_reverse: flags.is_reverse,
+            is_secondary: flags.is_secondary,
+            is_supplementary: flags.is_supplementary,
+            is_read1: flags.is_read1,
+            is_read2: flags.is_read2,
+        }
+    }
 }
 
 fn classify_observed_sort(
@@ -549,11 +575,11 @@ fn declared_specialized_mode(declared_sort: &DeclaredSortInfo) -> Option<String>
     }
 }
 
-fn compare_coordinate(previous: &LightAlignmentRecord, current: &LightAlignmentRecord) -> Ordering {
+fn compare_coordinate(previous: &SortRecord, current: &SortRecord) -> Ordering {
     coordinate_key(previous).cmp(&coordinate_key(current))
 }
 
-fn coordinate_key(record: &LightAlignmentRecord) -> (u8, i32, i32, u8, u8, u8, u8, u8, u16) {
+fn coordinate_key(record: &SortRecord) -> (u8, i32, i32, u8, u8, u8, u8, u8, u16) {
     if record.ref_id < 0 {
         (
             1,

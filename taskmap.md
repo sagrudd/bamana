@@ -917,6 +917,9 @@ Known present pieces:
 * `src/bam/tags.rs` now provides record-view aux helpers for bounded traversal,
   tag lookup, tag counting, tag-key collection, and string tag extraction over
   `BamRecordView::aux_bytes`;
+* production `check_sort` now uses `BamScanner` and scanner-owned field helpers
+  for record traversal while preserving existing bounded and strict scan
+  behavior;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -924,18 +927,18 @@ Known present pieces:
   is derived from `RecordLayout` and is not yet a true selective scanner view;
 * `src/bam/tags.rs` contains bounded aux traversal and tag lookup over
   materialized aux bytes;
-* `check_sort`, `check_map`, `summary`, `check_tag`, `validate`,
-  `inspect_duplication`, `forensic_inspect`, and BAM-side `subsample` already
-  perform record-facing work through existing first-slice readers and helpers;
+* `check_map`, `summary`, `check_tag`, `validate`, `inspect_duplication`,
+  `forensic_inspect`, and BAM-side `subsample` still perform record-facing work
+  through existing first-slice readers and helpers;
 * dependency-boundary checks already prohibit production `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
-* command consumers are not migrated onto a shared scanner substrate;
+* remaining command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.6 through M3.10 remain outstanding.
+* M3.7 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1170,7 +1173,7 @@ Completion evidence:
 
 ### M3.6 Migrate `check_sort` To The Native Scanner
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1191,7 +1194,17 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* routed production `check_sort` through `BamScanner::open` and
+  `BamScanner::next_record`;
+* removed `check_sort` usage of `BamReader::open`,
+  `parse_bam_header_from_reader`, and `read_next_light_record`;
+* built the command's sort-only comparison snapshot from `BamRecordView` plus
+  scanner-owned flag helpers instead of full `RecordLayout` materialization;
+* preserved existing bounded scan, strict scan, specialized-sort,
+  coordinate-sort, queryname-sort, JSON payload, and semantic-note behavior;
+* no command contract update was required because public output semantics did
+  not change;
+* `cargo test commands::check_sort` passed.
 
 ### M3.7 Migrate `check_map`, `summary`, And `check_tag` Scanner Consumers
 

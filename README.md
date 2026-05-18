@@ -395,10 +395,11 @@ record iteration substrate. Scanner-facing helpers now centralize common flag,
 coordinate, MAPQ, read-name, sequence-length, section-range, and skip-offset
 access. Record-view aux helpers now provide bounded traversal, selected tag
 lookup, tag counting, tag-key collection, and string tag extraction without
-materializing richer record layouts. Migration of the first record-scanning
-command consumers remains in progress. Full BAM semantic validation, BAI/CSI
-random access, native CRAM scanning, and broader BAM operations remain
-incremental downstream work under the project charter in
+materializing richer record layouts. `check_sort` now consumes the native
+scanner; migration of the remaining record-scanning command consumers remains
+in progress. Full BAM semantic validation, BAI/CSI random access, native CRAM
+scanning, and broader BAM operations remain incremental downstream work under
+the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 
 ## Specification Layer

@@ -181,6 +181,17 @@ This completes the scanner aux helper substrate. Command paths such as
 `check_tag`, read-group evidence, validation, and forensics still need to be
 migrated onto these helpers in M3.7 and M3.8.
 
+## First Command Migration
+
+M3.6 migrated `check_sort` onto `BamScanner`. The command now opens BAM input
+through the native BGZF/header scanner path, builds its sort-only comparison
+snapshot from `BamRecordView` and scanner-owned flag helpers, and preserves the
+existing bounded scan, strict scan, specialized-sort, JSON payload, and semantic
+note behavior.
+
+Remaining command migrations start in M3.7 with `check_map`, `summary`, and
+`check_tag`.
+
 ## Benchmark Hooks
 
 * records-per-second BAM scanner microbenchmark

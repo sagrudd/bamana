@@ -105,6 +105,17 @@ Command paths such as ``check_tag``, read-group evidence, validation, and
 forensics still need to move onto these scanner-owned helpers in later M3
 tasks.
 
+First Command Migration
+-----------------------
+
+``check_sort`` now consumes ``BamScanner`` directly. It builds its sort-only
+comparison snapshot from ``BamRecordView`` and scanner-owned flag helpers while
+preserving bounded scans, strict scans, specialized-sort handling, JSON payloads,
+and user-facing caveats.
+
+Remaining first consumers, beginning with ``check_map``, ``summary``, and
+``check_tag``, still need to move onto the scanner.
+
 Boundaries
 ----------
 
