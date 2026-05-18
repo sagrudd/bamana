@@ -76,6 +76,9 @@ Known present pieces:
 * `BamRecordView::to_record_layout` preserves the bridge back to the existing
   owned `RecordLayout` type for richer consumers that still need
   materialization or lossless serialization;
+* `src/bam/scan.rs` defines `BamScanner`, which opens BAM input through the
+  native BGZF backend, parses the native BAM header once, and iterates complete
+  raw alignment records into `BamRecordView`;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -92,7 +95,6 @@ Known present pieces:
 
 Known gaps:
 
-* no dedicated shared scanner API owns selective BAM record iteration yet;
 * skip-oriented field extraction is not centralized;
 * aux-region traversal for selected tag lookup is not yet a scanner-owned API;
 * first command consumers have not yet been migrated onto a shared scanner;

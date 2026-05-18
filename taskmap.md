@@ -908,6 +908,9 @@ Known present pieces:
 * `BamRecordView::to_record_layout` provides the explicit bridge back to the
   existing owned `RecordLayout` type for command paths that still need richer
   materialization or lossless serialization;
+* `src/bam/scan.rs` defines `BamScanner`, which opens BAM input through the
+  native BGZF backend, parses the native BAM header once, and iterates complete
+  raw alignment records into `BamRecordView`;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -923,14 +926,13 @@ Known present pieces:
 
 Known gaps:
 
-* no dedicated `src/bam/scan.rs` selective scanner API is in place yet;
 * skip-oriented selective field extraction is not centralized;
 * record-scanning consumers generally use the transitional `BamReader::open`
   gzip backend today rather than requiring the native BGZF backend;
 * command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.3 through M3.10 remain outstanding.
+* M3.4 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1047,7 +1049,7 @@ Completion evidence:
 
 ### M3.3 Implement Native Scan Loop
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1070,7 +1072,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/bam/scan.rs` with `BamScanner`;
+* `BamScanner::open` uses `BamReader::open_native_bgzf` and
+  `parse_bam_header_from_reader` so scanning starts after the native BGZF and
+  native BAM header path;
+* `BamScanner::next_record` reads the length-prefixed raw record payload,
+  preserves path context, and returns `BamRecordView` for valid records;
+* clean EOF returns `Ok(None)` without treating the canonical BGZF EOF marker
+  as an alignment record;
+* negative record sizes, block sizes smaller than the BAM core, truncated block
+  sizes, truncated payloads, and `BamRecordView` parse failures surface as
+  structured `AppError` values;
+* added scanner tests for empty BAM bodies, single-record bodies, multi-record
+  encounter order, negative block sizes, block sizes smaller than the core,
+  truncated payloads, and truncated block-size prefixes;
+* no production scanner hot path imports `noodles`;
+* `cargo test bam::scan` passed.
 
 ### M3.4 Add Selective Field Extraction Helpers
 

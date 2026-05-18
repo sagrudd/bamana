@@ -128,10 +128,21 @@ and exposes:
 * `to_record_layout` as the explicit bridge to the existing owned
   `RecordLayout` materialization path.
 
-This contract is not the scanner loop. M3.3 still needs to feed complete raw
-records from the native BGZF/header substrate into this view. M3.4 and M3.5
-still need to centralize selective field helpers and scanner-owned aux
-traversal on top of these borrowed ranges.
+## Native Scan Loop
+
+M3.3 added `src/bam/scan.rs` with `BamScanner`. The scanner opens BAM inputs
+through the native BGZF backend, parses the native BAM header once, and then
+iterates complete raw alignment records into `BamRecordView`.
+
+The scanner treats clean EOF as `Ok(None)`. It reports negative block sizes,
+block sizes smaller than the BAM core, truncated block-size prefixes,
+truncated record payloads, and record-view parse failures as structured
+`AppError` values that preserve input path context.
+
+This loop is the scanner substrate, not command migration. M3.4 and M3.5 still
+need to centralize selective field helpers and scanner-owned aux traversal.
+M3.6 through M3.8 still need to move command consumers from their current
+record loops onto `BamScanner`.
 
 ## Benchmark Hooks
 

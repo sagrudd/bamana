@@ -389,11 +389,13 @@ Milestone 2 is complete and Milestone 3 is active. The repository now contains
 a production-minded BAM header slice with shared JSON contracts, structured
 error handling, fast file probing, native BAM header parsing and serialization,
 header microbenchmarks, and real BGZF EOF inspection. The active Milestone 3
-work is the native BAM record scanner: selective record iteration,
-lightweight field views, bounded aux-region traversal, and migration of the
-first record-scanning command consumers. Full BAM semantic validation, BAI/CSI
-random access, native CRAM scanning, and broader BAM operations remain
-incremental downstream work under the project charter in
+work is the native BAM record scanner: `BamRecordView` now defines the borrowed
+record-view contract, and `BamScanner` now provides the native BGZF/header
+record iteration substrate. Selective field helpers, bounded aux-region
+traversal, and migration of the first record-scanning command consumers remain
+in progress. Full BAM semantic validation, BAI/CSI random access, native CRAM
+scanning, and broader BAM operations remain incremental downstream work under
+the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 
 ## Specification Layer

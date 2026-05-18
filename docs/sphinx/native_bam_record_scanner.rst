@@ -58,10 +58,21 @@ field-only consumers. Those sections are available as borrowed slices when a
 consumer asks for them. Existing richer consumers are preserved through an
 explicit ``to_record_layout`` bridge back to the owned ``RecordLayout`` type.
 
-This contract is intentionally separate from the native scan loop. The next
-scanner task must feed complete raw records from the native BGZF/header
-substrate into ``BamRecordView``; later tasks should move field helpers and
-auxiliary traversal onto these borrowed ranges.
+Native Scan Loop
+----------------
+
+``src/bam/scan.rs`` defines ``BamScanner``. The scanner opens BAM input through
+the native BGZF backend, parses the native BAM header once, and iterates
+complete raw alignment records into ``BamRecordView``.
+
+Clean EOF returns no next record. Negative record sizes, block sizes smaller
+than the BAM core, truncated block-size prefixes, truncated record payloads, and
+record-view parse failures are surfaced as structured errors with input path
+context.
+
+This loop is the scanner substrate, not command migration. Later milestone
+tasks should centralize selective field helpers, move auxiliary traversal onto
+scanner-owned ranges, and migrate command consumers onto ``BamScanner``.
 
 Boundaries
 ----------
