@@ -142,7 +142,7 @@ Completion evidence:
 
 ### M1.4 Define Virtual Offset Groundwork
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -159,6 +159,17 @@ Acceptance criteria:
   code;
 * invalid in-block offsets are rejected;
 * tests cover packing, unpacking, ordering, and boundary values.
+
+Completion evidence:
+
+* added `bgzf::VirtualOffset` with compressed-block and uncompressed in-block
+  components;
+* added checked construction with 48-bit compressed-offset and 16-bit
+  in-block-offset validation;
+* added packed `u64` conversions in both directions;
+* added ordering, boundary, packing, unpacking, and invalid-component tests;
+* documented BAI/CSI and future random-access consumers in the Milestone 1
+  roadmap.
 
 ### M1.5 Strengthen BGZF Reader Tests
 

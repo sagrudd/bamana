@@ -5,6 +5,9 @@ pub mod writer;
 
 pub use block::{BGZF_EOF_MARKER, is_bgzf_header, is_gzip_signature};
 pub use reader::{first_member_starts_with_bam_magic, has_bgzf_eof};
+pub use virtual_offset::{
+    MAX_COMPRESSED_BLOCK_OFFSET, MAX_UNCOMPRESSED_BLOCK_OFFSET, VirtualOffset, VirtualOffsetError,
+};
 pub use writer::BgzfWriter;
 
 #[cfg(test)]

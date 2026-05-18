@@ -71,8 +71,8 @@ The native BGZF substrate is split by responsibility:
   BAM verification
 * `writer` owns `BgzfWriter` and native BGZF member emission for BAM-compatible
   output streams
-* `virtual_offset` is reserved as the explicit home for M1.4 virtual-offset
-  groundwork
+* `virtual_offset` owns the typed BGZF virtual-offset representation used by
+  later BAI/CSI and random-access work
 
 `src/bgzf/mod.rs` remains a narrow facade. Existing BAM writer call sites may
 continue to import `BgzfWriter` through `bam::write` while the implementation
@@ -87,5 +87,7 @@ itself is owned by `src/bgzf/writer.rs`.
 
 ## Risks / Follow-Up
 
-* virtual offset support may need a dedicated type once indexed access expands
+* BAI/CSI parsing and future random-access readers should consume
+  `bgzf::VirtualOffset` instead of passing packed `u64` values through new BGZF
+  APIs
 * block reuse and buffering strategy will matter for later throughput work
