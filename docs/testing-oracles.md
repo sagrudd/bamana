@@ -28,3 +28,15 @@ If `noodles` or similar crates are added to tests:
   comparator
 * the same crate should not quietly become a production-path requirement for
   the command being tested
+
+## Native Header Oracle Boundary
+
+`tests/header_oracle.rs` is the explicit test-only oracle surface for Milestone
+2 header comparisons. It may use `noodles` to compare valid header fixtures or
+to document compatibility differences, but production header and verify paths
+must remain Bamana-native and free of direct `noodles` imports.
+
+Malformed-header failure expectations must stay in native unit tests and must
+not depend on an external parser. Differential tests may explain where another
+parser is stricter or more permissive, but the expected Bamana behavior remains
+owned by the native header codec.

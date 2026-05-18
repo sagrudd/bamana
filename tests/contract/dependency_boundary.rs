@@ -41,6 +41,38 @@ fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
 }
 
 #[test]
+fn native_header_and_verify_paths_do_not_import_noodles() {
+    let protected_paths = [
+        "src/bam/header.rs",
+        "src/bam/reader.rs",
+        "src/bgzf/reader.rs",
+        "src/commands/header.rs",
+        "src/commands/verify.rs",
+    ];
+    let mut violations = Vec::new();
+
+    for relative in protected_paths {
+        let path = repo_root().join(relative);
+        for (line_number, line) in read_utf8(&path).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                continue;
+            }
+
+            if contains_direct_noodles_reference(trimmed) {
+                violations.push(format!("{relative}:{}: {line}", line_number + 1));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "native BAM header and verify paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn cram_compatibility_exception_is_documented_with_removal_criteria() {
     let policy = read_utf8(&docs_dir().join("dependency-policy.md"));
     let demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
@@ -66,6 +98,23 @@ fn cram_compatibility_exception_is_documented_with_removal_criteria() {
         assert!(
             demotion.contains(required),
             "noodles demotion plan is missing guardrail language: {required}"
+        );
+    }
+}
+
+#[test]
+fn header_oracle_surface_is_documented_as_test_only() {
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+
+    for required in [
+        "tests/header_oracle.rs",
+        "test-only oracle",
+        "production header and verify paths",
+        "Malformed-header failure expectations",
+    ] {
+        assert!(
+            oracle_policy.contains(required),
+            "testing oracle policy is missing header-oracle boundary language: {required}"
         );
     }
 }

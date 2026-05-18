@@ -60,6 +60,9 @@ Known present pieces:
 * `src/commands/verify.rs` routes the command through native BGZF recognition
   and native BAM header parsing while leaving alignment records and EOF-marker
   checks out of scope;
+* test-only header oracle coverage is isolated in `tests/header_oracle.rs`, and
+  dependency-boundary tests protect native header and verify paths from direct
+  `noodles` imports;
 * production dependency-boundary tests already prohibit direct `noodles` usage
   outside the CRAM compatibility exception.
 

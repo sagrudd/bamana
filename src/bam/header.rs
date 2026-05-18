@@ -1488,6 +1488,62 @@ mod tests {
     }
 
     #[test]
+    fn rejects_header_text_that_is_not_utf8() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.push(0xff);
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-text-invalid-utf8",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("invalid UTF-8 text should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "BAM header text is not valid UTF-8");
+    }
+
+    #[test]
+    fn rejects_negative_reference_count() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+        let path = write_temp_file(
+            "header-negative-nref",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("negative n_ref should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "BAM reference count was negative");
+    }
+
+    #[test]
+    fn rejects_non_positive_reference_name_length() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-zero-reference-name-length",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("zero l_name should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "BAM reference name length was not positive");
+    }
+
+    #[test]
     fn reports_truncated_reference_name_with_specific_context() {
         let mut payload = Vec::new();
         payload.extend_from_slice(b"BAM\x01");
@@ -1547,6 +1603,48 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removed");
 
         assert_invalid_header_detail(error, "interior NUL");
+    }
+
+    #[test]
+    fn rejects_reference_name_that_is_not_utf8() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&2_i32.to_le_bytes());
+        payload.extend_from_slice(&[0xff, 0]);
+        payload.extend_from_slice(&10_i32.to_le_bytes());
+        let path = write_temp_file(
+            "header-reference-name-invalid-utf8",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("invalid UTF-8 reference should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "BAM reference name is not valid UTF-8");
+    }
+
+    #[test]
+    fn rejects_negative_reference_length() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1\0");
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+        let path = write_temp_file(
+            "header-negative-reference-length",
+            "bam",
+            &build_raw_bam_payload(payload),
+        );
+
+        let error = parse_bam_header(&path).expect_err("negative reference length should fail");
+        fs::remove_file(path).expect("fixture should be removed");
+
+        assert_invalid_header_detail(error, "BAM reference length was negative");
     }
 
     #[test]

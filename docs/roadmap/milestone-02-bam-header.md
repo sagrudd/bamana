@@ -93,7 +93,8 @@ Secondary beneficiaries:
 Allowed after this milestone:
 
 * CRAM compatibility
-* tests and oracles for header differential checks
+* tests and oracles for header differential checks, isolated to test-only
+  surfaces such as `tests/header_oracle.rs`
 
 Disallowed:
 

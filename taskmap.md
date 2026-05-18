@@ -80,7 +80,7 @@ Known gaps:
 
 * Milestone 2 does not yet have completion evidence;
 * header parse and serialization microbenchmarks are not yet present;
-* M2.8 through M2.10 remain outstanding.
+* M2.9 and M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -735,7 +735,7 @@ Completion evidence:
 
 ### M2.8 Add Header Oracle And Dependency Boundary Tests
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -758,7 +758,29 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added native malformed-header unit tests for invalid UTF-8 header text,
+  negative `n_ref`, non-positive reference-name length, non-UTF-8 reference
+  names, and negative binary reference lengths;
+* added `tests/header_oracle.rs` as the explicit test-only oracle surface using
+  `noodles` to compare valid native header parsing and document Bamana's
+  binary-authoritative mismatch policy;
+* extended dependency-boundary tests so native header, native BGZF reader,
+  `header`, and `verify` paths fail if they directly import `noodles`;
+* added a contract test requiring the header-oracle policy to document
+  `tests/header_oracle.rs`, test-only usage, production prohibition, and native
+  malformed-header ownership;
+* updated `docs/testing-oracles.md` and Sphinx technical notes with the native
+  header oracle boundary;
+* `cargo test --test header_oracle` passed with 2 oracle tests;
+* `cargo test dependency_boundary --test contract` passed with 4
+  dependency-boundary tests;
+* `cargo test rejects_ --lib` passed with 21 focused native rejection tests,
+  with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test` passed with 151 library tests, 16 contract tests, 2 header
+  oracle integration tests, binary tests, and doc tests, with the existing
+  unused-variable warning in `src/forensics/forensic_inspect.rs`;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.9 Add Header Microbenchmarks
 

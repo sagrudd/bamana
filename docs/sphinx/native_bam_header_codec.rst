@@ -38,6 +38,15 @@ header-level verification. It confirms BGZF container recognition, BAM magic,
 and native header/reference-dictionary parsing. It does not scan alignment
 records and does not report EOF-marker status.
 
+Test Oracle Boundary
+--------------------
+
+Malformed-header behavior is owned by native unit tests and does not depend on
+external parser expectations. ``tests/header_oracle.rs`` is the explicit
+test-only oracle surface for comparing valid native header parsing against
+``noodles`` and for documenting compatibility differences. Production
+``header`` and ``verify`` paths must remain free of direct ``noodles`` imports.
+
 Serialization
 -------------
 
