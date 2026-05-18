@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::Path,
+};
 
 use serde::Serialize;
 
@@ -8,13 +11,23 @@ const BAM_MAGIC: &[u8; 4] = b"BAM\x01";
 const MAX_HEADER_TEXT_BYTES: usize = 16 * 1024 * 1024;
 const MAX_REFERENCE_COUNT: usize = 1_000_000;
 const MAX_REFERENCE_NAME_BYTES: usize = 1024 * 1024;
+const MAX_BAM_I32_FIELD: u32 = i32::MAX as u32;
 
+/// JSON-facing BAM header payload produced by the native header codec.
 #[derive(Debug, Clone, Serialize)]
 pub struct HeaderPayload {
     pub format: &'static str,
     pub header: BamHeaderView,
 }
 
+/// Stable native representation shared by header, writer, reheader, merge,
+/// checksum, and validation consumers.
+///
+/// `raw_header_text` preserves the declared SAM-style text exactly as parsed
+/// from BAM, while `references` is the binary reference dictionary in encounter
+/// order. Binary reference names, lengths, and indexes are authoritative for
+/// BAM decoding; parsed textual fields are retained as diagnostics and
+/// user-facing metadata.
 #[derive(Debug, Clone, Serialize)]
 pub struct BamHeaderView {
     pub raw_header_text: String,
@@ -50,10 +63,16 @@ pub struct ReferenceHeaderFields {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ReferenceRecord {
+    /// Binary reference name without the required BAM NUL terminator.
     pub name: String,
+    /// Binary reference length. Values must fit the non-negative BAM `i32`
+    /// field before serialization.
     pub length: u32,
+    /// Encounter-order index from the binary reference dictionary.
     pub index: usize,
+    /// Metadata copied from the matching textual `@SQ` record, if present.
     pub header_fields: ReferenceHeaderFields,
+    /// Textual `@SQ` `LN` when it disagrees with the binary length.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_header_length: Option<u32>,
 }
@@ -127,7 +146,7 @@ struct SamSqRecord {
     fields: ReferenceHeaderFields,
 }
 
-pub fn parse_bam_header(path: &std::path::Path) -> Result<HeaderPayload, AppError> {
+pub fn parse_bam_header(path: &Path) -> Result<HeaderPayload, AppError> {
     let mut reader = BamReader::open(path)?;
     parse_bam_header_from_reader(&mut reader)
 }
@@ -275,22 +294,37 @@ pub fn rewrite_header_for_sort(
     }
 }
 
-pub fn serialize_bam_header_payload(header_text: &str, references: &[ReferenceRecord]) -> Vec<u8> {
+pub fn serialize_bam_header_payload(
+    path: &Path,
+    header_text: &str,
+    references: &[ReferenceRecord],
+) -> Result<Vec<u8>, AppError> {
     let mut payload = Vec::new();
     payload.extend_from_slice(BAM_MAGIC);
-    payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+    payload.extend_from_slice(
+        &checked_bam_i32_from_usize(path, "BAM header text length", header_text.len())?
+            .to_le_bytes(),
+    );
     payload.extend_from_slice(header_text.as_bytes());
-    payload.extend_from_slice(&(references.len() as i32).to_le_bytes());
+    payload.extend_from_slice(
+        &checked_bam_i32_from_usize(path, "BAM reference count", references.len())?.to_le_bytes(),
+    );
 
     for reference in references {
         let mut name = reference.name.as_bytes().to_vec();
         name.push(0);
-        payload.extend_from_slice(&(name.len() as i32).to_le_bytes());
+        payload.extend_from_slice(
+            &checked_bam_i32_from_usize(path, "BAM reference name length", name.len())?
+                .to_le_bytes(),
+        );
         payload.extend_from_slice(&name);
-        payload.extend_from_slice(&(reference.length as i32).to_le_bytes());
+        payload.extend_from_slice(
+            &checked_bam_i32_from_u32(path, "BAM reference length", reference.length)?
+                .to_le_bytes(),
+        );
     }
 
-    payload
+    Ok(payload)
 }
 
 pub fn parse_sam_header_text_with_references(
@@ -717,6 +751,24 @@ fn parse_tag_fields<'a>(fields: impl Iterator<Item = &'a str>) -> Vec<(String, S
         .collect()
 }
 
+fn checked_bam_i32_from_usize(path: &Path, field: &str, value: usize) -> Result<i32, AppError> {
+    let value = u32::try_from(value).map_err(|_| AppError::InvalidHeader {
+        path: path.to_path_buf(),
+        detail: format!("{field} {value} does not fit in a BAM signed 32-bit field."),
+    })?;
+    checked_bam_i32_from_u32(path, field, value)
+}
+
+fn checked_bam_i32_from_u32(path: &Path, field: &str, value: u32) -> Result<i32, AppError> {
+    if value > MAX_BAM_I32_FIELD {
+        return Err(AppError::InvalidHeader {
+            path: path.to_path_buf(),
+            detail: format!("{field} {value} does not fit in a BAM signed 32-bit field."),
+        });
+    }
+    Ok(value as i32)
+}
+
 fn merge_references(
     binary_references: Vec<BinaryReference>,
     sq_map: &HashMap<String, SamSqRecord>,
@@ -749,10 +801,15 @@ fn merge_references(
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, path::Path};
 
-    use super::parse_bam_header;
-    use crate::formats::bgzf::test_support::{build_bam_file_with_header, write_temp_file};
+    use super::{
+        ReferenceHeaderFields, ReferenceRecord, parse_bam_header, serialize_bam_header_payload,
+    };
+    use crate::{
+        error::AppError,
+        formats::bgzf::test_support::{build_bam_file_with_header, write_temp_file},
+    };
 
     #[test]
     fn parses_binary_and_text_header_sections() {
@@ -775,11 +832,17 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removed");
 
         assert_eq!(payload.format, "BAM");
+        assert_eq!(payload.header.raw_header_text, header_text);
         assert_eq!(payload.header.hd.version.as_deref(), Some("1.6"));
         assert_eq!(payload.header.hd.sort_order.as_deref(), Some("coordinate"));
         assert_eq!(payload.header.hd.group_order.as_deref(), Some("query"));
         assert_eq!(payload.header.references.len(), 2);
         assert_eq!(payload.header.references[0].name, "chr1");
+        assert_eq!(payload.header.references[0].length, 248_956_422);
+        assert_eq!(payload.header.references[0].index, 0);
+        assert_eq!(payload.header.references[1].name, "chr2");
+        assert_eq!(payload.header.references[1].length, 242_193_529);
+        assert_eq!(payload.header.references[1].index, 1);
         assert_eq!(
             payload.header.references[0].header_fields.m5.as_deref(),
             Some("abc123")
@@ -795,6 +858,10 @@ mod tests {
         assert_eq!(payload.header.programs[0].id.as_deref(), Some("pg1"));
         assert_eq!(payload.header.comments[0], "generated for tests");
         assert_eq!(payload.header.other_header_records[0].record_type, "XY");
+        assert_eq!(
+            payload.header.other_header_records[0].raw_line,
+            "@XY\tZZ:custom"
+        );
     }
 
     #[test]
@@ -808,5 +875,30 @@ mod tests {
 
         assert_eq!(payload.header.references[0].length, 456);
         assert_eq!(payload.header.references[0].text_header_length, Some(123));
+    }
+
+    #[test]
+    fn serialization_rejects_reference_lengths_outside_bam_i32_range() {
+        let error = serialize_bam_header_payload(
+            Path::new("oversized-reference.bam"),
+            "@SQ\tSN:chr1\tLN:2147483648\n",
+            &[ReferenceRecord {
+                name: "chr1".to_string(),
+                length: i32::MAX as u32 + 1,
+                index: 0,
+                header_fields: ReferenceHeaderFields::default(),
+                text_header_length: None,
+            }],
+        )
+        .expect_err("out-of-range BAM reference length should fail");
+
+        match error {
+            AppError::InvalidHeader { path, detail } => {
+                assert_eq!(path, Path::new("oversized-reference.bam"));
+                assert!(detail.contains("BAM reference length 2147483648"));
+                assert!(detail.contains("signed 32-bit field"));
+            }
+            other => panic!("expected invalid_header error, got {other:?}"),
+        }
     }
 }

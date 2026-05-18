@@ -23,6 +23,26 @@ Future extension targets:
 * header mutation helpers for `reheader`
 * compatibility-aware header merge helpers for `merge`
 
+## Native Data Model Contract
+
+The Milestone 2 header model preserves two related views of the BAM header:
+
+* `raw_header_text` stores the SAM-style text exactly as declared by the BAM
+  header prefix;
+* `references` stores the binary reference dictionary in encounter order.
+
+The binary reference dictionary is authoritative for BAM decoding. Each
+reference record retains the binary name, non-negative length, and encounter
+order index. Parsed textual `@SQ` metadata is retained as diagnostic and
+user-facing metadata, including a `text_header_length` value when the textual
+`LN` disagrees with the binary dictionary.
+
+Unknown SAM-style header records remain representable through their raw line so
+later commands can avoid lossy parsing. Writer consumers must serialize through
+the native header module rather than casting or assembling BAM header bytes
+themselves; values that do not fit BAM signed 32-bit fields must fail before
+bytes are emitted.
+
 ## Dependencies / Prerequisites
 
 Depends on:

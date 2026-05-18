@@ -98,8 +98,11 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         sort_order_name(options.order),
         queryname_suborder_name(queryname_suborder),
     );
-    let header_payload =
-        serialize_bam_header_payload(&rewritten_header_text, &parsed_header.header.references);
+    let header_payload = serialize_bam_header_payload(
+        &options.output_path,
+        &rewritten_header_text,
+        &parsed_header.header.references,
+    )?;
 
     let mut records = Vec::new();
     let mut ordinal = 0_u64;

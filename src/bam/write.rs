@@ -86,6 +86,7 @@ mod tests {
         ));
         let mut writer = BgzfWriter::create(&output).expect("writer should create");
         let header_payload = crate::bam::header::serialize_bam_header_payload(
+            &output,
             "@SQ\tSN:chr1\tLN:10\n",
             &[crate::bam::header::ReferenceRecord {
                 name: "chr1".to_string(),
@@ -94,7 +95,8 @@ mod tests {
                 header_fields: crate::bam::header::ReferenceHeaderFields::default(),
                 text_header_length: Some(10),
             }],
-        );
+        )
+        .expect("header should serialize");
         writer
             .write_all(&header_payload)
             .expect("header should write");

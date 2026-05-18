@@ -1613,6 +1613,7 @@ mod tests {
 
     fn write_test_bam(path: &PathBuf, header_text: &str, records: Vec<RecordLayout>) {
         let header_payload = serialize_bam_header_payload(
+            path,
             header_text,
             &[ReferenceRecord {
                 name: "chr1".to_string(),
@@ -1621,7 +1622,8 @@ mod tests {
                 header_fields: ReferenceHeaderFields::default(),
                 text_header_length: Some(100),
             }],
-        );
+        )
+        .expect("header should serialize");
 
         let mut writer = BgzfWriter::create(path).expect("writer should create");
         writer

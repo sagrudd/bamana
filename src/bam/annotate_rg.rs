@@ -514,8 +514,11 @@ fn rewrite_with_rg_annotation(
     let mut reader = BamReader::open(&config.input_path)?;
     let _ = parse_bam_header_from_reader(&mut reader)?;
     let mut writer = BgzfWriter::create(&temp_path)?;
-    let header_payload =
-        serialize_bam_header_payload(&updated_header.raw_header_text, &updated_header.references);
+    let header_payload = serialize_bam_header_payload(
+        output_path,
+        &updated_header.raw_header_text,
+        &updated_header.references,
+    )?;
     writer.write_all(&header_payload)?;
 
     let mut summary = RecordRewriteSummary::default();

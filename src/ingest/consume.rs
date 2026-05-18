@@ -606,7 +606,7 @@ fn write_output_bam(
     records: &[RecordLayout],
 ) -> Result<u64, AppError> {
     let preexisting_output = output_path.exists();
-    let header_payload = serialize_bam_header_payload(header_text, references);
+    let header_payload = serialize_bam_header_payload(output_path, header_text, references)?;
     let temp_path = temporary_output_path(output_path);
     if temp_path.exists() {
         let _ = fs::remove_file(&temp_path);

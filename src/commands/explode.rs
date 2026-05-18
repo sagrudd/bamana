@@ -475,8 +475,11 @@ fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
         .map(|path| temporary_output_path(path, "explode"))
         .collect::<Vec<_>>();
 
-    let header_payload =
-        serialize_bam_header_payload(&header.header.raw_header_text, &header.header.references);
+    let header_payload = serialize_bam_header_payload(
+        &request.input,
+        &header.header.raw_header_text,
+        &header.header.references,
+    )?;
     let write_result = (|| -> Result<Vec<u64>, AppError> {
         let mut reader = BamReader::open(&request.input)?;
         let _ = parse_bam_header_from_reader(&mut reader)?;

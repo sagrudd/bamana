@@ -237,8 +237,15 @@ fn execute_bam(
         payload: base_payload(DetectedFormat::Bam, config),
         error: map_parse_error(error, &config.input),
     })?;
-    let header_payload =
-        serialize_bam_header_payload(&header.header.raw_header_text, &header.header.references);
+    let header_payload = serialize_bam_header_payload(
+        &config.out,
+        &header.header.raw_header_text,
+        &header.header.references,
+    )
+    .map_err(|error| SubsampleFailure {
+        payload: base_payload(DetectedFormat::Bam, config),
+        error,
+    })?;
 
     let index_before = resolve_index_for_bam(&config.input);
     let index_info = build_index_info(&index_before, config, !config.dry_run);

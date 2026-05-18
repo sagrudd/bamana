@@ -745,8 +745,11 @@ fn rewrite_bam_header(
     let _header = parse_bam_header_from_reader(&mut reader)?;
     let mut writer = BgzfWriter::create(&temp_path)?;
 
-    let header_payload =
-        serialize_bam_header_payload(&updated_header.raw_header_text, &updated_header.references);
+    let header_payload = serialize_bam_header_payload(
+        output_path,
+        &updated_header.raw_header_text,
+        &updated_header.references,
+    )?;
     writer.write_all(&header_payload)?;
 
     while let Some(record) = read_next_record_layout(&mut reader)? {

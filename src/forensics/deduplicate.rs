@@ -655,8 +655,11 @@ fn write_bam_records(
     records: &[RecordLayout],
     remove_mask: &[bool],
 ) -> Result<(), AppError> {
-    let header_bytes =
-        serialize_bam_header_payload(&header.header.raw_header_text, &header.header.references);
+    let header_bytes = serialize_bam_header_payload(
+        path,
+        &header.header.raw_header_text,
+        &header.header.references,
+    )?;
     let mut writer = BgzfWriter::create(path)?;
     writer.write_all(&header_bytes)?;
 
@@ -1099,6 +1102,7 @@ mod tests {
 
     fn write_test_bam(path: &PathBuf, records: Vec<RecordLayout>) {
         let header_payload = serialize_bam_header_payload(
+            path,
             "@HD\tVN:1.6\tSO:unknown\n",
             &[ReferenceRecord {
                 name: "chr1".to_string(),
@@ -1107,7 +1111,8 @@ mod tests {
                 header_fields: ReferenceHeaderFields::default(),
                 text_header_length: Some(100),
             }],
-        );
+        )
+        .expect("header should serialize");
 
         let mut writer = BgzfWriter::create(path).expect("writer should create");
         writer

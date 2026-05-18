@@ -107,7 +107,8 @@ pub fn unmap_bam(options: &UnmapExecutionOptions) -> Result<UnmapExecution, AppE
         });
     }
 
-    let header_payload = serialize_bam_header_payload(&rewritten_header_text, &[]);
+    let header_payload =
+        serialize_bam_header_payload(&options.output_path, &rewritten_header_text, &[])?;
     let temp_path = temporary_output_path(&options.output_path);
     if temp_path.exists() {
         let _ = fs::remove_file(&temp_path);

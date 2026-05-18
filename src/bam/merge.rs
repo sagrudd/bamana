@@ -152,11 +152,12 @@ pub fn merge_bams(options: &MergeExecutionOptions) -> Result<MergeExecution, App
         produced_sub_order,
     );
     let header_payload = serialize_bam_header_payload(
+        &options.output_path,
         &rewritten_header,
         base_references
             .as_ref()
             .expect("first input references should have been captured"),
-    );
+    )?;
 
     let temp_path = temporary_output_path(&options.output_path, "merge");
     if temp_path.exists() {

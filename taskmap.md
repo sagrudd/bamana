@@ -485,7 +485,7 @@ Completion evidence:
 
 ### M2.2 Define Native Header Data Model
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -507,7 +507,28 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* documented the native header data model in
+  `docs/roadmap/milestone-02-bam-header.md`, including raw SAM-style text
+  preservation, binary reference dictionary authority, textual `@SQ` metadata
+  retention, unknown-record preservation, and checked serialization through the
+  native header module;
+* added code-level model documentation to `HeaderPayload`, `BamHeaderView`, and
+  `ReferenceRecord`;
+* tightened `serialize_bam_header_payload` so writer consumers must pass a
+  path and receive `Result<Vec<u8>, AppError>` instead of silently casting
+  header text length, reference count, reference-name length, or reference
+  length into BAM signed 32-bit fields;
+* updated current writer consumers in ingest, transform, forensic, and command
+  paths to propagate checked header serialization errors;
+* strengthened header tests to assert raw header text preservation, binary
+  reference names, lengths, encounter-order indexes, unknown record raw-line
+  preservation, and rejection of a reference length that does not fit a BAM
+  signed 32-bit field;
+* `cargo test` passed with 121 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 14 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.3 Complete Native BAM Header Parsing
 
