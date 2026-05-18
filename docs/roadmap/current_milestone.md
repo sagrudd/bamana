@@ -68,6 +68,14 @@ Known present pieces:
 
 * native BGZF reading can feed BAM payload bytes;
 * native BAM header parsing can position readers at the first alignment record;
+* `src/bam/record.rs` defines `BamRecordView`, a borrowed lightweight record
+  view over one complete length-prefixed BAM record;
+* `BamRecordView` exposes core fields, sequence length, raw record bytes, and
+  stable ranges for core, read name, CIGAR, sequence, qualities, and aux
+  regions without allocating skipped sections;
+* `BamRecordView::to_record_layout` preserves the bridge back to the existing
+  owned `RecordLayout` type for richer consumers that still need
+  materialization or lossless serialization;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -85,8 +93,6 @@ Known present pieces:
 Known gaps:
 
 * no dedicated shared scanner API owns selective BAM record iteration yet;
-* no stable lightweight record-view contract owns core fields and aux
-  boundaries;
 * skip-oriented field extraction is not centralized;
 * aux-region traversal for selected tag lookup is not yet a scanner-owned API;
 * first command consumers have not yet been migrated onto a shared scanner;

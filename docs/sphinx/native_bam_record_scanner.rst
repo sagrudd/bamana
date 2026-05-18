@@ -44,6 +44,25 @@ sequence or quality decoding. Raw-record writers and transformers should move
 after the scanner exposes raw record access or a lossless bridge back to richer
 record layouts.
 
+Record View Contract
+--------------------
+
+``src/bam/record.rs`` defines ``BamRecordView`` as the scanner-facing
+lightweight record contract. The view borrows one complete length-prefixed BAM
+record and exposes core fields, sequence length, raw record bytes, and stable
+ranges for the core, read name, CIGAR, sequence, quality, and auxiliary
+regions.
+
+The view does not allocate CIGAR, sequence, quality, or auxiliary payloads for
+field-only consumers. Those sections are available as borrowed slices when a
+consumer asks for them. Existing richer consumers are preserved through an
+explicit ``to_record_layout`` bridge back to the owned ``RecordLayout`` type.
+
+This contract is intentionally separate from the native scan loop. The next
+scanner task must feed complete raw records from the native BGZF/header
+substrate into ``BamRecordView``; later tasks should move field helpers and
+auxiliary traversal onto these borrowed ranges.
+
 Boundaries
 ----------
 

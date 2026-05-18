@@ -10,6 +10,7 @@ pub mod header;
 pub mod index;
 pub mod merge;
 pub mod reader;
+pub mod record;
 pub mod records;
 pub mod reheader;
 pub mod sort;

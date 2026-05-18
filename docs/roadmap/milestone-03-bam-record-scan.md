@@ -113,6 +113,26 @@ The first consumer migration order should be:
    paths need deterministic identity bytes, eligibility filters, pass-through
    serialization, or record mutation.
 
+## Record View Contract
+
+M3.2 added `src/bam/record.rs` as the native lightweight record-view contract.
+`BamRecordView<'a>` borrows one complete length-prefixed BAM alignment record
+and exposes:
+
+* raw record bytes;
+* `refID`, `pos`, flags, MAPQ, read name, sequence length, mate fields, bin,
+  and template length;
+* stable ranges for the raw record, core section, read name, CIGAR bytes,
+  sequence bytes, quality bytes, and aux bytes;
+* borrowed section slices for consumers that need selected fields;
+* `to_record_layout` as the explicit bridge to the existing owned
+  `RecordLayout` materialization path.
+
+This contract is not the scanner loop. M3.3 still needs to feed complete raw
+records from the native BGZF/header substrate into this view. M3.4 and M3.5
+still need to centralize selective field helpers and scanner-owned aux
+traversal on top of these borrowed ranges.
+
 ## Benchmark Hooks
 
 * records-per-second BAM scanner microbenchmark

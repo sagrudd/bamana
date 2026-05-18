@@ -900,6 +900,14 @@ Known present pieces:
 * Milestone 1 native BGZF reading is complete and can feed BAM payload bytes;
 * Milestone 2 native BAM header parsing is complete and can position readers at
   the first alignment record;
+* `src/bam/record.rs` defines `BamRecordView`, a borrowed lightweight record
+  view over one complete length-prefixed BAM record;
+* `BamRecordView` exposes core fields, sequence length, raw record bytes, and
+  stable ranges for the core, read name, CIGAR, sequence, qualities, and aux
+  regions without allocating skipped fields;
+* `BamRecordView::to_record_layout` provides the explicit bridge back to the
+  existing owned `RecordLayout` type for command paths that still need richer
+  materialization or lossless serialization;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -916,15 +924,13 @@ Known present pieces:
 Known gaps:
 
 * no dedicated `src/bam/scan.rs` selective scanner API is in place yet;
-* no stable lightweight record-view contract owns core fields and aux
-  boundaries;
 * skip-oriented selective field extraction is not centralized;
 * record-scanning consumers generally use the transitional `BamReader::open`
   gzip backend today rather than requiring the native BGZF backend;
 * command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.2 through M3.10 remain outstanding.
+* M3.3 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -996,7 +1002,7 @@ Completion evidence:
 
 ### M3.2 Define Lightweight Record View Contract
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1020,7 +1026,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/bam/record.rs` with `BamRecordView<'a>` and
+  `BamRecordSections`;
+* `BamRecordView::parse` validates a complete length-prefixed BAM record and
+  exposes `refID`, `pos`, flags, MAPQ, read name, sequence length, mate/core
+  fields, raw record bytes, and stable ranges for core, read name, CIGAR,
+  sequence, qualities, and aux bytes;
+* section accessors return borrowed slices for CIGAR, sequence, qualities, and
+  aux regions so field-only consumers can skip data without allocation once the
+  scanner feeds this view;
+* added `BamRecordView::to_record_layout` as the explicit bridge for existing
+  richer consumers that still need owned `RecordLayout` materialization or
+  lossless serialization;
+* added tests for a valid minimal record, variable-length section boundary
+  arithmetic, lossless bridge serialization, oversized variable-section
+  rejection, and non-NUL-terminated read-name rejection;
+* updated Sphinx and roadmap documentation to describe the record-view
+  contract;
+* `cargo test bam::record` passed.
 
 ### M3.3 Implement Native Scan Loop
 
