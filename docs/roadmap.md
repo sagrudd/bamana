@@ -89,20 +89,16 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ## Later Waves
 
-Later migration waves should follow after Milestone 6.
+Later migration waves should follow after Milestone 7.
 
-### Wave 3
+### Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
-Primary command targets:
-
-* `reheader`
-* `annotate_rg`
-* `inspect_duplication`
-* `deduplicate`
-* `forensic_inspect`
-
-These commands depend on stable BAM header ownership, BAM record scanning, and
-FASTQ support.
+* status: planned
+* detail: [roadmap/milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
+* goal: harden native mutation, conservative remediation, and provenance
+  inspection command paths
+* commands enabled first: `reheader`, `annotate_rg`, `inspect_duplication`,
+  `deduplicate`, `forensic_inspect`
 
 ### Wave 4
 

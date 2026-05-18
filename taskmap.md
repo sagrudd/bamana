@@ -11,7 +11,9 @@ FASTQ / FASTQ.GZ Parser milestone described in
 `noodles` milestone described in
 `docs/roadmap/milestone-05-command-migration.md`. Milestone 6 is the Native
 Inspection And Validation Commands milestone described in
-`docs/roadmap/milestone-06-inspection-validation.md`.
+`docs/roadmap/milestone-06-inspection-validation.md`. Milestone 7 is the
+Native Mutation, Remediation, And Forensics Commands milestone described in
+`docs/roadmap/milestone-07-mutation-forensics.md`.
 
 ## Milestone 1 Definition
 
@@ -2394,6 +2396,358 @@ Acceptance criteria:
 * production `noodles` usage remains isolated to documented CRAM
   compatibility, tests, oracles, and fixtures;
 * Milestone 6 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 7 Definition
+
+Milestone 7 is complete only when Bamana's native mutation, conservative
+remediation, and provenance-inspection command wave is hardened on native
+substrates. The milestone covers `reheader`, `annotate_rg`,
+`inspect_duplication`, `deduplicate`, and `forensic_inspect`. It follows the
+inspection/validation wave because these commands have higher blast radius:
+they either mutate output, remediate duplicated collection blocks, or assemble
+operational provenance evidence.
+
+## Milestone 7 Planned State
+
+Status: planned. Milestone 7 should not become active until Milestone 6 has
+closed, because the inspection/validation wave should establish the command
+contract, benchmark, and dependency-boundary discipline this mutation and
+forensics wave depends on.
+
+Known present pieces:
+
+* Milestone 2 native BAM header codec provides the substrate for `reheader`,
+  `annotate_rg`, checksum-domain header serialization, and header evidence in
+  forensic reports;
+* Milestone 3 native BAM scanner already backs BAM-body scans in
+  `inspect_duplication` and `forensic_inspect`;
+* Milestone 4 is expected to stabilize native FASTQ/FASTQ.GZ parser and writer
+  APIs used by FASTQ-side duplication and deduplication paths;
+* `reheader` command orchestration already separates header-only mutation from
+  record-level `RG:Z` annotation and exposes dry-run, rewrite, reindex, and
+  checksum verification controls;
+* `annotate_rg` command orchestration already enforces explicit record-mode and
+  header-policy choices;
+* `inspect_duplication` already supports BAM, FASTQ, and FASTQ.GZ inputs and
+  uses scanner/native FASTQ helpers for current scan paths;
+* `deduplicate` already implements conservative remediation modes for BAM,
+  FASTQ, and FASTQ.GZ inputs, with dry-run and applied modes;
+* `forensic_inspect` already uses scanner-backed BAM body evidence for
+  read-group, read-name, aux-tag, and duplication-hallmark checks.
+
+Known gaps:
+
+* the M7 command set has not yet been audited as one governed mutation,
+  remediation, and forensics wave;
+* `deduplicate` BAM paths still use `BamReader::open`,
+  `parse_bam_header_from_reader`, and `read_next_record_layout` rather than a
+  scanner-owned raw-record or native writer bridge;
+* `reheader` and `annotate_rg` implementation modules need a fresh native-core
+  audit for header serialization, record serialization, checksum verification,
+  and index invalidation boundaries;
+* FASTQ-side duplication and deduplication paths need to be reconciled with the
+  stable Milestone 4 reader/writer APIs;
+* command contracts and examples need a fresh pass for mutation safety,
+  dry-run/apply distinctions, remediation limits, and forensic caveats;
+* command-level benchmark smoke evidence is not yet recorded for the full M7
+  command set;
+* dependency-boundary tests do not yet name `reheader`, `annotate_rg`,
+  `inspect_duplication`, `deduplicate`, and `forensic_inspect` as one
+  protected milestone set.
+
+Milestone 7 closeout evidence must include:
+
+* all M7.1 through M7.10 tasks complete;
+* `reheader` documented and tested as native header-only mutation planning and
+  execution;
+* `annotate_rg` documented and tested as native record-level read-group
+  annotation distinct from `reheader`;
+* `inspect_duplication` documented and tested as native BAM/FASTQ collection
+  duplication inspection, not biological duplicate marking;
+* `deduplicate` documented and tested as conservative remediation over native
+  BAM/FASTQ paths, not broad duplicate collapse;
+* `forensic_inspect` documented and tested as evidence-driven provenance
+  inspection, not fraud detection;
+* command JSON contracts remaining stable or deliberately versioned;
+* command-level benchmark or smoke benchmark evidence for the M7 command set;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 7 evidence is limited to mutation, remediation, and forensics
+  commands: `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`,
+  and `forensic_inspect`.
+* Large transform, ordering, merge, checksum, explode, and ingest families
+  remain later waves unless a specific M7 task explicitly includes them.
+
+## Milestone 7 Task List
+
+### M7.1 Activate Milestone 7 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 7 is the active
+  milestone only after Milestone 6 is complete;
+* update roadmap/task-map status so Milestones 1 through 6 remain recorded
+  with their correct completion state;
+* audit `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect` command implementations, helper modules, tests,
+  contracts, examples, and docs;
+* record which command paths already use native header, scanner, FASTQ, and
+  writer primitives and which still need hardening;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 7 as active only when M6 is
+  closed;
+* the task map records present M7 command evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contract commands remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M7.2 Freeze Mutation And Forensics Contracts And Examples
+
+Status: pending.
+
+Tasks:
+
+* audit JSON schemas and success/failure examples for `reheader`,
+  `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect`;
+* confirm CLI documentation describes dry-run versus applied behavior,
+  mutation safety, remediation limits, and forensic caveats accurately;
+* add or update fixtures for header mutation, RG annotation, clean duplication
+  scans, duplicated collection blocks, remediation plans, applied remediation,
+  and forensic provenance evidence where gaps exist;
+* record any intentional contract changes before implementation hardening.
+
+Acceptance criteria:
+
+* M7 command schemas and examples exist and parse;
+* contract tests fail if governed M7 command documentation, schemas, or
+  examples disappear;
+* mutation, remediation, and forensic claims are documented without
+  overclaiming.
+
+Completion evidence:
+
+* pending.
+
+### M7.3 Harden `reheader` Native Header Mutation Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `reheader` use of native header parsing and serialization;
+* strengthen tests for full header replacement, `@RG` mutation, `@PG`
+  mutation, comment mutation, dry-run planning, rewrite modes, checksum
+  verification, and index invalidation where needed;
+* ensure docs state that `reheader` is header-only and does not modify
+  per-record `RG:Z` tags;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `reheader` remains native-header backed and header-only;
+* JSON contracts remain stable or are deliberately versioned;
+* true in-place or rewrite safety claims are only made where proven.
+
+Completion evidence:
+
+* pending.
+
+### M7.4 Harden `annotate_rg` Native Record Annotation Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `annotate_rg` use of native header and record mutation primitives;
+* strengthen tests for only-missing, replace-existing, fail-on-conflict,
+  require-header-rg, create-header-rg, add-header-rg, set-header-rg, dry-run,
+  checksum verification, and index invalidation where needed;
+* ensure docs preserve the distinction between record-level `annotate_rg` and
+  header-only `reheader`;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `annotate_rg` remains explicit about record-touching behavior;
+* record and header policies are test-covered;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M7.5 Harden `inspect_duplication` Native Scan Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit BAM, FASTQ, and FASTQ.GZ duplication inspection paths against native
+  scanner and Milestone 4 FASTQ APIs;
+* strengthen tests for clean inputs, whole-file append signatures, local block
+  signatures, identity modes, sample-record bounds, full-scan behavior,
+  malformed inputs, and RG-mode rejection for FASTQ where needed;
+* ensure docs state that `inspect_duplication` is collection-duplication and
+  operator-error inspection, not molecular duplicate marking;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `inspect_duplication` uses native scanner/FASTQ paths for supported inputs;
+* identity modes and scan bounds remain explicit in output;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M7.6 Harden `deduplicate` Conservative Remediation Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit BAM, FASTQ, and FASTQ.GZ deduplication load/write paths against native
+  scanner, raw-record, header, and Milestone 4 FASTQ APIs;
+* migrate BAM paths away from older transitional reader/layout usage where a
+  scanner-owned raw-record or native writer bridge can preserve behavior;
+* strengthen tests for dry-run plans, applied remediation, keep-first/keep-last
+  policy, whole-file append, contiguous-block, global-exact mode, emitted
+  removed-record reports, checksum verification, and malformed inputs where
+  needed;
+* ensure docs state that `deduplicate` is conservative remediation, not
+  biological duplicate collapse;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `deduplicate` uses native BAM/FASTQ paths for supported remediation modes;
+* dry-run and applied behavior remain visibly distinct;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M7.7 Harden `forensic_inspect` Provenance Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `forensic_inspect` native header and scanner-backed evidence paths;
+* strengthen tests for header evidence, read-group evidence, program evidence,
+  read-name regimes, aux-tag regimes, duplication hallmarks, bounded scans,
+  full scans, and max-finding behavior where needed;
+* ensure docs state that `forensic_inspect` is evidence-driven provenance
+  inspection, not fraud detection or full validation;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `forensic_inspect` uses native header/scanner evidence for supported BAM
+  paths;
+* findings remain caveated and evidence-scoped;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M7.8 Strengthen M7 Cross-Command Safety And Output Guarantees
+
+Status: pending.
+
+Tasks:
+
+* audit output temp-file, overwrite, force, dry-run, checksum verification, and
+  reindex behavior across `reheader`, `annotate_rg`, and `deduplicate`;
+* ensure mutation commands never report applied changes before writes and
+  verification steps complete;
+* ensure forensic and inspection commands never write output artifacts unless
+  explicitly requested;
+* add focused tests for error cleanup and no-output-on-failure behavior where
+  practical.
+
+Acceptance criteria:
+
+* mutation/remediation commands have consistent write-safety behavior;
+* dry-run behavior is side-effect bounded;
+* failures include useful path context and do not leave misleading success
+  payloads.
+
+Completion evidence:
+
+* pending.
+
+### M7.9 Strengthen M7 Dependency Boundaries And Benchmarks
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name the M7 command set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* add or formalize command-level benchmark hooks for the M7 command set;
+* record benchmark interpretation notes that distinguish command startup,
+  scan cost, rewrite cost, compression cost, checksum verification, and
+  dry-run behavior.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the M7 command set;
+* every M7 command has runnable smoke benchmark or timing evidence;
+* benchmark notes are documented and do not imply comparator parity where none
+  exists.
+
+Completion evidence:
+
+* pending.
+
+### M7.10 Close Milestone 7
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run M7 command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-07-mutation-forensics.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 7 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M7.1 through M7.10 tasks are complete;
+* `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect` are documented with native mutation/remediation/forensics
+  evidence;
+* full tests, contract tests, Sphinx, and M7 command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 7 completion evidence is recorded in the repository.
 
 Completion evidence:
 
