@@ -13,6 +13,39 @@ the command surface without inferring guarantees that Bamana does not make.
 * A command may return `ok: false` while still including structured `data`
   payloads when that helps automation reason about partial outcomes.
 
+## `benchmark`
+
+Synopsis:
+`bamana benchmark --profile <fastq_ingress|fastq_gz_enumerate> --fastq <reads.fastq.gz> --report <report.pdf> [--bam <output.bam>] [-j, --threads <N>] [--container-image <IMAGE>] [--force]`
+
+Semantics:
+Runs an owned benchmark profile from the Bamana CLI. The command builds the
+local release binary, builds the benchmark container, executes the selected
+profile inside that container, records logs and machine-readable outputs, and
+renders a PDF report.
+
+Current profiles:
+
+* `fastq_ingress`: compares Bamana FASTQ.GZ-to-unmapped-BAM ingestion against a
+  fastcat-plus-samtools baseline and requires `--bam`
+* `fastq_gz_enumerate`: compares Bamana FASTQ.GZ enumeration against gzip
+  decompression plus line counting and does not require `--bam`
+
+Does prove:
+Only the benchmark setup and command paths reported in the JSON payload. The
+profile output describes what was run, where logs were written, and where the
+report and raw/aggregated artifacts were placed.
+
+Does not prove:
+Broad comparator parity across every Bamana command. A benchmark profile is a
+specific measured workflow, not a blanket performance or semantic equivalence
+claim.
+
+Key output concepts:
+`profile`, `fastq`, `bamana_output`, `comparator_output`, `report_pdf`,
+`workdir`, `raw_results_dir`, `aggregated_dir`, `metadata_dir`, `logs_dir`,
+`steps`, `notes`.
+
 ## `identify`
 
 Synopsis:

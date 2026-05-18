@@ -1,81 +1,6 @@
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
-    path::{Path, PathBuf},
-};
+use crate::bam::records::RecordLayout;
 
-use flate2::{Compression, GzBuilder};
-
-use crate::{bam::records::RecordLayout, bgzf::BGZF_EOF_MARKER, error::AppError};
-
-const BGZF_MAX_BLOCK_SIZE: usize = 65_536;
-const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 64 * 1024 - 512;
-const BGZF_BLOCK_REDUCTION_STEP: usize = 1024;
-
-pub struct BgzfWriter {
-    path: PathBuf,
-    writer: BufWriter<File>,
-    buffer: Vec<u8>,
-}
-
-impl BgzfWriter {
-    pub fn create(path: &Path) -> Result<Self, AppError> {
-        let file = File::create(path).map_err(|error| AppError::WriteError {
-            path: path.to_path_buf(),
-            message: error.to_string(),
-        })?;
-
-        Ok(Self {
-            path: path.to_path_buf(),
-            writer: BufWriter::new(file),
-            buffer: Vec::with_capacity(BGZF_TARGET_UNCOMPRESSED_BLOCK * 2),
-        })
-    }
-
-    pub fn write_all(&mut self, bytes: &[u8]) -> Result<(), AppError> {
-        self.buffer.extend_from_slice(bytes);
-        while self.buffer.len() >= BGZF_TARGET_UNCOMPRESSED_BLOCK {
-            self.flush_next_block(false)?;
-        }
-        Ok(())
-    }
-
-    pub fn finish(mut self) -> Result<(), AppError> {
-        while !self.buffer.is_empty() {
-            self.flush_next_block(true)?;
-        }
-
-        self.writer
-            .write_all(&BGZF_EOF_MARKER)
-            .map_err(|error| AppError::WriteError {
-                path: self.path.clone(),
-                message: error.to_string(),
-            })?;
-        self.writer.flush().map_err(|error| AppError::WriteError {
-            path: self.path.clone(),
-            message: error.to_string(),
-        })?;
-        Ok(())
-    }
-
-    fn flush_next_block(&mut self, allow_small_block: bool) -> Result<(), AppError> {
-        let max_candidate = if allow_small_block {
-            self.buffer.len()
-        } else {
-            self.buffer.len().min(BGZF_TARGET_UNCOMPRESSED_BLOCK)
-        };
-        let (member, consumed) =
-            build_bgzf_member_fitting(&self.buffer[..max_candidate], &self.path)?;
-        self.writer
-            .write_all(&member)
-            .map_err(|error| AppError::WriteError {
-                path: self.path.clone(),
-                message: error.to_string(),
-            })?;
-        self.buffer.drain(..consumed);
-        Ok(())
-    }
-}
+pub use crate::bgzf::BgzfWriter;
 
 pub fn serialize_record_layout(record: &RecordLayout) -> Vec<u8> {
     let mut read_name = record.read_name.as_bytes().to_vec();
@@ -110,52 +35,6 @@ pub fn serialize_record_layout(record: &RecordLayout) -> Vec<u8> {
     bytes.extend_from_slice(&record.quality_bytes);
     bytes.extend_from_slice(&record.aux_bytes);
     bytes
-}
-
-fn build_bgzf_member_fitting(payload: &[u8], path: &Path) -> Result<(Vec<u8>, usize), AppError> {
-    let mut candidate_len = payload.len().min(BGZF_TARGET_UNCOMPRESSED_BLOCK);
-
-    loop {
-        let member =
-            build_bgzf_member(&payload[..candidate_len]).map_err(|error| AppError::WriteError {
-                path: path.to_path_buf(),
-                message: error,
-            })?;
-        if member.len() <= BGZF_MAX_BLOCK_SIZE {
-            return Ok((member, candidate_len));
-        }
-
-        if candidate_len <= BGZF_BLOCK_REDUCTION_STEP {
-            return Err(AppError::WriteError {
-                path: path.to_path_buf(),
-                message: "Unable to fit BAM output bytes into a BGZF block.".to_string(),
-            });
-        }
-        candidate_len -= BGZF_BLOCK_REDUCTION_STEP;
-    }
-}
-
-fn build_bgzf_member(payload: &[u8]) -> Result<Vec<u8>, String> {
-    let extra = [b'B', b'C', 2, 0, 0, 0];
-    let mut encoder = GzBuilder::new()
-        .extra(extra.as_slice())
-        .write(Vec::new(), Compression::default());
-    encoder
-        .write_all(payload)
-        .map_err(|error| format!("BGZF member compression failed: {error}"))?;
-    let mut member = encoder
-        .finish()
-        .map_err(|error| format!("BGZF member finalization failed: {error}"))?;
-    if member.len() > BGZF_MAX_BLOCK_SIZE {
-        return Ok(member);
-    }
-
-    let bsize = (member.len() - 1) as u16;
-    if member.len() < 18 {
-        return Err("Compressed BGZF member was shorter than the expected header.".to_string());
-    }
-    member[16..18].copy_from_slice(&bsize.to_le_bytes());
-    Ok(member)
 }
 
 #[cfg(test)]

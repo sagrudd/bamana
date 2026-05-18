@@ -108,7 +108,7 @@ Completion evidence:
 
 ### M1.3 Split BGZF Core Into Explicit Native Modules
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -127,6 +127,18 @@ Acceptance criteria:
 * BAM modules do not duplicate BGZF container logic unnecessarily;
 * module names match the roadmap ownership model;
 * no production BGZF hot path is implemented through `noodles`.
+
+Completion evidence:
+
+* split the native BGZF substrate into `block`, `reader`, `writer`, and
+  `virtual_offset` modules;
+* moved `BgzfWriter` ownership from `bam::write` to `bgzf::writer` while
+  preserving the existing `bam::write::BgzfWriter` import path as a
+  compatibility re-export;
+* kept `src/bgzf/mod.rs` as the public facade for EOF, signature, shallow
+  first-member, and writer helpers;
+* updated the Milestone 1 roadmap module-boundary documentation;
+* `cargo test` passed with 100 library tests, 12 contract tests, and doc tests.
 
 ### M1.4 Define Virtual Offset Groundwork
 

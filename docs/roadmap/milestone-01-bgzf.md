@@ -14,10 +14,10 @@ Implement Bamana-native BGZF reading and writing primitives sufficient for:
 Primary ownership:
 
 * `src/bgzf/mod.rs`
-* future `src/bgzf/reader.rs`
-* future `src/bgzf/writer.rs`
-* future `src/bgzf/block.rs`
-* future `src/bgzf/virtual_offset.rs`
+* `src/bgzf/reader.rs`
+* `src/bgzf/writer.rs`
+* `src/bgzf/block.rs`
+* `src/bgzf/virtual_offset.rs`
 
 Supporting consumers:
 
@@ -60,6 +60,23 @@ Disallowed:
 * Bamana can write valid BGZF output suitable for BAM-compatible payloads
 * tests exist for EOF detection and BGZF block parsing
 * no production BGZF hot path depends on `noodles`
+
+## Current Module Boundary
+
+The native BGZF substrate is split by responsibility:
+
+* `block` owns BGZF constants, gzip/BGZF header recognition, block-size
+  extraction, and native member construction helpers
+* `reader` owns EOF-marker checks and first-member inflation used by shallow
+  BAM verification
+* `writer` owns `BgzfWriter` and native BGZF member emission for BAM-compatible
+  output streams
+* `virtual_offset` is reserved as the explicit home for M1.4 virtual-offset
+  groundwork
+
+`src/bgzf/mod.rs` remains a narrow facade. Existing BAM writer call sites may
+continue to import `BgzfWriter` through `bam::write` while the implementation
+itself is owned by `src/bgzf/writer.rs`.
 
 ## Benchmark Hooks
 
