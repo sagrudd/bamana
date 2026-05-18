@@ -6,7 +6,7 @@ mod record;
 mod unmapped;
 mod writer;
 
-pub use gzip::resolved_threads;
+pub use gzip::{is_gzip_fastq_path, resolved_threads};
 pub use reader::{
     count_fastq_records, count_fastq_records_with_label, open_fastq_reader,
     open_fastq_reader_with_label, read_next_fastq_record,

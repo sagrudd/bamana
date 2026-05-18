@@ -1466,8 +1466,9 @@ Known gaps:
 * writer behavior preserves owned record content, uses LF line endings,
   selects gzip output from the final `.gz` extension, and finalizes or flushes
   output before returning success;
-* command consumers share helpers but have not been audited against a stable
-  Milestone 4 reader/writer API;
+* `enumerate` and FASTQ-side `subsample` are audited against the stable
+  Milestone 4 reader/writer API, while remaining command consumers still need
+  audit and migration;
 * FASTQ microbenchmark hooks are present in the broader benchmark framework,
   but a small native parser/writer smoke benchmark and closeout evidence are
   not yet recorded in the milestone task map.
@@ -1764,7 +1765,7 @@ Completion evidence:
 
 ### M4.7 Migrate FASTQ-Side `subsample` And `enumerate` Consumers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1786,7 +1787,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* exported the FASTQ gzip extension policy through the `crate::fastq` facade so
+  command consumers can share the same case-insensitive final `.gz` decision as
+  the reader and writer;
+* routed `subsample` temporary output naming through that FASTQ gzip policy so
+  staged `.FASTQ.GZ` outputs are still written with the M4 gzip writer before
+  being renamed into place;
+* preserved FASTQ-side `subsample` streaming through `open_fastq_reader`,
+  `read_next_fastq_record`, `FastqRecord` identity bytes, and `FastqWriter`;
+* preserved `enumerate` plain FASTQ counting through `count_fastq_records` and
+  FASTQ.GZ counting through `FASTQ.GZI` sidecar creation/reuse;
+* added command tests proving plain FASTQ `subsample` output round-trips
+  through the stable FASTQ reader/writer path while preserving raw header and
+  plus-line content;
+* added command tests proving FASTQ.GZ `subsample` uses the case-insensitive M4
+  gzip writer policy for uppercase `.FASTQ.GZ` output and can be counted and
+  parsed through the stable FASTQ reader immediately after success;
+* documented the `enumerate` and FASTQ-side `subsample` command-consumer
+  boundaries in `docs/sphinx/native_fastq_core.rst`.
 
 ### M4.8 Migrate `consume`, Duplication, Deduplication, And Shard Consumers
 

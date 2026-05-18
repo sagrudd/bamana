@@ -21,7 +21,7 @@ pub(crate) fn open_maybe_gzip_reader(
     }
 }
 
-pub(crate) fn is_gzip_fastq_path(path: &Path) -> bool {
+pub fn is_gzip_fastq_path(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| extension.eq_ignore_ascii_case("gz"))

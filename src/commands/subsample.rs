@@ -16,7 +16,8 @@ use crate::{
     },
     error::AppError,
     fastq::{
-        FastqIdentityBasis, FastqRecord, FastqWriter, open_fastq_reader, read_next_fastq_record,
+        FastqIdentityBasis, FastqRecord, FastqWriter, is_gzip_fastq_path, open_fastq_reader,
+        read_next_fastq_record,
     },
     formats::probe::{DetectedFormat, probe_path},
     json::CommandResponse,
@@ -762,7 +763,7 @@ fn temporary_output_path(output: &Path) -> PathBuf {
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or("bamana-subsample-output");
-    let suffix = if file_name.ends_with(".gz") {
+    let suffix = if is_gzip_fastq_path(output) {
         ".gz"
     } else if file_name.ends_with(".bam") {
         ".bam"
@@ -816,6 +817,7 @@ mod tests {
 
     use super::{SubsampleRequest, run};
     use crate::{
+        fastq::{FastqRecord, count_fastq_records, open_fastq_reader, read_next_fastq_record},
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -825,6 +827,17 @@ mod tests {
 
     fn read_response_body(response: &CommandResponse<super::SubsamplePayload>) -> String {
         serde_json::to_string(response).expect("response should serialize")
+    }
+
+    fn read_fastq_records(path: &std::path::Path) -> Vec<FastqRecord> {
+        let mut reader = open_fastq_reader(path).expect("subsample output should open");
+        let mut records = Vec::new();
+        while let Some(record) =
+            read_next_fastq_record(&mut reader, path).expect("subsample output should parse")
+        {
+            records.push(record);
+        }
+        records
     }
 
     #[test]
@@ -889,6 +902,50 @@ mod tests {
     }
 
     #[test]
+    fn fastq_subsample_round_trips_through_stable_reader_and_writer() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-subsample-m4-reader-writer-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &input,
+            "@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n",
+        )
+        .expect("fastq should write");
+        let output = std::env::temp_dir().join(format!(
+            "bamana-subsample-m4-reader-writer-out-{}.fastq",
+            std::process::id()
+        ));
+
+        let response = run(SubsampleRequest {
+            input: input.clone(),
+            out: output.clone(),
+            fraction: 1.0,
+            mode: SubsampleMode::Deterministic,
+            seed: None,
+            identity: DeterministicIdentity::FullRecord,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let records = read_fastq_records(&output);
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0].raw_header_line, "@r1 run=42");
+        assert_eq!(records[0].plus_line, "+plus comment");
+        assert_eq!(records[0].sequence, "AAAA");
+        assert_eq!(records[1].raw_header_line, "@r2");
+        assert_eq!(records[1].plus_line, "+");
+
+        fs::remove_file(input).expect("input should be removable");
+        fs::remove_file(output).expect("output should be removable");
+    }
+
+    #[test]
     fn seeded_random_fastq_subsampling_is_repeatable() {
         let input = std::env::temp_dir().join(format!(
             "bamana-subsample-random-{}.fastq.gz",
@@ -948,6 +1005,52 @@ mod tests {
         fs::remove_file(input).expect("input should be removable");
         fs::remove_file(out_a).expect("first output should be removable");
         fs::remove_file(out_b).expect("second output should be removable");
+    }
+
+    #[test]
+    fn fastq_gz_subsample_uses_case_insensitive_m4_gzip_writer_policy() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-subsample-gzip-policy-{}.fastq.gz",
+            std::process::id()
+        ));
+        let file = fs::File::create(&input).expect("gzip input should create");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        encoder
+            .write_all(b"@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n")
+            .expect("gzip input should write");
+        encoder.finish().expect("gzip input should finish");
+        let output = std::env::temp_dir().join(format!(
+            "bamana-subsample-gzip-policy-out-{}.FASTQ.GZ",
+            std::process::id()
+        ));
+
+        let response = run(SubsampleRequest {
+            input: input.clone(),
+            out: output.clone(),
+            fraction: 1.0,
+            mode: SubsampleMode::Deterministic,
+            seed: None,
+            identity: DeterministicIdentity::FullRecord,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let bytes = fs::read(&output).expect("output should read");
+        let count = count_fastq_records(&output).expect("gzip output should count");
+        let records = read_fastq_records(&output);
+        assert_eq!(bytes.get(0..2), Some(&[0x1f, 0x8b][..]));
+        assert_eq!(count, 2);
+        assert_eq!(records[0].raw_header_line, "@r1 run=42");
+        assert_eq!(records[0].plus_line, "+plus comment");
+        assert_eq!(records[1].read_name, "r2");
+
+        fs::remove_file(input).expect("input should be removable");
+        fs::remove_file(output).expect("output should be removable");
     }
 
     #[test]

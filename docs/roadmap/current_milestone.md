@@ -114,9 +114,12 @@ Known present pieces:
 * the current writer emits plain FASTQ or gzip-compressed FASTQ according to
   the output extension, preserves record header/plus-line content, emits LF
   line endings, and finalizes gzip output before returning success;
-* `enumerate`, FASTQ-side `subsample`, `consume`, `inspect_duplication`,
-  `deduplicate`, and FASTQ.GZ `explode` already consume native FASTQ helpers
-  in some form.
+* `enumerate` uses the stable FASTQ count facade for plain FASTQ and remains
+  `FASTQ.GZI`-aware for FASTQ.GZ;
+* FASTQ-side `subsample` uses the stable FASTQ reader, record identity, gzip
+  extension policy, and writer facade while preserving existing JSON payloads;
+* `consume`, `inspect_duplication`, `deduplicate`, and FASTQ.GZ `explode`
+  already consume native FASTQ helpers in some form.
 
 Known gaps:
 
@@ -124,8 +127,8 @@ Known gaps:
   field-only streaming integration remains future work even though
   `FastqRecordView` exists for borrowed access when line storage is already
   available;
-* command consumers need to be audited and migrated to a stable Milestone 4
-  parser/writer API;
+* remaining command consumers need to be audited and migrated to a stable
+  Milestone 4 parser/writer API;
 * FASTQ parser/writer benchmark smoke evidence has not yet been recorded.
 
 First consumer order:

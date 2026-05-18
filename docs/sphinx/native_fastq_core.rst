@@ -78,3 +78,19 @@ Later M4 tasks harden command-consumer audits; the current contract establishes
 module ownership, record ownership, borrowed field access, centralized FASTQ
 identity bytes, auditable gzip member semantics, and writer round-trip
 guarantees without changing command behavior.
+
+Command consumers
+-----------------
+
+``enumerate`` uses ``count_fastq_records`` for plain FASTQ inputs, so plain
+record counts flow through the same validated reader facade as other native
+FASTQ consumers. FASTQ.GZ enumeration remains ``FASTQ.GZI`` sidecar-aware:
+the command builds or reuses the sidecar and reports the indexed record total.
+
+FASTQ-side ``subsample`` streams records through ``open_fastq_reader`` and
+``read_next_fastq_record``, applies deterministic identity selection with
+``FastqRecord`` identity bytes, and writes retained records with
+``FastqWriter``. Because output is staged through a temporary file, the
+temporary path preserves the final ``.gz`` writer policy case-insensitively so
+``.fastq.gz`` and ``.FASTQ.GZ`` outputs both use gzip compression before being
+renamed into place.
