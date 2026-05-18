@@ -78,9 +78,8 @@ Known present pieces:
 
 Known gaps:
 
-* Milestone 2 does not yet have completion evidence;
-* header parse and serialization microbenchmarks are not yet present;
-* M2.9 and M2.10 remain outstanding.
+* Milestone 2 does not yet have closeout evidence;
+* M2.10 remains outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -784,7 +783,7 @@ Completion evidence:
 
 ### M2.9 Add Header Microbenchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -806,7 +805,28 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `header_microbench`, a standalone Rust microbenchmark binary for native
+  BAM header parsing and deterministic header serialization;
+* generated deterministic local BAM fixtures for `small`, `medium`, and
+  `large` profiles, so benchmark runs require no private input data;
+* added optional command startup timings for `verify` and `header` through
+  `--bamana-bin`;
+* added `benchmarks/results/header_microbench.schema.json` for
+  machine-readable benchmark output;
+* documented local benchmark commands and interpretation in Sphinx, benchmark
+  results docs, performance-core docs, and the Milestone 2 roadmap;
+* `cargo build --bin bamana --bin header_microbench` passed;
+* `cargo run --bin header_microbench -- --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out /tmp/bamana-header-small.json`
+  passed;
+* JSON smoke validation confirmed `header_parse_latency`,
+  `header_serialization_latency`, and `verify`/`header` command timings were
+  emitted with successful command exit counts;
+* `cargo test` passed with 151 library tests, 16 contract tests, 2 header
+  oracle integration tests, binary tests including `header_microbench`, and doc
+  tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.10 Close Milestone 2
 

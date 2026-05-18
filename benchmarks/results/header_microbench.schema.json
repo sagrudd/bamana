@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/benchmarks/results/header_microbench.schema.json",
+  "title": "Bamana Native BAM Header Microbenchmark Result",
+  "type": "object",
+  "required": ["benchmark", "version", "profile", "iterations", "fixture", "results", "notes"],
+  "properties": {
+    "benchmark": { "const": "header_microbench" },
+    "version": { "type": "integer", "minimum": 1 },
+    "profile": { "enum": ["small", "medium", "large"] },
+    "iterations": { "type": "integer", "minimum": 1 },
+    "fixture": {
+      "type": "object",
+      "required": [
+        "path",
+        "header_text_bytes",
+        "reference_count",
+        "serialized_header_bytes",
+        "bgzf_file_bytes",
+        "kept"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "header_text_bytes": { "type": "integer", "minimum": 0 },
+        "reference_count": { "type": "integer", "minimum": 0 },
+        "serialized_header_bytes": { "type": "integer", "minimum": 0 },
+        "bgzf_file_bytes": { "type": "integer", "minimum": 0 },
+        "kept": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "results": {
+      "type": "object",
+      "required": [
+        "header_parse_latency",
+        "header_serialization_latency",
+        "command_timings"
+      ],
+      "properties": {
+        "header_parse_latency": { "$ref": "#/$defs/measurement" },
+        "header_serialization_latency": { "$ref": "#/$defs/measurement" },
+        "command_timings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/command_timing" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": [
+        "operation",
+        "iterations",
+        "bytes_per_iteration",
+        "total_seconds",
+        "min_seconds",
+        "mean_seconds",
+        "max_seconds",
+        "bytes_per_second"
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "header_parse_latency",
+            "header_serialization_latency"
+          ]
+        },
+        "iterations": { "type": "integer", "minimum": 1 },
+        "bytes_per_iteration": { "type": "integer", "minimum": 0 },
+        "total_seconds": { "type": "number", "minimum": 0 },
+        "min_seconds": { "type": "number", "minimum": 0 },
+        "mean_seconds": { "type": "number", "minimum": 0 },
+        "max_seconds": { "type": "number", "minimum": 0 },
+        "bytes_per_second": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "command_timing": {
+      "type": "object",
+      "required": [
+        "command",
+        "iterations",
+        "ok_count",
+        "total_seconds",
+        "min_seconds",
+        "mean_seconds",
+        "max_seconds",
+        "exit_codes"
+      ],
+      "properties": {
+        "command": { "enum": ["verify", "header"] },
+        "iterations": { "type": "integer", "minimum": 1 },
+        "ok_count": { "type": "integer", "minimum": 0 },
+        "total_seconds": { "type": "number", "minimum": 0 },
+        "min_seconds": { "type": "number", "minimum": 0 },
+        "mean_seconds": { "type": "number", "minimum": 0 },
+        "max_seconds": { "type": "number", "minimum": 0 },
+        "exit_codes": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "type": "integer" },
+              { "type": "null" }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

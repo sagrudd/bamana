@@ -63,12 +63,14 @@ Known present pieces:
 * test-only header oracle coverage is isolated in `tests/header_oracle.rs`, and
   dependency-boundary tests protect native header and verify paths from direct
   `noodles` imports;
+* `header_microbench` provides runnable native header parse, serialization,
+  `verify`, and `header` timing hooks with machine-readable JSON output;
 * production dependency-boundary tests already prohibit direct `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
-* header parse and serialization microbenchmarks are not yet present.
+* Milestone 2 closeout evidence still needs to be recorded.
 
 ## What “Done” Means
 

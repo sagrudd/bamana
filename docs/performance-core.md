@@ -107,6 +107,7 @@ Expected benchmark hooks by milestone:
 * native BAM header codec
   * header parse latency
   * header serialization cost
+  * `verify` and `header` command startup timings
 * native BAM record scanner
   * records/sec scan throughput
   * selective-field extraction throughput

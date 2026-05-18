@@ -20,6 +20,7 @@ Build the site locally with:
    fastq_ingress
    fastq_gz_enumerate
    bgzf_microbenchmarks
+   header_microbenchmarks
 
 .. toctree::
    :maxdepth: 2

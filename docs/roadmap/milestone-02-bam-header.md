@@ -118,6 +118,8 @@ Disallowed:
 * startup / read-prefix cost comparison before and after migration
 * command-level `verify` and `header` reruns in the benchmark framework where
   appropriate
+* `header_microbench` JSON output conforming to
+  `benchmarks/results/header_microbench.schema.json`
 
 ## Risks / Follow-Up
 
