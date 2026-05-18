@@ -1,5 +1,25 @@
 # Current Milestone
 
+## Active Milestone
+
+**Milestone 2: Native BAM Header Codec**
+
+See:
+
+* [milestone-02-bam-header.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-02-bam-header.md)
+* [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
+
+## Why This Is Current
+
+Milestone 1 completed the native BGZF substrate. The next dependency layer is
+native BAM header ownership: BAM magic, `l_text`, textual SAM-style header
+content, the binary reference dictionary, and deterministic header
+serialization.
+
+This milestone is intentionally smaller than full BAM record scanning. It
+should make `verify` and `header` depend on Bamana-native BGZF plus native BAM
+header parsing without implying full alignment-record validation.
+
 ## Completed Milestone
 
 **Milestone 1: Native BGZF Core**
@@ -8,67 +28,74 @@ See:
 
 * [milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
 
-## Why This Was Current
+Milestone 1 completion evidence remains recorded in:
 
-Native BGZF ownership is the physical substrate for BAM. It enables:
-
-* EOF checks without external parser dependence
-* controlled block reading
-* future virtual-offset handling
-* the reader and writer foundation used by later BAM milestones
-
-Milestone 1 is substrate-focused. Some downstream command slices already exist
-in the repository, but they are not evidence that the native core migration is
-complete. They should be read as consumers or early command slices layered on
-top of the substrate.
-
-## Completion Status
-
-Milestone 1 is complete. The closing evidence is recorded in:
-
-* [milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-Final clean-worktree checks passed:
+The M1 closeout established:
 
-* `cargo test`
-* `cargo test --test contract`
-* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`
-* `cargo build --bin bamana --bin bgzf_microbench`
-* `cargo run --bin bgzf_microbench -- --profile small --iterations 1 --bamana-bin target/debug/bamana`
+* native BGZF block reading and EOF-marker handling;
+* BAM-compatible native BGZF writing;
+* virtual-offset groundwork for later random-access work;
+* BGZF microbenchmark hooks;
+* dependency guardrails that keep production `noodles` usage isolated to CRAM
+  compatibility.
+
+## Milestone 2 Baseline
+
+Known present pieces:
+
+* `src/bam/header.rs` contains native `parse_bam_header_from_reader` and
+  `parse_bam_header` entry points;
+* the native parser already checks BAM magic, signed `l_text`, signed `n_ref`,
+  signed reference-name length, NUL-terminated reference names, and signed
+  reference length;
+* raw SAM-style header text, parsed `@HD`, `@SQ`, `@RG`, `@PG`, `@CO`, and
+  unknown header records are represented in the JSON-facing header view;
+* binary reference names, lengths, and encounter-order indexes are exposed;
+* `serialize_bam_header_payload` can emit BAM header bytes for current writer
+  consumers;
+* `src/commands/header.rs` already routes the command through the native header
+  parser;
+* production dependency-boundary tests already prohibit direct `noodles` usage
+  outside the CRAM compatibility exception.
+
+Known gaps:
+
+* the header data model still needs an M2-specific tightening pass;
+* malformed-length and truncated-prefix tests need to be expanded around the
+  full M2 acceptance criteria;
+* textual `@SQ` versus binary reference dictionary reconciliation needs explicit
+  documented semantics and tests;
+* deterministic parse-serialize-parse behavior needs direct tests;
+* `verify` still needs to be raised from shallow BAM magic checking to the
+  native BGZF plus native header validation expected by M2;
+* header parse and serialization microbenchmarks are not yet present.
 
 ## What “Done” Means
 
-For contributors, Milestone 1 is done only when:
+For contributors, Milestone 2 is done only when:
 
-* BGZF block reading is Bamana-native and exercised by tests
-* BGZF EOF behavior is Bamana-native and tested
-* BGZF writing is sufficient for BAM-compatible output foundations
-* benchmark hooks for read, write, and EOF latency are defined and runnable
-* no production BGZF hot path depends on `noodles`
-
-All of those closure criteria are now satisfied for Milestone 1.
+* BAM header text and binary reference dictionaries parse natively;
+* malformed and negative header lengths fail safely with structured errors;
+* deterministic header serialization is tested and shared by writer consumers;
+* textual and binary reference metadata reconciliation is documented and tested;
+* production `header` and `verify` behavior is not backed by `noodles`;
+* header microbenchmark hooks are runnable and documented;
+* completion evidence is recorded in `taskmap.md`.
 
 ## Command-Surface Boundary
 
-Milestone 1 completion evidence:
+Milestone 2 completion evidence is limited to native BAM header ownership and
+the `verify` and `header` command paths that consume it.
 
-* `check_eof` uses native BGZF EOF marker handling
-* `verify` uses native BGZF first-member inflation for shallow BAM magic checks
-* BAM-compatible writer paths can emit native BGZF streams
-* `bgzf_microbench` can time native read, write, EOF, `verify`, and `check_eof`
-
-Downstream first slices, including commands such as `benchmark`, `fastq`,
-`unmap`, `subsample`, `consume`, `sort`, `merge`, and related inspection or
-transform commands, remain outside the Milestone 1 closure criteria except
-where they directly exercise the BGZF substrate.
+Commands such as `reheader`, `check_sort`, `check_map`, `summary`, `merge`,
+`checksum`, and later scanner-driven commands may benefit from the header codec,
+but their broader semantics remain downstream work unless an explicit M2 task
+updates them.
 
 ## What Should Not Happen
 
-Do not skip ahead to command-level rewrites that assume a mature native scanner
-or header codec before the BGZF substrate is clearly owned.
-
-## Next Milestone
-
-Milestone 2 is the native BAM header codec. It should build on the completed
-BGZF substrate rather than reopening Milestone 1 scope.
+Do not treat Milestone 2 as full BAM validation, full record scanning, BAI/CSI
+random access, or command-wide migration. Those remain later milestones or
+downstream command work.

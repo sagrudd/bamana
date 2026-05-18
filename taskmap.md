@@ -65,12 +65,13 @@ native header path.
 
 ## Milestone 2 Current State
 
-Status: planned.
+Status: active.
 
 Known present pieces:
 
 * Milestone 1 BGZF reading is complete and can inflate the first BAM member;
-* `src/bam/header.rs` already contains first-slice header parsing helpers;
+* `src/bam/header.rs` already contains native first-slice header parsing
+  helpers;
 * `header` and `verify` exist as public commands and have JSON contracts;
 * dependency-boundary checks already prevent production `noodles` usage outside
   the CRAM compatibility exception.
@@ -83,8 +84,7 @@ Known gaps:
 * malformed-length, reference-dictionary reconciliation, and deterministic
   reserialization behavior need explicit milestone tests;
 * header parse and serialization microbenchmarks are not yet present;
-* `docs/roadmap/current_milestone.md` still records Milestone 1 as the completed
-  milestone and Milestone 2 as next.
+* M2.2 through M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -434,7 +434,7 @@ Completion evidence:
 
 ### M2.1 Activate Milestone 2 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -457,7 +457,31 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* updated `docs/roadmap/current_milestone.md` so Milestone 2 is the active
+  milestone while preserving Milestone 1 completion evidence;
+* audited `src/bam/header.rs`, `src/bam/reader.rs`, `src/bam/write.rs`,
+  `src/commands/header.rs`, and `src/commands/verify.rs` against the M2
+  roadmap;
+* confirmed existing native header pieces: BAM magic parsing, signed `l_text`
+  validation, raw SAM-style header preservation, parsed `@HD`, `@SQ`, `@RG`,
+  `@PG`, `@CO`, and unknown-record representation, signed `n_ref` validation,
+  binary reference parsing, NUL-terminated reference-name validation, signed
+  reference length validation, and `serialize_bam_header_payload` for current
+  writer consumers;
+* confirmed existing tests exercise rich header parsing, binary-reference
+  authority when textual `@SQ` length disagrees, writer header round-trip,
+  header-only validation mode, and downstream header consumers in sort, unmap,
+  merge, subsample, explode, and related commands;
+* recorded explicit gaps for M2.2 through M2.10: data-model tightening,
+  malformed/truncated header-prefix coverage, text-vs-binary reference
+  reconciliation semantics, deterministic parse-serialize-parse coverage,
+  `verify` migration from shallow BAM magic to native header validation, and
+  header microbenchmarks;
+* `cargo test` passed with 120 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `cargo test --test contract` passed with 14 contract tests;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.2 Define Native Header Data Model
 
