@@ -9,7 +9,9 @@ is the Native BAM Record Scanner milestone described in
 FASTQ / FASTQ.GZ Parser milestone described in
 `docs/roadmap/milestone-04-fastq.md`. Milestone 5 is the Command Migration Off
 `noodles` milestone described in
-`docs/roadmap/milestone-05-command-migration.md`.
+`docs/roadmap/milestone-05-command-migration.md`. Milestone 6 is the Native
+Inspection And Validation Commands milestone described in
+`docs/roadmap/milestone-06-inspection-validation.md`.
 
 ## Milestone 1 Definition
 
@@ -2073,6 +2075,325 @@ Acceptance criteria:
 * production `noodles` usage remains isolated to documented CRAM
   compatibility, tests, oracles, and fixtures;
 * Milestone 5 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 6 Definition
+
+Milestone 6 is complete only when Bamana's first operational BAM inspection
+and validation command wave is hardened on native substrates. The milestone
+covers `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+`validate`. It is the follow-on to Milestone 5: after proof commands establish
+the native path, M6 makes the inspection commands dependable, well bounded,
+benchmarked, and protected from production `noodles` hot-path regressions.
+
+## Milestone 6 Planned State
+
+Status: planned. Milestone 6 should not become active until Milestone 5 has
+closed, because the proof-command migration should establish the final
+dependency-boundary and benchmark conventions for this command wave.
+
+Known present pieces:
+
+* `check_eof` already uses the native BGZF EOF-marker detection path;
+* `check_sort` already uses `BamScanner` and scanner-owned field helpers for
+  record traversal;
+* `check_map` already preserves index-preferred behavior and uses
+  `BamScanner` for scan fallback record traversal;
+* `summary` already uses `BamScanner` for bounded and full record scans;
+* `check_tag` already uses `BamScanner` plus record-view aux helpers for
+  selected tag lookup;
+* `validate` already uses `BamScanner` and `BamRecordView` for
+  scanner-compatible record-level structural checks;
+* scanner malformed-record tests and dependency-boundary tests already protect
+  the scanner substrate and selected migrated hot paths.
+
+Known gaps:
+
+* the inspection command set has not yet been audited as one governed M6 wave;
+* command contracts and examples need a fresh pass for bounded versus full-scan
+  claims, index-derived versus scan-derived evidence, and validation caveats;
+* `validate` needs explicit M6 evidence that it remains structural and does
+  not overclaim biological, reference-level, or optional-field semantic
+  correctness;
+* command-level benchmark smoke evidence is not yet recorded for the full M6
+  inspection wave;
+* dependency-boundary tests do not yet name `check_eof`, `check_sort`,
+  `check_map`, `summary`, `check_tag`, and `validate` as one protected
+  milestone set.
+
+Milestone 6 closeout evidence must include:
+
+* all M6.1 through M6.10 tasks complete;
+* `check_eof` documented and tested as the native BGZF EOF-marker command;
+* `check_sort`, `check_map`, `summary`, `check_tag`, and `validate`
+  documented and tested as native scanner/header consumers for their
+  scanner-compatible paths;
+* command JSON contracts remaining stable or deliberately versioned;
+* fixture coverage for bounded scan behavior, full scan behavior, malformed
+  inputs, absent evidence, and index-versus-scan distinctions where relevant;
+* command-level benchmark or smoke benchmark evidence for the M6 command set;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 6 evidence is limited to inspection and validation commands:
+  `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+  `validate`.
+* Mutation, rewrite, normalization, deduplication, forensic, checksum, sort,
+  merge, explode, and ingest families remain later waves unless a specific M6
+  task explicitly includes them.
+
+## Milestone 6 Task List
+
+### M6.1 Activate Milestone 6 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 6 is the active
+  milestone only after Milestone 5 is complete;
+* update roadmap/task-map status so Milestones 1 through 5 remain recorded
+  with their correct completion state;
+* audit `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+  `validate` command implementations, tests, contracts, examples, and docs;
+* record which command paths already use native BGZF/header/scanner primitives
+  and which still need hardening;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 6 as active only when M5 is
+  closed;
+* the task map records present M6 command evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contract commands remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M6.2 Freeze Inspection Command Contracts And Examples
+
+Status: pending.
+
+Tasks:
+
+* audit JSON schemas and success/failure examples for `check_eof`,
+  `check_sort`, `check_map`, `summary`, `check_tag`, and `validate`;
+* confirm CLI documentation describes each command's bounded and full-scan
+  semantics accurately;
+* add or update fixtures for malformed BAM, missing EOF, sorted/unsorted BAM,
+  mapped/unmapped evidence, absent tags, and validation failures where gaps
+  exist;
+* record any intentional contract changes before implementation hardening.
+
+Acceptance criteria:
+
+* inspection command schemas and examples exist and parse;
+* contract tests fail if governed M6 command documentation, schemas, or
+  examples disappear;
+* bounded evidence and absence claims are documented without overclaiming.
+
+Completion evidence:
+
+* pending.
+
+### M6.3 Harden `check_eof` Native BGZF Boundary
+
+Status: pending.
+
+Tasks:
+
+* confirm `check_eof` uses the native BGZF EOF-marker path only;
+* add tests for present EOF marker, missing EOF marker, truncated tail, and
+  non-BGZF inputs if coverage gaps remain;
+* ensure docs state that `check_eof` does not imply BAM header validity or
+  alignment-record validity;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `check_eof` has no production `noodles` dependency;
+* success and failure payloads remain stable or are deliberately versioned;
+* docs preserve the narrow EOF-only command boundary.
+
+Completion evidence:
+
+* pending.
+
+### M6.4 Harden `check_sort` Scanner Evidence
+
+Status: pending.
+
+Tasks:
+
+* audit `check_sort` native scanner traversal and strict/bounded scan behavior;
+* strengthen tests for coordinate sort, queryname sort, specialized sort,
+  unknown sort order, bounded scan caveats, and strict scan failures where
+  needed;
+* ensure docs state that `check_sort` is not full BAM validation;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `check_sort` remains scanner-backed for record traversal;
+* JSON contracts remain stable or are deliberately versioned;
+* bounded and strict modes are test-covered and documented.
+
+Completion evidence:
+
+* pending.
+
+### M6.5 Harden `check_map` Index And Scanner Evidence
+
+Status: pending.
+
+Tasks:
+
+* audit `check_map` index-preferred behavior and scanner fallback behavior;
+* strengthen tests for usable index summaries, missing/unusable indices, scan
+  fallback, mapped/unmapped counts, and bounded caveats where needed;
+* ensure docs distinguish index-derived evidence from scan-derived evidence;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `check_map` preserves index-preferred behavior where documented;
+* scanner fallback remains native and bounded as documented;
+* payloads identify evidence source and limitations accurately.
+
+Completion evidence:
+
+* pending.
+
+### M6.6 Harden `summary` Scanner Evidence
+
+Status: pending.
+
+Tasks:
+
+* audit `summary` bounded and full scan paths;
+* strengthen tests for header-only summaries, index-assisted summaries,
+  bounded scans, full scans, malformed records, and empty BAM bodies where
+  needed;
+* ensure docs state that `summary` is operational evidence, not full
+  validation;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `summary` uses native header/scanner primitives for record evidence;
+* bounded/full scan distinctions remain visible in output;
+* JSON contracts remain stable or are deliberately versioned.
+
+Completion evidence:
+
+* pending.
+
+### M6.7 Harden `check_tag` Aux Traversal Evidence
+
+Status: pending.
+
+Tasks:
+
+* audit `check_tag` scanner-owned aux traversal;
+* strengthen tests for present tag, absent tag under bounded scan, absent tag
+  under complete scan, duplicate tags, malformed aux payloads, and unsupported
+  aux shapes where needed;
+* ensure docs state that tag value semantics are limited to traversal and
+  supported extraction behavior;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `check_tag` uses scanner-owned aux traversal;
+* absent-tag claims distinguish bounded from complete scans;
+* malformed aux failures remain structured and precise.
+
+Completion evidence:
+
+* pending.
+
+### M6.8 Harden `validate` Structural Validation Boundary
+
+Status: pending.
+
+Tasks:
+
+* audit `validate` scanner-backed record structural checks;
+* strengthen tests for malformed record structure, aux traversal failures,
+  bounded validation, severity reporting, and clean minimal BAM inputs where
+  needed;
+* ensure docs state that `validate` does not imply biological correctness,
+  reference concordance, or full optional-field semantic validation;
+* add command-level smoke timing where benchmark hooks support it.
+
+Acceptance criteria:
+
+* `validate` remains native for scanner-compatible record traversal;
+* structural findings are precise and severity-coded;
+* public docs and payloads avoid overclaiming validation scope.
+
+Completion evidence:
+
+* pending.
+
+### M6.9 Strengthen M6 Dependency Boundaries And Benchmarks
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name the M6 inspection command set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* add or formalize command-level benchmark hooks for the M6 command set;
+* record benchmark interpretation notes that distinguish substrate timing,
+  command startup, bounded scans, full scans, index use, and malformed-input
+  behavior.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the M6 command set;
+* every M6 command has runnable smoke benchmark or timing evidence;
+* benchmark notes are documented and do not imply comparator parity where none
+  exists.
+
+Completion evidence:
+
+* pending.
+
+### M6.10 Close Milestone 6
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run M6 command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-06-inspection-validation.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 6 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M6.1 through M6.10 tasks are complete;
+* `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+  `validate` are documented with native inspection/validation evidence;
+* full tests, contract tests, Sphinx, and M6 command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 6 completion evidence is recorded in the repository.
 
 Completion evidence:
 

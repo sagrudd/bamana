@@ -78,22 +78,18 @@ This order is retained because it matches the dependency chain of the runtime:
 * goal: prove the substrate is real by migrating `verify`, `header`, and
   `subsample` in that order
 
+### Milestone 6: Native Inspection And Validation Commands
+
+* status: planned
+* detail: [roadmap/milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
+* goal: harden native inspection and validation command paths after the proof
+  command migration
+* commands enabled first: `check_eof`, `check_sort`, `check_map`, `summary`,
+  `check_tag`, `validate`
+
 ## Later Waves
 
-Later migration waves should follow after Milestone 5.
-
-### Wave 2
-
-Primary command targets:
-
-* `check_eof`
-* `check_sort`
-* `check_map`
-* `summary`
-* `check_tag`
-* `validate`
-
-These commands rely heavily on native scan and selective decode quality.
+Later migration waves should follow after Milestone 6.
 
 ### Wave 3
 
