@@ -15,7 +15,9 @@ Inspection And Validation Commands milestone described in
 Native Mutation, Remediation, And Forensics Commands milestone described in
 `docs/roadmap/milestone-07-mutation-forensics.md`. Milestone 8 is the Native
 Transform, Checksum, Explode, And Ingest Commands milestone described in
-`docs/roadmap/milestone-08-transform-ingest.md`.
+`docs/roadmap/milestone-08-transform-ingest.md`. Milestone 9 is the Native BAM
+Index And Random Access milestone described in
+`docs/roadmap/milestone-09-bam-index-random-access.md`.
 
 ## Milestone 1 Definition
 
@@ -3112,6 +3114,354 @@ Acceptance criteria:
 * production `noodles` usage remains isolated to documented CRAM
   compatibility, tests, oracles, and fixtures;
 * Milestone 8 completion evidence is recorded in the repository.
+
+Completion evidence:
+
+* pending.
+
+## Milestone 9 Definition
+
+Milestone 9 is complete only when Bamana owns BAM index writing, deeper BAM
+index validation, and the random-access groundwork needed by later indexed
+region workflows. The milestone covers native BAI creation for supported BAM
+inputs, `check_index` hardening, virtual-offset-backed reader/scanner
+plumbing, scoped CSI decisions, and index-aware evidence paths in commands such
+as `check_map` and `summary`.
+
+## Milestone 9 Planned State
+
+Status: planned. Milestone 9 should not become active until Milestone 8 has
+closed, because transform and ingest commands must first settle output safety,
+sorting semantics, and checksum evidence before generated BAM indices can be
+treated as a dependable contract.
+
+Known present pieces:
+
+* Milestone 1 introduced `VirtualOffset` groundwork for future BAI/CSI and
+  random-access work;
+* `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic;
+* `src/bam/index.rs` already discovers adjacent `.bam.bai`, `.bai`,
+  `.bam.csi`, and `.csi` candidates with CSI preference support;
+* `parse_bai` already performs shallow BAI parsing, reference-count
+  reconciliation, metadata pseudo-bin summary extraction, and optional
+  unplaced-unmapped count parsing;
+* `parse_csi_header` already parses CSI header metadata enough to report
+  detected-but-not-supported status;
+* `check_index` already reports adjacent index presence, selected path, kind,
+  shallow syntactic validity, staleness, and compatibility status;
+* `index` already creates `FASTQ.GZI` sidecars for FASTQ.GZ inputs;
+* BAM `index` already validates BAM plausibility and output path resolution but
+  explicitly reports BAI/CSI writing as unimplemented.
+
+Known gaps:
+
+* BAM `index` cannot yet write real BAI or CSI output;
+* native BGZF scanning does not yet expose enough virtual-offset accounting for
+  BAI chunk and linear-index construction;
+* BAI binning, chunk merging, metadata pseudo-bin emission, linear-index
+  construction, and unplaced-unmapped accounting remain to be implemented;
+* `check_index` does not yet validate chunks, virtual-offset ordering, linear
+  index monotonicity, reference span plausibility, or random-access usability;
+* CSI support remains header-only detection rather than scoped parsing/writing
+  or an explicit long-term deferral;
+* index-aware `check_map` and `summary` evidence remains limited to currently
+  parsed BAI metadata and scan fallback behavior;
+* dependency-boundary tests do not yet name BAM index writing, validation, and
+  random-access paths as one protected milestone set;
+* command-level benchmark smoke evidence is not yet recorded for BAM `index`,
+  `check_index`, indexed `check_map`, or indexed `summary`.
+
+Milestone 9 closeout evidence must include:
+
+* all M9.1 through M9.10 tasks complete;
+* BAM `index` documented and tested as creating real BAI for supported
+  coordinate-sorted BAM inputs, or rejecting unsupported inputs precisely;
+* `check_index` documented and tested as validating BAI/CSI sidecars to the
+  implemented depth without overclaiming random-access proof;
+* virtual-offset capture documented and tested as the substrate for BAI/CSI and
+  later indexed region work;
+* index-aware `check_map` and `summary` evidence documented as distinct from
+  scan-derived evidence;
+* CSI support documented as implemented to a scoped contract or explicitly
+  deferred with precise reasons;
+* command JSON contracts remaining stable or deliberately versioned;
+* command-level benchmark or smoke benchmark evidence for the M9 command set;
+* production `noodles` usage remaining isolated to CRAM compatibility, tests,
+  oracles, and fixtures.
+
+Command-surface scope:
+
+* Milestone 9 evidence is limited to BAM index writing, BAM index inspection,
+  virtual-offset random-access groundwork, and first index-aware command
+  evidence in `check_map` and `summary`.
+* Native CRAM parsing, indexed region selection commands, broad random-access
+  APIs, external comparator parity, and FASTQ.GZI work beyond existing sidecar
+  behavior remain later work unless a specific M9 task explicitly includes
+  them.
+
+## Milestone 9 Task List
+
+### M9.1 Activate Milestone 9 Scope And Baseline
+
+Status: pending.
+
+Tasks:
+
+* update `docs/roadmap/current_milestone.md` so Milestone 9 is the active
+  milestone only after Milestone 8 is complete;
+* update roadmap/task-map status so Milestones 1 through 8 remain recorded
+  with their correct completion state;
+* audit `src/bam/index.rs`, `src/bgzf/virtual_offset.rs`,
+  `src/bgzf/reader.rs`, `src/bam/scan.rs`, `src/commands/index.rs`,
+  `src/commands/check_index.rs`, `check_map`, and `summary`;
+* record which index and random-access pieces already exist and which still
+  need implementation;
+* update README, CLI docs, Sphinx docs, and roadmap docs if the active
+  milestone status changes visible project guidance.
+
+Acceptance criteria:
+
+* current milestone documentation names Milestone 9 as active only when M8 is
+  closed;
+* the task map records present M9 index/random-access evidence and gaps;
+* no command behavior changes are made unless required by the baseline audit;
+* public contract commands remain explicitly protected.
+
+Completion evidence:
+
+* pending.
+
+### M9.2 Freeze Index Command Contracts And Fixtures
+
+Status: pending.
+
+Tasks:
+
+* audit JSON schemas and success/failure examples for `index` and
+  `check_index`;
+* confirm CLI documentation describes BAM BAI/CSI behavior, FASTQ.GZI behavior,
+  overwrite rules, stale-index heuristics, and implemented validation depth
+  accurately;
+* add or update fixtures for valid BAI, invalid BAI, mismatched reference
+  counts, stale indices, CSI headers, unsupported CSI, coordinate-sorted BAM,
+  unsorted BAM rejection, and FASTQ.GZI sidecar behavior where gaps exist;
+* record any intentional contract changes before index implementation work.
+
+Acceptance criteria:
+
+* `index` and `check_index` schemas and examples exist and parse;
+* contract tests fail if governed index command documentation, schemas, or
+  examples disappear;
+* BAM index creation claims are not made until a sidecar is actually written.
+
+Completion evidence:
+
+* pending.
+
+### M9.3 Expose BGZF Virtual Offsets During Native Scans
+
+Status: pending.
+
+Tasks:
+
+* extend native BGZF reader/scanner plumbing to expose compressed block offsets
+  and uncompressed in-block offsets at record boundaries;
+* ensure virtual offsets use the `VirtualOffset` type rather than ambiguous raw
+  integers in new code;
+* add tests for virtual offsets across single-block and multi-block BAM bodies;
+* document how the offsets feed BAI/CSI chunk and linear-index construction.
+
+Acceptance criteria:
+
+* scanner/index code can obtain stable virtual offsets for alignment record
+  starts and ends;
+* virtual offsets remain bounded and packed according to BGZF semantics;
+* tests cover block-boundary and multi-record cases.
+
+Completion evidence:
+
+* pending.
+
+### M9.4 Implement Native BAI Binning And Linear Index Construction
+
+Status: pending.
+
+Tasks:
+
+* implement BAI bin calculation for mapped BAM records;
+* accumulate chunks per reference/bin using virtual-offset record spans;
+* merge adjacent or overlapping chunks where the BAI format permits it;
+* construct the BAI linear index from record start virtual offsets;
+* account for unmapped and unplaced records according to the supported BAI
+  contract.
+
+Acceptance criteria:
+
+* BAI index data structures can be built from scanner-owned record traversal;
+* coordinate constraints and unsupported record shapes produce precise errors;
+* unit tests cover representative bins, chunks, linear intervals, and unmapped
+  accounting.
+
+Completion evidence:
+
+* pending.
+
+### M9.5 Implement BAM `index` BAI Writing
+
+Status: pending.
+
+Tasks:
+
+* route BAM `index --format bai` and default BAM index creation through the
+  native BAI builder and writer;
+* enforce coordinate-sort or documented supported-order requirements;
+* write BAI sidecars atomically with overwrite/force behavior consistent with
+  other output commands;
+* preserve FASTQ.GZI behavior for FASTQ.GZ inputs;
+* update command payloads and examples only if the contract intentionally
+  changes.
+
+Acceptance criteria:
+
+* BAM `index` can create a real BAI sidecar for supported BAM fixtures;
+* unsupported sort order, invalid records, or impossible coordinates fail with
+  structured errors;
+* output paths, overwrite behavior, and `created` flags match actual work.
+
+Completion evidence:
+
+* pending.
+
+### M9.6 Harden `check_index` BAI And CSI Validation
+
+Status: pending.
+
+Tasks:
+
+* validate BAI chunks, virtual-offset ordering, bin structure, linear-index
+  shape, metadata pseudo-bin consistency, and reference counts where feasible;
+* validate CSI headers and either implement scoped CSI structural parsing or
+  preserve detected-but-not-supported behavior with precise notes;
+* distinguish syntactic validity, staleness, compatibility, and random-access
+  usability in payloads and docs;
+* add tests for corrupt chunks, impossible virtual offsets, mismatched
+  references, stale indices, unsupported CSI, and unknown index kinds.
+
+Acceptance criteria:
+
+* `check_index` reports validation depth precisely;
+* invalid BAI/CSI sidecars fail deterministically with useful details;
+* random-access usability is not overclaimed beyond implemented checks.
+
+Completion evidence:
+
+* pending.
+
+### M9.7 Add Random-Access Reader Groundwork
+
+Status: pending.
+
+Tasks:
+
+* add a minimal native seek/read path that can reopen or reposition BGZF input
+  at a `VirtualOffset` where the existing BGZF reader design allows it;
+* add helpers to fetch records from BAI chunks for internal tests or first
+  consumers;
+* keep public region-query command behavior out of scope unless explicitly
+  added later;
+* add tests proving indexed chunks can retrieve expected records from supported
+  fixtures.
+
+Acceptance criteria:
+
+* random-access helpers consume `VirtualOffset` values, not raw byte offsets;
+* random-access tests prove at least one indexed chunk can be used to retrieve
+  the expected records;
+* unsupported random-access scenarios fail clearly.
+
+Completion evidence:
+
+* pending.
+
+### M9.8 Integrate Index-Aware Evidence In First Consumers
+
+Status: pending.
+
+Tasks:
+
+* audit `check_map` index-derived evidence against the deeper BAI validation
+  and generated BAI sidecars;
+* audit `summary` index-derived evidence against the deeper BAI validation and
+  generated BAI sidecars;
+* update payload notes and docs to distinguish generated-index evidence,
+  discovered-index evidence, and scan-derived evidence;
+* add tests for index-preferred and scan-fallback behavior after M9 index
+  writing exists.
+
+Acceptance criteria:
+
+* `check_map` and `summary` use index evidence only when index validation says
+  it is usable for the needed purpose;
+* fallback scans remain native and documented;
+* payloads clearly identify evidence source.
+
+Completion evidence:
+
+* pending.
+
+### M9.9 Strengthen M9 Dependency Boundaries And Benchmarks
+
+Status: pending.
+
+Tasks:
+
+* extend dependency-boundary tests to name the M9 index and random-access
+  command/substrate set;
+* ensure production direct `noodles` imports remain limited to documented CRAM
+  compatibility paths;
+* add or formalize command-level benchmark hooks for BAM `index`,
+  `check_index`, indexed `check_map`, and indexed `summary`;
+* record benchmark interpretation notes that distinguish index construction,
+  index validation, random-access lookup, scan fallback, and command startup
+  costs.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the M9 command and substrate
+  set;
+* every M9 command path has runnable smoke benchmark or timing evidence;
+* benchmark notes are documented and do not imply random-access or comparator
+  parity where none exists.
+
+Completion evidence:
+
+* pending.
+
+### M9.10 Close Milestone 9
+
+Status: pending.
+
+Tasks:
+
+* run `cargo test`;
+* run `cargo test --test contract`;
+* run M9 command benchmark or smoke benchmark profiles;
+* run the Sphinx documentation build;
+* update `docs/roadmap/milestone-09-bam-index-random-access.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 9 completion evidence;
+* commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* all M9.1 through M9.10 tasks are complete;
+* `index`, `check_index`, virtual-offset capture, and first index-aware
+  consumers are documented with native BAM index/random-access evidence;
+* full tests, contract tests, Sphinx, and M9 command benchmark smoke checks
+  pass;
+* production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* Milestone 9 completion evidence is recorded in the repository.
 
 Completion evidence:
 

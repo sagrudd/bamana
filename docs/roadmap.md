@@ -104,6 +104,15 @@ This order is retained because it matches the dependency chain of the runtime:
   paths
 * commands enabled first: `sort`, `merge`, `explode`, `checksum`, `consume`
 
+### Milestone 9: Native BAM Index And Random Access
+
+* status: planned
+* detail: [roadmap/milestone-09-bam-index-random-access.md](roadmap/milestone-09-bam-index-random-access.md)
+* goal: own BAM index writing, deeper index validation, and virtual-offset
+  random-access groundwork
+* commands enabled first: `index`, `check_index`, indexed `check_map`,
+  indexed `summary`
+
 CRAM remains explicitly staged later and must not derail the BAM/FASTQ native
 core sequence.
 
