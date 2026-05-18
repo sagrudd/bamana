@@ -59,6 +59,8 @@ pub enum Commands {
     AnnotateRg(AnnotateRgArgs),
     /// Consume files and directories into a normalized BAM with explicit ingest semantics.
     Consume(ConsumeArgs),
+    /// Split a BAM, SAM, or FASTQ.GZ input into similarly sized shards.
+    Explode(ExplodeArgs),
     /// Rewrite a BAM as a single FASTQ.GZ stream as quickly as possible.
     Fastq(FastqArgs),
     /// Compute machine-verifiable BAM checksums over explicit checksum domains.
@@ -438,6 +440,25 @@ pub struct ConsumeArgs {
     /// Future exclude filter applied to discovered paths.
     #[arg(long = "exclude-glob")]
     pub exclude_glob: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ExplodeArgs {
+    /// Input BAM, SAM, or FASTQ.GZ file to split.
+    #[arg(long = "input")]
+    pub input: PathBuf,
+    /// Output directory for exploded shard files.
+    #[arg(long = "out-dir")]
+    pub out_dir: PathBuf,
+    /// Number of similarly sized output shards to produce.
+    #[arg(long = "explode")]
+    pub explode: usize,
+    /// Maximum worker threads for indexed FASTQ.GZ sharding. Defaults to all available cores.
+    #[arg(short = 'j', long = "threads", default_value_t = 0)]
+    pub threads: usize,
+    /// Overwrite an existing shard set.
+    #[arg(long = "force")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

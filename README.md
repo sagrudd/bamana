@@ -27,6 +27,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana checksum --bam <bamfile>`
 * `bamana sort --bam <bamfile> --out <result.bam>`
 * `bamana merge --bam <bamfile1> <bamfile2> ... --out <result.bam>`
+* `bamana explode --input <file> --out-dir <dir> --explode <N>`
 * `bamana fastq --bam <bamfile>`
 * `bamana unmap --bam <bamfile>`
 * `bamana benchmark --profile <profile> --fastq <reads.fastq.gz> --report <report.pdf>`
@@ -75,7 +76,8 @@ The current semantics are intentionally narrow:
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
-* `index` validates BAM inputs honestly, still defers BAI/CSI writing, and now creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with cumulative record totals stored at each checkpoint
+* `index` validates BAM inputs honestly, still defers BAI/CSI writing, and now creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
+* `explode` splits one `BAM`, `SAM`, or `FASTQ.GZ` input into contiguous shards while preserving the original encounter order of reads or alignments within each shard; the `FASTQ.GZ` path auto-creates or reuses adjacent `FASTQ.GZI` metadata, aligns shard boundaries to available index cutpoints, and allows shard sizes to vary so every sequence lands in exactly one shard without extra reordering work
 * `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
@@ -185,6 +187,9 @@ cargo run -- sort --bam example.bam --out sorted.bam --verify-checksum --create-
 cargo run -- merge --bam shard1.bam shard2.bam --out merged.bam
 cargo run -- merge --bam a.bam b.bam --out merged.sorted.bam --sort --verify-checksum
 cargo run -- merge --bam lane1.bam lane2.bam --out merged.qname.bam --order queryname --queryname-suborder lexicographical
+cargo run -- explode --input reads.fastq.gz --out-dir shards --explode 8
+cargo run -- explode --input input.bam --out-dir bam_shards --explode 4
+cargo run -- explode --input input.sam --out-dir sam_shards --explode 4
 cargo run -- fastq --bam input.bam --out input.fastq.gz -j 8
 cargo run -- unmap --bam aligned.bam --out aligned.unmapped.bam --dry-run
 cargo run -- benchmark --profile fastq_gz_enumerate --fastq reads.fastq.gz --report fastq-gz-enumerate.pdf --force
@@ -288,12 +293,13 @@ selects a default output path (`<bam>.bai` or `<bam>.csi`), and enforces
 overwrite rules, but actual BAI/CSI writing is still deferred and the JSON
 error response makes that limitation explicit instead of pretending an index
 was built. For `FASTQ.GZ` it writes a binary `FASTQ.GZI` sidecar, defaulting to
-`<input>.gzi`, with checkpoints sampled at approximately 1% compressed-offset
+`<input>.gzi`, with checkpoints sampled at approximately 0.1% compressed-offset
 intervals and pinned to completed FASTQ record boundaries rather than every
-read. The `FASTQ.GZI` sidecar stores header metadata plus sampled
-`(compressed_offset, uncompressed_offset, cumulative_records)` checkpoint
-pairs, so enumerate can reuse an exact indexed record total and consume can
-size parallel worker batches from the same sidecar.
+read. The `FASTQ.GZI` sidecar now stores header metadata, planner flags, and
+sampled `(compressed_offset, uncompressed_offset, cumulative_records)`
+checkpoint pairs, so enumerate can reuse an exact indexed record total,
+explode can derive dense contiguous shard plans, and consume can size parallel
+worker batches from the same sidecar.
 
 `summary` combines BAM header metadata with a bounded scan by default and
 switches to full-file totals only when EOF is actually reached or `--full-scan`

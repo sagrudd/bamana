@@ -7,34 +7,17 @@ use bamana::{
     json::{CommandResponse, emit_response},
 };
 use clap::Parser;
-use serde::Serialize;
 use commands::{
-    annotate_rg::AnnotateRgRequest,
-    benchmark::BenchmarkRequest,
-    check_eof::CheckEofRequest,
-    check_index::CheckIndexRequest,
-    check_map::CheckMapRequest,
-    check_sort::CheckSortRequest,
-    check_tag::CheckTagRequest,
-    checksum::ChecksumRequest,
-    consume::ConsumeRequest,
-    deduplicate::DeduplicateRequest,
-    enumerate::EnumerateRequest,
-    fastq::FastqRequest,
-    forensic_inspect::ForensicInspectRequest,
-    header::HeaderRequest,
-    identify::IdentifyRequest,
-    index::IndexRequest,
-    inspect_duplication::InspectDuplicationRequest,
-    merge::MergeRequest,
-    reheader::ReheaderRequest,
-    sort::SortRequest,
-    subsample::SubsampleRequest,
-    summary::SummaryRequest,
-    unmap::UnmapRequest,
-    validate::ValidateRequest,
-    verify::VerifyRequest,
+    annotate_rg::AnnotateRgRequest, benchmark::BenchmarkRequest, check_eof::CheckEofRequest,
+    check_index::CheckIndexRequest, check_map::CheckMapRequest, check_sort::CheckSortRequest,
+    check_tag::CheckTagRequest, checksum::ChecksumRequest, consume::ConsumeRequest,
+    deduplicate::DeduplicateRequest, enumerate::EnumerateRequest, explode::ExplodeRequest,
+    fastq::FastqRequest, forensic_inspect::ForensicInspectRequest, header::HeaderRequest,
+    identify::IdentifyRequest, index::IndexRequest, inspect_duplication::InspectDuplicationRequest,
+    merge::MergeRequest, reheader::ReheaderRequest, sort::SortRequest, subsample::SubsampleRequest,
+    summary::SummaryRequest, unmap::UnmapRequest, validate::ValidateRequest, verify::VerifyRequest,
 };
+use serde::Serialize;
 
 fn emit_timed_response<T, F>(pretty: bool, build: F) -> ExitCode
 where
@@ -177,6 +160,15 @@ fn main() -> ExitCode {
                 platform: args.platform,
                 include_glob: args.include_glob,
                 exclude_glob: args.exclude_glob,
+            })
+        }),
+        Commands::Explode(args) => emit_timed_response(cli.global.json_pretty, || {
+            commands::explode::run(ExplodeRequest {
+                input: args.input,
+                out_dir: args.out_dir,
+                explode: args.explode,
+                threads: args.threads,
+                force: args.force,
             })
         }),
         Commands::Fastq(args) => emit_timed_response(cli.global.json_pretty, || {

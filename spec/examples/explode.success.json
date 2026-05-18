@@ -1,39 +1,55 @@
 {
   "ok": true,
   "command": "explode",
-  "path": "input.bam",
+  "path": "reads.fastq.gz",
+  "analysis_wall_seconds": 0.412731,
   "data": {
-    "format": "BAM",
+    "format": "FASTQ.GZ",
     "input": {
-      "path": "input.bam"
+      "path": "reads.fastq.gz"
     },
     "explode": {
-      "strategy": "reference_shards",
-      "planned": true
+      "requested_parts": 4,
+      "produced_parts": 4,
+      "strategy": "indexed_record_ranges",
+      "threads_used": 8,
+      "total_records": 2450017,
+      "checkpoints_available": 1002
     },
     "outputs": [
       {
-        "path": "parts/chr1.bam",
-        "records_written": 2100
+        "path": "shards/reads.part0001.fastq.gz",
+        "records_written": 612504,
+        "record_start": 0,
+        "record_end": 612504,
+        "approx_compressed_start": 0,
+        "approx_compressed_end": 125829120
       },
       {
-        "path": "parts/chr2.bam",
-        "records_written": 1800
+        "path": "shards/reads.part0002.fastq.gz",
+        "records_written": 612504,
+        "record_start": 612504,
+        "record_end": 1225008,
+        "approx_compressed_start": 125829120,
+        "approx_compressed_end": 251658240
       }
     ],
     "index": {
       "requested": true,
       "created": false,
-      "kind": "BAI"
+      "kind": "GZI"
     },
     "checksum_verification": {
-      "requested": true,
+      "requested": false,
       "performed": false,
-      "mode": "canonical-record-order",
+      "mode": null,
+      "input_digest": null,
+      "output_digest": null,
       "match": null
     },
     "notes": [
-      "Planned contract example for a future explode implementation."
+      "FASTQ.GZ explode used FASTQ.GZI planning metadata to derive contiguous checkpoint-aligned record ranges without a pre-enumeration pass.",
+      "Shard sizes may vary because boundaries follow available FASTQ.GZI cutpoints, but each read remains in exactly one shard and encounter order is preserved within every shard."
     ]
   },
   "error": null

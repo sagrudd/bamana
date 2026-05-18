@@ -2,17 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/spec/jsonschema/explode.schema.json",
   "title": "Bamana Explode Response",
-  "description": "Planned contract for bamana explode JSON output.",
+  "description": "Contract for bamana explode JSON output.",
   "x-bamana-command": "explode",
   "x-bamana-contract-version": "0.1.0",
   "$defs": {
     "output": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "records_written"],
+      "required": ["path", "records_written", "record_start", "record_end"],
       "properties": {
         "path": { "type": "string" },
-        "records_written": { "type": "integer", "minimum": 0 }
+        "records_written": { "type": "integer", "minimum": 0 },
+        "record_start": { "type": "integer", "minimum": 0 },
+        "record_end": { "type": "integer", "minimum": 0 },
+        "approx_compressed_start": { "type": ["integer", "null"], "minimum": 0 },
+        "approx_compressed_end": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
     "data": {
@@ -20,7 +24,10 @@
       "additionalProperties": false,
       "required": ["format", "input", "explode", "outputs", "index", "checksum_verification", "notes"],
       "properties": {
-        "format": { "const": "BAM" },
+        "format": {
+          "type": "string",
+          "enum": ["BAM", "SAM", "FASTQ.GZ"]
+        },
         "input": {
           "type": "object",
           "additionalProperties": false,
@@ -31,7 +38,16 @@
         },
         "explode": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "required": ["requested_parts", "produced_parts", "strategy", "threads_used"],
+          "properties": {
+            "requested_parts": { "type": "integer", "minimum": 1 },
+            "produced_parts": { "type": "integer", "minimum": 0 },
+            "strategy": { "type": "string" },
+            "threads_used": { "type": "integer", "minimum": 1 },
+            "total_records": { "type": ["integer", "null"], "minimum": 0 },
+            "checkpoints_available": { "type": ["integer", "null"], "minimum": 0 }
+          }
         },
         "outputs": {
           "type": "array",

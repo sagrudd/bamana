@@ -9,6 +9,7 @@ pub mod checksum;
 pub mod consume;
 pub mod deduplicate;
 pub mod enumerate;
+pub mod explode;
 pub mod fastq;
 pub mod forensic_inspect;
 pub mod header;

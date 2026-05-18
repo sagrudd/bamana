@@ -13,7 +13,7 @@
     },
     "notes": [
       "FASTQ.GZI index created successfully.",
-      "Checkpoint boundaries were sampled at approximately 1.00% compressed-offset intervals and pinned to completed FASTQ records.",
+      "Checkpoint boundaries were sampled at approximately 0.10% compressed-offset intervals and pinned to completed FASTQ records.",
       "The FASTQ.GZI sidecar stores 101 checkpoints including start and end anchors."
     ]
   },

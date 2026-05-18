@@ -581,11 +581,11 @@ Creates a format-appropriate sidecar index for supported inputs. BAM input still
 validates plausibility and resolves output rules honestly, but BAI/CSI writing
 remains deferred in the current slice. `FASTQ.GZ` input writes a binary
 `FASTQ.GZI` sidecar by scanning the gzip stream once and sampling checkpoint
-boundaries at approximately 1% compressed-offset intervals by default, pinned
+boundaries at approximately 0.1% compressed-offset intervals by default, pinned
 to completed FASTQ record boundaries rather than arbitrary byte positions. The
-binary `FASTQ.GZI` payload stores header metadata plus sampled
-`(compressed_offset, uncompressed_offset, cumulative_records)` checkpoint
-pairs.
+binary `FASTQ.GZI` payload stores header metadata, planner flags, and sampled
+`(compressed_offset, uncompressed_offset, cumulative_records)` checkpoint pairs
+for indexed enumeration, explode planning, and consume planning.
 
 Does prove:
 For BAM: command input validation and output-path resolution.
@@ -716,19 +716,30 @@ Key output concepts:
 ## `explode`
 
 Synopsis:
-`bamana explode --bam <bamfile> --out-dir <dir> [future options]`
+`bamana explode --input <file> --out-dir <dir> --explode <N> [-j, --threads <N>] [--force]`
 
 Semantics:
-Planned contract for splitting one BAM into multiple BAM outputs for workflow
-distribution and reconstruction.
+Splits one `BAM`, `SAM`, or `FASTQ.GZ` input into `N` contiguous shards using
+encounter-order record ranges.
 
-Current status:
-Specified in the repository contract layer but not implemented in the current
-CLI slice.
+Does prove:
+Each shard preserves the original order of reads or alignments within that
+shard, every sequence or alignment lands in exactly one shard, and shard
+boundaries are reported explicitly.
 
-Planned key output concepts:
+Does not prove:
+Global equivalence reconstruction beyond the recorded shard ranges, or true
+random-access parallel inflate for generic single-member gzip streams.
+
+Key output concepts:
 `input`, `explode`, `outputs`, `index`, `checksum_verification`, `notes`.
 
+Operational notes:
+For `FASTQ.GZ`, `explode` auto-creates or reuses an adjacent `FASTQ.GZI`
+sidecar, plans shard boundaries from available index cutpoints, and then
+writes contiguous `FASTQ.GZ` shards without reordering reads inside any shard.
+Shard sizes are therefore only as uniform as the available cutpoints allow and
+may differ slightly to keep the method fast.
 
 ## `fastq`
 

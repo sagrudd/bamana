@@ -22,8 +22,7 @@ The detailed command contract is maintained in:
 The spec layer covers both:
 
 * implemented commands already present in the CLI
-* planned first-slice commands, such as `explode`, whose public contract shape
-  is being stabilized before runtime implementation
+* implemented commands already present in the CLI, including `explode`
 
 This separation is deliberate: repository-facing contract design should not wait
 for every implementation detail to be finished.
@@ -48,10 +47,31 @@ reuse the exact record total stored in that sidecar.
 
 `index` is now format-aware. It still validates BAM inputs and reports honest
 BAI/CSI writer limitations, but it also creates sampled `FASTQ.GZI` sidecars
-for `FASTQ.GZ` inputs via `--input`. The default `FASTQ.GZI` rule places
-checkpoints at approximately 1% compressed-offset intervals, pins each
+for `FASTQ.GZ` inputs via `--input`. The default `FASTQ.GZI` rule now places
+checkpoints at approximately 0.1% compressed-offset intervals, pins each
 checkpoint to the next completed FASTQ record boundary, and stores cumulative
-record totals for exact indexed enumeration and consume planning.
+record totals plus planner metadata for exact indexed enumeration, explode
+planning, and consume planning.
+
+`explode` is now implemented for `BAM`, `SAM`, and `FASTQ.GZ`. It accepts one
+input via `--input`, writes shards under `--out-dir`, and splits by contiguous
+encounter-order record ranges so the original read or alignment order is
+preserved within every shard and every sequence lands in exactly one shard.
+The `FASTQ.GZ` path uses adjacent `FASTQ.GZI` metadata for checkpoint-aligned
+shard planning and parallel gzip-member compression, so shard sizes are only
+as uniform as the available cutpoints allow. `BAM` and `SAM` use conservative
+contiguous-range splitting in the current slice.
+
+`fastq` is the BAM-to-FASTQ.GZ export command. It accepts one BAM via `--bam`,
+writes a single ordered FASTQ.GZ stream, and reports records read, records
+written, and worker-thread usage. It preserves read names, sequences, and
+qualities in input encounter order; it does not preserve BAM header metadata,
+alignment fields, or auxiliary tags in the FASTQ output.
+
+`unmap` rewrites one BAM as unmapped BAM. It removes reference dictionary state
+from the output header and strips reference-bound alignment state from each
+record while preserving non-mapping auxiliary metadata. `--dry-run` is a
+first-class planning path and reports record counts without writing output.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

@@ -312,7 +312,7 @@ mod tests {
         fs::remove_file(input).expect("fixture should remove");
         fs::remove_file(output).expect("index should remove");
 
-        assert_eq!(&magic, b"FQGZI\0\0\x01");
+        assert_eq!(&magic, b"FQGZI\0\0\x02");
     }
 
     #[test]

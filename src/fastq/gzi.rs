@@ -14,9 +14,12 @@ use flate2::read::MultiGzDecoder;
 
 use crate::error::AppError;
 
-const FASTQ_GZI_MAGIC: &[u8; 8] = b"FQGZI\0\0\x01";
-pub const DEFAULT_INTERVAL_PERCENT: f64 = 1.0;
-pub const DEFAULT_INTERVAL_BASIS_POINTS: u32 = 100;
+const FASTQ_GZI_MAGIC_V1: &[u8; 8] = b"FQGZI\0\0\x01";
+const FASTQ_GZI_MAGIC_V2: &[u8; 8] = b"FQGZI\0\0\x02";
+pub const FASTQ_GZI_FLAG_RECORD_ALIGNED_CHECKPOINTS: u32 = 0x1;
+pub const FASTQ_GZI_FLAG_PARALLEL_EXPLODE_HINTS: u32 = 0x2;
+pub const DEFAULT_INTERVAL_PERCENT: f64 = 0.1;
+pub const DEFAULT_INTERVAL_BASIS_POINTS: u32 = 10;
 const TOTAL_BASIS_POINTS: u64 = 10_000;
 const IO_CHUNK_BYTES: usize = 1024 * 1024;
 const DECOMPRESSED_CHUNK_BYTES: usize = 1024 * 1024;
@@ -31,11 +34,23 @@ pub struct FastqGziCheckpoint {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FastqGziIndexSummary {
+    pub flags: u32,
     pub compressed_size: u64,
     pub uncompressed_size: u64,
     pub total_records: u64,
     pub interval_basis_points: u32,
     pub checkpoints: Vec<FastqGziCheckpoint>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FastqGziPlannedRange {
+    pub part_index: usize,
+    pub record_start: u64,
+    pub record_end: u64,
+    pub approx_compressed_start: u64,
+    pub approx_compressed_end: u64,
+    pub approx_uncompressed_start: u64,
+    pub approx_uncompressed_end: u64,
 }
 
 pub fn fastq_gzi_output_path(path: &Path) -> PathBuf {
@@ -121,18 +136,37 @@ pub fn read_fastq_gzi(path: &Path) -> Result<FastqGziIndexSummary, AppError> {
     reader
         .read_exact(&mut magic)
         .map_err(|error| AppError::from_io(path, error))?;
-    if &magic != FASTQ_GZI_MAGIC {
+    let (
+        flags,
+        interval_basis_points,
+        compressed_size,
+        uncompressed_size,
+        total_records,
+        checkpoint_count,
+    ) = if &magic == FASTQ_GZI_MAGIC_V1 {
+        (
+            FASTQ_GZI_FLAG_RECORD_ALIGNED_CHECKPOINTS,
+            read_u32(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+        )
+    } else if &magic == FASTQ_GZI_MAGIC_V2 {
+        (
+            read_u32(&mut reader, path)?,
+            read_u32(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+            read_u64(&mut reader, path)?,
+        )
+    } else {
         return Err(AppError::InvalidIndex {
             path: path.to_path_buf(),
-            detail: "FASTQ.GZI magic did not match the expected Bamana sidecar header.".to_string(),
+            detail: "FASTQ.GZI magic did not match a supported Bamana sidecar header.".to_string(),
         });
-    }
-
-    let interval_basis_points = read_u32(&mut reader, path)?;
-    let compressed_size = read_u64(&mut reader, path)?;
-    let uncompressed_size = read_u64(&mut reader, path)?;
-    let total_records = read_u64(&mut reader, path)?;
-    let checkpoint_count = read_u64(&mut reader, path)?;
+    };
 
     let mut checkpoints = Vec::with_capacity(checkpoint_count as usize);
     for _ in 0..checkpoint_count {
@@ -144,12 +178,57 @@ pub fn read_fastq_gzi(path: &Path) -> Result<FastqGziIndexSummary, AppError> {
     }
 
     Ok(FastqGziIndexSummary {
+        flags,
         compressed_size,
         uncompressed_size,
         total_records,
         interval_basis_points,
         checkpoints,
     })
+}
+
+pub fn plan_fastq_gzi_ranges(
+    summary: &FastqGziIndexSummary,
+    parts: usize,
+) -> Result<Vec<FastqGziPlannedRange>, String> {
+    if parts == 0 {
+        return Err("Explode parts must be at least 1.".to_string());
+    }
+    if parts >= 1_000 {
+        return Err("Explode parts must be less than 1000.".to_string());
+    }
+    if summary.total_records == 0 {
+        return Err("FASTQ.GZI did not describe any records to explode.".to_string());
+    }
+    let boundaries = unique_checkpoint_boundaries(summary);
+    if parts as u64 > summary.total_records {
+        return Err(format!(
+            "Requested {} output parts, but the indexed FASTQ.GZ only contains {} records.",
+            parts, summary.total_records
+        ));
+    }
+
+    if parts >= boundaries.len() {
+        return plan_interpolated_ranges(summary, parts);
+    }
+
+    let boundary_indices = select_checkpoint_boundaries(&boundaries, parts);
+    let mut ranges = Vec::with_capacity(parts);
+    for part_index in 0..parts {
+        let start = &boundaries[boundary_indices[part_index]];
+        let end = &boundaries[boundary_indices[part_index + 1]];
+        ranges.push(FastqGziPlannedRange {
+            part_index,
+            record_start: start.records,
+            record_end: end.records,
+            approx_compressed_start: start.compressed_offset,
+            approx_compressed_end: end.compressed_offset,
+            approx_uncompressed_start: start.uncompressed_offset,
+            approx_uncompressed_end: end.uncompressed_offset,
+        });
+    }
+
+    Ok(ranges)
 }
 
 fn advance_thresholds(
@@ -177,7 +256,13 @@ fn write_fastq_gzi(path: &Path, summary: &FastqGziIndexSummary) -> Result<(), Ap
     let mut writer = BufWriter::new(file);
 
     writer
-        .write_all(FASTQ_GZI_MAGIC)
+        .write_all(FASTQ_GZI_MAGIC_V2)
+        .map_err(|error| AppError::WriteError {
+            path: path.to_path_buf(),
+            message: error.to_string(),
+        })?;
+    writer
+        .write_all(&summary.flags.to_le_bytes())
         .map_err(|error| AppError::WriteError {
             path: path.to_path_buf(),
             message: error.to_string(),
@@ -465,12 +550,123 @@ fn positional_thread(
     }
 
     Ok(FastqGziIndexSummary {
+        flags: FASTQ_GZI_FLAG_RECORD_ALIGNED_CHECKPOINTS | FASTQ_GZI_FLAG_PARALLEL_EXPLODE_HINTS,
         compressed_size,
         uncompressed_size: uncompressed_offset,
         total_records,
         interval_basis_points,
         checkpoints,
     })
+}
+
+fn unique_checkpoint_boundaries(summary: &FastqGziIndexSummary) -> Vec<FastqGziCheckpoint> {
+    let mut boundaries = Vec::with_capacity(summary.checkpoints.len());
+    for checkpoint in &summary.checkpoints {
+        if boundaries
+            .last()
+            .is_none_or(|last: &FastqGziCheckpoint| last.records != checkpoint.records)
+        {
+            boundaries.push(checkpoint.clone());
+        }
+    }
+    boundaries
+}
+
+fn plan_interpolated_ranges(
+    summary: &FastqGziIndexSummary,
+    parts: usize,
+) -> Result<Vec<FastqGziPlannedRange>, String> {
+    let mut ranges = Vec::with_capacity(parts);
+    for part_index in 0..parts {
+        let record_start = (summary.total_records * part_index as u64) / parts as u64;
+        let record_end = (summary.total_records * (part_index as u64 + 1)) / parts as u64;
+        let start_offsets = interpolate_offsets(summary, record_start);
+        let end_offsets = interpolate_offsets(summary, record_end);
+        ranges.push(FastqGziPlannedRange {
+            part_index,
+            record_start,
+            record_end,
+            approx_compressed_start: start_offsets.0,
+            approx_compressed_end: end_offsets.0,
+            approx_uncompressed_start: start_offsets.1,
+            approx_uncompressed_end: end_offsets.1,
+        });
+    }
+    Ok(ranges)
+}
+
+fn interpolate_offsets(summary: &FastqGziIndexSummary, target_record: u64) -> (u64, u64) {
+    let checkpoints = &summary.checkpoints;
+    if checkpoints.is_empty() {
+        return (0, 0);
+    }
+    if target_record <= checkpoints[0].records {
+        return (
+            checkpoints[0].compressed_offset,
+            checkpoints[0].uncompressed_offset,
+        );
+    }
+
+    for window in checkpoints.windows(2) {
+        let start = &window[0];
+        let end = &window[1];
+        if target_record > end.records {
+            continue;
+        }
+        if start.records == end.records {
+            return (end.compressed_offset, end.uncompressed_offset);
+        }
+
+        let span_records = end.records - start.records;
+        let delta_records = target_record.saturating_sub(start.records);
+        let compressed = start.compressed_offset
+            + ((end
+                .compressed_offset
+                .saturating_sub(start.compressed_offset))
+                * delta_records)
+                / span_records;
+        let uncompressed = start.uncompressed_offset
+            + ((end
+                .uncompressed_offset
+                .saturating_sub(start.uncompressed_offset))
+                * delta_records)
+                / span_records;
+        return (compressed, uncompressed);
+    }
+
+    let last = checkpoints.last().expect("checkpoint vector was not empty");
+    (last.compressed_offset, last.uncompressed_offset)
+}
+
+fn select_checkpoint_boundaries(boundaries: &[FastqGziCheckpoint], parts: usize) -> Vec<usize> {
+    let mut selected = Vec::with_capacity(parts + 1);
+    selected.push(0);
+    let last_index = boundaries.len() - 1;
+    let total_records = boundaries[last_index].records;
+    let mut previous_index = 0_usize;
+
+    for boundary_number in 1..parts {
+        let remaining_boundaries = parts - boundary_number;
+        let min_index = previous_index + 1;
+        let max_index = last_index - remaining_boundaries;
+        let target_record = (total_records * boundary_number as u64) / parts as u64;
+        let mut best_index = min_index;
+        let mut best_distance = boundaries[min_index].records.abs_diff(target_record);
+
+        for candidate_index in min_index..=max_index {
+            let distance = boundaries[candidate_index].records.abs_diff(target_record);
+            if distance < best_distance {
+                best_index = candidate_index;
+                best_distance = distance;
+            }
+        }
+
+        selected.push(best_index);
+        previous_index = best_index;
+    }
+
+    selected.push(last_index);
+    selected
 }
 
 fn read_u32(reader: &mut impl Read, path: &Path) -> Result<u32, AppError> {
@@ -499,8 +695,9 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
 
     use super::{
-        DEFAULT_INTERVAL_BASIS_POINTS, DEFAULT_INTERVAL_PERCENT, FASTQ_GZI_MAGIC, build_fastq_gzi,
-        sample_fastq_gzi,
+        DEFAULT_INTERVAL_BASIS_POINTS, DEFAULT_INTERVAL_PERCENT,
+        FASTQ_GZI_FLAG_PARALLEL_EXPLODE_HINTS, FASTQ_GZI_FLAG_RECORD_ALIGNED_CHECKPOINTS,
+        FASTQ_GZI_MAGIC_V2, build_fastq_gzi, plan_fastq_gzi_ranges, sample_fastq_gzi,
     };
 
     #[test]
@@ -522,8 +719,12 @@ mod tests {
         let summary = sample_fastq_gzi(&input, 2_500).expect("gzi summary should build");
         fs::remove_file(input).expect("fixture should remove");
 
-        assert_eq!(DEFAULT_INTERVAL_BASIS_POINTS, 100);
-        assert_eq!(DEFAULT_INTERVAL_PERCENT, 1.0);
+        assert_eq!(DEFAULT_INTERVAL_BASIS_POINTS, 10);
+        assert_eq!(DEFAULT_INTERVAL_PERCENT, 0.1);
+        assert_eq!(
+            summary.flags,
+            FASTQ_GZI_FLAG_RECORD_ALIGNED_CHECKPOINTS | FASTQ_GZI_FLAG_PARALLEL_EXPLODE_HINTS
+        );
         assert!(summary.checkpoints.len() >= 3);
         assert_eq!(summary.checkpoints.first().unwrap().compressed_offset, 0);
         assert_eq!(summary.checkpoints.first().unwrap().uncompressed_offset, 0);
@@ -563,7 +764,44 @@ mod tests {
         fs::remove_file(input).expect("fixture should remove");
         fs::remove_file(output).expect("index should remove");
 
-        assert!(bytes.starts_with(FASTQ_GZI_MAGIC));
+        assert!(bytes.starts_with(FASTQ_GZI_MAGIC_V2));
         assert!(summary.checkpoints.len() >= 2);
+    }
+
+    #[test]
+    fn plans_fastq_gzi_ranges_for_parallel_explode() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-fastq-gzi-plan-{}.fastq.gz",
+            std::process::id()
+        ));
+        let file = fs::File::create(&input).expect("fixture should create");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        for index in 0..40 {
+            writeln!(encoder, "@read{index}").expect("header should write");
+            writeln!(encoder, "ACGTACGT").expect("sequence should write");
+            writeln!(encoder, "+").expect("plus should write");
+            writeln!(encoder, "!!!!!!!!").expect("quality should write");
+        }
+        encoder.finish().expect("gzip should finish");
+
+        let summary = sample_fastq_gzi(&input, DEFAULT_INTERVAL_BASIS_POINTS)
+            .expect("gzi summary should build");
+        let ranges = plan_fastq_gzi_ranges(&summary, 4).expect("ranges should plan");
+        fs::remove_file(input).expect("fixture should remove");
+
+        assert_eq!(ranges.len(), 4);
+        assert_eq!(ranges[0].record_start, 0);
+        assert_eq!(ranges[3].record_end, 40);
+        assert!(
+            ranges
+                .iter()
+                .all(|range| range.record_end > range.record_start)
+        );
+        assert!(
+            ranges
+                .windows(2)
+                .all(|pair| pair[0].record_end == pair[1].record_start)
+        );
+        assert!(ranges[1].approx_compressed_start <= ranges[1].approx_compressed_end);
     }
 }
