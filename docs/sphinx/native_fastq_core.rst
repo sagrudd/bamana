@@ -53,10 +53,18 @@ marker, ``+`` marker, sequence/quality length equality, and usable read name.
 records. ``FastqRecordView`` is the borrowed view for field access and
 identity construction when a consumer already has record line storage.
 
-The gzip boundary currently follows the filename extension and uses
-``flate2::read::MultiGzDecoder`` for ``.gz`` inputs. The writer emits
-line-oriented FASTQ records and chooses gzip output from the output filename
-extension. Later M4 tasks harden the stream semantics, round-trip guarantees,
-and command-consumer audits; the current contract establishes module ownership,
-record ownership, borrowed field access, and centralized FASTQ identity bytes
-without changing command behavior.
+The gzip boundary follows the filename extension: paths ending in ``.gz``
+case-insensitively are decoded with ``flate2::read::MultiGzDecoder`` and other
+paths are treated as plain FASTQ. Concatenated gzip members are supported and
+records are yielded in member order. Corrupt or truncated gzip input is
+reported as a structured I/O error with the input path; it must not silently
+truncate record counts.
+
+``FASTQ.GZI`` sidecar construction uses the same multi-member gzip decoder
+policy and remains compatible with indexed ``enumerate``, ``consume``, and
+``explode`` paths. The writer emits line-oriented FASTQ records and chooses
+gzip output from the output filename extension. Later M4 tasks harden
+round-trip guarantees and command-consumer audits; the current contract
+establishes module ownership, record ownership, borrowed field access,
+centralized FASTQ identity bytes, and auditable gzip member semantics without
+changing command behavior.

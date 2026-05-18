@@ -1461,9 +1461,8 @@ Known gaps:
   field-only streaming integration remains future work even though
   `FastqRecordView` exists for borrowed access when line storage is already
   available;
-* gzip behavior is extension-driven and uses generic gzip decoding, while the
-  Milestone 4 boundary needs explicit FASTQ.GZ stream semantics and tests for
-  multi-member and malformed gzip inputs;
+* gzip behavior is extension-driven and uses `MultiGzDecoder` with documented
+  single-member and concatenated multi-member FASTQ.GZ semantics;
 * writer behavior exists but needs a clearer contract for line endings,
   finishing/flushing, gzip output, and round-trip validation;
 * command consumers share helpers but have not been audited against a stable
@@ -1683,7 +1682,7 @@ Completion evidence:
 
 ### M4.5 Strengthen FASTQ.GZ Reader And Gzip Stream Semantics
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1704,7 +1703,26 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/fastq/gzip.rs` tests proving extension-based gzip detection is
+  explicit, case-insensitive for `.gz`, and does not treat non-final `.gz`
+  components as gzip inputs;
+* added a valid single-member FASTQ.GZ parser/counting test through the public
+  FASTQ reader facade;
+* added a valid concatenated multi-member FASTQ.GZ parser/counting test proving
+  records are yielded in gzip member order;
+* added corrupt gzip and truncated gzip tests proving failures return
+  structured `AppError::Io` values with input path context instead of silent
+  count or record truncation;
+* added a `FASTQ.GZI` build test for a concatenated multi-member FASTQ.GZ
+  stream;
+* documented supported FASTQ.GZ semantics in
+  `docs/sphinx/native_fastq_core.rst`: extension-selected gzip decoding,
+  `MultiGzDecoder`, concatenated member support, structured corrupt/truncated
+  stream errors, and `FASTQ.GZI` compatibility;
+* focused gzip tests passed with `cargo test fastq::gzip::tests --lib`;
+* focused FASTQ tests passed with `cargo test fastq:: --lib`;
+* sidecar consumer smoke tests passed for FASTQ.GZ `enumerate`, FASTQ.GZ
+  `explode`, and indexed FASTQ.GZ `consume`.
 
 ### M4.6 Complete FASTQ Writer And Round-Trip Guarantees
 

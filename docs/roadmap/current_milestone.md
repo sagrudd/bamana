@@ -108,8 +108,9 @@ Known present pieces:
   `crate::fastq`;
 * the current reader validates the four-line FASTQ structure, header marker,
   plus marker, sequence/quality length equality, and usable read name;
-* the current gzip reader uses `flate2::read::MultiGzDecoder` for `.gz`
-  inputs;
+* the current gzip reader uses extension-based `.gz` detection and
+  `flate2::read::MultiGzDecoder`, including concatenated gzip-member support
+  and structured I/O errors for corrupt or truncated gzip streams;
 * the current writer emits plain FASTQ or gzip-compressed FASTQ according to
   the output extension;
 * `enumerate`, FASTQ-side `subsample`, `consume`, `inspect_duplication`,
@@ -122,8 +123,6 @@ Known gaps:
   field-only streaming integration remains future work even though
   `FastqRecordView` exists for borrowed access when line storage is already
   available;
-* FASTQ.GZ behavior needs explicit stream semantics and tests for multi-member
-  and malformed gzip inputs;
 * writer behavior needs a clear contract for line endings, gzip finalization,
   flushing, and round-trip guarantees;
 * command consumers need to be audited and migrated to a stable Milestone 4
