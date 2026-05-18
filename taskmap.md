@@ -911,6 +911,9 @@ Known present pieces:
 * `src/bam/scan.rs` defines `BamScanner`, which opens BAM input through the
   native BGZF backend, parses the native BAM header once, and iterates complete
   raw alignment records into `BamRecordView`;
+* `BamRecordView` now centralizes selective helpers for flags, coordinates,
+  MAPQ, read name, sequence length, section ranges, section presence, borrowed
+  section slices, and skip offsets;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -926,13 +929,12 @@ Known present pieces:
 
 Known gaps:
 
-* skip-oriented selective field extraction is not centralized;
 * record-scanning consumers generally use the transitional `BamReader::open`
   gzip backend today rather than requiring the native BGZF backend;
 * command consumers are not migrated onto a shared scanner substrate;
 * scanner oracle coverage and malformed-record tests are not yet isolated;
 * scanner microbenchmarks are not yet present;
-* M3.4 through M3.10 remain outstanding.
+* M3.5 through M3.10 remain outstanding.
 
 Milestone 3 closeout evidence must include:
 
@@ -1091,7 +1093,7 @@ Completion evidence:
 
 ### M3.4 Add Selective Field Extraction Helpers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1112,7 +1114,17 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `BamRecordFlags`, `BamRecordCoordinates`, and
+  `BamRecordSkipOffsets` as scanner-facing helper value types;
+* added `BamRecordView::flag_summary`, `coordinates`, section range helpers,
+  `skip_offsets`, `has_cigar`, `has_sequence`, `has_qualities`, and `has_aux`;
+* kept CIGAR, sequence, quality, and aux data access as borrowed slices so
+  consumers can inspect selected sections without owned allocation;
+* documented the stable scanner helper surface in roadmap and Sphinx docs,
+  while keeping parser internals and the `RecordLayout` bridge separate;
+* added tests for populated variable sections, mapped flag/coordinate helpers,
+  unmapped flag helpers, minimal records, empty sections, and skip offsets;
+* `cargo test bam::record` passed.
 
 ### M3.5 Add Aux Region Traversal Without Full Decode
 

@@ -79,6 +79,9 @@ Known present pieces:
 * `src/bam/scan.rs` defines `BamScanner`, which opens BAM input through the
   native BGZF backend, parses the native BAM header once, and iterates complete
   raw alignment records into `BamRecordView`;
+* `BamRecordView` centralizes selective helpers for flags, coordinates, MAPQ,
+  read name, sequence length, section ranges, borrowed section slices, section
+  presence, and skip offsets;
 * `src/bam/records.rs` contains the current central record bridge through
   `read_next_record_layout`, which performs bounded layout checks and
   materializes read name, CIGAR, sequence, quality, and aux sections;
@@ -95,7 +98,6 @@ Known present pieces:
 
 Known gaps:
 
-* skip-oriented field extraction is not centralized;
 * aux-region traversal for selected tag lookup is not yet a scanner-owned API;
 * first command consumers have not yet been migrated onto a shared scanner;
 * record-scanning consumers generally use the transitional `BamReader::open`

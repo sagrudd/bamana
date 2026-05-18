@@ -74,6 +74,20 @@ This loop is the scanner substrate, not command migration. Later milestone
 tasks should centralize selective field helpers, move auxiliary traversal onto
 scanner-owned ranges, and migrate command consumers onto ``BamScanner``.
 
+Selective Field Helpers
+-----------------------
+
+``BamRecordView`` exposes the stable scanner helper surface for common field
+access. ``flag_summary`` returns decoded flag booleans, ``coordinates`` groups
+reference and mate coordinates, and direct accessors expose MAPQ, read name,
+and sequence length.
+
+Variable sections remain allocation-light. Range helpers, borrowed section
+slices, section-presence helpers, and ``skip_offsets`` let consumers skip CIGAR,
+sequence, quality, or auxiliary payloads without rebuilding byte-offset
+arithmetic. Parser internals and the owned ``RecordLayout`` bridge remain
+separate from this stable scanner helper surface.
+
 Boundaries
 ----------
 

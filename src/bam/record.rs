@@ -18,6 +18,43 @@ pub struct BamRecordSections {
     pub aux: Range<usize>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BamRecordFlags {
+    pub raw: u16,
+    pub is_paired: bool,
+    pub is_proper_pair: bool,
+    pub is_unmapped: bool,
+    pub is_mate_unmapped: bool,
+    pub is_reverse: bool,
+    pub is_mate_reverse: bool,
+    pub is_read1: bool,
+    pub is_read2: bool,
+    pub is_secondary: bool,
+    pub is_qc_fail: bool,
+    pub is_duplicate: bool,
+    pub is_supplementary: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BamRecordCoordinates {
+    pub ref_id: i32,
+    pub pos: i32,
+    pub next_ref_id: i32,
+    pub next_pos: i32,
+    pub template_len: i32,
+    pub bin: u16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BamRecordSkipOffsets {
+    pub after_core: usize,
+    pub after_read_name: usize,
+    pub after_cigar: usize,
+    pub after_sequence: usize,
+    pub after_qualities: usize,
+    pub after_aux: usize,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BamRecordView<'a> {
     raw_record: &'a [u8],
@@ -181,6 +218,30 @@ impl<'a> BamRecordView<'a> {
         &self.sections
     }
 
+    pub fn core_range(&self) -> Range<usize> {
+        self.sections.core.clone()
+    }
+
+    pub fn read_name_range(&self) -> Range<usize> {
+        self.sections.read_name.clone()
+    }
+
+    pub fn cigar_range(&self) -> Range<usize> {
+        self.sections.cigar.clone()
+    }
+
+    pub fn sequence_range(&self) -> Range<usize> {
+        self.sections.sequence.clone()
+    }
+
+    pub fn quality_range(&self) -> Range<usize> {
+        self.sections.qualities.clone()
+    }
+
+    pub fn aux_range(&self) -> Range<usize> {
+        self.sections.aux.clone()
+    }
+
     pub fn block_size(&self) -> usize {
         self.block_size
     }
@@ -213,6 +274,21 @@ impl<'a> BamRecordView<'a> {
         self.flags
     }
 
+    pub fn flag_summary(&self) -> BamRecordFlags {
+        BamRecordFlags::from_raw(self.flags)
+    }
+
+    pub fn coordinates(&self) -> BamRecordCoordinates {
+        BamRecordCoordinates {
+            ref_id: self.ref_id,
+            pos: self.pos,
+            next_ref_id: self.next_ref_id,
+            next_pos: self.next_pos,
+            template_len: self.template_len,
+            bin: self.bin,
+        }
+    }
+
     pub fn mapping_quality(&self) -> u8 {
         self.mapping_quality
     }
@@ -227,6 +303,33 @@ impl<'a> BamRecordView<'a> {
 
     pub fn read_name(&self) -> &'a str {
         self.read_name
+    }
+
+    pub fn skip_offsets(&self) -> BamRecordSkipOffsets {
+        BamRecordSkipOffsets {
+            after_core: self.sections.core.end,
+            after_read_name: self.sections.read_name.end,
+            after_cigar: self.sections.cigar.end,
+            after_sequence: self.sections.sequence.end,
+            after_qualities: self.sections.qualities.end,
+            after_aux: self.sections.aux.end,
+        }
+    }
+
+    pub fn has_cigar(&self) -> bool {
+        !self.sections.cigar.is_empty()
+    }
+
+    pub fn has_sequence(&self) -> bool {
+        self.sequence_len > 0
+    }
+
+    pub fn has_qualities(&self) -> bool {
+        !self.sections.qualities.is_empty()
+    }
+
+    pub fn has_aux(&self) -> bool {
+        !self.sections.aux.is_empty()
     }
 
     pub fn read_name_bytes(&self) -> &'a [u8] {
@@ -268,6 +371,30 @@ impl<'a> BamRecordView<'a> {
             quality_bytes: self.quality_bytes().to_vec(),
             aux_bytes: self.aux_bytes().to_vec(),
         }
+    }
+}
+
+impl BamRecordFlags {
+    pub fn from_raw(raw: u16) -> Self {
+        Self {
+            raw,
+            is_paired: raw & 0x1 != 0,
+            is_proper_pair: raw & 0x2 != 0,
+            is_unmapped: raw & 0x4 != 0,
+            is_mate_unmapped: raw & 0x8 != 0,
+            is_reverse: raw & 0x10 != 0,
+            is_mate_reverse: raw & 0x20 != 0,
+            is_read1: raw & 0x40 != 0,
+            is_read2: raw & 0x80 != 0,
+            is_secondary: raw & 0x100 != 0,
+            is_qc_fail: raw & 0x200 != 0,
+            is_duplicate: raw & 0x400 != 0,
+            is_supplementary: raw & 0x800 != 0,
+        }
+    }
+
+    pub fn is_primary(self) -> bool {
+        !self.is_secondary && !self.is_supplementary
     }
 }
 
@@ -348,10 +475,88 @@ mod tests {
         assert_eq!(view.sections().sequence, 46..49);
         assert_eq!(view.sections().qualities, 49..54);
         assert_eq!(view.sections().aux, 54..61);
+        assert_eq!(view.read_name_range(), 36..42);
+        assert_eq!(view.cigar_range(), 42..46);
+        assert_eq!(view.sequence_range(), 46..49);
+        assert_eq!(view.quality_range(), 49..54);
+        assert_eq!(view.aux_range(), 54..61);
         assert_eq!(view.cigar_bytes(), &[160, 0, 0, 0]);
         assert_eq!(view.sequence_bytes(), &[0x12, 0x48, 0xf0]);
         assert_eq!(view.quality_bytes(), &[30, 31, 32, 33, 34]);
         assert_eq!(view.aux_bytes(), b"NMi\x01\0\0\0");
+        assert!(view.has_cigar());
+        assert!(view.has_sequence());
+        assert!(view.has_qualities());
+        assert!(view.has_aux());
+        assert_eq!(
+            view.skip_offsets(),
+            super::BamRecordSkipOffsets {
+                after_core: 36,
+                after_read_name: 42,
+                after_cigar: 46,
+                after_sequence: 49,
+                after_qualities: 54,
+                after_aux: 61,
+            }
+        );
+    }
+
+    #[test]
+    fn exposes_central_flag_and_coordinate_helpers() {
+        let raw = build_record_with_sections();
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let flags = view.flag_summary();
+        assert_eq!(flags.raw, 0x41);
+        assert!(flags.is_paired);
+        assert!(!flags.is_proper_pair);
+        assert!(!flags.is_unmapped);
+        assert!(flags.is_read1);
+        assert!(!flags.is_read2);
+        assert!(flags.is_primary());
+        assert!(!flags.is_duplicate);
+
+        assert_eq!(
+            view.coordinates(),
+            super::BamRecordCoordinates {
+                ref_id: 2,
+                pos: 100,
+                next_ref_id: 2,
+                next_pos: 150,
+                template_len: 200,
+                bin: 4681,
+            }
+        );
+        assert_eq!(view.mapping_quality(), 42);
+        assert_eq!(view.sequence_len(), 5);
+        assert_eq!(view.read_name(), "readA");
+    }
+
+    #[test]
+    fn exposes_unmapped_flags_and_empty_skip_sections() {
+        let raw = build_light_record(-1, -1, "unmapped", 0x4 | 0x100 | 0x400);
+        let view = BamRecordView::parse(&raw).expect("record view should parse");
+
+        let flags = view.flag_summary();
+        assert!(flags.is_unmapped);
+        assert!(flags.is_secondary);
+        assert!(flags.is_duplicate);
+        assert!(!flags.is_primary());
+        assert_eq!(view.coordinates().ref_id, -1);
+        assert_eq!(view.coordinates().pos, -1);
+        assert_eq!(view.sequence_len(), 0);
+        assert!(!view.has_cigar());
+        assert!(!view.has_sequence());
+        assert!(!view.has_qualities());
+        assert!(!view.has_aux());
+
+        let offsets = view.skip_offsets();
+        assert_eq!(offsets.after_core, 36);
+        assert_eq!(offsets.after_read_name, view.raw_record().len());
+        assert_eq!(offsets.after_cigar, view.raw_record().len());
+        assert_eq!(offsets.after_sequence, view.raw_record().len());
+        assert_eq!(offsets.after_qualities, view.raw_record().len());
+        assert_eq!(offsets.after_aux, view.raw_record().len());
     }
 
     #[test]

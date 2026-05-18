@@ -144,6 +144,26 @@ need to centralize selective field helpers and scanner-owned aux traversal.
 M3.6 through M3.8 still need to move command consumers from their current
 record loops onto `BamScanner`.
 
+## Selective Field Helpers
+
+M3.4 added the scanner-facing helper surface on `BamRecordView`:
+
+* `BamRecordFlags` and `flag_summary` centralize flag decoding and primary
+  record classification;
+* `BamRecordCoordinates` and `coordinates` centralize reference, position,
+  mate, bin, and template-length fields;
+* `mapping_quality`, `read_name`, and `sequence_len` expose common scalar
+  fields directly;
+* section range helpers and borrowed section slices expose CIGAR, sequence,
+  quality, and aux regions without owned allocation;
+* section presence helpers and `BamRecordSkipOffsets` identify the byte offsets
+  a consumer can advance to when it does not need a variable section.
+
+These helpers are the stable scanner API for common field access. Parser-local
+offset arithmetic and the owned `RecordLayout` materialization bridge remain
+implementation details for scanner construction or richer downstream
+consumers.
+
 ## Benchmark Hooks
 
 * records-per-second BAM scanner microbenchmark
