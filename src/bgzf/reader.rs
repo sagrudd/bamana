@@ -40,13 +40,39 @@ pub fn first_member_starts_with_bam_magic(path: &Path) -> Result<bool, AppError>
     Ok(payload.starts_with(b"BAM\x01"))
 }
 
+pub(crate) fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
+    let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+    let mut payloads = Vec::new();
+
+    while let Some(member) = read_bgzf_member(&mut file, path)? {
+        if member == BGZF_EOF_MARKER {
+            break;
+        }
+        payloads.push(decompress_member(&member, path)?);
+    }
+
+    Ok(payloads)
+}
+
 fn read_first_bgzf_payload(path: &Path) -> Result<Vec<u8>, AppError> {
+    let member = read_bgzf_payloads(path)?
+        .into_iter()
+        .next()
+        .ok_or_else(|| AppError::TruncatedFile {
+            path: path.to_path_buf(),
+            detail: "File did not contain a readable BGZF member before EOF.".to_string(),
+        })?;
+
+    Ok(member)
+}
+
+#[cfg(test)]
+fn read_first_bgzf_member_payload(path: &Path) -> Result<Vec<u8>, AppError> {
     let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     let member = read_bgzf_member(&mut file, path)?.ok_or_else(|| AppError::TruncatedFile {
         path: path.to_path_buf(),
         detail: "File did not contain a readable BGZF member.".to_string(),
     })?;
-
     decompress_member(&member, path)
 }
 
@@ -138,7 +164,8 @@ mod tests {
 
     use super::{
         BGZF_EOF_MARKER, decompress_member, first_member_starts_with_bam_magic, has_bgzf_eof,
-        read_bgzf_member, read_first_bgzf_payload,
+        read_bgzf_member, read_bgzf_payloads, read_first_bgzf_member_payload,
+        read_first_bgzf_payload,
     };
 
     fn write_temp_file(name: &str, bytes: &[u8]) -> std::path::PathBuf {
@@ -218,7 +245,8 @@ mod tests {
         let truncated = &member(b"payload")[..8];
         let path = write_temp_file("truncated-fixed-header", truncated);
 
-        let error = read_first_bgzf_payload(&path).expect_err("fixed header should be truncated");
+        let error =
+            read_first_bgzf_member_payload(&path).expect_err("fixed header should be truncated");
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_truncated_detail(error, "BGZF fixed header ended before 12 bytes.");
@@ -229,7 +257,8 @@ mod tests {
         let bytes = &member(b"payload")[..14];
         let path = write_temp_file("truncated-extra-header", bytes);
 
-        let error = read_first_bgzf_payload(&path).expect_err("extra header should be truncated");
+        let error =
+            read_first_bgzf_member_payload(&path).expect_err("extra header should be truncated");
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_truncated_detail(
@@ -244,7 +273,7 @@ mod tests {
         bytes.truncate(bytes.len() - 5);
         let path = write_temp_file("truncated-payload", &bytes);
 
-        let error = read_first_bgzf_payload(&path).expect_err("payload should be truncated");
+        let error = read_first_bgzf_member_payload(&path).expect_err("payload should be truncated");
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_truncated_detail(error, "BGZF block ended before the declared block size.");
@@ -257,7 +286,8 @@ mod tests {
         bytes[crc_start] ^= 0xff;
         let path = write_temp_file("invalid-crc", &bytes);
 
-        let error = read_first_bgzf_payload(&path).expect_err("crc mismatch should fail inflate");
+        let error =
+            read_first_bgzf_member_payload(&path).expect_err("crc mismatch should fail inflate");
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_invalid_bam_detail_contains(error, "Unable to inflate the first BGZF member");
@@ -307,5 +337,17 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removed");
         assert!(eof_present);
         assert_invalid_bam_detail_contains(error, "Unable to inflate the first BGZF member");
+    }
+
+    #[test]
+    fn all_payload_reader_stops_at_canonical_eof_marker() {
+        let mut bytes = member(b"payload before eof");
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("all-payloads", &bytes);
+
+        let payloads = read_bgzf_payloads(&path).expect("payloads should read");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(payloads, vec![b"payload before eof".to_vec()]);
     }
 }

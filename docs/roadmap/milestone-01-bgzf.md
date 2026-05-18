@@ -83,6 +83,10 @@ presence, first-member BAM magic, and first-member payload validity. Truncated
 headers, truncated declared payloads, and invalid gzip footer metadata retain
 specific error detail for JSON command failures.
 
+Writer coverage now verifies empty streams, deterministic EOF marker emission,
+single-payload round trips, multi-block payloads, and payloads near the writer
+target block boundary through the native BGZF reader.
+
 ## Benchmark Hooks
 
 * BGZF read throughput microbenchmark

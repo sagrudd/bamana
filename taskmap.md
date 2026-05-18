@@ -208,7 +208,7 @@ Completion evidence:
 
 ### M1.6 Strengthen BGZF Writer Tests
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -224,6 +224,16 @@ Acceptance criteria:
 * native writer output is accepted by the native reader;
 * EOF marker behavior is deterministic;
 * BAM writer consumers do not need to know BGZF block-layout details.
+
+Completion evidence:
+
+* added native writer tests for empty streams, single-payload round trips,
+  multi-block payloads, deterministic EOF marker emission, and payloads at and
+  just over the writer target block boundary;
+* added a crate-internal native reader helper for reading BGZF payload members
+  until the canonical EOF marker;
+* verified writer output through the native reader without requiring BAM writer
+  consumers to inspect BGZF block layout.
 
 ### M1.7 Add BGZF Microbenchmarks
 
