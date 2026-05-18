@@ -114,6 +114,29 @@ The user-facing configuration layer now exposes these stable scenario ids:
 
 Replication is built in via `replicates` and `warmup_runs`.
 
+## Native BGZF Microbenchmarks
+
+Milestone 1 also provides a lightweight native BGZF microbenchmark binary that
+does not require private data. It generates deterministic BAM-like BGZF
+fixtures, measures native read throughput, native write throughput, and
+EOF-check latency, and can optionally time `bamana verify` and
+`bamana check_eof` against the generated fixture.
+
+Build and run the small CI-friendly profile:
+
+```bash
+cargo build --release --bin bamana --bin bgzf_microbench
+target/release/bgzf_microbench \
+  --profile small \
+  --iterations 10 \
+  --bamana-bin target/release/bamana \
+  --out bgzf-small.json
+```
+
+Profiles are `small` (128 KiB payload), `medium` (8 MiB payload), and `large`
+(128 MiB payload). Output is JSON and is governed by
+[results/bgzf_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/bgzf_microbench.schema.json).
+
 ## Minimal Executable Slice
 
 The current `main.nf` is intentionally a minimal end-to-end execution slice.

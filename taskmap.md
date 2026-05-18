@@ -237,7 +237,7 @@ Completion evidence:
 
 ### M1.7 Add BGZF Microbenchmarks
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -256,6 +256,17 @@ Acceptance criteria:
 * results can be captured in CI or a local benchmark report;
 * `verify` and `check_eof` timings can be compared before and after BGZF
   changes.
+
+Completion evidence:
+
+* added `bgzf_microbench`, a standalone Rust microbenchmark binary for native
+  BGZF read throughput, write throughput, and EOF-check latency;
+* added deterministic `small`, `medium`, and `large` generated input profiles;
+* added optional `--bamana-bin` command timings for `verify` and `check_eof`;
+* added `benchmarks/results/bgzf_microbench.schema.json` for machine-readable
+  result capture;
+* documented local benchmark commands in Sphinx, benchmark framework docs, and
+  the Milestone 1 roadmap.
 
 ### M1.8 Reconcile Roadmap With Implemented Command Surface
 

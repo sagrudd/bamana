@@ -40,7 +40,7 @@ pub fn first_member_starts_with_bam_magic(path: &Path) -> Result<bool, AppError>
     Ok(payload.starts_with(b"BAM\x01"))
 }
 
-pub(crate) fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
+pub fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
     let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     let mut payloads = Vec::new();
 
