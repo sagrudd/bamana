@@ -9,6 +9,11 @@ hooks, and dependency checkpoints.
 It is intentionally organized around **engine capability milestones**, not just
 command count.
 
+Some command first slices already exist ahead of their final migration wave.
+That does not change the milestone order. The roadmap tracks when the native
+substrate is owned well enough for command behavior to rely on it, not merely
+when a command name first appears in the CLI.
+
 ## Backbone Order
 
 The backbone order for the migration is:

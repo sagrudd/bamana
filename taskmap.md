@@ -22,22 +22,31 @@ Known present pieces:
 * shallow BAM verification can inspect a BAM-like BGZF container and first-block
   BAM magic;
 * BAM-compatible BGZF writing exists for current first-slice BAM outputs;
-* unit tests cover several BGZF and BAM writer behaviors;
+* explicit native BGZF `block`, `reader`, `writer`, and `virtual_offset`
+  modules are in place;
+* unit tests cover BGZF reader, writer, EOF, virtual-offset, and BAM writer
+  behaviors;
+* `bgzf_microbench` provides runnable native BGZF read, write, EOF, `verify`,
+  and `check_eof` timing hooks;
+* public contract coverage exists for `benchmark`, `fastq`, and `unmap`;
 * `noodles` usage is isolated to the CRAM compatibility module in production
   code.
 
 Known blockers before Milestone 1 can be closed:
 
-* the full test suite is not green in the current working tree;
-* benchmark hooks for BGZF read throughput, write throughput, and EOF-check
-  latency are not yet defined and runnable;
-* virtual-offset groundwork is not yet represented as a dedicated public
-  internal type;
-* BGZF reader/writer ownership is still concentrated in broad modules rather
-  than split into explicit `reader`, `writer`, `block`, and `virtual_offset`
-  modules;
-* public contract coverage is incomplete for public commands that already exist
-  in the CLI, including `benchmark`, `fastq`, and `unmap`.
+* M1.9 still needs the final dependency-boundary audit and guardrail;
+* M1.10 still needs the closing verification run, benchmark evidence, and final
+  milestone status update.
+
+Command-surface scope:
+
+* Milestone 1 evidence is limited to BGZF substrate behavior, `verify` and
+  `check_eof` shallow BGZF use, BAM-compatible BGZF writer output, and
+  `bgzf_microbench` timings.
+* Existing first-slice commands such as `benchmark`, `fastq`, `unmap`,
+  `subsample`, `consume`, `sort`, `merge`, and other transform or inspection
+  commands may depend on this substrate, but their broader command semantics
+  remain downstream work and must not be treated as Milestone 1 closure proof.
 
 ## Task List
 
@@ -270,7 +279,7 @@ Completion evidence:
 
 ### M1.8 Reconcile Roadmap With Implemented Command Surface
 
-Status: open.
+Status: complete.
 
 Tasks:
 
@@ -288,6 +297,18 @@ Acceptance criteria:
 * existing later-wave commands are not mistaken for proof that Milestone 1 is
   complete;
 * roadmap, task map, and user-facing docs do not contradict each other.
+
+Completion evidence:
+
+* updated the task map completion state to reflect completed BGZF substrate
+  work and the remaining M1.9/M1.10 blockers;
+* added explicit command-surface scope boundaries to distinguish Milestone 1
+  evidence from downstream first-slice command behavior;
+* updated the current milestone and Milestone 1 roadmap pages so the milestone
+  remains substrate-focused while acknowledging existing later-wave command
+  slices;
+* labeled deferred work for full BAM header/record ownership, BAI/CSI
+  random-access use, broader command migration, and performance optimization.
 
 ### M1.9 Confirm Dependency Boundaries
 

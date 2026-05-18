@@ -41,6 +41,24 @@ Foundation for:
 * BAM record scanning
 * BAM writing
 
+## Command-Surface Boundary
+
+Milestone 1 is not a command-completion milestone. It closes only when the
+native BGZF substrate is owned, tested, benchmarkable, and dependency-audited.
+
+Milestone 1 evidence:
+
+* `check_eof` exercises native EOF-marker handling
+* `verify` exercises native first-member inflation and BAM magic detection
+* BAM-compatible writer paths exercise native BGZF output
+* `bgzf_microbench` captures native read, write, EOF, `verify`, and
+  `check_eof` timings
+
+Downstream first slices already present in the repository, including public
+contract commands such as `benchmark`, `fastq`, and `unmap`, are not themselves
+proof that Milestone 1 is complete. Broader command semantics belong to later
+milestones and command-migration waves.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:
@@ -104,3 +122,11 @@ target block boundary through the native BGZF reader.
   `bgzf::VirtualOffset` instead of passing packed `u64` values through new BGZF
   APIs
 * block reuse and buffering strategy will matter for later throughput work
+
+## Deferred Beyond Milestone 1
+
+* full BAM header ownership belongs to Milestone 2
+* native BAM record scanning belongs to Milestone 3
+* full BAI/CSI random-access behavior remains later index work
+* broad command migration off transitional compatibility surfaces belongs to
+  Milestone 5 and later waves
