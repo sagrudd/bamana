@@ -8,8 +8,15 @@
     "is_bam": true,
     "shallow_verified": true,
     "deep_validated": false,
+    "checks_performed": [
+      "opened_input",
+      "confirmed_bgzf_container_header",
+      "confirmed_bam_magic",
+      "parsed_bam_header",
+      "parsed_binary_reference_dictionary"
+    ],
     "confidence": "high",
-    "semantic_note": "Verification is shallow and does not imply full BAM validation."
+    "semantic_note": "Header-level verification confirms a BGZF container, BAM magic, and native BAM header parsing. It does not imply alignment-record validation, full BAM body validation, or EOF completeness."
   },
   "error": null
 }

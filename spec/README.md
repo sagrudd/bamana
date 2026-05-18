@@ -20,7 +20,7 @@ reviewed and versioned.
 The spec layer is intentionally explicit about what commands prove and what they
 do not prove. For example:
 
-* `verify` is shallow only
+* `verify` is header-level only and does not validate alignment records or EOF
 * `consume` introduces governed ingestion contracts for files and directories, including explicit CRAM reference-policy reporting
 * `annotate_rg` is record-level and may rewrite every BAM alignment record
 * `reheader` is header-only and does not imply record-level `RG:Z` tag mutation

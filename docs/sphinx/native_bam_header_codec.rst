@@ -30,6 +30,14 @@ textual header, and binary reference dictionary were readable enough to parse.
 It does not prove that alignment records, EOF state, or the complete BAM body
 are valid.
 
+Verify Command
+--------------
+
+``bamana verify`` uses the same native BGZF stream and BAM header codec for
+header-level verification. It confirms BGZF container recognition, BAM magic,
+and native header/reference-dictionary parsing. It does not scan alignment
+records and does not report EOF-marker status.
+
 Serialization
 -------------
 

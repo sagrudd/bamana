@@ -33,7 +33,7 @@ Depends on:
 
 ## Why This Order
 
-* `verify` is shallow and proves BGZF plus header ownership quickly
+* `verify` is header-level and proves BGZF plus header ownership quickly
 * `header` is the natural follow-on proof of header codec ownership
 * `subsample` is the first strong end-to-end scan and transform proof across
   BAM and FASTQ

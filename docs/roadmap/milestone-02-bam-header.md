@@ -107,7 +107,8 @@ Disallowed:
 * textual and binary reference information are merged consistently
 * production `header` command uses native BGZF streaming plus native BAM header
   parsing and does not rely on `noodles`
-* production `verify` uses native BGZF plus native header path only
+* production `verify` uses native BGZF plus native header path only and keeps
+  alignment-record and EOF-marker checks out of scope
 
 ## Benchmark Hooks
 

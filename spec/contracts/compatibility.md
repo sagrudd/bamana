@@ -24,7 +24,7 @@ fields mean.
 Examples:
 
 * bounded scan outputs must stay bounded in meaning
-* shallow verification must stay shallow in meaning
+* header-level verification must stay limited to BGZF plus BAM header structure
 * checksum modes must stay explicitly defined
 * CRAM ingest outputs must keep explicit reference-policy and reference-source semantics
 * sort/merge content preservation must stay opt-in and explicit

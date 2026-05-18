@@ -62,6 +62,20 @@ Key concepts:
 * `read_groups`, `programs`, `comments`, and `other_header_records` preserve
   parsed textual metadata for downstream inspection
 
+## `verify`
+
+The `verify` payload reports header-level BAM verification, not full BAM body
+validation.
+
+Key concepts:
+
+* `shallow_verified` remains true only when BGZF container recognition, BAM
+  magic, and native BAM header/reference-dictionary parsing succeeded
+* `deep_validated` remains false because alignment records are not scanned
+* `checks_performed` lists the successful header-level checks
+* EOF-marker status is intentionally outside `verify`; use `check_eof` for
+  that contract
+
 ## `consume`
 
 The `consume` payload introduces an ingestion-oriented contract layer in

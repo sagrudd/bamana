@@ -7,6 +7,6 @@
     "code": "invalid_header",
     "message": "BAM header could not be parsed.",
     "detail": "Missing BAM magic in decompressed stream.",
-    "hint": "Run bamana verify to perform shallow BAM checks before parsing the header."
+    "hint": "Inspect the BAM header and confirm the file has valid BGZF, BAM magic, and header-prefix fields."
   }
 }

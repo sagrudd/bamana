@@ -14,7 +14,8 @@
         "container",
         "is_bam",
         "shallow_verified",
-        "deep_validated"
+        "deep_validated",
+        "checks_performed"
       ],
       "properties": {
         "detected_format": { "const": "BAM" },
@@ -22,6 +23,20 @@
         "is_bam": { "type": "boolean" },
         "shallow_verified": { "type": "boolean" },
         "deep_validated": { "const": false },
+        "checks_performed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "opened_input",
+              "confirmed_bgzf_container_header",
+              "confirmed_bam_magic",
+              "parsed_bam_header",
+              "parsed_binary_reference_dictionary"
+            ]
+          },
+          "minItems": 5
+        },
         "confidence": {
           "$ref": "./common/defs.schema.json#/$defs/confidenceLevel"
         },

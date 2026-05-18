@@ -80,7 +80,7 @@ Known gaps:
 
 * Milestone 2 does not yet have completion evidence;
 * header parse and serialization microbenchmarks are not yet present;
-* M2.7 through M2.10 remain outstanding.
+* M2.8 through M2.10 remain outstanding.
 
 Milestone 2 closeout evidence must include:
 
@@ -695,7 +695,7 @@ Completion evidence:
 
 ### M2.7 Migrate `verify` To Native BGZF Plus Native Header
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -717,7 +717,21 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* routed `src/commands/verify.rs` through native BGZF recognition and
+  `parse_bam_header_from_native_bgzf` instead of stopping after BAM magic;
+* kept EOF-marker reporting out of `verify`; `check_eof` remains the BGZF EOF
+  command;
+* added tests for valid BAM, non-BGZF BAM-shaped input, BGZF without BAM magic,
+  negative `l_text`, and a truncated binary reference dictionary;
+* updated the `verify` schema, success/failure examples, CLI docs,
+  JSON-output docs, Sphinx docs, README, compatibility contract, and Milestone
+  2 roadmap to document header-level verification;
+* updated the shared `invalid_header` hint so it no longer describes `verify`
+  as a shallow pre-header check;
+* `cargo test` passed with 146 library tests, 14 contract tests, binary tests,
+  and doc tests, with the existing unused-variable warning in
+  `src/forensics/forensic_inspect.rs`;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html` passed.
 
 ### M2.8 Add Header Oracle And Dependency Boundary Tests
 

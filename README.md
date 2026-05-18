@@ -70,7 +70,7 @@ The current semantics are intentionally narrow:
 * `consume` is the ingestion gateway that discovers files/directories, classifies inputs, enforces mixed-format policy, and normalizes supported upstream formats into BAM according to an explicit mode and explicit CRAM reference policy; `FASTQ.GZ` imports now parallelize across files and use adjacent `FASTQ.GZI` checkpoint totals to drive single-file worker-batch conversion
 * `annotate_rg` performs record-level `RG:Z:` aux-tag insertion, replacement, or normalization across BAM alignment records, with optional coordinated `@RG` header updates
 * `reheader` performs BAM header-only mutation planning and execution without modifying per-record `RG:Z` tags in alignment records
-* `verify` performs shallow BAM verification only by confirming a BAM-like BGZF container and `BAM\1` magic in the first inflated block
+* `verify` performs header-level BAM verification by confirming a BGZF container, BAM magic, and native BAM header parse without scanning alignment records or checking EOF
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only through Bamana's native BGZF and BAM header codec, including the binary reference dictionary and textual SAM-style header records
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
@@ -94,6 +94,8 @@ That layer is intended to make tomorrow's first benchmark runs interpretable,
 not to claim full comparator or command parity already exists.
 
 Neither `verify` nor `check_eof` implies deep validation of the BAM payload.
+`verify` is limited to BGZF plus native BAM header structure; `check_eof` is
+limited to the canonical BGZF EOF marker.
 `inspect_duplication` does not perform Picard/GATK-style duplicate marking, does not treat BAM duplicate flags as primary evidence, and does not make biological claims about PCR or molecular duplication.
 `deduplicate` is the conservative remediation companion to `inspect_duplication`; it removes duplicated collection blocks according to an explicit keep policy and does not act as Picard/GATK-style duplicate marking, duplicate-flag cleanup, or broad biological duplicate collapse.
 `forensic_inspect` is an evidence-driven provenance inspection command; it is not a structural validator, not duplicate marking, and not a fraud detector.
@@ -383,10 +385,10 @@ cargo test
 
 ## Current Status
 
-The repository now contains a production-minded shallow BAM slice with shared
-JSON contracts, structured error handling, fast file probing, and real BGZF EOF
-inspection. Full BAM validation and broader BAM operations will be implemented
-incrementally under the project charter in
+The repository now contains a production-minded BAM header slice with shared
+JSON contracts, structured error handling, fast file probing, native BAM header
+parsing, and real BGZF EOF inspection. Full BAM validation and broader BAM
+operations will be implemented incrementally under the project charter in
 [`docs/project-charter.md`](docs/project-charter.md).
 
 ## Specification Layer

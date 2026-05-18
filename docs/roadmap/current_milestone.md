@@ -57,13 +57,14 @@ Known present pieces:
   consumers;
 * `src/commands/header.rs` routes the command through native BGZF streaming and
   native BAM header parsing;
+* `src/commands/verify.rs` routes the command through native BGZF recognition
+  and native BAM header parsing while leaving alignment records and EOF-marker
+  checks out of scope;
 * production dependency-boundary tests already prohibit direct `noodles` usage
   outside the CRAM compatibility exception.
 
 Known gaps:
 
-* `verify` still needs to be raised from shallow BAM magic checking to the
-  native BGZF plus native header validation expected by M2;
 * header parse and serialization microbenchmarks are not yet present.
 
 ## What “Done” Means

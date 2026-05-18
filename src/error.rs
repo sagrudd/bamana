@@ -407,7 +407,7 @@ impl AppError {
                 Some("Confirm the file is BGZF-compressed BAM and rerun bamana verify.".to_string())
             }
             Self::InvalidHeader { .. } => Some(
-                "Run bamana verify to perform shallow BAM checks before parsing the header."
+                "Inspect the BAM header and confirm the file has valid BGZF, BAM magic, and header-prefix fields."
                     .to_string(),
             ),
             Self::InvalidHeaderFile { .. } => Some(

@@ -464,17 +464,18 @@ Synopsis:
 `bamana verify --bam <bamfile>`
 
 Semantics:
-Performs shallow BAM verification only by confirming a BAM-like BGZF container
-and `BAM\1` magic in the first inflated block.
+Performs header-level BAM verification by confirming a BGZF container, BAM
+magic, and native BAM header parse.
 
 Does prove:
-The file is BAM-like enough to satisfy Bamana’s shallow verification contract.
+The file is BAM-like enough for Bamana to read the native BAM header and binary
+reference dictionary.
 
 Does not prove:
 Full record-stream validity, EOF presence, or deep validation.
 
 Key output concepts:
-`is_bam`, `shallow_verified`, `deep_validated`.
+`is_bam`, `shallow_verified`, `deep_validated`, `checks_performed`.
 
 ## `check_eof`
 

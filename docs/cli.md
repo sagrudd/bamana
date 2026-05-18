@@ -81,6 +81,12 @@ textual `@SQ` mismatches are reported as non-fatal
 the BGZF container and BAM header prefix/reference dictionary were readable
 enough to parse; it does not validate the BAM body.
 
+`verify` performs the same native BGZF plus BAM header-level structural check
+as a command contract. It confirms BGZF container recognition, BAM magic, and
+native header/reference-dictionary parsing. It does not scan alignment records
+and does not report BGZF EOF-marker presence; use `check_eof` for EOF-marker
+checks and `validate` for deeper BAM structure.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

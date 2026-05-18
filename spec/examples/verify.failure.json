@@ -1,12 +1,12 @@
 {
   "ok": false,
   "command": "verify",
-  "path": "example.sam",
+  "path": "broken.bam",
   "data": null,
   "error": {
-    "code": "not_bam",
-    "message": "Input is not a BAM file.",
-    "detail": "Detected format: SAM.",
-    "hint": "Run bamana identify on the input or provide a BGZF-compressed BAM file."
+    "code": "invalid_header",
+    "message": "BAM header could not be parsed.",
+    "detail": "Missing BAM magic in decompressed stream.",
+    "hint": "Inspect the BAM header and confirm the file has valid BGZF, BAM magic, and header-prefix fields."
   }
 }
