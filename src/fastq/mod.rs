@@ -11,7 +11,7 @@ pub use reader::{
     count_fastq_records, count_fastq_records_with_label, open_fastq_reader,
     open_fastq_reader_with_label, read_next_fastq_record,
 };
-pub use record::FastqRecord;
+pub use record::{FastqIdentityBasis, FastqRecord, FastqRecordView};
 pub use unmapped::{
     read_fastq_as_unmapped_records, read_fastq_as_unmapped_records_threaded_with_label,
     read_fastq_as_unmapped_records_with_label,

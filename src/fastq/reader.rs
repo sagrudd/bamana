@@ -5,10 +5,7 @@ use std::{
 
 use crate::error::AppError;
 
-use super::{
-    gzip::open_maybe_gzip_reader,
-    record::{FastqRecord, parse_read_name},
-};
+use super::{gzip::open_maybe_gzip_reader, record::FastqRecord};
 
 pub fn count_fastq_records(path: &Path) -> Result<u64, AppError> {
     count_fastq_records_with_label(path, path)
@@ -50,41 +47,12 @@ pub fn read_next_fastq_record(
     let plus_line = required_line(reader, path, "plus")?;
     let quality_line = required_line(reader, path, "quality")?;
 
-    if !header_line.starts_with('@') {
-        return Err(AppError::InvalidFastq {
+    FastqRecord::from_lines(header_line, sequence_line, plus_line, quality_line)
+        .map(Some)
+        .map_err(|error| AppError::InvalidFastq {
             path: path.to_path_buf(),
-            detail: "FASTQ record header line did not start with '@'.".to_string(),
-        });
-    }
-    if !plus_line.starts_with('+') {
-        return Err(AppError::InvalidFastq {
-            path: path.to_path_buf(),
-            detail: "FASTQ record plus line did not start with '+'.".to_string(),
-        });
-    }
-    if sequence_line.len() != quality_line.len() {
-        return Err(AppError::InvalidFastq {
-            path: path.to_path_buf(),
-            detail: format!(
-                "FASTQ sequence and quality lengths differed ({} vs {}).",
-                sequence_line.len(),
-                quality_line.len()
-            ),
-        });
-    }
-
-    let read_name = parse_read_name(&header_line).ok_or_else(|| AppError::InvalidFastq {
-        path: path.to_path_buf(),
-        detail: "FASTQ record header did not contain a usable read name.".to_string(),
-    })?;
-
-    Ok(Some(FastqRecord {
-        raw_header_line: header_line,
-        read_name,
-        sequence: sequence_line,
-        plus_line,
-        quality: quality_line,
-    }))
+            detail: error.detail().to_string(),
+        })
 }
 
 fn read_next_line(reader: &mut dyn BufRead, path: &Path) -> Result<Option<String>, AppError> {

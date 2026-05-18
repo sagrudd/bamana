@@ -91,8 +91,9 @@ Known present pieces:
 
 * `src/fastq/mod.rs` is the current native FASTQ parser/writer facade and
   preserves compatibility imports for existing command consumers;
-* `src/fastq/record.rs` owns the `FastqRecord` data model and read-name
-  parsing helper;
+* `src/fastq/record.rs` owns the `FastqRecord` data model,
+  `FastqRecordView`, read-name parsing, record-line validation, plus-line
+  preservation, field accessors, and FASTQ identity-byte construction;
 * `src/fastq/reader.rs` owns plain/gzip reader opening, record parsing, record
   validation, and record counting;
 * `src/fastq/writer.rs` owns plain/gzip FASTQ writing and finish behavior;
@@ -117,8 +118,10 @@ Known present pieces:
 
 Known gaps:
 
-* the current `FastqRecord` owns all strings, so field-only consumers still
-  allocate complete record lines;
+* the current streaming reader still returns owned `FastqRecord` values, so
+  field-only streaming integration remains future work even though
+  `FastqRecordView` exists for borrowed access when line storage is already
+  available;
 * FASTQ.GZ behavior needs explicit stream semantics and tests for multi-member
   and malformed gzip inputs;
 * writer behavior needs a clear contract for line endings, gzip finalization,

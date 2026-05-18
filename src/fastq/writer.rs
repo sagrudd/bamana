@@ -49,12 +49,7 @@ impl FastqWriter {
     }
 
     pub fn write_record(&mut self, record: &FastqRecord) -> Result<(), AppError> {
-        for line in [
-            &record.raw_header_line,
-            &record.sequence,
-            &record.plus_line,
-            &record.quality,
-        ] {
+        for line in record.view().lines() {
             self.write_all(line.as_bytes())?;
             self.write_all(b"\n")?;
         }

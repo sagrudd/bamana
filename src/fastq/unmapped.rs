@@ -177,10 +177,12 @@ fn build_unmapped_record(
     quality_line: &str,
     read_group: Option<&str>,
 ) -> Result<RecordLayout, AppError> {
-    let read_name = parse_read_name(header_line).ok_or_else(|| AppError::InvalidFastq {
-        path: path.to_path_buf(),
-        detail: "FASTQ record header did not contain a usable read name.".to_string(),
-    })?;
+    let read_name = parse_read_name(header_line)
+        .ok_or_else(|| AppError::InvalidFastq {
+            path: path.to_path_buf(),
+            detail: "FASTQ record header did not contain a usable read name.".to_string(),
+        })?
+        .to_string();
     let sequence_bytes =
         encode_bam_sequence(sequence_line).map_err(|detail| AppError::InvalidFastq {
             path: path.to_path_buf(),

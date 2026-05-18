@@ -15,7 +15,9 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
-    fastq::{FastqRecord, FastqWriter, open_fastq_reader, read_next_fastq_record},
+    fastq::{
+        FastqIdentityBasis, FastqRecord, FastqWriter, open_fastq_reader, read_next_fastq_record,
+    },
     formats::probe::{DetectedFormat, probe_path},
     json::CommandResponse,
     sampling::{
@@ -637,7 +639,7 @@ fn should_keep_record_fastq(
             should_keep_fraction(sample, config.fraction)
         }
         SubsampleMode::Deterministic => {
-            let identity = build_fastq_identity_bytes(record, config.identity);
+            let identity = record.identity_bytes(fastq_identity_basis(config.identity));
             should_keep_fraction(fnv1a64(&identity), config.fraction)
         }
     }
@@ -658,27 +660,11 @@ fn build_bam_identity_bytes(record: &RecordLayout, identity: DeterministicIdenti
     }
 }
 
-fn build_fastq_identity_bytes(record: &FastqRecord, identity: DeterministicIdentity) -> Vec<u8> {
+fn fastq_identity_basis(identity: DeterministicIdentity) -> FastqIdentityBasis {
     match identity {
-        DeterministicIdentity::Qname => record.read_name.as_bytes().to_vec(),
-        DeterministicIdentity::QnameSeq => {
-            let mut bytes = Vec::new();
-            bytes.extend_from_slice(record.read_name.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(record.sequence.as_bytes());
-            bytes
-        }
-        DeterministicIdentity::FullRecord => {
-            let mut bytes = Vec::new();
-            bytes.extend_from_slice(record.raw_header_line.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(record.sequence.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(record.plus_line.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(record.quality.as_bytes());
-            bytes
-        }
+        DeterministicIdentity::Qname => FastqIdentityBasis::Qname,
+        DeterministicIdentity::QnameSeq => FastqIdentityBasis::QnameSeq,
+        DeterministicIdentity::FullRecord => FastqIdentityBasis::FullRecord,
     }
 }
 

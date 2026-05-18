@@ -1421,7 +1421,9 @@ Known present pieces:
 
 * `src/fastq/mod.rs` is the Bamana-native FASTQ facade and preserves
   compatibility imports for existing command consumers;
-* `src/fastq/record.rs` owns `FastqRecord` and read-name parsing;
+* `src/fastq/record.rs` owns `FastqRecord`, `FastqRecordView`, read-name
+  parsing, record-line validation, plus-line preservation, field accessors,
+  and FASTQ identity-byte construction;
 * `src/fastq/reader.rs` owns plain/gzip reader opening, record parsing, record
   validation, and record counting;
 * `src/fastq/writer.rs` owns plain/gzip FASTQ writing and finish behavior;
@@ -1455,8 +1457,10 @@ Known present pieces:
 
 Known gaps:
 
-* the current `FastqRecord` owns all strings, so field-only consumers still
-  allocate complete record lines;
+* the current streaming reader still returns owned `FastqRecord` values, so
+  field-only streaming integration remains future work even though
+  `FastqRecordView` exists for borrowed access when line storage is already
+  available;
 * gzip behavior is extension-driven and uses generic gzip decoding, while the
   Milestone 4 boundary needs explicit FASTQ.GZ stream semantics and tests for
   multi-member and malformed gzip inputs;
@@ -1590,7 +1594,7 @@ Completion evidence:
 
 ### M4.3 Define Native FASTQ Record View And Owned Record Contract
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -1615,7 +1619,25 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* kept `FastqRecord` as the stable owned FASTQ record for consumers that retain
+  records or write them back out;
+* added `FastqRecordView` as a borrowed view over raw header, parsed read name,
+  sequence, plus line, and quality fields;
+* moved record-line validation into `FastqRecord::from_lines` and
+  `FastqRecordView::from_lines`, preserving existing error detail text for the
+  reader path;
+* centralized read-name parsing in `src/fastq/record.rs` so the reader and
+  unmapped-BAM conversion path share the same parser;
+* added `FastqIdentityBasis` and `identity_bytes` helpers for qname,
+  qname-sequence, and full-record FASTQ deterministic identities;
+* routed deterministic FASTQ `subsample` identity hashing through
+  `FastqRecord::identity_bytes` instead of a command-local duplicate helper;
+* routed `FastqWriter` through `FastqRecordView::lines` so plus-line handling
+  and line order stay owned by the FASTQ record contract;
+* documented the owned/view record contract in
+  `docs/sphinx/native_fastq_core.rst`;
+* focused tests passed with `cargo test fastq:: --lib` and
+  `cargo test commands::subsample::tests::deterministic_fastq_subsampling_is_repeatable --lib`.
 
 ### M4.4 Strengthen Plain FASTQ Reader Validation
 

@@ -14,7 +14,9 @@ Owned module layout
    ``FASTQ.GZI`` available as ``crate::fastq::gzi``.
 
 ``src/fastq/record.rs``
-   Owned ``FastqRecord`` data model and read-name parsing helper.
+   Owned ``FastqRecord`` data model, borrowed ``FastqRecordView``,
+   read-name parsing, validation, plus-line preservation, field accessors, and
+   FASTQ identity-byte construction.
 
 ``src/fastq/reader.rs``
    Plain FASTQ and extension-selected FASTQ.GZ reader entry points, record
@@ -45,12 +47,16 @@ Owned module layout
 Current scope
 -------------
 
-The reader validates the four-line FASTQ structure, ``@`` header marker,
-``+`` marker, sequence/quality length equality, and usable read name. The gzip
-boundary currently follows the filename extension and uses
-``flate2::read::MultiGzDecoder`` for ``.gz`` inputs.
+The record contract validates the four-line FASTQ structure, ``@`` header
+marker, ``+`` marker, sequence/quality length equality, and usable read name.
+``FastqRecord`` is the stable owned record for consumers that retain or write
+records. ``FastqRecordView`` is the borrowed view for field access and
+identity construction when a consumer already has record line storage.
 
-The writer emits line-oriented FASTQ records and chooses gzip output from the
-output filename extension. Later M4 tasks harden the stream semantics,
-round-trip guarantees, and command-consumer audits; this split establishes
-module ownership without changing command behavior.
+The gzip boundary currently follows the filename extension and uses
+``flate2::read::MultiGzDecoder`` for ``.gz`` inputs. The writer emits
+line-oriented FASTQ records and chooses gzip output from the output filename
+extension. Later M4 tasks harden the stream semantics, round-trip guarantees,
+and command-consumer audits; the current contract establishes module ownership,
+record ownership, borrowed field access, and centralized FASTQ identity bytes
+without changing command behavior.
