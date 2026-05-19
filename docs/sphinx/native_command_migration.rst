@@ -58,3 +58,22 @@ is supplied a Bamana binary. The benchmark framework also exposes
 
 M5 closeout must record command-level evidence for ``verify``, ``header``, and
 ``subsample`` after the remaining migration work is complete.
+
+M5.2 Contract Freeze
+--------------------
+
+M5.2 freezes the pre-migration proof-command contract baseline without changing
+command behavior. ``verify``, ``header``, and ``subsample`` each have governed
+JSON schemas, canonical success and failure examples, CLI documentation, and
+JSON-output documentation.
+
+Focused contract tests now fail if those proof-command schemas, examples, or
+documentation surfaces disappear. The fixture manifest also reserves
+``subsample`` coverage for BAM, FASTQ, FASTQ.GZ, malformed FASTQ, and truncated
+BAM inputs:
+
+* ``tiny.clean.bam``
+* ``tiny.clean.fastq``
+* ``tiny.valid.fastq_gz``
+* ``tiny.invalid.fastq.truncated``
+* ``tiny.invalid.bam.truncated_record``

@@ -2090,7 +2090,7 @@ Completion evidence:
 
 ### M5.2 Freeze Proof-Command Contracts And Fixtures
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2111,7 +2111,32 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited proof-command JSON schemas and canonical examples:
+  `spec/jsonschema/verify.schema.json`,
+  `spec/jsonschema/header.schema.json`,
+  `spec/jsonschema/subsample.schema.json`,
+  `spec/examples/verify.success.json`,
+  `spec/examples/verify.failure.json`,
+  `spec/examples/header.success.json`,
+  `spec/examples/header.failure.json`,
+  `spec/examples/subsample.success.json`,
+  `spec/examples/subsample.success.deterministic.json`,
+  `spec/examples/subsample.success.random.json`,
+  `spec/examples/subsample.failure.json`, and
+  `spec/examples/subsample.failure.invalid_fraction.json`;
+* confirmed `spec/cli/commands.md`, `docs/cli.md`, and `docs/json-output.md`
+  describe the supported `verify`, `header`, and `subsample` behavior and
+  limits;
+* added focused contract coverage in `tests/contract/json_contract.rs` so
+  proof-command schemas, success/failure examples, CLI documentation, and
+  JSON-output documentation cannot disappear silently;
+* updated `tests/fixtures/manifest.json` so `subsample` has reserved BAM,
+  FASTQ, FASTQ.GZ, malformed FASTQ, and truncated BAM fixture coverage through
+  `tiny.clean.bam`, `tiny.clean.fastq`, `tiny.valid.fastq_gz`,
+  `tiny.invalid.fastq.truncated`, and `tiny.invalid.bam.truncated_record`;
+* updated Milestone 5 roadmap and Sphinx native command-migration notes with
+  the frozen contract and fixture baseline;
+* no intentional command contract changes were made before migration work.
 
 ### M5.3 Confirm And Harden `verify` Native Migration
 

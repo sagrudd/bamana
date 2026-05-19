@@ -211,6 +211,108 @@ fn public_contract_commands_have_docs_schemas_and_examples() {
 }
 
 #[test]
+fn proof_command_contracts_have_docs_schemas_examples_and_behavior_notes() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+
+    for command in ["verify", "header", "subsample"] {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "proof command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "proof command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "proof command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "proof command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "proof command {command} is missing from docs/cli.md"
+        );
+        assert!(
+            json_doc.contains(&format!("## `{command}`")),
+            "proof command {command} is missing from docs/json-output.md"
+        );
+    }
+
+    for required in [
+        "native BAM header parse",
+        "Full record-stream validity, EOF presence, or deep validation",
+        "native BAM header codec",
+        "That alignment records are valid or that the full file body is readable",
+        "BAM, FASTQ, or FASTQ.GZ",
+        "retained records preserve encounter order",
+    ] {
+        assert!(
+            commands_doc.contains(required),
+            "proof-command CLI contract is missing behavior note: {required}"
+        );
+    }
+}
+
+#[test]
+fn fixture_manifest_includes_m5_subsample_baseline() {
+    let manifest = load_fixture_manifest();
+
+    for (required_id, expected_format, expected_validity) in [
+        ("tiny.clean.bam", "BAM", "valid"),
+        ("tiny.clean.fastq", "FASTQ", "valid"),
+        ("tiny.valid.fastq_gz", "FASTQ.GZ", "valid"),
+        ("tiny.invalid.fastq.truncated", "FASTQ", "invalid"),
+        ("tiny.invalid.bam.truncated_record", "BAM", "invalid"),
+    ] {
+        let fixture = manifest
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.id == required_id)
+            .unwrap_or_else(|| {
+                panic!("fixture manifest is missing M5 subsample fixture {required_id}")
+            });
+
+        assert_eq!(
+            fixture.format, expected_format,
+            "fixture {required_id} has unexpected format"
+        );
+        assert_eq!(
+            fixture.validity, expected_validity,
+            "fixture {required_id} has unexpected validity"
+        );
+        assert!(
+            fixture
+                .primary_commands
+                .iter()
+                .any(|command| command == "subsample")
+                || fixture
+                    .secondary_commands
+                    .iter()
+                    .any(|command| command == "subsample"),
+            "fixture {required_id} is not mapped to subsample"
+        );
+        assert!(
+            fixture
+                .expected_artifacts
+                .iter()
+                .any(|artifact| artifact.starts_with("expected/subsample/")),
+            "fixture {required_id} has no reserved subsample expected artifact"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

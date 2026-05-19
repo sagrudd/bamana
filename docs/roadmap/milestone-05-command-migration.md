@@ -87,6 +87,31 @@ Contract and benchmark surfaces:
   binary, and the benchmark framework contains `subsample_only` workflow
   variants for command-level subsample timing.
 
+## M5.2 Contract Freeze
+
+M5.2 freezes the proof-command contract baseline before deeper migration work.
+No intentional command contract changes are introduced by this task.
+
+Frozen proof-command surfaces:
+
+* `verify`, `header`, and `subsample` each have a JSON schema plus canonical
+  success and failure examples;
+* `spec/cli/commands.md`, `docs/cli.md`, and `docs/json-output.md` describe
+  the supported behavior and limits for the three proof commands;
+* focused contract tests now fail if any proof-command schema, example, or
+  governed documentation surface disappears;
+* fixture manifest coverage now reserves BAM, FASTQ, FASTQ.GZ, malformed
+  FASTQ, and truncated BAM inputs for `subsample` before implementation
+  migration changes begin.
+
+Reserved `subsample` fixture baseline:
+
+* `tiny.clean.bam`
+* `tiny.clean.fastq`
+* `tiny.valid.fastq_gz`
+* `tiny.invalid.fastq.truncated`
+* `tiny.invalid.bam.truncated_record`
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

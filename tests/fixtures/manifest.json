@@ -401,12 +401,14 @@
       "status": "planned",
       "planned_status": "planned",
       "description": "Tiny clean FASTQ with stable read order and no suspicious duplicated block signatures.",
-      "primary_commands": ["inspect_duplication", "deduplicate"],
+      "primary_commands": ["subsample", "inspect_duplication", "deduplicate"],
       "secondary_commands": [],
       "generated": true,
       "source_fixture_ids": [],
       "regeneration_strategy": "hand_authored_fastq_source",
       "expected_artifacts": [
+        "expected/subsample/subsample.tiny.clean.fastq.deterministic.success.json",
+        "expected/subsample/subsample.tiny.clean.fastq.random.success.json",
         "expected/inspect_duplication/inspect_duplication.tiny.clean.fastq.success.json",
         "expected/deduplicate/deduplicate.tiny.clean.fastq.noop.success.json"
       ],
@@ -418,6 +420,9 @@
       "header_anomaly_type": null,
       "read_name_regime_type": "stable",
       "contract_assertions": [
+        "subsample deterministic mode remains repeatable for identical input, fraction, and identity basis",
+        "subsample seeded random mode remains reproducible for a given seed",
+        "subsample preserves retained FASTQ encounter order",
         "inspect_duplication reports no suspicious duplicate finding",
         "deduplicate reports deterministic no-op planning or no-op applied output",
         "fixture remains the clean FASTQ baseline for operator-error duplication tests"
@@ -436,12 +441,14 @@
       "status": "planned",
       "planned_status": "planned",
       "description": "Tiny clean BAM with normal header provenance and no suspicious duplicate block or regime-shift hallmarks.",
-      "primary_commands": ["inspect_duplication", "deduplicate", "forensic_inspect"],
+      "primary_commands": ["subsample", "inspect_duplication", "deduplicate", "forensic_inspect"],
       "secondary_commands": [],
       "generated": true,
       "source_fixture_ids": [],
       "regeneration_strategy": "hand_authored_sam_to_bam",
       "expected_artifacts": [
+        "expected/subsample/subsample.tiny.clean.bam.random.success.json",
+        "expected/subsample/subsample.tiny.clean.bam.deterministic.success.json",
         "expected/inspect_duplication/inspect_duplication.tiny.clean.bam.success.json",
         "expected/deduplicate/deduplicate.tiny.clean.bam.noop.success.json",
         "expected/forensic_inspect/forensic_inspect.tiny.clean.bam.success.json"
@@ -454,6 +461,9 @@
       "header_anomaly_type": null,
       "read_name_regime_type": "stable",
       "contract_assertions": [
+        "subsample preserves BAM header bytes and retained record encounter order",
+        "subsample reports BAM index invalidation when writing output",
+        "subsample records eligible record counts when BAM filters are active",
         "inspect_duplication reports no suspicious duplicate finding",
         "deduplicate reports deterministic no-op behavior",
         "forensic_inspect reports a clean BAM with no suspicious provenance findings"
@@ -683,12 +693,13 @@
       "status": "planned",
       "planned_status": "planned",
       "description": "Tiny malformed FASTQ with a truncated final record for parse-failure contract tests.",
-      "primary_commands": ["inspect_duplication", "deduplicate"],
+      "primary_commands": ["subsample", "inspect_duplication", "deduplicate"],
       "secondary_commands": [],
       "generated": true,
       "source_fixture_ids": ["tiny.clean.fastq"],
       "regeneration_strategy": "truncate_final_fastq_record",
       "expected_artifacts": [
+        "expected/subsample/subsample.tiny.invalid.fastq.truncated.failure.json",
         "expected/inspect_duplication/inspect_duplication.tiny.invalid.fastq.truncated.failure.json",
         "expected/deduplicate/deduplicate.tiny.invalid.fastq.truncated.failure.json"
       ],
@@ -700,6 +711,7 @@
       "header_anomaly_type": null,
       "read_name_regime_type": null,
       "contract_assertions": [
+        "subsample fails with machine-readable invalid FASTQ parse semantics",
         "inspect_duplication fails with parse uncertainty or equivalent invalid-input semantics",
         "deduplicate refuses remediation because a stable duplicate-removal plan cannot be constructed"
       ],
@@ -717,12 +729,13 @@
       "status": "planned",
       "planned_status": "planned",
       "description": "Tiny malformed BAM with a truncated alignment stream reserved for duplication and forensic parse-failure paths.",
-      "primary_commands": ["inspect_duplication", "deduplicate", "forensic_inspect"],
+      "primary_commands": ["subsample", "inspect_duplication", "deduplicate", "forensic_inspect"],
       "secondary_commands": [],
       "generated": true,
       "source_fixture_ids": ["tiny.clean.bam"],
       "regeneration_strategy": "truncate_alignment_record_payload",
       "expected_artifacts": [
+        "expected/subsample/subsample.tiny.invalid.bam.truncated_record.failure.json",
         "expected/inspect_duplication/inspect_duplication.tiny.invalid.bam.truncated_record.failure.json",
         "expected/deduplicate/deduplicate.tiny.invalid.bam.truncated_record.failure.json",
         "expected/forensic_inspect/forensic_inspect.tiny.invalid.bam.truncated_record.failure.json"
@@ -735,6 +748,7 @@
       "header_anomaly_type": null,
       "read_name_regime_type": null,
       "contract_assertions": [
+        "subsample fails with machine-readable truncated BAM record semantics",
         "inspect_duplication fails with parse uncertainty or equivalent invalid-input semantics",
         "deduplicate fails because no stable removal plan can be constructed",
         "forensic_inspect fails early or reports partial header-only evidence without a stable provenance assessment"
@@ -1023,13 +1037,15 @@
       "validity": "valid",
       "status": "planned",
       "description": "Tiny FASTQ.GZ input reserved for unmapped-mode consume coverage.",
-      "primary_commands": ["consume"],
+      "primary_commands": ["consume", "subsample"],
       "secondary_commands": ["identify"],
       "generated": true,
       "source_fixture_ids": ["tiny.valid.fastq"],
       "regeneration_strategy": "gzip_wrap_tiny_fastq",
       "expected_artifacts": [
-        "expected/consume/consume.tiny.valid.fastq_gz.dry_run.success.json"
+        "expected/consume/consume.tiny.valid.fastq_gz.dry_run.success.json",
+        "expected/subsample/subsample.tiny.valid.fastq_gz.deterministic.success.json",
+        "expected/subsample/subsample.tiny.valid.fastq_gz.random.success.json"
       ],
       "size_class": "tiny"
     },
