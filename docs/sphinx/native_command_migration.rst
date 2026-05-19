@@ -77,3 +77,19 @@ BAM inputs:
 * ``tiny.valid.fastq_gz``
 * ``tiny.invalid.fastq.truncated``
 * ``tiny.invalid.bam.truncated_record``
+
+M5.3 Verify Migration
+---------------------
+
+M5.3 confirms ``verify`` as a native proof-command path. Production ``verify``
+performs shallow path probing, requires a BGZF-backed BAM container, and parses
+BAM magic plus the header/reference dictionary through
+``parse_bam_header_from_native_bgzf``.
+
+The command remains intentionally limited. It does not scan alignment records,
+validate the full BAM body, or report BGZF EOF-marker status. A valid header can
+therefore verify even when the canonical BGZF EOF marker is absent; use
+``check_eof`` for EOF-marker checks and ``validate`` for deeper structure.
+
+Command-level timing evidence for ``verify`` is captured through
+``header_microbench --bamana-bin``.

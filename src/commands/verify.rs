@@ -104,6 +104,27 @@ mod tests {
     }
 
     #[test]
+    fn verify_accepts_header_without_bgzf_eof_marker() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        let bytes = test_support::build_bgzf_member(&payload);
+        let path = test_support::write_temp_file("verify-no-eof", "bam", &bytes);
+
+        let response =
+            run(VerifyRequest { bam: path.clone() }).expect("header-only verify should pass");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert!(response.shallow_verified);
+        assert!(!response.deep_validated);
+        assert_eq!(
+            response.semantic_note,
+            "Header-level verification confirms a BGZF container, BAM magic, and native BAM header parsing. It does not imply alignment-record validation, full BAM body validation, or EOF completeness."
+        );
+    }
+
+    #[test]
     fn verify_rejects_non_bgzf_bam_container() {
         let path = test_support::write_temp_file("verify-not-bgzf", "invalid.bam", b"not bgzf");
 

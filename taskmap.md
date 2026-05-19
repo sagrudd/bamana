@@ -2140,7 +2140,7 @@ Completion evidence:
 
 ### M5.3 Confirm And Harden `verify` Native Migration
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2162,7 +2162,27 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed production `src/commands/verify.rs` uses `probe_path` for shallow
+  format/container recognition and `parse_bam_header_from_native_bgzf` for
+  native BAM magic, header text, and binary reference-dictionary parsing;
+* confirmed `tests/contract/dependency_boundary.rs` protects
+  `src/commands/verify.rs` and the native BAM header path from direct
+  production `noodles` imports;
+* added `verify_accepts_header_without_bgzf_eof_marker` to document that
+  `verify` remains header-level and does not perform EOF-marker checking;
+* existing focused malformed-header tests continue to cover non-BGZF input,
+  BGZF without BAM magic, negative `l_text`, and a truncated reference
+  dictionary;
+* confirmed README, `spec/cli/commands.md`, `docs/cli.md`,
+  `docs/json-output.md`, and Sphinx docs state that `verify` is header-level
+  verification, not alignment-record validation, full BAM body validation, or
+  EOF checking;
+* recorded command-level benchmark timing for `verify` through
+  `target/debug/header_microbench --profile small --iterations 1
+  --bamana-bin target/debug/bamana`, with the JSON smoke check confirming
+  `benchmark: header_microbench`, `profile: small`, `iterations: 1`, and
+  `verify` `ok_count: 1`;
+* JSON contracts remained stable.
 
 ### M5.4 Confirm And Harden `header` Native Migration
 

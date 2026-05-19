@@ -112,6 +112,28 @@ Reserved `subsample` fixture baseline:
 * `tiny.invalid.fastq.truncated`
 * `tiny.invalid.bam.truncated_record`
 
+## M5.3 `verify` Native Migration
+
+M5.3 confirms the `verify` proof command as a completed native migration. The
+production command path remains limited to:
+
+1. shallow path probing;
+2. BGZF-backed BAM container confirmation;
+3. native BAM magic and header/reference-dictionary parsing through
+   `parse_bam_header_from_native_bgzf`.
+
+The task does not expand `verify` into alignment-record validation, full BAM
+body validation, or BGZF EOF-marker checking. EOF-marker checks remain owned by
+`check_eof`, and deeper body checks remain owned by `validate`.
+
+Additional hardening records that a valid BGZF BAM header can verify even when
+the canonical BGZF EOF marker is absent. That behavior is deliberate: missing
+EOF is outside the `verify` contract.
+
+Command-level benchmark evidence is recorded through `header_microbench` with
+`--bamana-bin`, which times both `verify` and `header` against the generated
+native header fixture.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:
