@@ -112,18 +112,29 @@ Milestone 1 through 4 completion evidence remains recorded in:
 Known present pieces:
 
 * native BGZF, BAM header, BAM scanner, and FASTQ substrates are available;
-* `verify` and `header` already use native BGZF plus native BAM header parsing;
-* FASTQ-side `subsample` already uses the native FASTQ parser/writer core;
-* public command contracts exist for `benchmark`, `fastq`, and `unmap`;
+* `verify` already probes the input, requires a BGZF-backed BAM container, and
+  calls `parse_bam_header_from_native_bgzf`;
+* `header` follows the same native BGZF and BAM header path and returns the
+  native `HeaderPayload`;
+* FASTQ-side `subsample` already uses `open_fastq_reader`,
+  `read_next_fastq_record`, and `FastqWriter` from the native FASTQ core;
+* public command contracts exist and remain protected for `benchmark`,
+  `fastq`, and `unmap`;
 * dependency-boundary tests already restrict direct production `noodles` usage
-  to the CRAM compatibility boundary.
+  to the CRAM compatibility boundary and separately protect native header,
+  verify, scanner, migrated BAM-record, and FASTQ hot paths;
+* `header_microbench` can time `verify` and `header` command paths when passed
+  a Bamana binary, while the benchmark framework already exposes
+  `subsample_only` scenarios for larger command-level runs.
 
 Known gaps:
 
-* BAM-side `subsample` still needs explicit native scanner or raw-record bridge
-  evidence in the M5 task map;
-* proof-command migration evidence needs to be collected and recorded for
-  `verify`, `header`, and `subsample`;
+* BAM-side `subsample` still uses `BamReader::open`,
+  `parse_bam_header_from_reader`, `read_next_record_layout`,
+  `serialize_record_layout`, and `BgzfWriter` rather than `BamScanner` or a
+  scanner-owned raw-record bridge;
+* M5 still needs explicit proof-command evidence recorded for `verify`,
+  `header`, and both BAM and FASTQ `subsample`;
 * benchmark or differential evidence for the proof commands remains to be
   recorded.
 

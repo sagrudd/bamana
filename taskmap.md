@@ -1980,8 +1980,15 @@ Known present pieces:
   `parse_bam_header_from_native_bgzf`;
 * production `header` already routes through native BGZF probing plus
   `parse_bam_header_from_native_bgzf`;
+* FASTQ and FASTQ.GZ `subsample` already use `open_fastq_reader`,
+  `read_next_fastq_record`, and `FastqWriter` from the native FASTQ core;
 * contract dependency-boundary tests already protect production native header,
   verify, scanner, and migrated hot paths from direct `noodles` imports;
+* `tests/contract/json_contract.rs` protects `benchmark`, `fastq`, and
+  `unmap` as public contract commands with schemas, examples, and CLI docs;
+* `header_microbench` can time `verify` and `header` command paths when passed
+  a Bamana binary, and the benchmark framework contains `subsample_only`
+  workflow variants;
 * production `subsample` already has governed JSON contracts for BAM, FASTQ,
   and FASTQ.GZ inputs and explicit deterministic/random selection policies.
 
@@ -1990,9 +1997,8 @@ Known gaps:
 * BAM-side `subsample` still uses `BamReader::open` and
   `read_next_record_layout` rather than the native scanner or a scanner-owned
   raw-record bridge;
-* FASTQ-side `subsample` already uses the stable Milestone 4 reader/writer API,
-  but that evidence still needs to be recorded in the M5 proof-command
-  migration narrative;
+* M5 still needs command-level proof evidence recorded for `verify`, `header`,
+  and both BAM and FASTQ `subsample`;
 * command-level benchmark deltas for `verify`, `header`, and `subsample` are
   not yet recorded as M5 evidence;
 * dependency-boundary tests do not yet name the full M5 proof-command set as a
@@ -2028,7 +2034,7 @@ Command-surface scope:
 
 ### M5.1 Activate Milestone 5 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2054,7 +2060,33 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed `docs/roadmap/current_milestone.md` names Milestone 5 as active
+  only after Milestone 4 closeout and keeps Milestones 1 through 4 recorded as
+  complete;
+* audited `src/commands/verify.rs`: production `verify` probes input format,
+  requires a BGZF-backed BAM container, and calls
+  `parse_bam_header_from_native_bgzf`;
+* audited `src/commands/header.rs`: production `header` follows the same
+  native BGZF plus native BAM header parse path and returns `HeaderPayload`;
+* audited `src/commands/subsample.rs`: FASTQ and FASTQ.GZ paths use
+  `open_fastq_reader`, `read_next_fastq_record`, and `FastqWriter`, while BAM
+  still uses `BamReader::open`, `parse_bam_header_from_reader`,
+  `read_next_record_layout`, `serialize_record_layout`, and `BgzfWriter`
+  rather than `BamScanner` or a scanner-owned raw-record bridge;
+* audited `tests/contract/dependency_boundary.rs`: direct production
+  `noodles` usage remains restricted to `src/ingest/cram.rs`, with separate
+  checks for native header, verify, scanner, migrated BAM-record, and FASTQ
+  hot paths;
+* audited `tests/contract/json_contract.rs`, `spec/cli/commands.md`,
+  `docs/cli.md`, schemas, and examples: public contract commands
+  `benchmark`, `fastq`, and `unmap` remain protected;
+* audited benchmark hooks: `header_microbench` can time `verify` and `header`
+  when supplied a Bamana binary, and the benchmark framework exposes
+  `subsample_only` workflow variants;
+* updated `docs/roadmap/milestone-05-command-migration.md`,
+  `docs/roadmap/current_milestone.md`, and Sphinx technical documentation with
+  the M5.1 baseline audit;
+* no command behavior changes were made.
 
 ### M5.2 Freeze Proof-Command Contracts And Fixtures
 

@@ -54,6 +54,39 @@ Depends on:
 * benchmark `subsample` before and after migration
 * capture command-level deltas in the benchmark framework where possible
 
+## M5.1 Baseline Audit
+
+M5.1 activated this milestone after Milestone 4 closed. The baseline audit is
+documentation-only and does not change command behavior.
+
+Already-native proof paths:
+
+* `verify` probes the path, requires a BGZF-backed BAM container, and calls
+  `parse_bam_header_from_native_bgzf`;
+* `header` uses the same native BGZF and BAM header parse path and returns the
+  native `HeaderPayload`;
+* FASTQ and FASTQ.GZ `subsample` paths use the native FASTQ reader, record, and
+  writer core from Milestone 4.
+
+Remaining migration target:
+
+* BAM `subsample` currently uses `BamReader::open`,
+  `parse_bam_header_from_reader`, `read_next_record_layout`,
+  `serialize_record_layout`, and `BgzfWriter`. This path is free of direct
+  `noodles` imports, but it is not yet proven through `BamScanner` or a
+  scanner-owned raw-record bridge.
+
+Contract and benchmark surfaces:
+
+* `benchmark`, `fastq`, and `unmap` remain public contract commands protected
+  by contract tests for schemas, examples, and CLI documentation;
+* `verify`, `header`, and `subsample` already have JSON schemas, examples, and
+  CLI documentation that M5 migration work must preserve or deliberately
+  version;
+* `header_microbench` can time `verify` and `header` when supplied a Bamana
+  binary, and the benchmark framework contains `subsample_only` workflow
+  variants for command-level subsample timing.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:
