@@ -134,6 +134,26 @@ Command-level benchmark evidence is recorded through `header_microbench` with
 `--bamana-bin`, which times both `verify` and `header` against the generated
 native header fixture.
 
+## M5.4 `header` Native Migration
+
+M5.4 confirms the `header` proof command as a completed native migration. The
+production command path remains limited to:
+
+1. shallow path probing;
+2. BGZF-backed BAM container confirmation;
+3. native BAM magic, header text, and binary reference-dictionary parsing
+   through `parse_bam_header_from_native_bgzf`;
+4. returning the native `HeaderPayload`.
+
+The command remains header-only. It does not validate alignment records, does
+not validate the complete BAM body, and does not report BGZF EOF-marker status.
+Additional hardening records that malformed alignment-body bytes after an
+otherwise valid header do not make `header` fail.
+
+Command-level benchmark evidence is recorded through `header_microbench` with
+`--bamana-bin`, which times the `header` command against the generated native
+header fixture.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

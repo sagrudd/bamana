@@ -2186,7 +2186,7 @@ Completion evidence:
 
 ### M5.4 Confirm And Harden `header` Native Migration
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2207,7 +2207,27 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed production `src/commands/header.rs` uses `probe_path` for shallow
+  format/container recognition and `parse_bam_header_from_native_bgzf` for
+  native BAM magic, header text, and binary reference-dictionary parsing;
+* confirmed `tests/contract/dependency_boundary.rs` protects
+  `src/commands/header.rs` and the native BAM header path from direct
+  production `noodles` imports;
+* existing focused tests continue to prove multi-member native BGZF header
+  parsing and missing BAM magic failure behavior;
+* added `header_command_does_not_validate_alignment_body` to document that
+  `header` remains header-only and does not validate alignment records or the
+  full BAM body;
+* confirmed README, `spec/cli/commands.md`, `docs/cli.md`,
+  `docs/json-output.md`, and Sphinx docs state that `header` parses only BAM
+  header content and does not imply alignment-record validity, EOF presence, or
+  full body readability;
+* recorded command-level benchmark timing for `header` through
+  `target/debug/header_microbench --profile small --iterations 1
+  --bamana-bin target/debug/bamana`, with the JSON smoke check confirming
+  `benchmark: header_microbench`, `profile: small`, `iterations: 1`, and
+  `header` `ok_count: 1`;
+* JSON contracts remained stable.
 
 ### M5.5 Migrate BAM-Side `subsample` To Native Scanner Or Raw-Record Bridge
 

@@ -93,3 +93,19 @@ therefore verify even when the canonical BGZF EOF marker is absent; use
 
 Command-level timing evidence for ``verify`` is captured through
 ``header_microbench --bamana-bin``.
+
+M5.4 Header Migration
+---------------------
+
+M5.4 confirms ``header`` as a native proof-command path. Production ``header``
+performs shallow path probing, requires a BGZF-backed BAM container, parses BAM
+magic plus the header/reference dictionary through
+``parse_bam_header_from_native_bgzf``, and returns the native ``HeaderPayload``.
+
+The command remains header-only. It does not validate alignment records,
+validate the complete BAM body, or report BGZF EOF-marker status. Malformed
+alignment-body bytes after an otherwise valid header are therefore outside the
+``header`` failure contract.
+
+Command-level timing evidence for ``header`` is captured through
+``header_microbench --bamana-bin``.

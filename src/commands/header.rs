@@ -77,6 +77,30 @@ mod tests {
     }
 
     #[test]
+    fn header_command_does_not_validate_alignment_body() {
+        let header_text = "@HD\tVN:1.6\n";
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+        payload.extend_from_slice(header_text.as_bytes());
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+        payload.extend_from_slice(b"malformed-body-that-header-must-not-read");
+
+        let mut bam = test_support::build_bgzf_member(&payload);
+        bam.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = test_support::write_temp_file("header-body-boundary", "bam", &bam);
+
+        let response = run(HeaderRequest { bam: path.clone() })
+            .expect("header command should not validate alignment records");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(response.header.raw_header_text, header_text);
+        assert!(response.header.references.is_empty());
+        assert!(response.header.reference_diagnostics.is_empty());
+    }
+
+    #[test]
     fn header_command_surfaces_native_header_parse_failures() {
         let mut bam = test_support::build_bgzf_member(b"not-bam");
         bam.extend_from_slice(&BGZF_EOF_MARKER);
