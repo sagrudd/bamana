@@ -116,6 +116,9 @@ Known present pieces:
   calls `parse_bam_header_from_native_bgzf`;
 * `header` follows the same native BGZF and BAM header path and returns the
   native `HeaderPayload`;
+* BAM-side `subsample` streams through `BamScanner`, applies filters and
+  selection from `BamRecordView`, and writes retained scanner-owned raw record
+  bytes;
 * FASTQ-side `subsample` already uses `open_fastq_reader`,
   `read_next_fastq_record`, and `FastqWriter` from the native FASTQ core;
 * public command contracts exist and remain protected for `benchmark`,
@@ -129,10 +132,6 @@ Known present pieces:
 
 Known gaps:
 
-* BAM-side `subsample` still uses `BamReader::open`,
-  `parse_bam_header_from_reader`, `read_next_record_layout`,
-  `serialize_record_layout`, and `BgzfWriter` rather than `BamScanner` or a
-  scanner-owned raw-record bridge;
 * M5 still needs explicit proof-command evidence recorded for `verify`,
   `header`, and both BAM and FASTQ `subsample`;
 * benchmark or differential evidence for the proof commands remains to be

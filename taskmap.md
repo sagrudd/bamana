@@ -2276,7 +2276,7 @@ Completion evidence:
 
 ### M5.6 Migrate FASTQ-Side `subsample` To Milestone 4 APIs
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2297,7 +2297,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed FASTQ and FASTQ.GZ `subsample` stream through the stable M4
+  `open_fastq_reader` plus `read_next_fastq_record` APIs;
+* confirmed retained FASTQ records are written through the stable M4
+  `FastqWriter` API, including gzip-compressed output when the final output
+  path uses a `.gz` suffix;
+* preserved deterministic and seeded-random selection semantics;
+* preserved raw-read deterministic identity semantics through
+  `FastqRecord::identity_bytes`;
+* preserved encounter-order output and M4 record fidelity for header comments,
+  plus-line comments, sequence, and quality content;
+* preserved rejection of BAM-only `--mapped-only`, `--primary-only`, and
+  `--create-index` options before FASTQ streaming begins;
+* added command tests covering the M4 reader/writer round trip, deterministic
+  retained-record evidence, FASTQ.GZ writer policy, and FASTQ rejection for
+  BAM-only flags;
+* documented FASTQ-side `subsample` M4 API completion in the Milestone 5
+  roadmap, current milestone notes, and Sphinx native command-migration notes.
 
 ### M5.7 Strengthen M5 Dependency Boundaries
 

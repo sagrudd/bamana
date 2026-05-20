@@ -27,16 +27,13 @@ a BGZF-backed BAM container, and parses the BAM header through
 ``header`` follows the same native BGZF and BAM header parse path and returns
 the native ``HeaderPayload``.
 
-FASTQ and FASTQ.GZ ``subsample`` paths already use the native FASTQ reader,
-record, and writer core established in Milestone 4.
+FASTQ and FASTQ.GZ ``subsample`` paths use the native FASTQ reader, record,
+and writer core established in Milestone 4.
 
-BAM ``subsample`` is the remaining migration target. It currently streams
-through ``BamReader::open``, parses the header through
-``parse_bam_header_from_reader``, reads records with
-``read_next_record_layout``, and writes retained records with
-``serialize_record_layout`` plus ``BgzfWriter``. This path is free of direct
-``noodles`` imports, but it is not yet proven through ``BamScanner`` or a
-scanner-owned raw-record bridge.
+BAM ``subsample`` now streams through ``BamScanner`` and writes retained
+scanner-owned raw record bytes. The earlier transitional
+``BamReader::open`` plus ``read_next_record_layout`` path is no longer used by
+the command.
 
 Guardrails
 ----------
@@ -126,3 +123,21 @@ record bytes without rebuilding each record through the older transitional
 The migration preserves deterministic selection, seeded-random selection,
 ``--mapped-only`` and ``--primary-only`` filtering, encounter-order output, and
 the existing JSON contract.
+
+M5.6 FASTQ Subsample Migration
+------------------------------
+
+M5.6 records FASTQ-side ``subsample`` as complete on the stable Milestone 4
+FASTQ APIs. Plain FASTQ and FASTQ.GZ inputs are opened through
+``open_fastq_reader``, streamed as owned ``FastqRecord`` values via
+``read_next_fastq_record``, selected with ``FastqRecord`` identity bytes, and
+written with ``FastqWriter``.
+
+Output compression remains an output-path policy: temporary files created for
+``.gz`` targets keep a gzip suffix so ``FastqWriter`` produces gzip-compressed
+FASTQ before the final rename. BAM-only controls, including mapped-only,
+primary-only, and index creation, remain rejected before FASTQ streaming begins.
+
+The migration preserves deterministic selection, seeded-random selection,
+identity-basis semantics for raw-read inputs, encounter-order output, and the
+existing JSON contract.

@@ -175,6 +175,28 @@ Preserved semantics:
   notes;
 * JSON contracts remain unchanged.
 
+## M5.6 FASTQ-Side `subsample` M4 API Migration
+
+M5.6 records FASTQ-side `subsample` as complete on the stable Milestone 4
+FASTQ APIs. Plain FASTQ and FASTQ.GZ inputs are opened through
+`open_fastq_reader`, streamed as owned `FastqRecord` values via
+`read_next_fastq_record`, selected with `FastqRecord` identity bytes, and
+written through `FastqWriter`.
+
+Preserved semantics:
+
+* deterministic selection remains hash-based over the configured raw-read
+  identity;
+* seeded-random selection remains reproducible for a fixed seed;
+* retained FASTQ records preserve input encounter order;
+* header comments, plus-line comments, sequences, and qualities are preserved
+  by the M4 record model and writer;
+* FASTQ.GZ output compression remains inferred from the output filename
+  extension, including the staged temporary output path;
+* BAM-only flags and index creation remain rejected before FASTQ streaming
+  begins;
+* JSON contracts remain unchanged.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

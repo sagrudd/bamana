@@ -851,17 +851,20 @@ mod tests {
         )
     }
 
-    #[test]
-    fn deterministic_fastq_subsampling_is_repeatable() {
-        let input = std::env::temp_dir().join(format!(
-            "bamana-subsample-deterministic-{}.fastq",
-            std::process::id()
-        ));
+    fn write_plain_fastq_subsample_fixture(name: &str) -> std::path::PathBuf {
+        let input =
+            std::env::temp_dir().join(format!("bamana-{name}-{}.fastq", std::process::id()));
         fs::write(
             &input,
-            "@r1\nAAAA\n+\n!!!!\n@r2\nCCCC\n+\n####\n@r3\nGGGG\n+\n$$$$\n",
+            "@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n@r3\nGGGG\n+\n$$$$\n",
         )
-        .expect("fastq should write");
+        .expect("plain FASTQ fixture should write");
+        input
+    }
+
+    #[test]
+    fn deterministic_fastq_subsampling_is_repeatable() {
+        let input = write_plain_fastq_subsample_fixture("subsample-deterministic");
         let out_a = std::env::temp_dir().join(format!(
             "bamana-subsample-deterministic-a-{}.fastq",
             std::process::id()
@@ -906,6 +909,14 @@ mod tests {
             fs::read_to_string(&out_a).expect("first output should read"),
             fs::read_to_string(&out_b).expect("second output should read")
         );
+        let records = read_fastq_records(&out_a);
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.read_name.as_str())
+                .collect::<Vec<_>>(),
+            ["r1"]
+        );
 
         fs::remove_file(input).expect("input should be removable");
         fs::remove_file(out_a).expect("first output should be removable");
@@ -914,15 +925,7 @@ mod tests {
 
     #[test]
     fn fastq_subsample_round_trips_through_stable_reader_and_writer() {
-        let input = std::env::temp_dir().join(format!(
-            "bamana-subsample-m4-reader-writer-{}.fastq",
-            std::process::id()
-        ));
-        fs::write(
-            &input,
-            "@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n",
-        )
-        .expect("fastq should write");
+        let input = write_plain_fastq_subsample_fixture("subsample-m4-reader-writer");
         let output = std::env::temp_dir().join(format!(
             "bamana-subsample-m4-reader-writer-out-{}.fastq",
             std::process::id()
@@ -945,12 +948,20 @@ mod tests {
 
         assert!(response.ok);
         let records = read_fastq_records(&output);
-        assert_eq!(records.len(), 2);
+        assert_eq!(records.len(), 3);
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.read_name.as_str())
+                .collect::<Vec<_>>(),
+            ["r1", "r2", "r3"]
+        );
         assert_eq!(records[0].raw_header_line, "@r1 run=42");
         assert_eq!(records[0].plus_line, "+plus comment");
         assert_eq!(records[0].sequence, "AAAA");
         assert_eq!(records[1].raw_header_line, "@r2");
         assert_eq!(records[1].plus_line, "+");
+        assert_eq!(records[2].sequence, "GGGG");
 
         fs::remove_file(input).expect("input should be removable");
         fs::remove_file(output).expect("output should be removable");
@@ -1096,6 +1107,51 @@ mod tests {
         assert!(body.contains("\"invalid_fraction\""));
 
         fs::remove_file(input).expect("input should be removable");
+    }
+
+    #[test]
+    fn fastq_subsample_rejects_bam_only_flags_before_streaming() {
+        let cases = [
+            ("mapped-only", true, false, false),
+            ("primary-only", false, true, false),
+            ("create-index", false, false, true),
+        ];
+
+        for (name, mapped_only, primary_only, create_index) in cases {
+            let input = write_plain_fastq_subsample_fixture(name);
+            let output = std::env::temp_dir().join(format!(
+                "bamana-subsample-{name}-out-{}.fastq",
+                std::process::id()
+            ));
+
+            let response = run(SubsampleRequest {
+                input: input.clone(),
+                out: output.clone(),
+                fraction: 1.0,
+                mode: SubsampleMode::Deterministic,
+                seed: None,
+                identity: DeterministicIdentity::QnameSeq,
+                dry_run: false,
+                create_index,
+                mapped_only,
+                primary_only,
+                threads: 1,
+                force: true,
+            });
+
+            assert!(!response.ok, "{name} should be rejected for FASTQ input");
+            let error = response.error.expect("rejection should report an error");
+            assert_eq!(error.code, "unsupported_input_for_command");
+            assert_eq!(
+                error.detail.as_deref(),
+                Some(
+                    "FASTQ and FASTQ.GZ subsampling do not support BAM-only filters or index creation."
+                )
+            );
+            assert!(!output.exists());
+
+            fs::remove_file(input).expect("input should be removable");
+        }
     }
 
     #[test]
