@@ -7,6 +7,38 @@ use super::{docs_dir, read_utf8, repo_root};
 
 const ALLOWED_PRODUCTION_NOODLES_FILES: &[&str] = &["src/ingest/cram.rs"];
 
+const M5_PROOF_COMMAND_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "verify",
+        &[
+            "src/commands/verify.rs",
+            "src/bam/header.rs",
+            "src/bgzf/reader.rs",
+        ],
+    ),
+    (
+        "header",
+        &[
+            "src/commands/header.rs",
+            "src/bam/header.rs",
+            "src/bgzf/reader.rs",
+        ],
+    ),
+    (
+        "subsample",
+        &[
+            "src/commands/subsample.rs",
+            "src/bam/header.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/write.rs",
+            "src/fastq/record.rs",
+            "src/fastq/reader.rs",
+            "src/fastq/writer.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -68,6 +100,43 @@ fn native_header_and_verify_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "native BAM header and verify paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m5_proof_command_hot_paths_do_not_import_noodles() {
+    let proof_commands: Vec<_> = M5_PROOF_COMMAND_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        proof_commands,
+        ["verify", "header", "subsample"],
+        "M5 proof-command dependency boundary must explicitly name verify, header, and subsample"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M5_PROOF_COMMAND_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M5 proof-command hot paths must stay noodles-free:\n{}",
         violations.join("\n")
     );
 }
@@ -227,6 +296,25 @@ fn fastq_oracle_surface_is_documented_as_native_first() {
         assert!(
             oracle_policy.contains(required),
             "testing oracle policy is missing FASTQ-oracle boundary language: {required}"
+        );
+    }
+}
+
+#[test]
+fn m5_proof_command_oracle_policy_is_documented() {
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+
+    for required in [
+        "Milestone 5 Proof-Command Oracle Boundary",
+        "`verify`, `header`, and `subsample`",
+        "production proof-command paths",
+        "tests/header_oracle.rs",
+        "BAM-side `subsample`",
+        "FASTQ-side `subsample`",
+    ] {
+        assert!(
+            oracle_policy.contains(required),
+            "testing oracle policy is missing M5 proof-command boundary language: {required}"
         );
     }
 }

@@ -197,6 +197,27 @@ Preserved semantics:
   begins;
 * JSON contracts remain unchanged.
 
+## M5.7 Dependency Boundary Strengthening
+
+M5.7 makes the proof-command dependency boundary explicit in contract tests.
+The M5 proof-command set is:
+
+* `verify`
+* `header`
+* `subsample`
+
+`tests/contract/dependency_boundary.rs` now protects the command files and
+their native substrate hot paths from direct `noodles` imports. The global
+production dependency guard remains in place and still allows direct production
+`noodles` usage only in the documented CRAM compatibility boundary:
+`src/ingest/cram.rs`.
+
+Test-only oracle policy is documented in `docs/testing-oracles.md`. Header
+oracle usage remains isolated to `tests/header_oracle.rs`; BAM and FASTQ
+`subsample` expectations are owned by native scanner and native FASTQ command
+tests unless a future differential test is explicitly labelled as an oracle or
+compatibility comparison.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

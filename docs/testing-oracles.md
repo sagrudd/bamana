@@ -62,3 +62,24 @@ Differential checks may be added later as a clearly labelled test-only oracle
 surface, but production FASTQ parser, writer, command-consumer, and FASTQ.GZI paths must remain
 Bamana-native. This includes `src/fastq`, FASTQ-facing command consumers,
 unmapped FASTQ consume paths, duplication inspection, and deduplication.
+
+## Milestone 5 Proof-Command Oracle Boundary
+
+The Milestone 5 proof-command set is `verify`, `header`, and `subsample`.
+The production proof-command paths for these commands must remain Bamana-native
+and free of direct `noodles` imports.
+
+Test-only oracle usage remains limited to explicit oracle surfaces:
+
+* `tests/header_oracle.rs` may compare valid native BAM header behavior for
+  `verify` and `header` against `noodles`;
+* BAM-side `subsample` expectations are owned by native scanner and command
+  tests using `BamScanner`, `BamRecordView`, and the scanner-owned raw-record
+  bridge;
+* FASTQ-side `subsample` expectations are owned by native FASTQ reader,
+  record, and writer tests.
+
+Malformed proof-command failure expectations must stay in native tests. Any
+future differential test for these commands must be clearly labelled as an
+oracle or compatibility comparison and must not define the production execution
+engine.

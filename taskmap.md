@@ -2317,7 +2317,7 @@ Completion evidence:
 
 ### M5.7 Strengthen M5 Dependency Boundaries
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2337,7 +2337,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added an explicit M5 proof-command hot-path boundary in
+  `tests/contract/dependency_boundary.rs` naming `verify`, `header`, and
+  `subsample`;
+* protected the proof-command command files and native substrate paths for
+  header parsing, BGZF reading, BAM scanning/writing, and FASTQ
+  parsing/writing from direct `noodles` imports;
+* preserved the global production dependency boundary that allows direct
+  production `noodles` usage only in `src/ingest/cram.rs`;
+* documented the M5 proof-command test-only oracle boundary in
+  `docs/testing-oracles.md`;
+* added contract coverage requiring that oracle policy to keep `verify`,
+  `header`, and `subsample` expectations native-first;
+* documented the strengthened dependency boundary in the Milestone 5 roadmap
+  and Sphinx native command-migration notes.
 
 ### M5.8 Add Differential And Fixture Coverage For `subsample`
 

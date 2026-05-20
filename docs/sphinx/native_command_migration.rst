@@ -141,3 +141,19 @@ primary-only, and index creation, remain rejected before FASTQ streaming begins.
 The migration preserves deterministic selection, seeded-random selection,
 identity-basis semantics for raw-read inputs, encounter-order output, and the
 existing JSON contract.
+
+M5.7 Dependency Boundary
+------------------------
+
+M5.7 makes the proof-command dependency boundary explicit. Contract tests name
+``verify``, ``header``, and ``subsample`` as the Milestone 5 proof-command set
+and guard their production command files plus native substrate hot paths against
+direct ``noodles`` imports.
+
+The broader production dependency check still allows direct ``noodles`` usage
+only in the documented CRAM compatibility boundary, ``src/ingest/cram.rs``.
+Test-only oracle policy is recorded in ``docs/testing-oracles.md``: header
+oracle usage remains isolated to ``tests/header_oracle.rs``, while BAM and
+FASTQ ``subsample`` expectations are owned by native scanner and native FASTQ
+tests unless a future differential check is explicitly labelled as an oracle or
+compatibility comparison.
