@@ -154,6 +154,27 @@ Command-level benchmark evidence is recorded through `header_microbench` with
 `--bamana-bin`, which times the `header` command against the generated native
 header fixture.
 
+## M5.5 BAM-Side `subsample` Scanner Migration
+
+M5.5 migrates BAM-side `subsample` traversal to `BamScanner`. The command now
+opens BAM input through the scanner, reuses the scanner-owned native header for
+output header serialization, applies filters and sampling decisions from
+`BamRecordView`, and writes retained records from `BamRecordView::raw_record`.
+
+This is an explicit scanner-owned raw-record bridge. It preserves output record
+bytes for retained records without rebuilding every BAM record through the
+older transitional `BamReader::open` plus `read_next_record_layout` loop.
+
+Preserved semantics:
+
+* deterministic selection remains hash-based over the configured identity;
+* seeded-random selection remains reproducible for a fixed seed;
+* `--mapped-only` and `--primary-only` are applied before sampling;
+* retained records preserve input encounter order;
+* pre-existing BAM index invalidation remains explicit in the JSON payload and
+  notes;
+* JSON contracts remain unchanged.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

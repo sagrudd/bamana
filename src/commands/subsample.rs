@@ -8,11 +8,11 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{parse_bam_header_from_reader, serialize_bam_header_payload},
+        header::serialize_bam_header_payload,
         index::{IndexKind, IndexResolution, resolve_index_for_bam},
-        reader::BamReader,
-        records::{BAM_FSECONDARY, BAM_FSUPPLEMENTARY, RecordLayout, read_next_record_layout},
-        write::{BgzfWriter, serialize_record_layout},
+        record::BamRecordView,
+        scan::BamScanner,
+        write::BgzfWriter,
     },
     error::AppError,
     fastq::{
@@ -232,18 +232,14 @@ fn execute_bam(
     config: &SubsampleConfig,
     resolved_seed: Option<u64>,
 ) -> Result<SubsamplePayload, SubsampleFailure> {
-    let mut reader = BamReader::open(&config.input).map_err(|error| SubsampleFailure {
-        payload: base_payload(DetectedFormat::Bam, config),
-        error,
-    })?;
-    let header = parse_bam_header_from_reader(&mut reader).map_err(|error| SubsampleFailure {
+    let mut scanner = BamScanner::open(&config.input).map_err(|error| SubsampleFailure {
         payload: base_payload(DetectedFormat::Bam, config),
         error: map_parse_error(error, &config.input),
     })?;
     let header_payload = serialize_bam_header_payload(
         &config.out,
-        &header.header.raw_header_text,
-        &header.header.references,
+        &scanner.header().header.raw_header_text,
+        &scanner.header().header.references,
     )
     .map_err(|error| SubsampleFailure {
         payload: base_payload(DetectedFormat::Bam, config),
@@ -307,30 +303,26 @@ fn execute_bam(
     let mut records_retained = 0_u64;
     let mut random = resolved_seed.map(SplitMix64::new);
 
-    loop {
-        let next = read_next_record_layout(&mut reader).map_err(|error| SubsampleFailure {
-            payload: partial_payload(
-                DetectedFormat::Bam,
-                config,
-                resolved_seed,
-                Some(index_info.clone()),
-            ),
-            error: map_parse_error(error, &config.input),
-        })?;
-        let Some(record) = next else {
-            break;
-        };
+    while let Some(record) = scanner.next_record().map_err(|error| SubsampleFailure {
+        payload: partial_payload(
+            DetectedFormat::Bam,
+            config,
+            resolved_seed,
+            Some(index_info.clone()),
+        ),
+        error: map_parse_error(error, &config.input),
+    })? {
         records_examined += 1;
 
-        if !bam_record_is_eligible(&record, config) {
+        if !bam_record_view_is_eligible(&record, config) {
             continue;
         }
         eligible_records_examined += 1;
 
-        if should_keep_record_bam(&record, config, &mut random) {
+        if should_keep_record_bam_view(&record, config, &mut random) {
             if let Some(writer) = &mut writer {
                 writer
-                    .write_all(&serialize_record_layout(&record))
+                    .write_all(record.raw_record())
                     .map_err(|error| SubsampleFailure {
                         payload: partial_payload(
                             DetectedFormat::Bam,
@@ -594,20 +586,19 @@ fn build_index_info(
     }
 }
 
-fn bam_record_is_eligible(record: &RecordLayout, config: &SubsampleConfig) -> bool {
-    if config.mapped_only && (record.flags & 0x4 != 0 || record.ref_id < 0) {
+fn bam_record_view_is_eligible(record: &BamRecordView<'_>, config: &SubsampleConfig) -> bool {
+    let flags = record.flag_summary();
+    if config.mapped_only && (flags.is_unmapped || record.ref_id() < 0) {
         return false;
     }
-    if config.primary_only
-        && (record.flags & BAM_FSECONDARY != 0 || record.flags & BAM_FSUPPLEMENTARY != 0)
-    {
+    if config.primary_only && !flags.is_primary() {
         return false;
     }
     true
 }
 
-fn should_keep_record_bam(
-    record: &RecordLayout,
+fn should_keep_record_bam_view(
+    record: &BamRecordView<'_>,
     config: &SubsampleConfig,
     random: &mut Option<SplitMix64>,
 ) -> bool {
@@ -620,7 +611,7 @@ fn should_keep_record_bam(
             should_keep_fraction(sample, config.fraction)
         }
         SubsampleMode::Deterministic => {
-            let identity = build_bam_identity_bytes(record, config.identity);
+            let identity = build_bam_view_identity_bytes(record, config.identity);
             should_keep_fraction(fnv1a64(&identity), config.fraction)
         }
     }
@@ -646,18 +637,21 @@ fn should_keep_record_fastq(
     }
 }
 
-fn build_bam_identity_bytes(record: &RecordLayout, identity: DeterministicIdentity) -> Vec<u8> {
+fn build_bam_view_identity_bytes(
+    record: &BamRecordView<'_>,
+    identity: DeterministicIdentity,
+) -> Vec<u8> {
     match identity {
-        DeterministicIdentity::Qname => record.read_name.as_bytes().to_vec(),
+        DeterministicIdentity::Qname => record.read_name().as_bytes().to_vec(),
         DeterministicIdentity::QnameSeq => {
             let mut bytes = Vec::new();
-            bytes.extend_from_slice(record.read_name.as_bytes());
+            bytes.extend_from_slice(record.read_name().as_bytes());
             bytes.push(0);
-            bytes.extend_from_slice(&(record.l_seq as u64).to_le_bytes());
-            bytes.extend_from_slice(&record.sequence_bytes);
+            bytes.extend_from_slice(&(record.sequence_len() as u64).to_le_bytes());
+            bytes.extend_from_slice(record.sequence_bytes());
             bytes
         }
-        DeterministicIdentity::FullRecord => serialize_record_layout(record),
+        DeterministicIdentity::FullRecord => record.raw_record().to_vec(),
     }
 }
 
@@ -838,6 +832,23 @@ mod tests {
             records.push(record);
         }
         records
+    }
+
+    fn write_bam_subsample_fixture(name: &str) -> std::path::PathBuf {
+        write_temp_file(
+            name,
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 1, "read1", 0),
+                    build_light_record(-1, -1, "read2", 0x4),
+                    build_light_record(0, 3, "read3", 0x100),
+                    build_light_record(0, 4, "read4", 0x800),
+                ],
+            ),
+        )
     }
 
     #[test]
@@ -1089,19 +1100,7 @@ mod tests {
 
     #[test]
     fn bam_subsampling_writes_preserved_header_stream() {
-        let input = write_temp_file(
-            "subsample-bam-in",
-            "bam",
-            &build_bam_file_with_header_and_records(
-                "@SQ\tSN:chr1\tLN:10\n",
-                &[("chr1", 10)],
-                &[
-                    build_light_record(0, 1, "read1", 0),
-                    build_light_record(0, 2, "read2", 0),
-                    build_light_record(-1, -1, "read3", 4),
-                ],
-            ),
-        );
+        let input = write_bam_subsample_fixture("subsample-bam-in");
         let output = std::env::temp_dir().join(format!(
             "bamana-subsample-bam-out-{}.bam",
             std::process::id()
@@ -1129,5 +1128,152 @@ mod tests {
 
         fs::remove_file(input).expect("input should be removable");
         fs::remove_file(output).expect("output should be removable");
+    }
+
+    #[test]
+    fn deterministic_bam_subsampling_is_repeatable_through_scanner_bridge() {
+        let input = write_bam_subsample_fixture("subsample-bam-deterministic");
+        let out_a = std::env::temp_dir().join(format!(
+            "bamana-subsample-bam-deterministic-a-{}.bam",
+            std::process::id()
+        ));
+        let out_b = std::env::temp_dir().join(format!(
+            "bamana-subsample-bam-deterministic-b-{}.bam",
+            std::process::id()
+        ));
+
+        let response_a = run(SubsampleRequest {
+            input: input.clone(),
+            out: out_a.clone(),
+            fraction: 0.5,
+            mode: SubsampleMode::Deterministic,
+            seed: Some(99),
+            identity: DeterministicIdentity::FullRecord,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+        let response_b = run(SubsampleRequest {
+            input: input.clone(),
+            out: out_b.clone(),
+            fraction: 0.5,
+            mode: SubsampleMode::Deterministic,
+            seed: Some(123),
+            identity: DeterministicIdentity::FullRecord,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response_a.ok);
+        assert!(response_b.ok);
+        assert_eq!(
+            fs::read(&out_a).expect("first BAM output should read"),
+            fs::read(&out_b).expect("second BAM output should read")
+        );
+
+        fs::remove_file(input).expect("input should be removable");
+        fs::remove_file(out_a).expect("first output should be removable");
+        fs::remove_file(out_b).expect("second output should be removable");
+    }
+
+    #[test]
+    fn seeded_random_bam_subsampling_is_repeatable_through_scanner_bridge() {
+        let input = write_bam_subsample_fixture("subsample-bam-random");
+        let out_a = std::env::temp_dir().join(format!(
+            "bamana-subsample-bam-random-a-{}.bam",
+            std::process::id()
+        ));
+        let out_b = std::env::temp_dir().join(format!(
+            "bamana-subsample-bam-random-b-{}.bam",
+            std::process::id()
+        ));
+
+        let response_a = run(SubsampleRequest {
+            input: input.clone(),
+            out: out_a.clone(),
+            fraction: 0.5,
+            mode: SubsampleMode::Random,
+            seed: Some(104729),
+            identity: DeterministicIdentity::Qname,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+        let response_b = run(SubsampleRequest {
+            input: input.clone(),
+            out: out_b.clone(),
+            fraction: 0.5,
+            mode: SubsampleMode::Random,
+            seed: Some(104729),
+            identity: DeterministicIdentity::FullRecord,
+            dry_run: false,
+            create_index: false,
+            mapped_only: false,
+            primary_only: false,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response_a.ok);
+        assert!(response_b.ok);
+        assert_eq!(
+            fs::read(&out_a).expect("first BAM output should read"),
+            fs::read(&out_b).expect("second BAM output should read")
+        );
+
+        fs::remove_file(input).expect("input should be removable");
+        fs::remove_file(out_a).expect("first output should be removable");
+        fs::remove_file(out_b).expect("second output should be removable");
+    }
+
+    #[test]
+    fn bam_subsampling_applies_mapped_and_primary_filters_through_scanner_bridge() {
+        let input = write_bam_subsample_fixture("subsample-bam-filters");
+        let output = std::env::temp_dir().join(format!(
+            "bamana-subsample-bam-filters-out-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(SubsampleRequest {
+            input: input.clone(),
+            out: output.clone(),
+            fraction: 1.0,
+            mode: SubsampleMode::Deterministic,
+            seed: None,
+            identity: DeterministicIdentity::Qname,
+            dry_run: true,
+            create_index: false,
+            mapped_only: true,
+            primary_only: true,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("subsample should return payload");
+        let execution = payload
+            .execution
+            .expect("subsample should report execution");
+        assert_eq!(execution.records_examined, 4);
+        assert_eq!(execution.eligible_records_examined, Some(1));
+        assert_eq!(execution.records_retained, 1);
+        let filters = payload
+            .filters
+            .expect("BAM subsample should report filters");
+        assert!(filters.mapped_only);
+        assert!(filters.primary_only);
+        assert!(!output.exists());
+
+        fs::remove_file(input).expect("input should be removable");
     }
 }

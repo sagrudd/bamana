@@ -109,3 +109,20 @@ alignment-body bytes after an otherwise valid header are therefore outside the
 
 Command-level timing evidence for ``header`` is captured through
 ``header_microbench --bamana-bin``.
+
+M5.5 BAM Subsample Migration
+----------------------------
+
+M5.5 migrates BAM-side ``subsample`` traversal to ``BamScanner``. The command
+opens BAM input through the scanner, reuses the scanner-owned native header for
+output header serialization, applies filters and sampling decisions from
+``BamRecordView``, and writes retained records from
+``BamRecordView::raw_record``.
+
+This is an explicit scanner-owned raw-record bridge. It preserves retained BAM
+record bytes without rebuilding each record through the older transitional
+``BamReader::open`` plus ``read_next_record_layout`` loop.
+
+The migration preserves deterministic selection, seeded-random selection,
+``--mapped-only`` and ``--primary-only`` filtering, encounter-order output, and
+the existing JSON contract.

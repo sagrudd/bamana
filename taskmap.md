@@ -2231,7 +2231,7 @@ Completion evidence:
 
 ### M5.5 Migrate BAM-Side `subsample` To Native Scanner Or Raw-Record Bridge
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2255,7 +2255,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* migrated BAM-side `subsample` from `BamReader::open` plus
+  `read_next_record_layout` to `BamScanner::open` plus
+  `BamScanner::next_record`;
+* reused the scanner-owned native header for output header serialization;
+* used `BamRecordView` for mapped-only and primary-only filtering;
+* used `BamRecordView` read-name, sequence bytes, and raw record bytes for
+  deterministic identity construction;
+* wrote retained BAM records through the scanner-owned raw-record bridge via
+  `BamRecordView::raw_record`, preserving encounter order and retained record
+  bytes without reserializing `RecordLayout`;
+* preserved seeded-random selection semantics and deterministic selection
+  semantics;
+* preserved BAM index invalidation reporting and existing JSON contract shape;
+* added tests covering BAM header/output preservation, deterministic repeatable
+  BAM subsampling, seeded-random repeatable BAM subsampling, and combined
+  mapped-only plus primary-only filter accounting;
+* documented the explicit scanner-owned raw-record bridge in the Milestone 5
+  roadmap and Sphinx native command-migration notes.
 
 ### M5.6 Migrate FASTQ-Side `subsample` To Milestone 4 APIs
 
