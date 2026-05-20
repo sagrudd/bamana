@@ -40,14 +40,19 @@ The JSON result contains:
 * ``selective_field_extraction_throughput``: the same traversal plus selective
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
-* optional ``summary``, ``validate``, and ``check_tag`` command timings when
-  ``--bamana-bin`` is supplied
+* optional ``summary``, ``validate``, ``check_tag``, and ``subsample_bam``
+  command timings when ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
 timings include process startup, CLI parsing, JSON envelope emission, file
 probing, and command-specific payload construction; use them for before/after
 command migration checks, not as pure scanner measurements.
+
+``subsample_bam`` is a command-level dry-run timing over the generated BAM
+fixture. It proves the BAM ``subsample`` CLI path is runnable through the
+benchmark hook, but it should be interpreted as command smoke timing rather
+than output-write throughput.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived

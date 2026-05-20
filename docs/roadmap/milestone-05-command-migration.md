@@ -242,6 +242,37 @@ Governed failure examples now cover:
 * invalid fraction;
 * invalid FASTQ filter/index combinations for BAM-only controls.
 
+## M5.9 Proof-Command Benchmark Evidence
+
+M5.9 records runnable proof-command benchmark hooks for the Milestone 5 command
+set:
+
+* `header_microbench --bamana-bin` emits command-level smoke timings for
+  `verify` and `header`;
+* `scanner_microbench --bamana-bin` emits `subsample_bam` command-level
+  dry-run timing over a generated BAM fixture;
+* `fastq_microbench --bamana-bin` emits `subsample_fastq` and
+  `subsample_fastq_gz` command-level dry-run timings over generated FASTQ and
+  FASTQ.GZ fixtures.
+
+The benchmark schemas under `benchmarks/results/` include the new subsample
+command-timing rows, so the outputs remain machine-readable and archivable.
+
+Smoke evidence from the M5.9 implementation run:
+
+* `target/debug/header_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `verify: 1/1` and `header: 1/1`;
+* `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `subsample_bam: 1/1`;
+* `target/debug/fastq_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `subsample_fastq: 1/1` and
+  `subsample_fastq_gz: 1/1`.
+
+These command timings are smoke timings. They include process startup, CLI
+parsing, path probing, command execution, and JSON emission. They are not pure
+substrate microbenchmarks and should not be compared directly with in-process
+BGZF, scanner, or FASTQ throughput rows.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:

@@ -170,20 +170,64 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         args.iterations,
     )?;
     let command_timings = match args.bamana_bin.as_deref() {
-        Some(bamana_bin) => vec![
-            measure_enumerate_command(
-                "enumerate_fastq",
-                bamana_bin,
-                &plain_fixture,
-                args.iterations,
-            )?,
-            measure_enumerate_command(
-                "enumerate_fastq_gz",
-                bamana_bin,
-                &gzip_fixture,
-                args.iterations,
-            )?,
-        ],
+        Some(bamana_bin) => {
+            let plain_subsample_output = workdir.join("fastq-microbench-subsample-out.fastq");
+            let gzip_subsample_output = workdir.join("fastq-microbench-subsample-out.fastq.gz");
+            vec![
+                measure_command(
+                    "enumerate_fastq",
+                    bamana_bin,
+                    &["enumerate", "--input", fixture_arg(&plain_fixture)],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "enumerate_fastq_gz",
+                    bamana_bin,
+                    &["enumerate", "--input", fixture_arg(&gzip_fixture)],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "subsample_fastq",
+                    bamana_bin,
+                    &[
+                        "subsample",
+                        "--input",
+                        fixture_arg(&plain_fixture),
+                        "--out",
+                        fixture_arg(&plain_subsample_output),
+                        "--fraction",
+                        "0.5",
+                        "--mode",
+                        "deterministic",
+                        "--identity",
+                        "full_record",
+                        "--dry-run",
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "subsample_fastq_gz",
+                    bamana_bin,
+                    &[
+                        "subsample",
+                        "--input",
+                        fixture_arg(&gzip_fixture),
+                        "--out",
+                        fixture_arg(&gzip_subsample_output),
+                        "--fraction",
+                        "0.5",
+                        "--mode",
+                        "deterministic",
+                        "--identity",
+                        "full_record",
+                        "--dry-run",
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+            ]
+        }
         None => Vec::new(),
     };
 
@@ -193,6 +237,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "Parse throughput measures the Bamana-native FASTQ reader facade and record validation."
             .to_string(),
         "Writer throughput measures the Bamana-native FASTQ writer facade, including gzip finalization for gzip output."
+            .to_string(),
+        "Command timings include enumerate and FASTQ/FASTQ.GZ subsample dry-runs when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {
@@ -334,10 +380,10 @@ fn measure_writer(
     ))
 }
 
-fn measure_enumerate_command(
+fn measure_command(
     command_name: &'static str,
     bamana_bin: &Path,
-    fixture: &Path,
+    args: &[&str],
     iterations: usize,
 ) -> Result<CommandTiming, Box<dyn std::error::Error>> {
     let mut samples = Vec::with_capacity(iterations);
@@ -347,9 +393,7 @@ fn measure_enumerate_command(
     for _ in 0..iterations {
         let started = Instant::now();
         let output = Command::new(bamana_bin)
-            .arg("enumerate")
-            .arg("--input")
-            .arg(fixture)
+            .args(args)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .output()?;
@@ -371,6 +415,12 @@ fn measure_enumerate_command(
         max_seconds,
         exit_codes,
     })
+}
+
+fn fixture_arg(fixture: &Path) -> &str {
+    fixture
+        .to_str()
+        .expect("benchmark fixture path should be valid UTF-8")
 }
 
 fn measurement(

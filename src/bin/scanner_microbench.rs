@@ -164,34 +164,57 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let selective_field_extraction_throughput =
         measure_selective_extraction(&fixture, bgzf_file_bytes, args.iterations)?;
     let command_timings = match args.bamana_bin.as_deref() {
-        Some(bamana_bin) => vec![
-            measure_command(
-                "summary",
-                bamana_bin,
-                &["summary", "--bam", fixture_arg(&fixture), "--full-scan"],
-                args.iterations,
-            )?,
-            measure_command(
-                "validate",
-                bamana_bin,
-                &["validate", "--bam", fixture_arg(&fixture)],
-                args.iterations,
-            )?,
-            measure_command(
-                "check_tag",
-                bamana_bin,
-                &[
+        Some(bamana_bin) => {
+            let subsample_output = workdir.join("scanner-microbench-subsample-out.bam");
+            vec![
+                measure_command(
+                    "summary",
+                    bamana_bin,
+                    &["summary", "--bam", fixture_arg(&fixture), "--full-scan"],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "validate",
+                    bamana_bin,
+                    &["validate", "--bam", fixture_arg(&fixture)],
+                    args.iterations,
+                )?,
+                measure_command(
                     "check_tag",
-                    "--bam",
-                    fixture_arg(&fixture),
-                    "--tag",
-                    "NM",
-                    "--full-scan",
-                    "--count-hits",
-                ],
-                args.iterations,
-            )?,
-        ],
+                    bamana_bin,
+                    &[
+                        "check_tag",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--tag",
+                        "NM",
+                        "--full-scan",
+                        "--count-hits",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "subsample_bam",
+                    bamana_bin,
+                    &[
+                        "subsample",
+                        "--input",
+                        fixture_arg(&fixture),
+                        "--out",
+                        fixture_arg(&subsample_output),
+                        "--fraction",
+                        "0.5",
+                        "--mode",
+                        "deterministic",
+                        "--identity",
+                        "full_record",
+                        "--dry-run",
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+            ]
+        }
         None => Vec::new(),
     };
 
@@ -201,6 +224,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "Record scan throughput measures native BGZF/header opening plus full alignment-record iteration through BamScanner."
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
+            .to_string(),
+        "Command timings include summary, validate, check_tag, and BAM subsample dry-run when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {

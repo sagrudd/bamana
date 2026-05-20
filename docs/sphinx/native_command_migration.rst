@@ -173,3 +173,26 @@ record structure and encounter order remain stable for the covered inputs.
 
 Governed failure examples now cover unsupported input format, invalid fraction,
 and invalid FASTQ filter/index combinations for BAM-only controls.
+
+M5.9 Benchmark Evidence
+-----------------------
+
+M5.9 records runnable proof-command benchmark hooks for ``verify``, ``header``,
+and ``subsample``.
+
+``header_microbench --bamana-bin`` emits command-level smoke timings for
+``verify`` and ``header``. ``scanner_microbench --bamana-bin`` emits
+``subsample_bam`` dry-run timing over a generated BAM fixture.
+``fastq_microbench --bamana-bin`` emits ``subsample_fastq`` and
+``subsample_fastq_gz`` dry-run timings over generated FASTQ and FASTQ.GZ
+fixtures.
+
+The M5.9 smoke run used the ``small`` profile with one iteration for each
+benchmark. Command timing rows reported ``verify: 1/1``, ``header: 1/1``,
+``subsample_bam: 1/1``, ``subsample_fastq: 1/1``, and
+``subsample_fastq_gz: 1/1``.
+
+These command timings include process startup, CLI parsing, path probing,
+command execution, and JSON emission. They are not pure substrate
+microbenchmarks and should be interpreted separately from in-process BGZF,
+scanner, or FASTQ throughput rows.

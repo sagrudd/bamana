@@ -109,7 +109,14 @@
         "exit_codes"
       ],
       "properties": {
-        "command": { "enum": ["enumerate_fastq", "enumerate_fastq_gz"] },
+        "command": {
+          "enum": [
+            "enumerate_fastq",
+            "enumerate_fastq_gz",
+            "subsample_fastq",
+            "subsample_fastq_gz"
+          ]
+        },
         "iterations": { "type": "integer", "minimum": 1 },
         "ok_count": { "type": "integer", "minimum": 0 },
         "total_seconds": { "type": "number", "minimum": 0 },

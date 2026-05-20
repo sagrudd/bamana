@@ -41,14 +41,19 @@ The JSON result contains:
   writing owned ``FastqRecord`` values as plain FASTQ
 * ``gzip_writer_throughput``: the same writer measurement with gzip output,
   including gzip finalization before the write iteration completes
-* optional ``enumerate_fastq`` and ``enumerate_fastq_gz`` command timings when
-  ``--bamana-bin`` is supplied
+* optional ``enumerate_fastq``, ``enumerate_fastq_gz``, ``subsample_fastq``,
+  and ``subsample_fastq_gz`` command timings when ``--bamana-bin`` is supplied
 
 The in-process measurements and command timings answer different questions.
 In-process timings measure the native FASTQ substrate. Command timings include
 process startup, CLI parsing, file probing, JSON envelope emission, and
 command-specific behavior such as FASTQ.GZI creation or reuse for FASTQ.GZ
 enumeration.
+
+``subsample_fastq`` and ``subsample_fastq_gz`` are command-level dry-run
+timings over generated FASTQ fixtures. They prove the FASTQ ``subsample`` CLI
+paths are runnable through the benchmark hook, but they should be interpreted
+as command smoke timings rather than output-write throughput.
 
 Results conform to
 ``benchmarks/results/fastq_microbench.schema.json`` and can be archived beside

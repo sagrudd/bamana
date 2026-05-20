@@ -2393,7 +2393,7 @@ Completion evidence:
 
 ### M5.9 Add Proof-Command Benchmark Evidence
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2412,7 +2412,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* kept `verify` and `header` command-level smoke timings covered by
+  `header_microbench --bamana-bin`;
+* added `subsample_bam` command-level dry-run timing to
+  `scanner_microbench --bamana-bin`;
+* added `subsample_fastq` and `subsample_fastq_gz` command-level dry-run
+  timings to `fastq_microbench --bamana-bin`;
+* updated `scanner_microbench` and `fastq_microbench` result schemas so the new
+  command timing rows are machine-readable and archivable;
+* documented command-timing interpretation separately from in-process substrate
+  timing in Sphinx and the Milestone 5 roadmap;
+* ran proof-command benchmark smoke profiles with `--profile small
+  --iterations 1 --bamana-bin target/debug/bamana`, confirming `verify: 1/1`,
+  `header: 1/1`, `subsample_bam: 1/1`, `subsample_fastq: 1/1`, and
+  `subsample_fastq_gz: 1/1`.
 
 ### M5.10 Close Milestone 5
 
