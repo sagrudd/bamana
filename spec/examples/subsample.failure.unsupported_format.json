@@ -1,0 +1,19 @@
+{
+  "ok": false,
+  "command": "subsample",
+  "path": "reference.fa",
+  "data": {
+    "format": "UNKNOWN",
+    "output": {
+      "path": "reference.subsampled.fa",
+      "written": false,
+      "overwritten": false
+    }
+  },
+  "error": {
+    "code": "unsupported_format",
+    "message": "Detected format is not supported by this command.",
+    "detail": "UNKNOWN",
+    "hint": "Use a command intended for the detected format."
+  }
+}

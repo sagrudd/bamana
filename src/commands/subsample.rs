@@ -811,12 +811,13 @@ mod tests {
 
     use super::{SubsampleRequest, run};
     use crate::{
+        bam::scan::BamScanner,
         fastq::{FastqRecord, count_fastq_records, open_fastq_reader, read_next_fastq_record},
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
         json::CommandResponse,
-        sampling::{DeterministicIdentity, SubsampleMode},
+        sampling::{DeterministicIdentity, SubsampleMode, hash::fnv1a64},
     };
 
     fn read_response_body(response: &CommandResponse<super::SubsamplePayload>) -> String {
@@ -832,6 +833,32 @@ mod tests {
             records.push(record);
         }
         records
+    }
+
+    fn fastq_record_digest(records: &[FastqRecord]) -> u64 {
+        let mut bytes = Vec::new();
+        for record in records {
+            for line in record.view().lines() {
+                bytes.extend_from_slice(&(line.len() as u64).to_le_bytes());
+                bytes.extend_from_slice(line.as_bytes());
+            }
+        }
+        fnv1a64(&bytes)
+    }
+
+    fn read_bam_names_and_record_digest(path: &std::path::Path) -> (Vec<String>, u64) {
+        let mut scanner = BamScanner::open(path).expect("BAM fixture should open");
+        let mut names = Vec::new();
+        let mut bytes = Vec::new();
+        while let Some(record) = scanner
+            .next_record()
+            .expect("BAM fixture records should parse")
+        {
+            names.push(record.read_name().to_string());
+            bytes.extend_from_slice(&(record.raw_record().len() as u64).to_le_bytes());
+            bytes.extend_from_slice(record.raw_record());
+        }
+        (names, fnv1a64(&bytes))
     }
 
     fn write_bam_subsample_fixture(name: &str) -> std::path::PathBuf {
@@ -859,6 +886,20 @@ mod tests {
             "@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n@r3\nGGGG\n+\n$$$$\n",
         )
         .expect("plain FASTQ fixture should write");
+        input
+    }
+
+    fn write_gzip_fastq_subsample_fixture(name: &str) -> std::path::PathBuf {
+        let input =
+            std::env::temp_dir().join(format!("bamana-{name}-{}.fastq.gz", std::process::id()));
+        let file = fs::File::create(&input).expect("gzip input should create");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        encoder
+            .write_all(
+                b"@r1 run=42\nAAAA\n+plus comment\n!!!!\n@r2\nCCCC\n+\n####\n@r3\nGGGG\n+\n$$$$\n",
+            )
+            .expect("gzip input should write");
+        encoder.finish().expect("gzip input should finish");
         input
     }
 
@@ -969,16 +1010,7 @@ mod tests {
 
     #[test]
     fn seeded_random_fastq_subsampling_is_repeatable() {
-        let input = std::env::temp_dir().join(format!(
-            "bamana-subsample-random-{}.fastq.gz",
-            std::process::id()
-        ));
-        let file = fs::File::create(&input).expect("gzip input should create");
-        let mut encoder = GzEncoder::new(file, Compression::default());
-        encoder
-            .write_all(b"@r1\nAAAA\n+\n!!!!\n@r2\nCCCC\n+\n####\n@r3\nGGGG\n+\n$$$$\n")
-            .expect("gzip input should write");
-        encoder.finish().expect("gzip input should finish");
+        let input = write_gzip_fastq_subsample_fixture("subsample-random");
         let out_a = std::env::temp_dir().join(format!(
             "bamana-subsample-random-a-{}.fastq.gz",
             std::process::id()
@@ -1027,6 +1059,102 @@ mod tests {
         fs::remove_file(input).expect("input should be removable");
         fs::remove_file(out_a).expect("first output should be removable");
         fs::remove_file(out_b).expect("second output should be removable");
+    }
+
+    #[test]
+    fn subsample_fixture_outputs_have_stable_ordered_record_digests() {
+        let bam_input = write_bam_subsample_fixture("subsample-digest-bam");
+        let bam_output = std::env::temp_dir().join(format!(
+            "bamana-subsample-digest-bam-out-{}.bam",
+            std::process::id()
+        ));
+        let fastq_input = write_plain_fastq_subsample_fixture("subsample-digest-fastq");
+        let fastq_output = std::env::temp_dir().join(format!(
+            "bamana-subsample-digest-fastq-out-{}.fastq",
+            std::process::id()
+        ));
+        let fastq_gz_input = write_gzip_fastq_subsample_fixture("subsample-digest-fastq-gz");
+        let fastq_gz_output = std::env::temp_dir().join(format!(
+            "bamana-subsample-digest-fastq-gz-out-{}.fastq.gz",
+            std::process::id()
+        ));
+
+        for (input, output, expected_records) in [
+            (&bam_input, &bam_output, 4),
+            (&fastq_input, &fastq_output, 3),
+            (&fastq_gz_input, &fastq_gz_output, 3),
+        ] {
+            let response = run(SubsampleRequest {
+                input: input.clone(),
+                out: output.clone(),
+                fraction: 1.0,
+                mode: SubsampleMode::Deterministic,
+                seed: Some(999),
+                identity: DeterministicIdentity::FullRecord,
+                dry_run: false,
+                create_index: false,
+                mapped_only: false,
+                primary_only: false,
+                threads: 1,
+                force: true,
+            });
+
+            assert!(response.ok);
+            let payload = response.data.expect("subsample should return payload");
+            let execution = payload
+                .execution
+                .expect("subsample should report execution");
+            assert!(execution.order_preserved);
+            assert_eq!(execution.records_examined, expected_records);
+            assert_eq!(execution.records_retained, execution.records_examined);
+        }
+
+        let (bam_input_names, bam_input_digest) = read_bam_names_and_record_digest(&bam_input);
+        let (bam_output_names, bam_output_digest) = read_bam_names_and_record_digest(&bam_output);
+        assert_eq!(bam_output_names, ["read1", "read2", "read3", "read4"]);
+        assert_eq!(bam_output_names, bam_input_names);
+        assert_eq!(bam_output_digest, bam_input_digest);
+
+        let fastq_input_records = read_fastq_records(&fastq_input);
+        let fastq_output_records = read_fastq_records(&fastq_output);
+        assert_eq!(
+            fastq_output_records
+                .iter()
+                .map(|record| record.read_name.as_str())
+                .collect::<Vec<_>>(),
+            ["r1", "r2", "r3"]
+        );
+        assert_eq!(fastq_output_records, fastq_input_records);
+        assert_eq!(
+            fastq_record_digest(&fastq_output_records),
+            fastq_record_digest(&fastq_input_records)
+        );
+
+        let fastq_gz_input_records = read_fastq_records(&fastq_gz_input);
+        let fastq_gz_output_records = read_fastq_records(&fastq_gz_output);
+        assert_eq!(
+            fastq_gz_output_records
+                .iter()
+                .map(|record| record.read_name.as_str())
+                .collect::<Vec<_>>(),
+            ["r1", "r2", "r3"]
+        );
+        assert_eq!(fastq_gz_output_records, fastq_gz_input_records);
+        assert_eq!(
+            fastq_record_digest(&fastq_gz_output_records),
+            fastq_record_digest(&fastq_gz_input_records)
+        );
+
+        for path in [
+            bam_input,
+            bam_output,
+            fastq_input,
+            fastq_output,
+            fastq_gz_input,
+            fastq_gz_output,
+        ] {
+            fs::remove_file(path).expect("fixture should be removable");
+        }
     }
 
     #[test]

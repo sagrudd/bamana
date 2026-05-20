@@ -1,0 +1,19 @@
+{
+  "ok": false,
+  "command": "subsample",
+  "path": "reads.fastq",
+  "data": {
+    "format": "FASTQ",
+    "output": {
+      "path": "reads.subsampled.fastq",
+      "written": false,
+      "overwritten": false
+    }
+  },
+  "error": {
+    "code": "unsupported_input_for_command",
+    "message": "Detected input is not supported by this command.",
+    "detail": "FASTQ and FASTQ.GZ subsampling do not support BAM-only filters or index creation.",
+    "hint": "Use BAM, FASTQ, or FASTQ.GZ with this command, or choose a command that supports the detected format."
+  }
+}

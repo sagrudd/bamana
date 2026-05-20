@@ -2354,7 +2354,7 @@ Completion evidence:
 
 ### M5.8 Add Differential And Fixture Coverage For `subsample`
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2374,7 +2374,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* strengthened command tests for BAM deterministic and seeded-random
+  `subsample` selection through the scanner-owned raw-record bridge;
+* strengthened command tests for FASTQ deterministic and FASTQ.GZ seeded-random
+  `subsample` selection through the Milestone 4 reader and writer;
+* added ordered record-digest evidence for BAM, FASTQ, and FASTQ.GZ retained
+  records, comparing command outputs back to source fixture records and proving
+  encounter-order stability for the covered inputs;
+* kept selection metadata covered by assertions that `order_preserved` remains
+  true and retained counts match examined counts for full-retention fixture
+  runs;
+* added governed failure examples for unsupported format and invalid FASTQ
+  filter/index combinations alongside the existing invalid-fraction example;
+* added contract coverage requiring `subsample` failure examples to cover
+  unsupported format, invalid fraction, and invalid filter combinations;
+* documented the fixture and differential evidence in the Milestone 5 roadmap
+  and Sphinx native command-migration notes.
 
 ### M5.9 Add Proof-Command Benchmark Evidence
 

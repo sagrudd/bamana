@@ -313,6 +313,46 @@ fn fixture_manifest_includes_m5_subsample_baseline() {
 }
 
 #[test]
+fn subsample_failure_examples_cover_m5_failure_taxonomy() {
+    let examples = [
+        (
+            "subsample.failure.unsupported_format.json",
+            "unsupported_format",
+        ),
+        (
+            "subsample.failure.invalid_fraction.json",
+            "invalid_fraction",
+        ),
+        (
+            "subsample.failure.invalid_filter_combination.json",
+            "unsupported_input_for_command",
+        ),
+    ];
+
+    for (file_name, expected_code) in examples {
+        let path = spec_dir().join("examples").join(file_name);
+        let contents = read_utf8(&path);
+        let value = serde_json::from_str::<Value>(&contents)
+            .unwrap_or_else(|error| panic!("example {} did not parse: {error}", path.display()));
+        assert_eq!(
+            value
+                .get("command")
+                .and_then(Value::as_str)
+                .expect("example should include command"),
+            "subsample"
+        );
+        assert_eq!(
+            value
+                .pointer("/error/code")
+                .and_then(Value::as_str)
+                .expect("example should include error.code"),
+            expected_code,
+            "example {file_name} should cover {expected_code}"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

@@ -218,6 +218,30 @@ oracle usage remains isolated to `tests/header_oracle.rs`; BAM and FASTQ
 tests unless a future differential test is explicitly labelled as an oracle or
 compatibility comparison.
 
+## M5.8 `subsample` Fixture And Differential Coverage
+
+M5.8 strengthens `subsample` fixture-style evidence across BAM, FASTQ, and
+FASTQ.GZ inputs.
+
+Command tests now cover:
+
+* deterministic BAM selection through the scanner-owned raw-record bridge;
+* seeded-random BAM selection through the scanner-owned raw-record bridge;
+* deterministic FASTQ selection through the Milestone 4 reader and writer;
+* seeded-random FASTQ.GZ selection through the Milestone 4 reader and writer;
+* retained-record encounter order and ordered record digests for BAM, FASTQ,
+  and FASTQ.GZ when all records are retained.
+
+The ordered digest checks compare output records against the source fixture
+records after command execution, proving retained record bytes or FASTQ record
+structure remain stable for the covered tiny inputs.
+
+Governed failure examples now cover:
+
+* unsupported input format;
+* invalid fraction;
+* invalid FASTQ filter/index combinations for BAM-only controls.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:
