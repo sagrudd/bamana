@@ -1,7 +1,7 @@
 Native Command Migration
 ========================
 
-Milestone 5 is active. It uses the completed native BGZF, BAM header, BAM
+Milestone 5 is complete. It used the completed native BGZF, BAM header, BAM
 scanner, and FASTQ substrates to migrate the first proof commands away from
 external production hot-path dependencies.
 
@@ -53,8 +53,8 @@ Benchmark Evidence
 is supplied a Bamana binary. The benchmark framework also exposes
 ``subsample_only`` workflow variants for larger command-level subsample timing.
 
-M5 closeout must record command-level evidence for ``verify``, ``header``, and
-``subsample`` after the remaining migration work is complete.
+M5 closeout recorded command-level evidence for ``verify``, ``header``, and
+``subsample`` through the benchmark smoke profiles described below.
 
 M5.2 Contract Freeze
 --------------------
@@ -196,3 +196,26 @@ These command timings include process startup, CLI parsing, path probing,
 command execution, and JSON emission. They are not pure substrate
 microbenchmarks and should be interpreted separately from in-process BGZF,
 scanner, or FASTQ throughput rows.
+
+M5.10 Closeout
+--------------
+
+M5.10 closed Milestone 5 on 2026-05-20. The final milestone state is:
+
+* ``verify`` is a native BGZF plus native BAM header proof command;
+* ``header`` is a native BAM header extraction proof command;
+* ``subsample`` uses native BAM scanner traversal for BAM inputs and native
+  FASTQ/FASTQ.GZ reader and writer APIs for raw-read inputs;
+* command JSON contracts remained stable;
+* direct production ``noodles`` usage remains isolated to CRAM compatibility,
+  with tests, oracles, and fixtures as the only other allowed surfaces.
+
+Closeout verification completed with ``cargo test``, ``cargo test --test
+contract``, the Sphinx documentation build, and proof-command smoke benchmark
+profiles for ``header_microbench``, ``scanner_microbench``, and
+``fastq_microbench`` using ``--profile small --iterations 1 --bamana-bin
+target/debug/bamana``.
+
+The final smoke rows reported ``verify: 1/1``, ``header: 1/1``,
+``subsample_bam: 1/1``, ``subsample_fastq: 1/1``, and
+``subsample_fastq_gz: 1/1``.

@@ -2,14 +2,20 @@
 
 ## Milestone Status
 
-**Milestone 5: Command Migration Off `noodles`** is active as of 2026-05-18.
+**Milestone 5: Command Migration Off `noodles`** is complete as of
+2026-05-20.
+
+The next planned milestone is **Milestone 6: Native Inspection And Validation
+Commands**. It should become active through M6.1, after this M5 closeout state
+has been preserved.
 
 See:
 
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
+* [milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-## Why This Is Current
+## Completed Backbone
 
 Milestone 1 completed the native BGZF substrate. Milestone 2 completed native
 BAM header parsing and deterministic header serialization. Milestone 3
@@ -17,10 +23,33 @@ completed selective native BAM record scanning and migrated the first
 scanner-compatible BAM command consumers. Milestone 4 completed the native
 FASTQ and FASTQ.GZ parser/writer core.
 
-Milestone 5 uses those substrates to prove command migration boundaries on the
-first command set: `verify`, `header`, and `subsample`. It is intentionally
+Milestone 5 used those substrates to prove command migration boundaries on the
+first command set: `verify`, `header`, and `subsample`. It was intentionally
 about production command paths and dependency boundaries, not broad native CRAM
 support or wholesale replacement of every transform command.
+
+## Milestone 5 Closeout State
+
+M5 closeout established:
+
+* `verify` as a native BGZF plus native BAM header proof command;
+* `header` as a native BAM header extraction proof command;
+* BAM-side `subsample` through `BamScanner`, `BamRecordView`, and
+  scanner-owned retained raw record bytes;
+* FASTQ-side `subsample` through `open_fastq_reader`,
+  `read_next_fastq_record`, and `FastqWriter`;
+* stable governed JSON contracts for the proof commands;
+* protected public contracts for `benchmark`, `fastq`, and `unmap`;
+* dependency-boundary tests that keep direct production `noodles` usage
+  isolated to CRAM compatibility and separately protect the M5 proof-command
+  hot paths;
+* fixture and differential evidence for BAM, FASTQ, and FASTQ.GZ `subsample`
+  selection and encounter-order behavior;
+* command-level smoke benchmark rows for `verify`, `header`, `subsample_bam`,
+  `subsample_fastq`, and `subsample_fastq_gz`.
+
+M5 closeout verification passed with `cargo test`, `cargo test --test
+contract`, Sphinx, and the proof-command benchmark smoke profiles.
 
 ## Previously Completed Milestones
 
@@ -30,14 +59,10 @@ See:
 
 * [milestone-01-bgzf.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-01-bgzf.md)
 
-The M1 closeout established:
-
-* native BGZF block reading and EOF-marker handling;
-* BAM-compatible native BGZF writing;
-* virtual-offset groundwork for later random-access work;
-* BGZF microbenchmark hooks;
-* dependency guardrails that keep production `noodles` usage isolated to CRAM
-  compatibility.
+The M1 closeout established native BGZF block reading and EOF-marker handling,
+BAM-compatible native BGZF writing, virtual-offset groundwork, BGZF
+microbenchmark hooks, and dependency guardrails that keep production `noodles`
+usage isolated to CRAM compatibility.
 
 **Milestone 2: Native BAM Header Codec**
 
@@ -45,17 +70,11 @@ See:
 
 * [milestone-02-bam-header.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-02-bam-header.md)
 
-The M2 closeout established:
-
-* native BAM magic, `l_text`, SAM-style textual header, and binary reference
-  dictionary parsing;
-* deterministic BAM header serialization helpers;
-* production `verify` and `header` paths backed by native BGZF plus native BAM
-  header parsing;
-* malformed-header tests and test-only header oracle boundaries;
-* header microbenchmark hooks with machine-readable output;
-* dependency-boundary checks protecting production native header code from
-  direct `noodles` imports.
+The M2 closeout established native BAM magic, header text, SAM-style textual
+header, binary reference dictionary parsing, deterministic BAM header
+serialization helpers, production `verify` and `header` paths backed by native
+BGZF plus native BAM header parsing, malformed-header tests, test-only header
+oracle boundaries, header microbenchmark hooks, and dependency-boundary checks.
 
 **Milestone 3: Native BAM Record Scanner**
 
@@ -63,21 +82,10 @@ See:
 
 * [milestone-03-bam-record-scan.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-03-bam-record-scan.md)
 
-The M3 closeout established:
-
-* `BamRecordView` as the borrowed native BAM record-view contract;
-* `BamScanner` as the native BGZF/header-backed BAM record iteration substrate;
-* scanner-owned helpers for flags, coordinates, MAPQ, read names, sequence
-  length, section ranges, skip offsets, borrowed section slices, and selected
-  aux traversal;
-* scanner-backed `check_sort`, `check_map`, `summary`, `check_tag`,
-  `validate`, `inspect_duplication`, and `forensic_inspect` paths;
-* scanner malformed-record tests, dependency-boundary protection, and
-  `scanner_microbench` hooks.
-
-Milestone 1 through 3 completion evidence remains recorded in:
-
-* [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
+The M3 closeout established `BamRecordView`, `BamScanner`, scanner-owned
+helpers for common BAM fields and selected aux traversal, scanner-backed
+inspection paths, malformed-record tests, dependency-boundary protection, and
+`scanner_microbench` hooks.
 
 **Milestone 4: Native FASTQ / FASTQ.GZ Parser**
 
@@ -85,83 +93,23 @@ See:
 
 * [milestone-04-fastq.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-04-fastq.md)
 
-The M4 closeout established:
+The M4 closeout established native FASTQ modules for record contracts, reader
+validation, writer finalization, gzip handling, unmapped conversion, and
+`FASTQ.GZI` sidecar work, plus native parser/writer command-consumer evidence,
+dependency-boundary checks, and `fastq_microbench` hooks.
 
-* explicit native FASTQ modules for record contracts, reader validation,
-  writer finalization, gzip handling, unmapped conversion, and `FASTQ.GZI`
-  sidecar work;
-* native plain FASTQ and FASTQ.GZ parsing, validation, structured malformed
-  input errors, and writer round trips;
-* selected command-consumer evidence for `enumerate`, FASTQ-side `subsample`,
-  `consume`, `inspect_duplication`, `deduplicate`, and FASTQ.GZ `explode`;
-* dependency-boundary checks keeping production FASTQ hot paths free of direct
-  external generic bioinformatics parser crates;
-* `fastq_microbench` parser/writer benchmark hooks with machine-readable JSON
-  output.
+## Next Milestone Boundary
 
-M4 closeout verification passed with `cargo test`, `cargo test --test
-contract`, Sphinx, and `fastq_microbench --profile small --iterations 1` plus a
-JSON smoke check.
+Milestone 6 is planned for the first operational BAM inspection and validation
+command wave:
 
-Milestone 1 through 4 completion evidence remains recorded in:
+* `check_eof`
+* `check_sort`
+* `check_map`
+* `summary`
+* `check_tag`
+* `validate`
 
-* [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
-
-## Milestone 5 Current State
-
-Known present pieces:
-
-* native BGZF, BAM header, BAM scanner, and FASTQ substrates are available;
-* `verify` already probes the input, requires a BGZF-backed BAM container, and
-  calls `parse_bam_header_from_native_bgzf`;
-* `header` follows the same native BGZF and BAM header path and returns the
-  native `HeaderPayload`;
-* BAM-side `subsample` streams through `BamScanner`, applies filters and
-  selection from `BamRecordView`, and writes retained scanner-owned raw record
-  bytes;
-* FASTQ-side `subsample` already uses `open_fastq_reader`,
-  `read_next_fastq_record`, and `FastqWriter` from the native FASTQ core;
-* public command contracts exist and remain protected for `benchmark`,
-  `fastq`, and `unmap`;
-* dependency-boundary tests already restrict direct production `noodles` usage
-  to the CRAM compatibility boundary and separately protect native header,
-  verify, scanner, migrated BAM-record, and FASTQ hot paths;
-* `header_microbench` can time `verify` and `header` command paths when passed
-  a Bamana binary, while the benchmark framework already exposes
-  `subsample_only` scenarios for larger command-level runs.
-
-Known gaps:
-
-* M5 still needs explicit proof-command evidence recorded for `verify`,
-  `header`, and both BAM and FASTQ `subsample`;
-* benchmark or differential evidence for the proof commands remains to be
-  recorded.
-
-First consumer order:
-
-1. refresh M5 baseline and dependency audit;
-2. confirm `verify` and `header` native proof-command evidence;
-3. migrate or prove `subsample` across BAM and FASTQ paths;
-4. add fixture, differential, and benchmark closeout evidence.
-
-## Completion Boundary
-
-Milestone 5 completion will mean:
-
-* `verify`, `header`, and `subsample` have explicit native-substrate evidence;
-* direct production `noodles` usage remains isolated to CRAM compatibility;
-* public JSON contracts remain stable unless deliberately versioned;
-* command-level tests, dependency-boundary tests, and benchmark or smoke
-  evidence are recorded.
-
-## Command-Surface Boundary
-
-Milestone 5 evidence is limited to the proof commands named above. Broader
-transform, indexing, ingest, region-query, and native CRAM migration remain
-later milestones unless an explicit M5 task includes them.
-
-## What Should Not Happen
-
-Do not treat Milestone 5 as native CRAM implementation, broad command parity,
-or a mandate to rewrite unrelated transform paths. Keep the focus on the proof
-commands and on preserving public contracts.
+Milestone 6 should not broaden Milestone 5's proof-command claims. Native CRAM
+support, broad transform parity, indexing, and random-access work remain later
+milestones unless an explicit future task promotes them.

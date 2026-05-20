@@ -406,9 +406,16 @@ the project charter in
 Milestone 4 is complete. Bamana now owns an explicit native FASTQ and FASTQ.GZ
 parser/writer core with stable module boundaries, stronger validation,
 sidecar-aware command-consumer evidence, dependency guardrails, and
-`fastq_microbench` smoke coverage. Milestone 5 is now the active native-core
-milestone and focuses on command migration off remaining `noodles` hot-path
-usage.
+`fastq_microbench` smoke coverage.
+
+Milestone 5 is complete. `verify` and `header` are documented and tested as
+native BGZF plus native BAM header proof commands, while `subsample` uses the
+native BAM scanner path for BAM inputs and the native FASTQ/FASTQ.GZ
+reader/writer APIs for raw-read inputs. Command contracts remained stable,
+proof-command benchmark smoke evidence is recorded, and direct production
+`noodles` usage remains isolated to CRAM compatibility. Milestone 6 is the next
+planned native-core milestone and focuses on inspection and validation command
+hardening.
 
 ## Specification Layer
 

@@ -1966,8 +1966,10 @@ selection, and native serialization or pass-through writing.
 
 ## Milestone 5 Current State
 
-Status: active. Milestone 5 became active after Milestone 4 closed with stable
-native FASTQ/FASTQ.GZ parser and writer APIs.
+Status: complete as of 2026-05-20. Milestone 5 became active after Milestone 4
+closed with stable native FASTQ/FASTQ.GZ parser and writer APIs, and closed
+after proof-command migration evidence was recorded for `verify`, `header`,
+and `subsample`.
 
 Known present pieces:
 
@@ -1980,31 +1982,40 @@ Known present pieces:
   `parse_bam_header_from_native_bgzf`;
 * production `header` already routes through native BGZF probing plus
   `parse_bam_header_from_native_bgzf`;
-* FASTQ and FASTQ.GZ `subsample` already use `open_fastq_reader`,
+* BAM-side `subsample` streams through `BamScanner`, uses `BamRecordView` for
+  filtering and selection identity, and writes retained scanner-owned raw
+  record bytes;
+* FASTQ and FASTQ.GZ `subsample` use `open_fastq_reader`,
   `read_next_fastq_record`, and `FastqWriter` from the native FASTQ core;
 * contract dependency-boundary tests already protect production native header,
   verify, scanner, and migrated hot paths from direct `noodles` imports;
 * `tests/contract/json_contract.rs` protects `benchmark`, `fastq`, and
   `unmap` as public contract commands with schemas, examples, and CLI docs;
 * `header_microbench` can time `verify` and `header` command paths when passed
-  a Bamana binary, and the benchmark framework contains `subsample_only`
-  workflow variants;
+  a Bamana binary;
+* `scanner_microbench` can emit `subsample_bam` command-level dry-run timing
+  when passed a Bamana binary;
+* `fastq_microbench` can emit `subsample_fastq` and `subsample_fastq_gz`
+  command-level dry-run timings when passed a Bamana binary;
 * production `subsample` already has governed JSON contracts for BAM, FASTQ,
   and FASTQ.GZ inputs and explicit deterministic/random selection policies.
 
-Known gaps:
+Closeout evidence:
 
-* BAM-side `subsample` still uses `BamReader::open` and
-  `read_next_record_layout` rather than the native scanner or a scanner-owned
-  raw-record bridge;
-* M5 still needs command-level proof evidence recorded for `verify`, `header`,
-  and both BAM and FASTQ `subsample`;
-* command-level benchmark deltas for `verify`, `header`, and `subsample` are
-  not yet recorded as M5 evidence;
-* dependency-boundary tests do not yet name the full M5 proof-command set as a
-  single governed migration boundary;
-* post-migration differential and fixture evidence for `subsample` across BAM,
-  FASTQ, and FASTQ.GZ remains to be collected.
+* `verify` is documented and tested as native BGZF plus native BAM header
+  verification only;
+* `header` is documented and tested as native BAM header extraction only;
+* `subsample` is documented and tested as native BAM scanner traversal and
+  native FASTQ/FASTQ.GZ parsing and writing for governed input formats;
+* dependency-boundary tests name `verify`, `header`, and `subsample` as the M5
+  proof-command set and keep direct production `noodles` usage isolated to
+  CRAM compatibility;
+* fixture and differential tests cover BAM, FASTQ, and FASTQ.GZ `subsample`
+  selection and encounter-order evidence;
+* proof-command smoke benchmark rows were recorded for `verify`, `header`,
+  `subsample_bam`, `subsample_fastq`, and `subsample_fastq_gz`;
+* M5 closeout verification completed with full tests, contract tests, Sphinx,
+  and proof-command smoke benchmarks.
 
 Milestone 5 closeout evidence must include:
 
@@ -2429,7 +2440,7 @@ Completion evidence:
 
 ### M5.10 Close Milestone 5
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2455,7 +2466,25 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* closed Milestone 5 on 2026-05-20 with all M5.1 through M5.10 tasks marked
+  complete;
+* confirmed `verify`, `header`, and `subsample` have documented
+  native-substrate proof-command evidence;
+* confirmed production direct `noodles` usage remains isolated to documented
+  CRAM compatibility, tests, oracles, and fixtures by the contract dependency
+  boundary;
+* preserved governed JSON contracts for `benchmark`, `fastq`, and `unmap` as
+  public contract commands while closing the M5 proof-command set;
+* reran proof-command smoke benchmarks with `--profile small --iterations 1
+  --bamana-bin target/debug/bamana`, confirming `verify: 1/1`, `header: 1/1`,
+  `subsample_bam: 1/1`, `subsample_fastq: 1/1`, and
+  `subsample_fastq_gz: 1/1`;
+* updated Milestone 5 roadmap, current milestone notes, README status text,
+  Sphinx native command-migration notes, and this task map with final
+  completion evidence;
+* closeout verification completed with `cargo test`, `cargo test --test
+  contract`, the Sphinx documentation build, and proof-command benchmark smoke
+  profiles.
 
 ## Milestone 6 Definition
 

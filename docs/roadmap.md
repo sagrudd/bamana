@@ -73,7 +73,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 5: Command Migration Off `noodles`
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * goal: prove the substrate is real by migrating `verify`, `header`, and
   `subsample` in that order

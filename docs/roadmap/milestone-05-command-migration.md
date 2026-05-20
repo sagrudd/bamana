@@ -1,5 +1,7 @@
 # Milestone 5: Command Migration Off `noodles`
 
+Status: complete as of 2026-05-20.
+
 ## Technical Goal
 
 Use the substrate milestones to migrate the first proof commands off external
@@ -273,6 +275,38 @@ parsing, path probing, command execution, and JSON emission. They are not pure
 substrate microbenchmarks and should not be compared directly with in-process
 BGZF, scanner, or FASTQ throughput rows.
 
+## M5.10 Closeout
+
+M5.10 closes Milestone 5 with the proof-command set fully recorded:
+
+* `verify` is a native BGZF plus native BAM header proof command. It remains
+  header-level verification and does not claim alignment-record validation,
+  full BAM body validation, or BGZF EOF-marker checking.
+* `header` is a native BAM header extraction proof command. It remains
+  header-only and does not validate alignment records or full BAM body
+  readability.
+* `subsample` uses native BAM scanner traversal for BAM inputs and the native
+  FASTQ/FASTQ.GZ reader and writer APIs for raw-read inputs.
+* command JSON contracts remained stable.
+* dependency-boundary tests keep direct production `noodles` usage isolated to
+  CRAM compatibility while separately protecting the M5 proof-command hot
+  paths.
+* fixture and differential tests cover BAM, FASTQ, and FASTQ.GZ `subsample`
+  selection, retained-record evidence, and encounter-order preservation.
+
+Closeout verification completed with:
+
+* `cargo test`;
+* `cargo test --test contract`;
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`;
+* `header_microbench`, `scanner_microbench`, and `fastq_microbench` smoke
+  profiles using `--profile small --iterations 1 --bamana-bin
+  target/debug/bamana`.
+
+The final smoke benchmark evidence reported `verify: 1/1`, `header: 1/1`,
+`subsample_bam: 1/1`, `subsample_fastq: 1/1`, and
+`subsample_fastq_gz: 1/1`.
+
 ## Remaining `noodles` Surface
 
 Allowed after this milestone:
@@ -282,5 +316,8 @@ Allowed after this milestone:
 
 ## Risks / Follow-Up
 
-* command migrations must not regress JSON contract stability
+* command migrations in later milestones must not regress JSON contract
+  stability
 * benchmark regressions should be treated as real signals, not postponed
+* Milestone 6 should activate the inspection and validation command wave
+  without broadening Milestone 5's proof-command claims
