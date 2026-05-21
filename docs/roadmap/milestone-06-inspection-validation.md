@@ -153,3 +153,24 @@ M6 hardening work must preserve the distinction between bounded evidence and
 full-file claims. Bounded scan output may describe only examined records.
 Full-file absence, full-file summary, or full validation claims require a
 complete scan that reaches EOF cleanly.
+
+## M6.3 `check_eof` Native BGZF Boundary
+
+M6.3 hardens `check_eof` as the native BGZF EOF-marker command. The production
+command path remains limited to:
+
+1. shallow path probing;
+2. BGZF-backed BAM container confirmation;
+3. canonical BGZF EOF-marker tail detection through `bgzf::has_bgzf_eof`.
+
+The task does not expand `check_eof` into BAM magic parsing, BAM header
+parsing, alignment-record validation, or auxiliary-field validation. A BGZF
+stream with invalid BAM header bytes can pass `check_eof` when the canonical
+EOF marker is present. That behavior is deliberate: `check_eof` proves only
+tail EOF-marker evidence. Use `verify` for native BAM header checks and
+`validate` for deeper structural validation.
+
+Additional hardening records present EOF, missing EOF, too-short tail, non-BGZF
+BAM input, and invalid-BAM-payload-with-present-EOF cases. Command-level smoke
+timing remains available through `bgzf_microbench --bamana-bin`, which emits a
+`check_eof` command timing row.

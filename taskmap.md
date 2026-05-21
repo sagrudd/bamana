@@ -2657,7 +2657,7 @@ Completion evidence:
 
 ### M6.3 Harden `check_eof` Native BGZF Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2676,7 +2676,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed production `src/commands/check_eof.rs` uses shallow probing plus
+  native `bgzf::has_bgzf_eof` and does not parse the BAM header or alignment
+  records;
+* added focused command tests for present canonical EOF marker, missing EOF
+  marker, tail too short for the canonical EOF marker, non-BGZF BAM input, and
+  invalid BAM payload bytes with a present EOF marker;
+* documented that `check_eof` success does not imply BAM magic validity, BAM
+  header validity, alignment-record validity, or auxiliary-field validity;
+* recorded the M6.3 boundary in the Milestone 6 roadmap and Sphinx technical
+  documentation;
+* confirmed command-level smoke timing for `check_eof` through
+  `bgzf_microbench --bamana-bin`, with the M6.3 smoke run reporting
+  `check_eof: 1/1`.
 
 ### M6.4 Harden `check_sort` Scanner Evidence
 

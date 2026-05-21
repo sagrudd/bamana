@@ -68,6 +68,22 @@ failures. Bounded examples must remain bounded: they may describe examined
 records only. Full-file absence and full-file summary claims require a complete
 scan that reaches EOF cleanly.
 
+M6.3 Check EOF Boundary
+-----------------------
+
+M6.3 hardens ``check_eof`` as the native BGZF EOF-marker command. Production
+``check_eof`` performs shallow path probing, requires a BGZF-backed BAM
+container, and then calls Bamana's native ``has_bgzf_eof`` tail check.
+
+The command remains intentionally narrow. It does not parse BAM magic, does not
+parse the BAM header, does not inspect alignment records, and does not validate
+auxiliary fields. A BGZF stream with invalid BAM header bytes can therefore
+pass ``check_eof`` when the canonical EOF marker is present. Use ``verify`` for
+native BAM header checks and ``validate`` for deeper structural validation.
+
+Command-level timing evidence for ``check_eof`` is captured through
+``bgzf_microbench --bamana-bin``.
+
 Guardrails
 ----------
 

@@ -85,6 +85,8 @@ Key concepts:
 * `bgzf_eof_present` reports whether the canonical EOF marker was found
 * `complete` mirrors tail-completeness evidence, not BAM semantic validity
 * `semantic_note` states that EOF presence does not imply full BAM validity
+* a successful payload does not prove that BAM magic, the BAM header,
+  alignment records, or optional fields are readable
 
 ## `check_sort`
 
