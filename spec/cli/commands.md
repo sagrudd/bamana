@@ -661,10 +661,12 @@ Performs a deeper streaming structural and internal-consistency validation pass
 than `verify`.
 
 Does prove:
-The specific structural and consistency checks that were actually run.
+The specific structural and consistency checks that were actually run for the
+reported scope.
 
 Does not prove:
 Biological correctness, reference concordance, or all optional-field semantics.
+It also does not prove full-file validity in bounded or header-only modes.
 
 Key output concepts:
 `mode`, `valid`, `summary`, `findings`, `semantic_note`.

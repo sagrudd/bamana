@@ -171,6 +171,31 @@ full-file absence.
 Command-level timing evidence for ``check_tag`` is captured through
 ``scanner_microbench --bamana-bin``.
 
+M6.8 Validate Boundary
+----------------------
+
+M6.8 hardens ``validate`` as a native structural validation command. Production
+``validate`` probes BAM/BGZF input, opens the native scanner with
+``BamScanner::open``, and validates scanner-compatible records through borrowed
+``BamRecordView`` fields. Auxiliary-field structure is traversed with native
+aux helpers; malformed aux regions are reported as structural findings with
+``scope=aux``.
+
+The command distinguishes header-only, bounded-record, and full validation
+scopes. Header-only validation does not imply record validity. Bounded
+validation reports only the examined prefix and leaves
+``summary.full_file_examined=false``. Full validation reports EOF-backed
+coverage only when scanner traversal reaches the end of the BAM body cleanly.
+Finding counters record all observed severities even when ``--max-errors`` or
+``--max-warnings`` limits the stored finding list.
+
+``validate`` remains structural and internal-consistency validation. It does
+not prove biological correctness, external reference concordance, or complete
+optional-field semantic validity.
+
+Command-level timing evidence for ``validate`` is captured through
+``scanner_microbench --bamana-bin``.
+
 Guardrails
 ----------
 

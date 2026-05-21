@@ -279,3 +279,31 @@ absent tags, type-filter mismatches, duplicate tag records, malformed aux
 payloads, and unsupported B-array shapes. Command-level smoke timing remains
 available through `scanner_microbench --bamana-bin`, which emits a `check_tag`
 command timing row.
+
+## M6.8 `validate` Structural Validation Boundary
+
+M6.8 hardens `validate` as a native structural and internal-consistency
+validation command. The production command path remains:
+
+1. shallow BAM/BGZF probing;
+2. native scanner opening through `BamScanner::open`;
+3. header validation against native header metadata;
+4. scanner-compatible record validation through borrowed `BamRecordView`
+   fields;
+5. native auxiliary traversal for duplicate-tag and malformed-aux structural
+   findings;
+6. severity-coded payload construction for header-only, bounded-record, and
+   full validation scopes.
+
+The task preserves the command boundary. Header-only validation does not imply
+alignment-record validity. Bounded validation reports only the examined record
+prefix. Full validation reports `summary.full_file_examined=true` only after
+scanner traversal reaches EOF cleanly. Finding counters count all observed
+error, warning, and info severities even when stored findings are limited by
+`--max-errors` or `--max-warnings`.
+
+Additional hardening records clean minimal BAM validation, header-only scope,
+bounded-record scope, malformed record structure, malformed auxiliary
+structure, severity-coded findings, and configured finding-list limits.
+Command-level smoke timing remains available through
+`scanner_microbench --bamana-bin`, which emits a `validate` command timing row.

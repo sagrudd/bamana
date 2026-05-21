@@ -616,11 +616,14 @@ impl FindingCollector {
 mod tests {
     use std::fs;
 
-    use crate::formats::bgzf::test_support::{
-        build_bam_file_with_header_and_records, write_temp_file,
+    use crate::{
+        bgzf::BGZF_EOF_MARKER,
+        formats::bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_bgzf_member, write_temp_file,
+        },
     };
 
-    use super::{FindingSeverity, ValidationMode, ValidationOptions, validate_bam};
+    use super::{FindingScope, FindingSeverity, ValidationMode, ValidationOptions, validate_bam};
 
     struct RecordSpec<'a> {
         ref_id: i32,
@@ -689,6 +692,53 @@ mod tests {
 
         assert!(payload.valid);
         assert!(matches!(payload.mode, ValidationMode::HeaderOnly));
+        assert_eq!(payload.summary.records_examined, 0);
+        assert!(!payload.summary.full_file_examined);
+        assert!(
+            payload
+                .semantic_note
+                .contains("does not imply that alignment records are structurally valid")
+        );
+    }
+
+    #[test]
+    fn validates_clean_minimal_bam_full_scan() {
+        let record = build_record(RecordSpec {
+            ref_id: -1,
+            pos: -1,
+            flags: 0x4,
+            read_name: "read1",
+            next_ref_id: -1,
+            next_pos: -1,
+            n_cigar_op: 0,
+            l_seq: 0,
+            aux: b"",
+        });
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[record],
+        );
+        let path = write_temp_file("validate-clean-minimal", "bam", &bytes);
+        let payload = validate_bam(
+            &path,
+            ValidationOptions {
+                max_errors: 10,
+                max_warnings: 10,
+                header_only: false,
+                record_limit: None,
+                fail_fast: false,
+                include_warnings: true,
+            },
+        )
+        .expect("validation should complete");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(payload.valid);
+        assert!(matches!(payload.mode, ValidationMode::Full));
+        assert_eq!(payload.summary.records_examined, 1);
+        assert!(payload.summary.full_file_examined);
+        assert_eq!(payload.summary.errors, 0);
     }
 
     #[test]
@@ -734,6 +784,86 @@ mod tests {
     }
 
     #[test]
+    fn reports_malformed_aux_region_as_error() {
+        let record = build_record(RecordSpec {
+            ref_id: -1,
+            pos: -1,
+            flags: 0x4,
+            read_name: "read1",
+            next_ref_id: -1,
+            next_pos: -1,
+            n_cigar_op: 0,
+            l_seq: 0,
+            aux: b"NMc",
+        });
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[record],
+        );
+        let path = write_temp_file("validate-malformed-aux", "bam", &bytes);
+        let payload = validate_bam(
+            &path,
+            ValidationOptions {
+                max_errors: 10,
+                max_warnings: 10,
+                header_only: false,
+                record_limit: None,
+                fail_fast: false,
+                include_warnings: true,
+            },
+        )
+        .expect("validation should complete");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(!payload.valid);
+        assert!(payload.findings.iter().any(|finding| {
+            finding.code == "malformed_aux_region"
+                && matches!(finding.scope, FindingScope::Aux)
+                && finding.severity == FindingSeverity::Error
+                && finding.record_index == Some(1)
+        }));
+    }
+
+    #[test]
+    fn reports_malformed_record_structure_as_error() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1\0");
+        payload.extend_from_slice(&10_i32.to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+
+        let mut bytes = build_bgzf_member(&payload);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("validate-malformed-record", "bam", &bytes);
+        let payload = validate_bam(
+            &path,
+            ValidationOptions {
+                max_errors: 10,
+                max_warnings: 10,
+                header_only: false,
+                record_limit: None,
+                fail_fast: false,
+                include_warnings: true,
+            },
+        )
+        .expect("validation should complete");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(!payload.valid);
+        assert_eq!(payload.summary.records_examined, 0);
+        assert!(!payload.summary.full_file_examined);
+        assert!(payload.findings.iter().any(|finding| {
+            finding.code == "invalid_record"
+                && finding.severity == FindingSeverity::Error
+                && finding.record_index == Some(1)
+        }));
+    }
+
+    #[test]
     fn reports_contradictory_mapping_state() {
         let record = build_record(RecordSpec {
             ref_id: 0,
@@ -772,6 +902,115 @@ mod tests {
                 .findings
                 .iter()
                 .any(|finding| finding.code == "contradictory_mapping_state")
+        );
+    }
+
+    #[test]
+    fn bounded_validation_stops_at_record_limit() {
+        let clean = build_record(RecordSpec {
+            ref_id: -1,
+            pos: -1,
+            flags: 0x4,
+            read_name: "read1",
+            next_ref_id: -1,
+            next_pos: -1,
+            n_cigar_op: 0,
+            l_seq: 0,
+            aux: b"",
+        });
+        let contradictory = build_record(RecordSpec {
+            ref_id: 0,
+            pos: 1,
+            flags: 0x4,
+            read_name: "read2",
+            next_ref_id: -1,
+            next_pos: -1,
+            n_cigar_op: 0,
+            l_seq: 0,
+            aux: b"",
+        });
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[clean, contradictory],
+        );
+        let path = write_temp_file("validate-bounded", "bam", &bytes);
+        let payload = validate_bam(
+            &path,
+            ValidationOptions {
+                max_errors: 10,
+                max_warnings: 10,
+                header_only: false,
+                record_limit: Some(1),
+                fail_fast: false,
+                include_warnings: true,
+            },
+        )
+        .expect("validation should complete");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(payload.valid);
+        assert!(matches!(payload.mode, ValidationMode::BoundedRecords));
+        assert_eq!(payload.summary.records_examined, 1);
+        assert!(!payload.summary.full_file_examined);
+        assert!(
+            payload
+                .semantic_note
+                .contains("examined portion of the file only")
+        );
+    }
+
+    #[test]
+    fn severity_limits_count_all_findings_but_store_configured_subset() {
+        let record = build_record(RecordSpec {
+            ref_id: 0,
+            pos: 1,
+            flags: 0x4,
+            read_name: "read1",
+            next_ref_id: 0,
+            next_pos: -1,
+            n_cigar_op: 0,
+            l_seq: 0,
+            aux: b"NMi\x01\0\0\0NMi\x02\0\0\0",
+        });
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[record],
+        );
+        let path = write_temp_file("validate-severity-limits", "bam", &bytes);
+        let payload = validate_bam(
+            &path,
+            ValidationOptions {
+                max_errors: 1,
+                max_warnings: 1,
+                header_only: false,
+                record_limit: None,
+                fail_fast: false,
+                include_warnings: true,
+            },
+        )
+        .expect("validation should complete");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(!payload.valid);
+        assert!(payload.summary.errors >= 1);
+        assert!(payload.summary.warnings >= 2);
+        assert_eq!(
+            payload
+                .findings
+                .iter()
+                .filter(|finding| finding.severity == FindingSeverity::Error)
+                .count(),
+            1
+        );
+        assert_eq!(
+            payload
+                .findings
+                .iter()
+                .filter(|finding| finding.severity == FindingSeverity::Warning)
+                .count(),
+            1
         );
     }
 }

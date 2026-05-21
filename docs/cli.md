@@ -103,8 +103,9 @@ output reports observed operational metrics only; full-file totals require
 `check_tag` reports scanner-owned auxiliary traversal evidence only: bounded
 non-observation is not full-file absence, duplicate tags are counted at the
 record level, and unsupported aux shapes are structured traversal failures.
-`validate` reports structural and internal-consistency checks, not biological
-correctness or external reference concordance.
+`validate` reports structural and internal-consistency checks over the requested
+scope, including aux traversal structure, not biological correctness, external
+reference concordance, or full optional-field semantic validation.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

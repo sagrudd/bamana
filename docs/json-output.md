@@ -162,6 +162,10 @@ Key concepts:
 * `summary.full_file_examined` states whether the requested validation reached
   EOF cleanly
 * `findings` report structured `error`, `warning`, and `info` evidence
+* `summary.errors`, `summary.warnings`, and `summary.infos` count observed
+  findings even when `--max-errors` or `--max-warnings` limits stored findings
+* `scope=aux` means auxiliary-field traversal failed structurally; it does not
+  validate arbitrary tag value semantics
 * `semantic_note` states that validation does not imply biological correctness
   or external reference concordance
 

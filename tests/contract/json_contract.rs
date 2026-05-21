@@ -519,6 +519,7 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
         ("scanner_microbench", &scanner_schema, "check_sort"),
         ("scanner_microbench", &scanner_schema, "check_map"),
         ("scanner_microbench", &scanner_schema, "check_tag"),
+        ("scanner_microbench", &scanner_schema, "validate"),
         ("fastq_microbench", &fastq_schema, "subsample_fastq"),
         ("fastq_microbench", &fastq_schema, "subsample_fastq_gz"),
     ] {

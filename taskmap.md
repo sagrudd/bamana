@@ -2835,7 +2835,7 @@ Completion evidence:
 
 ### M6.8 Harden `validate` Structural Validation Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2855,7 +2855,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/commands/validate.rs` and `src/bam/validate.rs`: production
+  behavior probes BAM/BGZF input, opens BAM via `BamScanner`, validates
+  scanner-compatible records through borrowed `BamRecordView` fields, and uses
+  native auxiliary traversal for aux structural findings;
+* strengthened validation tests for clean minimal BAM input, header-only scope,
+  bounded-record scope, malformed record structure, malformed aux traversal,
+  severity-coded findings, and configured finding-list limits;
+* documented that `validate` is structural/internal-consistency validation and
+  does not imply biological correctness, external reference concordance, or
+  complete optional-field semantic validation in CLI, JSON-output, Sphinx, and
+  roadmap sources;
+* confirmed `scanner_microbench --bamana-bin` already emits a `validate`
+  command timing row and added a contract guard for that row;
+* confirmed M6.8 smoke run reported `validate: 1/1`.
 
 ### M6.9 Strengthen M6 Dependency Boundaries And Benchmarks
 
