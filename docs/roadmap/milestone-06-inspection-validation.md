@@ -1,5 +1,7 @@
 # Milestone 6: Native Inspection And Validation Commands
 
+Status: active as of 2026-05-21.
+
 ## Technical Goal
 
 Use the native BGZF, BAM header, BAM scanner, FASTQ, and proof-command
@@ -89,3 +91,41 @@ Disallowed:
 * `validate` must not overclaim full biological or reference-level correctness
 * `check_map` must keep index-derived and scan-derived evidence distinct
 * bounded scans must continue to state when absence or validity is not proven
+
+## M6.1 Baseline Audit
+
+M6.1 activates this milestone after Milestone 5 closeout. The baseline audit is
+documentation-only and does not change command behavior.
+
+Already-native or native-backed command paths:
+
+* `check_eof` probes the input as BAM/BGZF and uses the native BGZF EOF-marker
+  detection path;
+* `check_sort` opens BAM input through `BamScanner` and uses
+  `BamRecordView`-derived fields for coordinate and queryname ordering
+  evidence;
+* `check_map` keeps usable BAI-derived summaries as the preferred evidence
+  source and falls back to `BamScanner` record traversal when an index is not
+  usable or not requested;
+* `summary` opens BAM input through `BamScanner`, uses native header metadata,
+  can incorporate BAI-derived totals, and otherwise reports bounded or full
+  scanner evidence;
+* `check_tag` uses `BamScanner` with native aux traversal helpers for selected
+  tag lookup and type filtering;
+* `validate` runs through the native validation substrate built on header
+  parsing, `BamScanner`, and `BamRecordView`.
+
+Baseline gaps for later M6 tasks:
+
+* contracts and examples need a fresh milestone-level freeze for all six
+  commands;
+* bounded-scan absence claims and full-scan claims need focused fixture
+  evidence;
+* `check_map` and `summary` need continued care around index-derived versus
+  scan-derived evidence;
+* `validate` needs explicit hardening around structural-only validation
+  claims;
+* command-level smoke benchmark evidence is still needed for the full M6
+  command set;
+* dependency-boundary tests should name the six M6 command files as one
+  protected milestone set.

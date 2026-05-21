@@ -2495,11 +2495,11 @@ covers `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
 the native path, M6 makes the inspection commands dependable, well bounded,
 benchmarked, and protected from production `noodles` hot-path regressions.
 
-## Milestone 6 Planned State
+## Milestone 6 Current State
 
-Status: planned. Milestone 6 should not become active until Milestone 5 has
-closed, because the proof-command migration should establish the final
-dependency-boundary and benchmark conventions for this command wave.
+Status: active as of 2026-05-21. Milestone 6 became active after Milestone 5
+closed with proof-command migration, dependency-boundary, and benchmark
+conventions recorded.
 
 Known present pieces:
 
@@ -2514,7 +2514,9 @@ Known present pieces:
 * `validate` already uses `BamScanner` and `BamRecordView` for
   scanner-compatible record-level structural checks;
 * scanner malformed-record tests and dependency-boundary tests already protect
-  the scanner substrate and selected migrated hot paths.
+  the scanner substrate and selected migrated hot paths;
+* `spec/cli/commands.md`, `docs/cli.md`, README, JSON schemas, and success and
+  failure examples already describe the six M6 commands at a baseline level.
 
 Known gaps:
 
@@ -2557,7 +2559,7 @@ Command-surface scope:
 
 ### M6.1 Activate Milestone 6 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2582,7 +2584,34 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* updated `docs/roadmap/current_milestone.md` so Milestone 6 is active only
+  after the recorded Milestone 5 closeout;
+* updated `docs/roadmap.md`, `docs/roadmap/milestone-06-inspection-validation.md`,
+  README status text, and Sphinx technical documentation so Milestone 6 is the
+  active native-core milestone;
+* confirmed Milestones 1 through 5 remain recorded as complete;
+* audited `src/commands/check_eof.rs`: production `check_eof` probes BAM/BGZF
+  input and uses native `bgzf::has_bgzf_eof`;
+* audited `src/commands/check_sort.rs`: production `check_sort` uses
+  `BamScanner` and `BamRecordView` fields for ordering evidence;
+* audited `src/commands/check_map.rs`: production `check_map` preserves
+  usable BAI index-derived evidence and falls back to `BamScanner` traversal;
+* audited `src/commands/summary.rs`: production `summary` uses native header
+  metadata, optional BAI-derived totals, and bounded or full `BamScanner`
+  scans;
+* audited `src/commands/check_tag.rs`: production `check_tag` uses
+  `BamScanner` plus native aux traversal helpers for selected tag lookup;
+* audited `src/commands/validate.rs`: production `validate` routes through the
+  native validation substrate built on native header parsing, `BamScanner`, and
+  `BamRecordView`;
+* audited `tests/contract/dependency_boundary.rs`: scanner substrate and
+  selected migrated hot paths are already protected from direct `noodles`
+  imports, while a single named M6 command-set boundary remains planned for
+  M6.9;
+* audited `spec/cli/commands.md`, `docs/cli.md`, README, schemas, and examples:
+  baseline documentation exists for all six M6 commands, with detailed contract
+  freezing left to M6.2;
+* no command behavior changes were made.
 
 ### M6.2 Freeze Inspection Command Contracts And Examples
 

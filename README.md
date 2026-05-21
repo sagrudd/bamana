@@ -413,9 +413,12 @@ native BGZF plus native BAM header proof commands, while `subsample` uses the
 native BAM scanner path for BAM inputs and the native FASTQ/FASTQ.GZ
 reader/writer APIs for raw-read inputs. Command contracts remained stable,
 proof-command benchmark smoke evidence is recorded, and direct production
-`noodles` usage remains isolated to CRAM compatibility. Milestone 6 is the next
-planned native-core milestone and focuses on inspection and validation command
-hardening.
+`noodles` usage remains isolated to CRAM compatibility.
+
+Milestone 6 is now the active native-core milestone. It focuses on hardening
+the first operational BAM inspection and validation command wave:
+`check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+`validate`.
 
 ## Specification Layer
 
