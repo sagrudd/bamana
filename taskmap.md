@@ -2729,7 +2729,7 @@ Completion evidence:
 
 ### M6.5 Harden `check_map` Index And Scanner Evidence
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2747,7 +2747,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/commands/check_map.rs`: production behavior still opens BAM via
+  `BamScanner`, prefers usable BAI metadata when requested, and falls back to
+  scanner-derived record evidence when index evidence is absent, incomplete,
+  unsupported, malformed, or disabled;
+* strengthened command tests for usable BAI summaries, missing indexes,
+  incomplete BAI metadata, invalid BAI fallback, explicit index disabling,
+  mapped/unmapped scan counts, bounded-scan caveats, and full-scan evidence
+  beyond the bounded window;
+* documented the distinction between index-derived and scan-derived
+  `check_map` evidence in CLI, JSON-output, Sphinx, and roadmap sources;
+* added `check_map` command-level timing to `scanner_microbench --bamana-bin`
+  and updated the benchmark schema, benchmark documentation, and contract test
+  guard;
+* confirmed M6.5 smoke run reported `check_map: 1/1`.
 
 ### M6.6 Harden `summary` Scanner Evidence
 

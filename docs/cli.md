@@ -95,7 +95,9 @@ not prove BAM header validity or alignment-record validity. `check_sort`,
 output states that a full scan reached EOF cleanly. `check_sort --strict`
 expands ordering inspection beyond the bounded sample window but still does not
 perform full BAM structural validation. `check_map` and `summary` keep
-index-derived evidence separate from scan-derived evidence. `validate` reports
+index-derived evidence separate from scan-derived evidence. For `check_map`,
+index-derived results describe usable BAI mapped/unmapped metadata; scan-derived
+results describe only the examined alignment records. `validate` reports
 structural and internal-consistency checks, not biological correctness or
 external reference concordance.
 

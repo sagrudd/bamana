@@ -198,3 +198,32 @@ template-coordinate sort, unknown declared sort order, bounded-scan caveats,
 and strict violation detection after a bounded sample window. Command-level
 smoke timing is available through `scanner_microbench --bamana-bin`, which now
 emits a `check_sort` command timing row.
+
+## M6.5 `check_map` Index And Scanner Evidence
+
+M6.5 hardens `check_map` as an index-preferred mapping-evidence command with a
+native scanner fallback. The production command path remains:
+
+1. shallow BAM/BGZF probing;
+2. native BAM header opening through `BamScanner::open`;
+3. optional adjacent-index discovery and BAI metadata parsing;
+4. index-derived payload construction when complete per-reference metadata is
+   available;
+5. native scanner traversal through `BamRecordView` flag and reference fields
+   when index evidence is unavailable or explicitly disabled.
+
+Index-derived output reports `evidence_source=index`, `index.used=true`, and no
+`summary.records_examined` value because alignment records were not scanned for
+the result. Scan-derived output reports `evidence_source=scan`,
+`summary.records_examined`, observed mapped/unmapped counts, per-reference
+observations, and inconsistent-record observations. Missing, incomplete,
+unsupported, or malformed indexes remain visible in the `index` object and
+`semantic_note` while still allowing scanner fallback where the BAM stream is
+readable.
+
+Additional hardening records usable BAI summaries, missing indexes, incomplete
+BAI metadata, invalid BAI fallback, explicit index disabling, bounded-scan
+caveats, and full-scan observation after a bounded window would have missed a
+mapped record. Command-level smoke timing is available through
+`scanner_microbench --bamana-bin`, which now emits a `check_map` command timing
+row.

@@ -114,6 +114,10 @@ Key concepts:
 * `index.used` reports whether the adjacent index actually supplied the result
 * `summary.records_examined` is scan evidence and is absent from pure
   index-derived summaries
+* index-derived summaries report BAI mapped/unmapped metadata and do not imply
+  that alignment records were scanned
+* scan-derived summaries report only the records examined by the bounded or
+  full scan path
 * `semantic_note` describes the limits of the reported evidence source
 
 ## `summary`

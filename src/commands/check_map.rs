@@ -526,7 +526,18 @@ mod tests {
 
         assert!(matches!(payload.evidence_source, EvidenceSource::Index));
         assert!(matches!(payload.mapping_status, MappingStatus::Mapped));
+        assert!(payload.index.present);
+        assert!(payload.index.used);
+        assert_eq!(payload.summary.records_examined, None);
+        assert_eq!(payload.references[0].mapped_reads, Some(5));
+        assert_eq!(payload.references[0].unmapped_reads, Some(2));
         assert_eq!(payload.summary.total_mapped_reads, Some(5));
+        assert_eq!(payload.summary.total_unmapped_reads, Some(3));
+        assert!(
+            payload
+                .semantic_note
+                .contains("derived from the BAM index and header")
+        );
     }
 
     #[test]
@@ -556,7 +567,134 @@ mod tests {
 
         assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert!(matches!(payload.mapping_status, MappingStatus::Mapped));
+        assert!(!payload.index.present);
+        assert!(!payload.index.used);
+        assert_eq!(payload.summary.records_examined, Some(2));
         assert_eq!(payload.summary.mapped_records_observed, Some(1));
+        assert_eq!(payload.summary.unmapped_records_observed, Some(1));
+        assert_eq!(payload.references[0].observed, Some(true));
+        assert!(
+            payload
+                .semantic_note
+                .contains("no usable index was available")
+        );
+    }
+
+    #[test]
+    fn incomplete_bai_metadata_falls_back_to_scan_with_index_note() {
+        let bam_path = write_temp_file(
+            "check-map-incomplete-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(-1, -1, "read1", 4),
+                    build_light_record(0, 10, "read2", 0),
+                ],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        fs::write(&bai_path, build_bai_file(&[None], None)).expect("bai fixture should be written");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(payload.index.present);
+        assert!(!payload.index.used);
+        assert_eq!(payload.summary.records_examined, Some(2));
+        assert_eq!(payload.summary.mapped_records_observed, Some(1));
+        assert!(
+            payload
+                .semantic_note
+                .contains("per-reference mapped/unmapped metadata was incomplete")
+        );
+    }
+
+    #[test]
+    fn invalid_bai_falls_back_to_scan_with_unusable_index_note() {
+        let bam_path = write_temp_file(
+            "check-map-invalid-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 10, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let mut invalid_bai = Vec::new();
+        invalid_bai.extend_from_slice(b"BAI\x01");
+        invalid_bai.extend_from_slice(&2_i32.to_le_bytes());
+        fs::write(&bai_path, invalid_bai).expect("invalid bai fixture should be written");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(payload.index.present);
+        assert!(!payload.index.used);
+        assert_eq!(payload.summary.records_examined, Some(1));
+        assert!(
+            payload
+                .semantic_note
+                .contains("BAI index was present but unusable")
+        );
+    }
+
+    #[test]
+    fn prefer_index_false_forces_scan_even_when_bai_is_present() {
+        let bam_path = write_temp_file(
+            "check-map-index-disabled",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 10, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        fs::write(&bai_path, build_bai_file(&[Some((99, 0))], None))
+            .expect("bai fixture should be written");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: false,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(!payload.index.present);
+        assert!(!payload.index.used);
+        assert_eq!(payload.summary.mapped_records_observed, Some(1));
+        assert_eq!(payload.summary.total_mapped_reads, None);
+        assert!(
+            payload
+                .semantic_note
+                .contains("Index preference was disabled")
+        );
     }
 
     #[test]
@@ -582,6 +720,84 @@ mod tests {
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
 
         assert!(matches!(payload.mapping_status, MappingStatus::Unmapped));
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert_eq!(payload.has_mapped_reads, Some(false));
+        assert_eq!(payload.summary.records_examined, Some(1));
+        assert_eq!(payload.summary.unmapped_records_observed, Some(1));
+        assert!(
+            payload
+                .semantic_note
+                .contains("No mapped alignments were observed in the scanned alignment stream")
+        );
+    }
+
+    #[test]
+    fn bounded_scan_caveat_before_later_mapped_record() {
+        let bam_path = write_temp_file(
+            "check-map-bounded-caveat",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(-1, -1, "read1", 4),
+                    build_light_record(0, 10, "read2", 0),
+                ],
+            ),
+        );
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: false,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(matches!(payload.mapping_status, MappingStatus::Unmapped));
+        assert_eq!(payload.has_mapped_reads, Some(false));
+        assert_eq!(payload.summary.records_examined, Some(1));
+        assert_eq!(payload.summary.mapped_records_observed, Some(0));
+        assert!(
+            payload
+                .semantic_note
+                .contains("No mapped alignments were observed in the bounded scan")
+        );
+    }
+
+    #[test]
+    fn full_scan_finds_mapped_record_after_bounded_window() {
+        let bam_path = write_temp_file(
+            "check-map-full-scan",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(-1, -1, "read1", 4),
+                    build_light_record(0, 10, "read2", 0),
+                ],
+            ),
+        );
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: true,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(matches!(payload.mapping_status, MappingStatus::Mapped));
+        assert_eq!(payload.has_mapped_reads, Some(true));
+        assert_eq!(payload.summary.records_examined, Some(2));
+        assert_eq!(payload.summary.mapped_records_observed, Some(1));
+        assert_eq!(payload.summary.unmapped_records_observed, Some(1));
     }
 }

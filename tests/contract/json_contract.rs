@@ -515,6 +515,8 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
         ("header_microbench", &header_schema, "verify"),
         ("header_microbench", &header_schema, "header"),
         ("scanner_microbench", &scanner_schema, "subsample_bam"),
+        ("scanner_microbench", &scanner_schema, "check_sort"),
+        ("scanner_microbench", &scanner_schema, "check_map"),
         ("fastq_microbench", &fastq_schema, "subsample_fastq"),
         ("fastq_microbench", &fastq_schema, "subsample_fastq_gz"),
     ] {

@@ -548,7 +548,9 @@ Assesses mapping state using the header, an index if usable, and otherwise a
 bounded or full alignment scan.
 
 Does prove:
-Mapping evidence from the sources explicitly reported.
+Mapping evidence from the sources explicitly reported. Index-derived results
+prove only usable index metadata was available; scan-derived results prove only
+what was observed in the examined alignment records.
 
 Does not prove:
 Full BAM validity or complete mapping semantics beyond the examined data.

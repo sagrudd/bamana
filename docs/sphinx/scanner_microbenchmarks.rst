@@ -40,8 +40,9 @@ The JSON result contains:
 * ``selective_field_extraction_throughput``: the same traversal plus selective
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
-* optional ``summary``, ``check_sort``, ``validate``, ``check_tag``, and
-  ``subsample_bam`` command timings when ``--bamana-bin`` is supplied
+* optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
+  ``check_tag``, and ``subsample_bam`` command timings when ``--bamana-bin``
+  is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command

@@ -103,6 +103,28 @@ validated.
 Command-level timing evidence for ``check_sort`` is captured through
 ``scanner_microbench --bamana-bin``.
 
+M6.5 Check Map Evidence
+-----------------------
+
+M6.5 hardens ``check_map`` as an index-preferred mapping-evidence command with
+a native scanner fallback. When a usable BAI sidecar supplies complete
+per-reference mapped/unmapped metadata, the command reports
+``evidence_source=index``, ``index.used=true``, and omits
+``summary.records_examined`` because alignment records were not scanned for the
+result.
+
+When an index is absent, disabled, unsupported, malformed, or missing required
+metadata, ``check_map`` falls back to ``BamScanner`` traversal and reports
+``evidence_source=scan``. Scan-derived output reports
+``summary.records_examined`` plus observed mapped, unmapped, per-reference, and
+inconsistent-record counts. Bounded scans remain bounded evidence: absence of a
+mapped read in the sampled window is not a full-file absence claim. Full-scan
+mode expands the scan to EOF, but ``check_map`` still does not perform full BAM
+structural validation.
+
+Command-level timing evidence for ``check_map`` is captured through
+``scanner_microbench --bamana-bin``.
+
 Guardrails
 ----------
 
