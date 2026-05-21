@@ -84,6 +84,25 @@ native BAM header checks and ``validate`` for deeper structural validation.
 Command-level timing evidence for ``check_eof`` is captured through
 ``bgzf_microbench --bamana-bin``.
 
+M6.4 Check Sort Evidence
+------------------------
+
+M6.4 hardens ``check_sort`` as a native scanner-backed ordering-evidence
+command. Production ``check_sort`` opens BAM input through ``BamScanner`` and
+uses ``BamRecordView`` fields for coordinates, flags, read names, and queryname
+ordering comparisons.
+
+The command distinguishes bounded and strict evidence. Bounded mode reports
+ordering evidence only for the sampled window. ``--strict`` continues
+sequential inspection until EOF or until the command has enough evidence for a
+stronger conclusion, but it is still not full BAM structural validation.
+Specialized header sort modes such as ``template-coordinate`` are preserved and
+reported as limited observed confirmation rather than overclaimed as fully
+validated.
+
+Command-level timing evidence for ``check_sort`` is captured through
+``scanner_microbench --bamana-bin``.
+
 Guardrails
 ----------
 

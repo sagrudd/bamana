@@ -2692,7 +2692,7 @@ Completion evidence:
 
 ### M6.4 Harden `check_sort` Scanner Evidence
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2711,7 +2711,21 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed production `src/commands/check_sort.rs` opens BAM input through
+  `BamScanner` and derives ordering evidence from `BamRecordView` coordinates,
+  flags, and read names;
+* strengthened tests for coordinate sort, queryname sort,
+  `template-coordinate` specialized sort reporting, unknown declared sort
+  order, bounded-scan caveats, and strict violation detection after a bounded
+  sample window;
+* documented that bounded `check_sort` evidence is scoped to examined records
+  and that `--strict` expands sequential inspection without becoming full BAM
+  structural validation;
+* added `check_sort` command smoke timing to `scanner_microbench --bamana-bin`
+  and updated its machine-readable schema and documentation;
+* recorded the M6.4 scanner-evidence boundary in the Milestone 6 roadmap and
+  Sphinx technical documentation;
+* confirmed the M6.4 smoke run reported `check_sort: 1/1`.
 
 ### M6.5 Harden `check_map` Index And Scanner Evidence
 

@@ -92,10 +92,12 @@ Milestone 6 inspection commands are governed as one public command wave:
 `validate`. `check_eof` reports EOF marker presence or absence only; it does
 not prove BAM header validity or alignment-record validity. `check_sort`,
 `check_map`, `summary`, and `check_tag` report bounded evidence unless their
-output states that a full scan reached EOF cleanly. `check_map` and `summary`
-keep index-derived evidence separate from scan-derived evidence. `validate`
-reports structural and internal-consistency checks, not biological correctness
-or external reference concordance.
+output states that a full scan reached EOF cleanly. `check_sort --strict`
+expands ordering inspection beyond the bounded sample window but still does not
+perform full BAM structural validation. `check_map` and `summary` keep
+index-derived evidence separate from scan-derived evidence. `validate` reports
+structural and internal-consistency checks, not biological correctness or
+external reference concordance.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

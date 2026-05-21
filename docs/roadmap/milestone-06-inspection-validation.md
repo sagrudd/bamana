@@ -174,3 +174,27 @@ Additional hardening records present EOF, missing EOF, too-short tail, non-BGZF
 BAM input, and invalid-BAM-payload-with-present-EOF cases. Command-level smoke
 timing remains available through `bgzf_microbench --bamana-bin`, which emits a
 `check_eof` command timing row.
+
+## M6.4 `check_sort` Scanner Evidence
+
+M6.4 hardens `check_sort` as a native scanner-backed ordering-evidence command.
+The production command path remains:
+
+1. shallow path probing;
+2. BGZF-backed BAM container confirmation;
+3. native BAM header parsing through `BamScanner::open`;
+4. record-order evidence from `BamRecordView` coordinates, flags, and read
+   names.
+
+The task preserves the distinction between bounded and strict evidence.
+Bounded mode reports only the sampled window. `--strict` continues sequential
+inspection until EOF or a stronger conclusion, but it still does not perform
+full BAM structural validation. Specialized sort modes are preserved from the
+header and reported with limited observed confirmation when full specialized
+confirmation is outside the current slice.
+
+Additional hardening records coordinate sort, queryname sort, specialized
+template-coordinate sort, unknown declared sort order, bounded-scan caveats,
+and strict violation detection after a bounded sample window. Command-level
+smoke timing is available through `scanner_microbench --bamana-bin`, which now
+emits a `check_sort` command timing row.

@@ -174,6 +174,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     args.iterations,
                 )?,
                 measure_command(
+                    "check_sort",
+                    bamana_bin,
+                    &["check_sort", "--bam", fixture_arg(&fixture), "--strict"],
+                    args.iterations,
+                )?,
+                measure_command(
                     "validate",
                     bamana_bin,
                     &["validate", "--bam", fixture_arg(&fixture)],
@@ -225,7 +231,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, validate, check_tag, and BAM subsample dry-run when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, validate, check_tag, and BAM subsample dry-run when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {

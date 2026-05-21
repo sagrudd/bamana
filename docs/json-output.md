@@ -100,6 +100,8 @@ Key concepts:
 * `observed_sort.first_violation` records the first detected ordering problem
 * `confidence` and `semantic_note` keep bounded evidence separate from full
   validation
+* `--strict` expands the sequential inspection scope, but `check_sort` still
+  does not perform full BAM structural validation
 
 ## `check_map`
 

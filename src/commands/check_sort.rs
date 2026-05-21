@@ -705,6 +705,82 @@ mod tests {
     }
 
     #[test]
+    fn bounded_scan_reports_scope_before_later_violation() {
+        let header_text = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n";
+        let bytes = build_bam_file_with_header_and_records(
+            header_text,
+            &[("chr1", 1000)],
+            &[
+                build_light_record(0, 10, "read1", 0),
+                build_light_record(0, 20, "read2", 0),
+                build_light_record(0, 5, "read3", 0),
+            ],
+        );
+        let path = write_temp_file("check-sort-bounded-caveat", "bam", &bytes);
+
+        let result = run(CheckSortRequest {
+            bam: path.clone(),
+            sample_records: 2,
+            strict: false,
+        })
+        .expect("bounded check_sort should succeed");
+
+        std::fs::remove_file(path).expect("fixture should be removed");
+        assert!(matches!(
+            result.observed_sort.order,
+            ObservedOrder::Coordinate
+        ));
+        assert_eq!(result.observed_sort.records_examined, 2);
+        assert_eq!(result.observed_sort.appears_sorted, Some(true));
+        assert!(result.observed_sort.first_violation.is_none());
+        assert!(
+            result
+                .semantic_note
+                .contains("bounded scan of alignment records")
+        );
+    }
+
+    #[test]
+    fn strict_scan_detects_violation_after_bounded_window() {
+        let header_text = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n";
+        let bytes = build_bam_file_with_header_and_records(
+            header_text,
+            &[("chr1", 1000)],
+            &[
+                build_light_record(0, 10, "read1", 0),
+                build_light_record(0, 20, "read2", 0),
+                build_light_record(0, 5, "read3", 0),
+            ],
+        );
+        let path = write_temp_file("check-sort-strict-violation", "bam", &bytes);
+
+        let result = run(CheckSortRequest {
+            bam: path.clone(),
+            sample_records: 2,
+            strict: true,
+        })
+        .expect("strict check_sort should inspect past the bounded window");
+
+        std::fs::remove_file(path).expect("fixture should be removed");
+        assert!(matches!(
+            result.observed_sort.order,
+            ObservedOrder::Unsorted
+        ));
+        assert_eq!(result.observed_sort.records_examined, 3);
+        assert_eq!(result.observed_sort.appears_sorted, Some(false));
+        assert_eq!(
+            result
+                .observed_sort
+                .first_violation
+                .as_ref()
+                .map(|violation| violation.record_index),
+            Some(3)
+        );
+        assert_eq!(result.agreement.header_matches_observation, Some(false));
+        assert!(result.semantic_note.contains("sequential inspection"));
+    }
+
+    #[test]
     fn detects_unsorted_coordinate_violation() {
         let header_text = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n";
         let bytes = build_bam_file_with_header_and_records(
@@ -763,5 +839,68 @@ mod tests {
             result.observed_sort.sub_order.as_deref(),
             Some("queryname:natural")
         );
+    }
+
+    #[test]
+    fn specialized_template_coordinate_sort_remains_indeterminate() {
+        let header_text =
+            "@HD\tVN:1.6\tSO:coordinate\tSS:template-coordinate\n@SQ\tSN:chr1\tLN:1000\n";
+        let bytes = build_bam_file_with_header_and_records(
+            header_text,
+            &[("chr1", 1000)],
+            &[
+                build_light_record(0, 10, "read1", 0),
+                build_light_record(0, 20, "read2", 0),
+            ],
+        );
+        let path = write_temp_file("check-sort-specialized-template", "bam", &bytes);
+
+        let result = run(CheckSortRequest {
+            bam: path.clone(),
+            sample_records: 10,
+            strict: false,
+        })
+        .expect("specialized sort should remain reportable");
+
+        std::fs::remove_file(path).expect("fixture should be removed");
+        assert!(matches!(
+            result.observed_sort.order,
+            ObservedOrder::Indeterminate
+        ));
+        assert_eq!(
+            result.observed_sort.sub_order.as_deref(),
+            Some("template-coordinate")
+        );
+        assert_eq!(result.observed_sort.appears_sorted, None);
+        assert!(result.semantic_note.contains("specialized sort mode"));
+    }
+
+    #[test]
+    fn unknown_declared_sort_order_remains_indeterminate() {
+        let header_text = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\n";
+        let bytes = build_bam_file_with_header_and_records(
+            header_text,
+            &[("chr1", 1000)],
+            &[
+                build_light_record(0, 10, "read1", 0),
+                build_light_record(0, 20, "read2", 0),
+            ],
+        );
+        let path = write_temp_file("check-sort-unknown", "bam", &bytes);
+
+        let result = run(CheckSortRequest {
+            bam: path.clone(),
+            sample_records: 10,
+            strict: false,
+        })
+        .expect("unknown sort order should still produce scoped evidence");
+
+        std::fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(result.declared_sort.so, None);
+        assert!(matches!(
+            result.observed_sort.order,
+            ObservedOrder::Indeterminate
+        ));
+        assert_eq!(result.agreement.header_matches_observation, None);
     }
 }
