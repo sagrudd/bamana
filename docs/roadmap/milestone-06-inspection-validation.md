@@ -227,3 +227,30 @@ caveats, and full-scan observation after a bounded window would have missed a
 mapped record. Command-level smoke timing is available through
 `scanner_microbench --bamana-bin`, which now emits a `check_map` command timing
 row.
+
+## M6.6 `summary` Scanner Evidence
+
+M6.6 hardens `summary` as a native operational-overview command. The production
+command path remains:
+
+1. shallow BAM/BGZF probing;
+2. native BAM header opening through `BamScanner::open`;
+3. optional adjacent-index discovery and BAI metadata parsing;
+4. scanner traversal through `SummaryAccumulator` and `BamRecordView` for
+   record counts, mapping observations, MAPQ, flags, and anomalies;
+5. payload construction that keeps index-derived totals separate from
+   scan-derived operational counts.
+
+Bounded output reports `mode=bounded_scan`, `evidence.full_file_scanned=false`,
+`fractions_observed`, and no `counts.records_total_known` value. Full-scan
+output reports `mode=full_scan`, `evidence.full_file_scanned=true`,
+`counts.records_total_known`, and full-file fractions only after EOF is reached
+cleanly. Header-only BAM bodies are handled as valid zero-record operational
+evidence, and malformed alignment records return an indeterminate failure
+payload rather than a misleading partial summary.
+
+Additional hardening records header-only summaries, BAI-assisted summaries,
+bounded summaries, full-scan summaries, malformed record failures, and
+index-derived totals kept separate from scanner counts. Command-level smoke
+timing remains available through `scanner_microbench --bamana-bin`, which emits
+a `summary` command timing row.

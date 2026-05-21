@@ -128,8 +128,11 @@ Key concepts:
 
 * `mode` distinguishes `bounded_scan`, `full_scan`, and `indeterminate`
 * `evidence.full_file_scanned` controls whether full-file claims are supported
+* `counts.records_total_known` is present only when the scan reaches EOF
 * `index_derived` keeps BAI-derived totals separate from scan-derived counts
 * `fractions_observed` is scoped to examined records when the scan is bounded
+* malformed-record failures can return an `indeterminate` payload because no
+  stable operational summary was completed
 
 ## `check_tag`
 

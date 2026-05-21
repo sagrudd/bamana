@@ -584,11 +584,56 @@ fn fraction(value: u64, denominator: f64) -> Option<f64> {
 mod tests {
     use std::fs;
 
-    use crate::bgzf::test_support::{
-        build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+    use crate::{
+        bam::index::test_support::build_bai_file,
+        bgzf::{
+            BGZF_EOF_MARKER,
+            test_support::{
+                build_bam_file_with_header, build_bam_file_with_header_and_records,
+                build_bgzf_member, build_light_record, write_temp_file,
+            },
+        },
     };
 
-    use super::{MappingStatus, SummaryMode, SummaryRequest, run};
+    use super::{ConfidenceLevel, MappingStatus, SummaryMode, SummaryRequest, run};
+
+    #[test]
+    fn header_only_full_summary_reports_empty_body_evidence() {
+        let bam_path = write_temp_file(
+            "summary-header-only",
+            "bam",
+            &build_bam_file_with_header("@SQ\tSN:chr1\tLN:1000\n", &[("chr1", 1000)]),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: true,
+            prefer_index: true,
+            include_mapq_hist: true,
+            include_flags: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        assert!(matches!(payload.mode, SummaryMode::FullScan));
+        assert!(matches!(payload.confidence, Some(ConfidenceLevel::Low)));
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(evidence.header_used);
+        assert!(!evidence.index_used);
+        assert_eq!(evidence.records_scanned, 0);
+        assert!(evidence.full_file_scanned);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_examined, 0);
+        assert_eq!(counts.records_total_known, Some(0));
+        assert_eq!(counts.mapped_records, 0);
+        assert_eq!(counts.unmapped_records, 0);
+        assert!(payload.fractions.is_some());
+        assert!(payload.fractions_observed.is_none());
+        assert!(payload.index_derived.is_none());
+    }
 
     #[test]
     fn bounded_summary_uses_scanner_records() {
@@ -626,9 +671,18 @@ mod tests {
         assert_eq!(counts.records_examined, 1);
         assert_eq!(counts.mapped_records, 1);
         assert_eq!(counts.unmapped_records, 0);
+        assert_eq!(counts.records_total_known, None);
+        assert!(payload.fractions.is_none());
+        assert!(payload.fractions_observed.is_some());
         let mapping = payload.mapping.expect("mapping summary should be present");
         assert!(matches!(mapping.status, MappingStatus::Mapped));
         assert!(payload.flag_categories.is_some());
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("bounded scan")
+        );
     }
 
     #[test]
@@ -667,6 +721,101 @@ mod tests {
         assert_eq!(counts.records_total_known, Some(2));
         assert_eq!(counts.mapped_records, 1);
         assert_eq!(counts.unmapped_records, 1);
+        assert!(payload.fractions.is_some());
+        assert!(payload.fractions_observed.is_none());
         assert!(payload.flag_categories.is_none());
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("full alignment-record scan")
+        );
+    }
+
+    #[test]
+    fn index_assisted_summary_keeps_index_totals_separate_from_scan_counts() {
+        let bam_path = write_temp_file(
+            "summary-index-assisted",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 10, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        fs::write(&bai_path, build_bai_file(&[Some((7, 3))], Some(2)))
+            .expect("bai fixture should be written");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(evidence.index_used);
+        assert_eq!(evidence.records_scanned, 1);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_examined, 1);
+        assert_eq!(counts.mapped_records, 1);
+        let index_derived = payload
+            .index_derived
+            .expect("index-derived summary should be present");
+        assert!(index_derived.used);
+        assert_eq!(index_derived.total_mapped_reads, Some(7));
+        assert_eq!(index_derived.total_unmapped_reads, Some(5));
+        let references = payload.references.expect("references should be present");
+        assert_eq!(references[0].mapped_reads, Some(7));
+        assert_eq!(references[0].unmapped_reads, Some(3));
+        assert_eq!(references[0].observed_mapped, Some(true));
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("header/index metadata")
+        );
+    }
+
+    #[test]
+    fn malformed_record_returns_indeterminate_failure_payload() {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&0_i32.to_le_bytes());
+        payload.extend_from_slice(&1_i32.to_le_bytes());
+        payload.extend_from_slice(&5_i32.to_le_bytes());
+        payload.extend_from_slice(b"chr1\0");
+        payload.extend_from_slice(&1000_i32.to_le_bytes());
+        payload.extend_from_slice(&(-1_i32).to_le_bytes());
+
+        let mut bytes = build_bgzf_member(&payload);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let bam_path = write_temp_file("summary-malformed-record", "bam", &bytes);
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: false,
+            include_mapq_hist: false,
+            include_flags: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        let payload = response.data.expect("failure payload should be present");
+        assert!(matches!(payload.mode, SummaryMode::Indeterminate));
+        assert!(payload.evidence.is_none());
+        let error = response.error.expect("summary error should be present");
+        assert_eq!(error.code, "parse_uncertainty");
     }
 }

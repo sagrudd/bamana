@@ -97,9 +97,11 @@ expands ordering inspection beyond the bounded sample window but still does not
 perform full BAM structural validation. `check_map` and `summary` keep
 index-derived evidence separate from scan-derived evidence. For `check_map`,
 index-derived results describe usable BAI mapped/unmapped metadata; scan-derived
-results describe only the examined alignment records. `validate` reports
-structural and internal-consistency checks, not biological correctness or
-external reference concordance.
+results describe only the examined alignment records. For `summary`, bounded
+output reports observed operational metrics only; full-file totals require
+`evidence.full_file_scanned: true` and are not BAM structural validation.
+`validate` reports structural and internal-consistency checks, not biological
+correctness or external reference concordance.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

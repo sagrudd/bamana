@@ -618,10 +618,13 @@ Produces a fast operational BAM overview from header metadata, optional index
 signals, and bounded or full record scans.
 
 Does prove:
-Only the metrics that correspond to the reported evidence mode.
+Only the metrics that correspond to the reported evidence mode. Bounded scan
+metrics describe examined records; index-derived totals remain separate from
+scan-derived counts.
 
 Does not prove:
-Full-file totals when the command explicitly reports bounded scan evidence.
+Full-file totals when the command explicitly reports bounded scan evidence, or
+full BAM structural validity.
 
 Key output concepts:
 `mode`, `evidence`, `counts`, `fractions`, `mapq`, `mapping`, `anomalies`,

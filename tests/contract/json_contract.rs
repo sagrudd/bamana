@@ -514,6 +514,7 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
     for (schema_name, schema, command) in [
         ("header_microbench", &header_schema, "verify"),
         ("header_microbench", &header_schema, "header"),
+        ("scanner_microbench", &scanner_schema, "summary"),
         ("scanner_microbench", &scanner_schema, "subsample_bam"),
         ("scanner_microbench", &scanner_schema, "check_sort"),
         ("scanner_microbench", &scanner_schema, "check_map"),

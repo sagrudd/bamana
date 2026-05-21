@@ -2764,7 +2764,7 @@ Completion evidence:
 
 ### M6.6 Harden `summary` Scanner Evidence
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2784,7 +2784,18 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/commands/summary.rs`: production behavior opens BAM via
+  `BamScanner`, uses native header metadata, optionally parses adjacent BAI
+  metadata, and builds scan-derived counts through `SummaryAccumulator`;
+* strengthened command tests for header-only BAM summaries, bounded scanner
+  evidence, full scanner evidence, BAI-assisted summaries, malformed alignment
+  record failures, and separation of index-derived totals from scan-derived
+  counts;
+* documented that `summary` is operational evidence rather than full BAM
+  validation in CLI, JSON-output, Sphinx, and roadmap sources;
+* confirmed `scanner_microbench --bamana-bin` already emits a `summary`
+  command timing row and added a contract guard for that row;
+* confirmed M6.6 smoke run reported `summary: 1/1`.
 
 ### M6.7 Harden `check_tag` Aux Traversal Evidence
 

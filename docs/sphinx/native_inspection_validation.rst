@@ -125,6 +125,29 @@ structural validation.
 Command-level timing evidence for ``check_map`` is captured through
 ``scanner_microbench --bamana-bin``.
 
+M6.6 Summary Evidence
+---------------------
+
+M6.6 hardens ``summary`` as an operational overview command built from native
+header metadata, optional BAI-derived totals, and native ``BamScanner`` record
+evidence. BAI metadata is reported in ``index_derived`` and reference
+mapped/unmapped fields, but it remains separate from scan-derived counts and
+flag categories.
+
+Bounded summaries report ``mode=bounded_scan`` and place fractions in
+``fractions_observed``. ``counts.records_total_known`` and full-file fractions
+are emitted only when scanner traversal reaches EOF cleanly. Header-only BAM
+bodies are valid operational evidence with zero scanned records and low
+confidence. Malformed record traversal returns an indeterminate failure payload
+rather than a partial summary.
+
+``summary`` is not full BAM structural validation. It is a fast operational
+overview; use ``validate`` for structural record validation and interpret
+bounded summaries as sampled evidence only.
+
+Command-level timing evidence for ``summary`` is captured through
+``scanner_microbench --bamana-bin``.
+
 Guardrails
 ----------
 
