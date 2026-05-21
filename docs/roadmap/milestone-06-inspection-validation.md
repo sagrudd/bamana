@@ -1,6 +1,6 @@
 # Milestone 6: Native Inspection And Validation Commands
 
-Status: active as of 2026-05-21.
+Status: complete as of 2026-05-21.
 
 ## Technical Goal
 
@@ -329,3 +329,40 @@ M6 benchmark notes are interpretation guardrails, not performance claims. They
 distinguish native substrate timings from command timings, bounded/full scan
 choices from index-derived evidence, and smoke-runnable commands from
 comparator parity against external tools.
+
+## M6.10 Closeout
+
+Milestone 6 closed on 2026-05-21 after M6.1 through M6.10 completed. The
+closeout confirms that Bamana's first operational BAM inspection and validation
+wave is governed, documented, scanner-backed where applicable, and protected by
+dependency-boundary tests.
+
+Closed command surfaces:
+
+* `check_eof` remains a narrow native BGZF EOF-marker inspection command;
+* `check_sort` reports bounded or strict scanner-derived ordering evidence;
+* `check_map` preserves index-preferred mapping evidence while keeping scanner
+  fallback evidence distinct;
+* `summary` reports operational header/index/scanner evidence without claiming
+  full BAM validation;
+* `check_tag` reports scanner-owned auxiliary traversal evidence and keeps
+  bounded non-observation distinct from full-scan absence;
+* `validate` reports structural and internal-consistency checks without
+  claiming biological correctness, external reference concordance, or complete
+  optional-field semantic validation.
+
+Closeout verification:
+
+* `cargo test`
+* `cargo test --test contract`
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`
+* `cargo build --bin bamana --bin bgzf_microbench --bin scanner_microbench`
+* `bgzf_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana`
+  reported `verify:1/1, check_eof:1/1`
+* `scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `summary:1/1, check_sort:1/1, check_map:1/1,
+  validate:1/1, check_tag:1/1, subsample_bam:1/1`
+
+Production direct `noodles` usage remains isolated to documented CRAM
+compatibility. Tests, fixtures, compatibility checks, and oracle-style
+validation remain allowed surfaces.

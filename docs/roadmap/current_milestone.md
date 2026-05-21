@@ -2,14 +2,17 @@
 
 ## Milestone Status
 
-**Milestone 6: Native Inspection And Validation Commands** is active as of
-2026-05-21.
+**Milestone 6: Native Inspection And Validation Commands** is complete as of
+2026-05-21. **Milestone 7: Native Mutation, Remediation, And Forensics
+Commands** is the next active milestone target.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
-`noodles`** closed on 2026-05-20.
+`noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
+completed on 2026-05-21.
 
 See:
 
+* [milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * [milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
@@ -21,11 +24,29 @@ BAM header parsing and deterministic header serialization. Milestone 3
 completed selective native BAM record scanning and migrated the first
 scanner-compatible BAM command consumers. Milestone 4 completed the native
 FASTQ and FASTQ.GZ parser/writer core. Milestone 5 completed the proof-command
-migration for `verify`, `header`, and `subsample`.
+migration for `verify`, `header`, and `subsample`. Milestone 6 completed the
+native inspection and validation hardening wave for `check_eof`, `check_sort`,
+`check_map`, `summary`, `check_tag`, and `validate`.
 
-## Milestone 6 Scope
+## Milestone 7 Scope
 
-Milestone 6 hardens the first operational BAM inspection and validation command
+Milestone 7 hardens native mutation, conservative remediation, and provenance
+inspection command paths:
+
+* `reheader`
+* `annotate_rg`
+* `inspect_duplication`
+* `deduplicate`
+* `forensic_inspect`
+
+The milestone is about native mutation safety, conservative remediation
+boundaries, provenance evidence, command contracts, benchmark smoke coverage,
+and dependency-boundary protection for these higher-blast-radius command
+paths.
+
+## Milestone 6 Closeout
+
+Milestone 6 hardened the first operational BAM inspection and validation command
 wave:
 
 * `check_eof`
@@ -35,41 +56,25 @@ wave:
 * `check_tag`
 * `validate`
 
-The milestone is about bounded evidence, full-scan claims, index-versus-scan
+The milestone covered bounded evidence, full-scan claims, index-versus-scan
 distinctions, structural validation caveats, command contracts, benchmark smoke
 coverage, and dependency-boundary protection for these command paths.
 
-## Baseline State
+Closeout evidence:
 
-Known present pieces:
-
-* `check_eof` uses the native BGZF EOF-marker detection path;
-* `check_sort` uses `BamScanner` and scanner-owned record-view helpers for
-  ordering evidence;
-* `check_map` prefers usable BAI-derived mapping summaries and otherwise falls
-  back to `BamScanner` traversal;
-* `summary` combines header metadata, optional index-derived totals, and
-  bounded or full `BamScanner` record scans;
-* `check_tag` uses `BamScanner` plus native aux traversal helpers for selected
-  tag lookup;
-* `validate` uses the native validation substrate built on header parsing,
-  `BamScanner`, and `BamRecordView`;
-* existing schemas, examples, CLI docs, and README guidance cover the six M6
-  commands;
-* dependency-boundary tests already protect the scanner substrate and selected
-  migrated hot paths from direct production `noodles` imports.
-
-Known M6 hardening work:
-
-* freeze the six command contracts and examples as one governed M6 wave;
-* sharpen bounded versus full-scan language for absence and validity claims;
-* keep index-derived and scan-derived mapping evidence distinct;
-* make `validate` caveats explicit enough to avoid biological,
-  reference-level, or optional-field semantic overclaiming;
-* add command-level benchmark or smoke benchmark evidence for the complete M6
-  command set;
-* strengthen dependency-boundary tests so the six M6 command files are named as
-  one protected milestone set.
+* command contracts, schemas, examples, CLI docs, JSON-output docs, README, and
+  Sphinx notes cover the six M6 commands;
+* bounded versus full-scan evidence is documented for absence and validity
+  claims;
+* index-derived and scan-derived mapping/summary evidence is distinct;
+* `validate` explicitly remains structural/internal-consistency validation and
+  does not claim biological correctness, external reference concordance, or
+  complete optional-field semantic validation;
+* `bgzf_microbench --bamana-bin` emits `check_eof` command smoke timing;
+* `scanner_microbench --bamana-bin` emits `check_sort`, `check_map`,
+  `summary`, `check_tag`, and `validate` command smoke timings;
+* dependency-boundary tests name the six M6 command paths and keep them free of
+  direct production `noodles` imports.
 
 ## Command-Surface Boundary
 

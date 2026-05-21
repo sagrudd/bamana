@@ -80,7 +80,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 6: Native Inspection And Validation Commands
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * goal: harden native inspection and validation command paths after the proof
   command migration
@@ -89,7 +89,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * goal: harden native mutation, conservative remediation, and provenance
   inspection command paths

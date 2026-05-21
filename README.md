@@ -415,10 +415,18 @@ reader/writer APIs for raw-read inputs. Command contracts remained stable,
 proof-command benchmark smoke evidence is recorded, and direct production
 `noodles` usage remains isolated to CRAM compatibility.
 
-Milestone 6 is now the active native-core milestone. It focuses on hardening
-the first operational BAM inspection and validation command wave:
+Milestone 6 is complete. Bamana's first operational BAM inspection and
+validation command wave is now hardened on native substrates:
 `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
-`validate`.
+`validate`. The closeout includes governed contracts and documentation,
+bounded/full-scan evidence language, index-versus-scan distinctions, structural
+validation caveats, command smoke benchmark evidence, and explicit
+dependency-boundary protection for the M6 command paths.
+
+Milestone 7 is now the next active native-core milestone target. It focuses on
+native mutation, conservative remediation, and provenance-inspection command
+paths: `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+`forensic_inspect`.
 
 ## Specification Layer
 

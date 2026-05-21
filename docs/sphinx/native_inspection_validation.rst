@@ -1,7 +1,7 @@
 Native Inspection And Validation
 ================================
 
-Milestone 6 is active. It uses the completed native BGZF, BAM header, BAM
+Milestone 6 is complete. It used the completed native BGZF, BAM header, BAM
 scanner, and proof-command migration substrate to harden Bamana's first
 operational BAM inspection and validation command wave.
 
@@ -199,23 +199,27 @@ Command-level timing evidence for ``validate`` is captured through
 Guardrails
 ----------
 
-Contract tests already protect the scanner substrate and selected migrated hot
-paths from direct production ``noodles`` imports. Later M6 tasks should name
-the six M6 command files as one protected milestone set.
+Contract tests protect the scanner substrate, selected migrated hot paths, and
+the six M6 command paths from direct production ``noodles`` imports.
 
 ``benchmark``, ``fastq``, and ``unmap`` remain public contract commands. Their
 schemas, examples, and CLI documentation stay governed while M6 focuses on the
 inspection and validation command wave.
 
-Remaining M6 Work
------------------
+M6.10 Closeout
+--------------
 
-M6 still needs:
+M6.10 closed the milestone after all command-specific hardening tasks and
+milestone guardrails completed. Closeout evidence includes:
 
-* a milestone-level contract and example freeze for all six commands;
-* fixture evidence for bounded scans, full scans, absent evidence,
-  malformed-input handling, and index-versus-scan distinctions;
-* explicit ``validate`` caveats that prevent structural validation from
-  overclaiming biological or reference-level correctness;
-* command-level smoke benchmark evidence for the full M6 command set;
-* dependency-boundary tests that name the full M6 command set.
+* governed schemas, examples, CLI contracts, JSON-output docs, README text, and
+  Sphinx notes for ``check_eof``, ``check_sort``, ``check_map``, ``summary``,
+  ``check_tag``, and ``validate``
+* bounded versus full-scan evidence coverage for ordering, mapping, summaries,
+  tag absence, and structural validation
+* index-derived versus scan-derived evidence boundaries for ``check_map`` and
+  ``summary``
+* explicit structural-only caveats for ``validate``
+* command smoke timing rows in ``bgzf_microbench --bamana-bin`` and
+  ``scanner_microbench --bamana-bin``
+* dependency-boundary tests that name the full M6 command set

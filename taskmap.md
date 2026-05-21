@@ -2497,11 +2497,11 @@ benchmarked, and protected from production `noodles` hot-path regressions.
 
 ## Milestone 6 Current State
 
-Status: active as of 2026-05-21. Milestone 6 became active after Milestone 5
+Status: complete as of 2026-05-21. Milestone 6 became active after Milestone 5
 closed with proof-command migration, dependency-boundary, and benchmark
-conventions recorded.
+conventions recorded, and closed after M6.1 through M6.10 completed.
 
-Known present pieces:
+Completed pieces:
 
 * `check_eof` already uses the native BGZF EOF-marker detection path;
 * `check_sort` already uses `BamScanner` and scanner-owned field helpers for
@@ -2516,21 +2516,15 @@ Known present pieces:
 * scanner malformed-record tests and dependency-boundary tests already protect
   the scanner substrate and selected migrated hot paths;
 * `spec/cli/commands.md`, `docs/cli.md`, README, JSON schemas, and success and
-  failure examples already describe the six M6 commands at a baseline level.
-
-Known gaps:
-
-* the inspection command set has not yet been audited as one governed M6 wave;
-* command contracts and examples need a fresh pass for bounded versus full-scan
-  claims, index-derived versus scan-derived evidence, and validation caveats;
-* `validate` needs explicit M6 evidence that it remains structural and does
-  not overclaim biological, reference-level, or optional-field semantic
-  correctness;
-* command-level benchmark smoke evidence is not yet recorded for the full M6
+  failure examples describe the six M6 commands as governed public surfaces;
+* bounded versus full-scan claims, index-derived versus scan-derived evidence,
+  and validation caveats are documented and test-covered;
+* `validate` is documented and tested as structural/internal-consistency
+  validation only;
+* command-level benchmark smoke evidence is recorded for the full M6
   inspection wave;
-* dependency-boundary tests do not yet name `check_eof`, `check_sort`,
-  `check_map`, `summary`, `check_tag`, and `validate` as one protected
-  milestone set.
+* dependency-boundary tests name `check_eof`, `check_sort`, `check_map`,
+  `summary`, `check_tag`, and `validate` as one protected milestone set.
 
 Milestone 6 closeout evidence must include:
 
@@ -2912,7 +2906,7 @@ Completion evidence:
 
 ### M6.10 Close Milestone 6
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2938,7 +2932,25 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* ran `cargo test`;
+* ran `cargo test --test contract`;
+* ran `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`;
+* ran `cargo build --bin bamana --bin bgzf_microbench --bin
+  scanner_microbench`;
+* ran M6 command smoke profiles:
+  `bgzf_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `verify:1/1, check_eof:1/1`, and
+  `scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `summary:1/1, check_sort:1/1`,
+  `check_map:1/1`, `validate:1/1`, `check_tag:1/1`, and
+  `subsample_bam:1/1`;
+* updated Milestone 6 roadmap, current milestone notes, README status text,
+  Sphinx technical notes, and this task map with final Milestone 6 completion
+  evidence;
+* confirmed production direct `noodles` usage remains isolated to documented
+  CRAM compatibility through contract tests;
+* Milestone 6 is complete as of 2026-05-21, and Milestone 7 is the next active
+  milestone target.
 
 ## Milestone 7 Definition
 
