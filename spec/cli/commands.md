@@ -640,10 +640,12 @@ Traverses BAM auxiliary fields just deeply enough to establish observed tag
 presence, bounded non-observation, or full-scan absence.
 
 Does prove:
-Presence in examined records, or absence across a successful full scan.
+Presence in examined records, type-filtered presence when `--require-type` is
+used, or absence across a successful full scan.
 
 Does not prove:
-Full-file absence in bounded mode.
+Full-file absence in bounded mode, duplicate tag prevalence inside a record, or
+general auxiliary-tag value semantics beyond supported traversal.
 
 Key output concepts:
 `tag`, `required_type`, `mode`, `result`, `records_examined`,

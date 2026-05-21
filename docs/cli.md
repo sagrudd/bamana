@@ -100,6 +100,9 @@ index-derived results describe usable BAI mapped/unmapped metadata; scan-derived
 results describe only the examined alignment records. For `summary`, bounded
 output reports observed operational metrics only; full-file totals require
 `evidence.full_file_scanned: true` and are not BAM structural validation.
+`check_tag` reports scanner-owned auxiliary traversal evidence only: bounded
+non-observation is not full-file absence, duplicate tags are counted at the
+record level, and unsupported aux shapes are structured traversal failures.
 `validate` reports structural and internal-consistency checks, not biological
 correctness or external reference concordance.
 

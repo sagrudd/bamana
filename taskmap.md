@@ -2799,7 +2799,7 @@ Completion evidence:
 
 ### M6.7 Harden `check_tag` Aux Traversal Evidence
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2819,7 +2819,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/commands/check_tag.rs`: production behavior opens BAM via
+  `BamScanner`, traverses borrowed `BamRecordView` auxiliary bytes through
+  `record_aux_contains_tag`, and returns structured indeterminate payloads for
+  aux traversal uncertainty;
+* strengthened command tests for present tags, bounded absent tags,
+  complete-scan absent tags, type-filter mismatches, duplicate tag records,
+  malformed aux payloads, and unsupported B-array shapes;
+* documented the `check_tag` evidence boundary in CLI, JSON-output, Sphinx, and
+  roadmap sources, including record-level hit counting and limited tag value
+  semantics;
+* confirmed `scanner_microbench --bamana-bin` already emits a `check_tag`
+  command timing row and added a contract guard for that row;
+* confirmed M6.7 smoke run reported `check_tag: 1/1`.
 
 ### M6.8 Harden `validate` Structural Validation Boundary
 

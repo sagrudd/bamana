@@ -254,3 +254,28 @@ bounded summaries, full-scan summaries, malformed record failures, and
 index-derived totals kept separate from scanner counts. Command-level smoke
 timing remains available through `scanner_microbench --bamana-bin`, which emits
 a `summary` command timing row.
+
+## M6.7 `check_tag` Aux Traversal Evidence
+
+M6.7 hardens `check_tag` as a native scanner-owned auxiliary traversal command.
+The production command path remains:
+
+1. shallow BAM/BGZF probing;
+2. native BAM header opening through `BamScanner::open`;
+3. record traversal through borrowed `BamRecordView` values;
+4. auxiliary traversal through `record_aux_contains_tag`;
+5. result construction that distinguishes observed presence, bounded
+   non-observation, complete-scan absence, and indeterminate traversal.
+
+The task preserves the command's evidence boundary. `records_with_tag` counts
+records with at least one matching tag rather than duplicate occurrences inside
+one record. `--require-type` filters matches by BAM auxiliary type code.
+Malformed auxiliary payloads and unsupported B-array shapes remain structured
+`tag_parse_uncertainty` failures with an indeterminate payload, not successful
+absence claims.
+
+Additional hardening records present tags, bounded absent tags, complete-scan
+absent tags, type-filter mismatches, duplicate tag records, malformed aux
+payloads, and unsupported B-array shapes. Command-level smoke timing remains
+available through `scanner_microbench --bamana-bin`, which emits a `check_tag`
+command timing row.

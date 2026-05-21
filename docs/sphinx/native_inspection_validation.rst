@@ -148,6 +148,29 @@ bounded summaries as sampled evidence only.
 Command-level timing evidence for ``summary`` is captured through
 ``scanner_microbench --bamana-bin``.
 
+M6.7 Check Tag Aux Evidence
+---------------------------
+
+M6.7 hardens ``check_tag`` as a native scanner-owned auxiliary traversal
+command. Production ``check_tag`` opens BAM input through ``BamScanner`` and
+uses ``record_aux_contains_tag`` over borrowed ``BamRecordView`` auxiliary bytes
+for selected tag lookup and optional BAM auxiliary type filtering.
+
+The command distinguishes presence, bounded non-observation, complete-scan
+absence, and indeterminate traversal. ``records_with_tag`` counts records with
+at least one matching tag, not duplicate occurrences inside one record.
+Malformed auxiliary payloads and unsupported B-array shapes return structured
+``tag_parse_uncertainty`` failures with an indeterminate payload instead of
+successful absence claims.
+
+``check_tag`` does not validate general tag value semantics. It reports
+traversal and supported extraction evidence for the requested tag/type only.
+Bounded non-observation is sampled evidence and must not be interpreted as
+full-file absence.
+
+Command-level timing evidence for ``check_tag`` is captured through
+``scanner_microbench --bamana-bin``.
+
 Guardrails
 ----------
 

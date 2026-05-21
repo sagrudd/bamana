@@ -326,7 +326,7 @@ mod tests {
 
     use crate::bgzf::test_support::{build_bam_file_with_header_and_records, write_temp_file};
 
-    use super::{CheckTagMode, CheckTagRequest, CheckTagResult, run};
+    use super::{CheckTagMode, CheckTagRequest, CheckTagResult, ConfidenceLevel, run};
 
     #[test]
     fn bounded_check_tag_uses_scanner_aux_view() {
@@ -362,6 +362,7 @@ mod tests {
         assert_eq!(payload.records_examined, 1);
         assert_eq!(payload.records_with_tag, 1);
         assert!(!payload.full_file_scanned);
+        assert!(matches!(payload.confidence, Some(ConfidenceLevel::High)));
     }
 
     #[test]
@@ -395,6 +396,200 @@ mod tests {
         assert_eq!(payload.records_examined, 1);
         assert_eq!(payload.records_with_tag, 0);
         assert!(payload.full_file_scanned);
+        assert!(matches!(payload.confidence, Some(ConfidenceLevel::High)));
+    }
+
+    #[test]
+    fn bounded_absence_does_not_claim_full_file_absence() {
+        let bam_path = write_temp_file(
+            "check-tag-bounded-absent",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_record_with_aux(0, 10, "read1", b"RGZgroup1\0"),
+                    build_record_with_aux(0, 20, "read2", b"NMc\x05"),
+                ],
+            ),
+        );
+
+        let response = run(CheckTagRequest {
+            bam: bam_path.clone(),
+            tag: "NM".to_string(),
+            sample_records: 1,
+            full_scan: false,
+            require_type: None,
+            count_hits: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("check_tag payload should be present");
+        assert!(matches!(payload.mode, CheckTagMode::BoundedScan));
+        assert!(matches!(
+            payload.result,
+            CheckTagResult::NotFoundInExaminedRecords
+        ));
+        assert!(!payload.tag_found);
+        assert_eq!(payload.records_examined, 1);
+        assert_eq!(payload.records_with_tag, 0);
+        assert!(!payload.full_file_scanned);
+        assert!(matches!(payload.confidence, Some(ConfidenceLevel::Medium)));
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("does not prove absence from the full file")
+        );
+    }
+
+    #[test]
+    fn required_type_mismatch_is_not_presence() {
+        let bam_path = write_temp_file(
+            "check-tag-type-mismatch",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_record_with_aux(0, 10, "read1", b"NMc\x05")],
+            ),
+        );
+
+        let response = run(CheckTagRequest {
+            bam: bam_path.clone(),
+            tag: "NM".to_string(),
+            sample_records: 10,
+            full_scan: true,
+            require_type: Some("i".to_string()),
+            count_hits: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("check_tag payload should be present");
+        assert_eq!(payload.required_type.as_deref(), Some("i"));
+        assert!(matches!(payload.result, CheckTagResult::AbsentInFullScan));
+        assert!(!payload.tag_found);
+        assert_eq!(payload.records_examined, 1);
+        assert_eq!(payload.records_with_tag, 0);
+        assert!(payload.full_file_scanned);
+    }
+
+    #[test]
+    fn duplicate_tags_count_as_one_matching_record() {
+        let bam_path = write_temp_file(
+            "check-tag-duplicate-tags",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_record_with_aux(0, 10, "read1", b"NMc\x01NMc\x02")],
+            ),
+        );
+
+        let response = run(CheckTagRequest {
+            bam: bam_path.clone(),
+            tag: "NM".to_string(),
+            sample_records: 10,
+            full_scan: true,
+            require_type: Some("c".to_string()),
+            count_hits: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("check_tag payload should be present");
+        assert!(matches!(payload.result, CheckTagResult::ObservedPresent));
+        assert!(payload.tag_found);
+        assert_eq!(payload.records_examined, 1);
+        assert_eq!(payload.records_with_tag, 1);
+        assert!(payload.full_file_scanned);
+    }
+
+    #[test]
+    fn malformed_aux_payload_returns_structured_indeterminate_failure() {
+        let bam_path = write_temp_file(
+            "check-tag-malformed-aux",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_record_with_aux(0, 10, "read1", b"NMc")],
+            ),
+        );
+
+        let response = run(CheckTagRequest {
+            bam: bam_path.clone(),
+            tag: "NM".to_string(),
+            sample_records: 10,
+            full_scan: false,
+            require_type: None,
+            count_hits: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        let payload = response.data.expect("failure payload should be present");
+        assert!(matches!(payload.result, CheckTagResult::Indeterminate));
+        assert!(!payload.tag_found);
+        assert_eq!(payload.records_examined, 1);
+        assert_eq!(payload.records_with_tag, 0);
+        assert!(!payload.full_file_scanned);
+        assert!(matches!(payload.confidence, Some(ConfidenceLevel::Low)));
+        let error = response.error.expect("error should be present");
+        assert_eq!(error.code, "parse_uncertainty");
+        assert!(
+            error
+                .detail
+                .as_deref()
+                .unwrap_or_default()
+                .contains("truncated auxiliary field")
+        );
+    }
+
+    #[test]
+    fn unsupported_b_array_shape_returns_structured_indeterminate_failure() {
+        let bam_path = write_temp_file(
+            "check-tag-unsupported-array",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_record_with_aux(0, 10, "read1", b"MLBx\x01\0\0\0\x05")],
+            ),
+        );
+
+        let response = run(CheckTagRequest {
+            bam: bam_path.clone(),
+            tag: "ML".to_string(),
+            sample_records: 10,
+            full_scan: true,
+            require_type: Some("B".to_string()),
+            count_hits: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        let payload = response.data.expect("failure payload should be present");
+        assert!(matches!(payload.mode, CheckTagMode::FullScan));
+        assert!(matches!(payload.result, CheckTagResult::Indeterminate));
+        assert_eq!(payload.records_examined, 1);
+        assert!(!payload.full_file_scanned);
+        let error = response.error.expect("error should be present");
+        assert_eq!(error.code, "parse_uncertainty");
+        assert!(
+            error
+                .detail
+                .as_deref()
+                .unwrap_or_default()
+                .contains("unsupported BAM auxiliary B-array subtype")
+        );
     }
 
     fn build_record_with_aux(ref_id: i32, pos: i32, read_name: &str, aux: &[u8]) -> Vec<u8> {

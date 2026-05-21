@@ -144,7 +144,13 @@ Key concepts:
 * `result` distinguishes observed presence, bounded non-observation,
   full-scan absence, and indeterminate traversal
 * `records_examined` and `full_file_scanned` define the evidence scope
+* `records_with_tag` counts records with at least one matching tag, not
+  duplicate tag occurrences inside a single record
+* `required_type` filters on the BAM auxiliary type code before reporting a
+  match
 * bounded non-observation must not be interpreted as full-file absence
+* malformed or unsupported auxiliary shapes produce an indeterminate failure
+  payload rather than a successful absence claim
 
 ## `validate`
 
