@@ -27,9 +27,9 @@ Contracts:
 
 * [result.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/result.schema.json): structured raw per-run JSON record
 * [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy per-run row contract
-* [bgzf_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/bgzf_microbench.schema.json): native BGZF microbenchmark JSON contract
+* [bgzf_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/bgzf_microbench.schema.json): native BGZF microbenchmark JSON contract, including optional `check_eof` command smoke timing
 * [header_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/header_microbench.schema.json): native BAM header microbenchmark JSON contract
-* [scanner_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/scanner_microbench.schema.json): native BAM scanner microbenchmark JSON contract, including optional `check_sort`, `check_map`, and `subsample_bam` command smoke timings
+* [scanner_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/scanner_microbench.schema.json): native BAM scanner microbenchmark JSON contract, including optional `summary`, `check_sort`, `check_map`, `validate`, `check_tag`, and `subsample_bam` command smoke timings
 * [fastq_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/fastq_microbench.schema.json): native FASTQ parser/writer microbenchmark JSON contract, including optional `subsample_fastq` and `subsample_fastq_gz` command smoke timings
 * [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
 * [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical `tool` and `workflow_variant` values
@@ -51,6 +51,18 @@ Design rule:
 * failed rows are not unsupported
 * successful rows alone drive performance summaries
 * unsupported and failed rows remain visible for support and reliability analysis
+
+Benchmark interpretation notes:
+
+* substrate timings measure in-process native readers, writers, and scanners
+* command timings include process startup, CLI parsing, JSON envelope emission,
+  file probing, and command-specific payload construction
+* `check_eof` timing is EOF-marker evidence only, not BAM header or record
+  validation
+* scanner command smoke timings use deterministic synthetic BAM input and do
+  not exercise malformed-input paths
+* scanner command smoke timings do not imply comparator parity with external
+  tools
 
 First analysis slice:
 

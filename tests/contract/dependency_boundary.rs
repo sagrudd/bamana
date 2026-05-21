@@ -39,6 +39,60 @@ const M5_PROOF_COMMAND_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M6_INSPECTION_COMMAND_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "check_eof",
+        &["src/commands/check_eof.rs", "src/bgzf/reader.rs"],
+    ),
+    (
+        "check_sort",
+        &[
+            "src/commands/check_sort.rs",
+            "src/bam/header.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+        ],
+    ),
+    (
+        "check_map",
+        &[
+            "src/commands/check_map.rs",
+            "src/bam/index.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+        ],
+    ),
+    (
+        "summary",
+        &[
+            "src/commands/summary.rs",
+            "src/bam/index.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/summary.rs",
+        ],
+    ),
+    (
+        "check_tag",
+        &[
+            "src/commands/check_tag.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
+        ],
+    ),
+    (
+        "validate",
+        &[
+            "src/commands/validate.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
+            "src/bam/validate.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -175,6 +229,50 @@ fn scanner_and_migrated_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "native scanner and migrated BAM record hot paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m6_inspection_command_hot_paths_do_not_import_noodles() {
+    let inspection_commands: Vec<_> = M6_INSPECTION_COMMAND_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        inspection_commands,
+        [
+            "check_eof",
+            "check_sort",
+            "check_map",
+            "summary",
+            "check_tag",
+            "validate"
+        ],
+        "M6 dependency boundary must explicitly name the six inspection and validation commands"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M6_INSPECTION_COMMAND_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M6 inspection and validation hot paths must stay noodles-free:\n{}",
         violations.join("\n")
     );
 }

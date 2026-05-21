@@ -35,6 +35,13 @@ The JSON result contains:
 * optional ``verify`` and ``check_eof`` command timings when ``--bamana-bin`` is
   supplied
 
+The BGZF substrate timings and command timings answer different questions.
+Command timings include process startup, CLI parsing, JSON envelope emission,
+file probing, and command-specific payload construction. The ``check_eof`` row
+is EOF-marker smoke evidence only; it does not measure BAM header parsing,
+alignment-record validation, malformed-input behavior, or comparator parity
+with external tools.
+
 Results conform to
 ``benchmarks/results/bgzf_microbench.schema.json`` and can be archived beside
 other benchmark result artifacts.

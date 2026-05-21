@@ -50,6 +50,14 @@ timings include process startup, CLI parsing, JSON envelope emission, file
 probing, and command-specific payload construction; use them for before/after
 command migration checks, not as pure scanner measurements.
 
+Milestone 6 command timings are smoke timings over deterministic synthetic BAM
+input. ``check_sort`` is run in strict mode. ``check_map`` and ``summary`` run
+without adjacent index sidecars, so they exercise scanner-derived evidence
+rather than index-derived evidence. ``check_tag`` performs a full scan for the
+synthetic ``NM`` auxiliary tag, and ``validate`` runs the default full
+structural pass. These timings do not exercise malformed-input paths and do
+not imply comparator parity with external tools.
+
 ``subsample_bam`` is a command-level dry-run timing over the generated BAM
 fixture. It proves the BAM ``subsample`` CLI path is runnable through the
 benchmark hook, but it should be interpreted as command smoke timing rather

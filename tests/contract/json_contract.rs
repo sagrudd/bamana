@@ -498,6 +498,12 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
             .join("results")
             .join("header_microbench.schema.json"),
     );
+    let bgzf_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("bgzf_microbench.schema.json"),
+    );
     let scanner_schema = read_utf8(
         &super::repo_root()
             .join("benchmarks")
@@ -514,6 +520,7 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
     for (schema_name, schema, command) in [
         ("header_microbench", &header_schema, "verify"),
         ("header_microbench", &header_schema, "header"),
+        ("bgzf_microbench", &bgzf_schema, "check_eof"),
         ("scanner_microbench", &scanner_schema, "summary"),
         ("scanner_microbench", &scanner_schema, "subsample_bam"),
         ("scanner_microbench", &scanner_schema, "check_sort"),

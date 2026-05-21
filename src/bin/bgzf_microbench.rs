@@ -136,6 +136,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Read throughput measures native BGZF member inflation into memory.".to_string(),
         "Write throughput measures native BGZF member emission to a temporary file.".to_string(),
+        "Command timings include verify and check_eof when --bamana-bin is supplied; they include process startup and JSON emission."
+            .to_string(),
+        "check_eof command timing is EOF-marker smoke evidence only; it does not measure BAM header parsing or alignment-record validation."
+            .to_string(),
     ];
     if args.bamana_bin.is_none() {
         notes.push(

@@ -2872,7 +2872,7 @@ Completion evidence:
 
 ### M6.9 Strengthen M6 Dependency Boundaries And Benchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2893,7 +2893,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `M6_INSPECTION_COMMAND_HOT_PATHS` to
+  `tests/contract/dependency_boundary.rs`, explicitly naming `check_eof`,
+  `check_sort`, `check_map`, `summary`, `check_tag`, and `validate` plus their
+  protected native substrate paths;
+* strengthened benchmark schema contract coverage so `check_eof` is guarded in
+  `bgzf_microbench.schema.json` and `summary`, `check_sort`, `check_map`,
+  `check_tag`, and `validate` are guarded in
+  `scanner_microbench.schema.json`;
+* documented benchmark interpretation notes for substrate timing versus command
+  startup, bounded/full scan behavior, index absence in scanner smoke fixtures,
+  malformed-input limitations, and lack of external comparator parity;
+* added runtime benchmark notes to `bgzf_microbench` and `scanner_microbench`
+  JSON output;
+* confirmed M6.9 smoke runs reported `check_eof: 1/1` and scanner command rows
+  `summary: 1/1`, `check_sort: 1/1`, `check_map: 1/1`, `validate: 1/1`, and
+  `check_tag: 1/1`.
 
 ### M6.10 Close Milestone 6
 

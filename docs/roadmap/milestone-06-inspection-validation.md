@@ -68,12 +68,12 @@ Primary beneficiaries:
 
 ## Benchmark Hooks
 
-* command-level smoke timings for `check_eof`
-* command-level smoke timings for `check_sort`
-* command-level smoke timings for `check_map`
-* command-level smoke timings for `summary`
-* command-level smoke timings for `check_tag`
-* command-level smoke timings for `validate`
+* command-level smoke timing for `check_eof` through `bgzf_microbench
+  --bamana-bin`
+* command-level smoke timings for `check_sort`, `check_map`, `summary`,
+  `check_tag`, and `validate` through `scanner_microbench --bamana-bin`
+* benchmark interpretation notes must distinguish substrate timing from
+  command timing and must not imply comparator parity with external tools
 
 ## Remaining `noodles` Surface
 
@@ -307,3 +307,25 @@ bounded-record scope, malformed record structure, malformed auxiliary
 structure, severity-coded findings, and configured finding-list limits.
 Command-level smoke timing remains available through
 `scanner_microbench --bamana-bin`, which emits a `validate` command timing row.
+
+## M6.9 Dependency Boundary And Benchmark Guardrails
+
+M6.9 formalizes the milestone-level guardrails for the six-command inspection
+and validation wave. Contract tests explicitly name `check_eof`, `check_sort`,
+`check_map`, `summary`, `check_tag`, and `validate` as the M6 protected command
+set, and their production command/substrate paths must remain free of direct
+`noodles` imports.
+
+Benchmark schema guards now cover the M6 command timing rows. `check_eof` is
+timed by `bgzf_microbench --bamana-bin`; `check_sort`, `check_map`, `summary`,
+`check_tag`, and `validate` are timed by `scanner_microbench --bamana-bin`.
+These rows are command smoke timings. They include process startup, CLI
+parsing, probing, JSON emission, and command payload construction. Scanner
+command timings use deterministic synthetic BAM input and do not exercise
+malformed-input behavior or adjacent-index evidence unless a future benchmark
+profile explicitly adds those fixtures.
+
+M6 benchmark notes are interpretation guardrails, not performance claims. They
+distinguish native substrate timings from command timings, bounded/full scan
+choices from index-derived evidence, and smoke-runnable commands from
+comparator parity against external tools.
