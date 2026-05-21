@@ -265,6 +265,144 @@ fn proof_command_contracts_have_docs_schemas_examples_and_behavior_notes() {
 }
 
 #[test]
+fn inspection_command_contracts_have_docs_schemas_examples_and_behavior_notes() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+
+    for command in [
+        "check_eof",
+        "check_sort",
+        "check_map",
+        "summary",
+        "check_tag",
+        "validate",
+    ] {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "M6 command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "M6 command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "M6 command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "M6 command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "M6 command {command} is missing from docs/cli.md"
+        );
+        assert!(
+            json_doc.contains(&format!("## `{command}`")),
+            "M6 command {command} is missing from docs/json-output.md"
+        );
+        assert!(
+            readme.contains(&format!("`{command}`")),
+            "M6 command {command} is missing from README.md"
+        );
+    }
+
+    for required in [
+        "EOF marker presence or absence",
+        "Overall BAM validity or full stream readability",
+        "bounded or stricter scan",
+        "Mapping evidence from the sources explicitly reported",
+        "Only the metrics that correspond to the reported evidence mode",
+        "Full-file absence in bounded mode",
+        "Biological correctness, reference concordance, or all optional-field semantics",
+        "bounded non-observation must not be interpreted as full-file absence",
+    ] {
+        assert!(
+            commands_doc.contains(required)
+                || cli_doc.contains(required)
+                || json_doc.contains(required)
+                || readme.contains(required),
+            "M6 command documentation is missing behavior note: {required}"
+        );
+    }
+}
+
+#[test]
+fn fixture_manifest_includes_m6_inspection_baseline() {
+    let manifest = load_fixture_manifest();
+
+    for (required_id, expected_format, expected_validity, expected_command) in [
+        ("tiny.valid.coordinate", "BAM", "valid", "check_eof"),
+        ("tiny.valid.coordinate", "BAM", "valid", "check_sort"),
+        ("tiny.valid.queryname", "BAM", "valid", "check_sort"),
+        (
+            "tiny.invalid.unsorted_coordinate",
+            "BAM",
+            "invalid",
+            "check_sort",
+        ),
+        ("tiny.valid.coordinate", "BAM", "valid", "check_map"),
+        ("tiny.valid.unmapped", "BAM", "valid", "check_map"),
+        ("tiny.valid.coordinate.bai", "BAI", "valid", "check_map"),
+        ("tiny.valid.coordinate.bai", "BAI", "valid", "summary"),
+        ("tiny.tags.nm_rg", "BAM", "valid", "check_tag"),
+        ("tiny.tags.absent_requested", "BAM", "valid", "check_tag"),
+        ("tiny.invalid.bad_aux", "BAM", "invalid", "check_tag"),
+        ("tiny.invalid.no_eof", "BAM", "invalid", "check_eof"),
+        (
+            "tiny.invalid.truncated_record",
+            "BAM",
+            "invalid",
+            "validate",
+        ),
+        ("tiny.invalid.header_mismatch", "BAM", "invalid", "validate"),
+    ] {
+        let fixture = manifest
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.id == required_id)
+            .unwrap_or_else(|| {
+                panic!("fixture manifest is missing M6 inspection fixture {required_id}")
+            });
+
+        assert_eq!(
+            fixture.format, expected_format,
+            "fixture {required_id} has unexpected format"
+        );
+        assert_eq!(
+            fixture.validity, expected_validity,
+            "fixture {required_id} has unexpected validity"
+        );
+        assert!(
+            fixture
+                .primary_commands
+                .iter()
+                .any(|command| command == expected_command)
+                || fixture
+                    .secondary_commands
+                    .iter()
+                    .any(|command| command == expected_command),
+            "fixture {required_id} is not mapped to {expected_command}"
+        );
+        assert!(
+            fixture
+                .expected_artifacts
+                .iter()
+                .any(|artifact| { artifact.starts_with(&format!("expected/{expected_command}/")) }),
+            "fixture {required_id} has no reserved {expected_command} expected artifact"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_m5_subsample_baseline() {
     let manifest = load_fixture_manifest();
 

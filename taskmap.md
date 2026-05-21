@@ -2615,7 +2615,7 @@ Completion evidence:
 
 ### M6.2 Freeze Inspection Command Contracts And Examples
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -2637,7 +2637,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited JSON schemas and canonical success/failure examples for `check_eof`,
+  `check_sort`, `check_map`, `summary`, `check_tag`, and `validate`;
+* confirmed all six M6 commands are documented in `spec/cli/commands.md`,
+  `docs/cli.md`, README, and `docs/json-output.md`;
+* added contract coverage requiring each M6 command to keep a schema, canonical
+  success example, canonical failure example, CLI contract docs, user-facing
+  CLI docs, and JSON-output docs;
+* confirmed bounded/full-scan language is present for `check_sort`,
+  `check_map`, `summary`, `check_tag`, and `validate`, and EOF-only language is
+  present for `check_eof`;
+* updated fixture planning with explicit M6 assets for missing EOF,
+  sorted/queryname/unsorted BAMs, mapped/unmapped evidence, index-derived
+  mapping and summary evidence, observed and absent tag evidence, malformed aux
+  evidence, and structural validation failures;
+* recorded the M6.2 contract freeze in the Milestone 6 roadmap and Sphinx
+  technical documentation;
+* no intentional command behavior or JSON shape changes were made.
 
 ### M6.3 Harden `check_eof` Native BGZF Boundary
 

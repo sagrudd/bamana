@@ -62,6 +62,28 @@
       "tag_inventory": ["NM"]
     },
     {
+      "id": "tiny.invalid.unsorted_coordinate",
+      "path": "bam/sorting/tiny.invalid.unsorted_coordinate.bam",
+      "format": "BAM",
+      "category": "sorting",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "Coordinate-declared BAM with an intentional out-of-order alignment pair for check_sort violation evidence.",
+      "primary_commands": ["check_sort"],
+      "secondary_commands": ["summary", "validate"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate"],
+      "regeneration_strategy": "swap_adjacent_coordinate_records",
+      "expected_artifacts": [
+        "expected/check_sort/tiny.invalid.unsorted_coordinate.failure.json"
+      ],
+      "has_index": false,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": ["NM", "RG"]
+    },
+    {
       "id": "tiny.valid.unmapped",
       "path": "bam/valid/tiny.valid.unmapped.bam",
       "format": "BAM",
@@ -108,6 +130,29 @@
       "mapped_state": "mixed",
       "size_class": "tiny",
       "tag_inventory": ["NM", "RG", "MD", "AS"]
+    },
+    {
+      "id": "tiny.tags.absent_requested",
+      "path": "bam/tags/tiny.tags.absent_requested.bam",
+      "format": "BAM",
+      "category": "tags",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Tiny BAM with a known tag inventory that deliberately omits SA for bounded and full-scan absence checks.",
+      "primary_commands": ["check_tag"],
+      "secondary_commands": ["summary", "validate"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.tags.nm_rg"],
+      "regeneration_strategy": "reuse_tag_fixture_without_requested_absent_tag",
+      "expected_artifacts": [
+        "expected/check_tag/tiny.tags.absent_requested.bounded_absent.json",
+        "expected/check_tag/tiny.tags.absent_requested.full_absent.json"
+      ],
+      "has_index": false,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": ["NM", "RG"]
     },
     {
       "id": "tiny.tags.mixed_aux_types",

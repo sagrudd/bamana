@@ -21,6 +21,25 @@ These commands should become executable quickly once
 * `validate`
 * `checksum`
 
+### Milestone 6 inspection and validation coverage
+
+The M6 fixture freeze reserves explicit targets for:
+
+* missing EOF evidence: `tiny.invalid.no_eof`
+* sorted evidence: `tiny.valid.coordinate`, `tiny.valid.queryname`
+* unsorted evidence: `tiny.invalid.unsorted_coordinate`
+* mapped and unmapped evidence: `tiny.valid.coordinate`, `tiny.valid.unmapped`
+* index-derived mapping and summary evidence: `tiny.valid.coordinate.bai`
+* observed and absent tag evidence: `tiny.tags.nm_rg`,
+  `tiny.tags.absent_requested`
+* malformed aux evidence: `tiny.invalid.bad_aux`
+* structural validation failures: `tiny.invalid.truncated_record`,
+  `tiny.invalid.header_mismatch`
+
+Bounded-scan fixtures should prove only examined-record claims. Full-scan
+fixtures may prove absence or full-file summaries only when the command reaches
+EOF cleanly.
+
 ### Tag-focused coverage
 
 These commands depend on the tag fixtures:

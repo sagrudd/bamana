@@ -121,6 +121,31 @@ Its fixture plan must cover:
 These fixtures should be used to prove discovery order, classification, and
 policy behavior before larger normalization or transform workflows are tested.
 
+## Milestone 6 Inspection Fixtures
+
+Milestone 6 reserves fixture coverage for the first operational BAM inspection
+and validation command wave:
+
+* `tiny.valid.coordinate` covers valid BAM, EOF, coordinate sort, mixed mapping,
+  summary, and validation success paths;
+* `tiny.valid.queryname` covers queryname sort evidence;
+* `tiny.invalid.unsorted_coordinate` covers explicit `check_sort` violation
+  evidence;
+* `tiny.valid.unmapped` covers unmapped-only `check_map` and `summary`
+  evidence;
+* `tiny.valid.coordinate.bai` covers index-derived `check_map` and `summary`
+  evidence;
+* `tiny.tags.nm_rg`, `tiny.tags.mixed_aux_types`, and
+  `tiny.tags.absent_requested` cover observed, typed, malformed, and absent
+  `check_tag` evidence;
+* `tiny.invalid.no_eof`, `tiny.invalid.truncated_record`,
+  `tiny.invalid.bad_aux`, and `tiny.invalid.header_mismatch` cover missing EOF,
+  malformed records, malformed aux payloads, and validation failures.
+
+These assets are intentionally small and deterministic. Bounded-scan examples
+must not claim full-file absence or validity; full-scan examples may claim
+absence only when the scan reaches EOF cleanly.
+
 ### CRAM Consume Fixtures
 
 CRAM is handled more conservatively than BAM or SAM because its decode path may

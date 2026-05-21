@@ -129,3 +129,27 @@ Baseline gaps for later M6 tasks:
   command set;
 * dependency-boundary tests should name the six M6 command files as one
   protected milestone set.
+
+## M6.2 Contract Freeze
+
+M6.2 freezes the inspection and validation command contract baseline. No
+intentional command behavior or JSON shape changes are introduced by this task.
+
+Frozen command surfaces:
+
+* `check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+  `validate` each have a JSON schema plus canonical success and failure
+  examples;
+* `spec/cli/commands.md`, `docs/cli.md`, `docs/json-output.md`, README, and
+  Sphinx documentation describe the evidence scope and caveats for all six
+  commands;
+* contract tests fail if any M6 command schema, success example, failure
+  example, CLI documentation, or JSON-output documentation disappears;
+* fixture planning reserves missing EOF, sorted and unsorted BAMs,
+  mapped/unmapped evidence, absent tags, malformed aux payloads, BAI-derived
+  mapping and summary evidence, and structural validation failures.
+
+M6 hardening work must preserve the distinction between bounded evidence and
+full-file claims. Bounded scan output may describe only examined records.
+Full-file absence, full-file summary, or full validation claims require a
+complete scan that reaches EOF cleanly.

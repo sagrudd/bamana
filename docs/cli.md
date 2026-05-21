@@ -87,6 +87,15 @@ native header/reference-dictionary parsing. It does not scan alignment records
 and does not report BGZF EOF-marker presence; use `check_eof` for EOF-marker
 checks and `validate` for deeper BAM structure.
 
+Milestone 6 inspection commands are governed as one public command wave:
+`check_eof`, `check_sort`, `check_map`, `summary`, `check_tag`, and
+`validate`. `check_eof` reports EOF marker presence or absence only.
+`check_sort`, `check_map`, `summary`, and `check_tag` report bounded evidence
+unless their output states that a full scan reached EOF cleanly. `check_map`
+and `summary` keep index-derived evidence separate from scan-derived evidence.
+`validate` reports structural and internal-consistency checks, not biological
+correctness or external reference concordance.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

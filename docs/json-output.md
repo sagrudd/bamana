@@ -76,6 +76,78 @@ Key concepts:
 * EOF-marker status is intentionally outside `verify`; use `check_eof` for
   that contract
 
+## `check_eof`
+
+The `check_eof` payload reports only canonical BGZF EOF-marker evidence.
+
+Key concepts:
+
+* `bgzf_eof_present` reports whether the canonical EOF marker was found
+* `complete` mirrors tail-completeness evidence, not BAM semantic validity
+* `semantic_note` states that EOF presence does not imply full BAM validity
+
+## `check_sort`
+
+The `check_sort` payload compares declared sort metadata with observed
+record-order evidence.
+
+Key concepts:
+
+* `declared_sort` preserves `SO`, `SS`, and `GO` values from the header
+* `observed_sort.records_examined` bounds the evidence scope
+* `observed_sort.first_violation` records the first detected ordering problem
+* `confidence` and `semantic_note` keep bounded evidence separate from full
+  validation
+
+## `check_map`
+
+The `check_map` payload reports whether mapping evidence came from an index or
+from record scanning.
+
+Key concepts:
+
+* `evidence_source` distinguishes `index` from `scan`
+* `index.used` reports whether the adjacent index actually supplied the result
+* `summary.records_examined` is scan evidence and is absent from pure
+  index-derived summaries
+* `semantic_note` describes the limits of the reported evidence source
+
+## `summary`
+
+The `summary` payload is an operational overview, not a validation certificate.
+
+Key concepts:
+
+* `mode` distinguishes `bounded_scan`, `full_scan`, and `indeterminate`
+* `evidence.full_file_scanned` controls whether full-file claims are supported
+* `index_derived` keeps BAI-derived totals separate from scan-derived counts
+* `fractions_observed` is scoped to examined records when the scan is bounded
+
+## `check_tag`
+
+The `check_tag` payload reports selected auxiliary-tag evidence.
+
+Key concepts:
+
+* `mode` distinguishes bounded and full-scan tag checks
+* `result` distinguishes observed presence, bounded non-observation,
+  full-scan absence, and indeterminate traversal
+* `records_examined` and `full_file_scanned` define the evidence scope
+* bounded non-observation must not be interpreted as full-file absence
+
+## `validate`
+
+The `validate` payload reports structural and internal-consistency findings.
+
+Key concepts:
+
+* `mode` distinguishes header-only, bounded-record, and full validation scopes
+* `summary.full_file_examined` states whether the requested validation reached
+  EOF cleanly
+* `findings` report structured `error`, `warning`, and `info` evidence
+* `semantic_note` states that validation does not imply biological correctness
+  or external reference concordance
+
 ## `consume`
 
 The `consume` payload introduces an ingestion-oriented contract layer in

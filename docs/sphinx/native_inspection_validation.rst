@@ -52,6 +52,22 @@ parsing, ``BamScanner``, and ``BamRecordView``. It remains structural and
 internal-consistency validation, not biological correctness, external reference
 concordance, or complete optional-field semantic validation.
 
+M6.2 Contract Freeze
+--------------------
+
+M6.2 freezes the inspection-command contract baseline before command-specific
+hardening. ``check_eof``, ``check_sort``, ``check_map``, ``summary``,
+``check_tag``, and ``validate`` each have governed JSON schemas, canonical
+success and failure examples, CLI documentation, JSON-output documentation, and
+reserved fixture coverage.
+
+The frozen fixture plan covers missing EOF, sorted and unsorted BAMs,
+mapped and unmapped evidence, index-derived mapping and summary evidence,
+observed and absent tags, malformed aux payloads, and structural validation
+failures. Bounded examples must remain bounded: they may describe examined
+records only. Full-file absence and full-file summary claims require a complete
+scan that reaches EOF cleanly.
+
 Guardrails
 ----------
 
