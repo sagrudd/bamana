@@ -99,6 +99,17 @@ or explicitly defer:
 * M8 dependency-boundary tests and command-level benchmark smoke hooks are not
   yet complete for the full command set.
 
+M8.2 froze the transform, checksum, explode, and ingest contract surface before
+implementation hardening. The freeze confirms that `sort`, `merge`, `explode`,
+`checksum`, and `consume` have JSON schemas, canonical success and failure
+examples, CLI contracts, JSON-output documentation, README coverage, Sphinx
+coverage, and fixture reservations for sorted BAMs, merge compatibility, shard
+planning, checksum filters, `FASTQ.GZI` planning, and mixed-format ingest.
+The documented contracts explicitly cover ordering semantics, checksum
+domains, shard boundaries, ingest policy, dry-run behavior, CRAM compatibility,
+deferred checksum verification, deferred index behavior, and in-memory
+first-slice caveats without claiming full external-tool parity.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

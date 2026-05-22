@@ -107,6 +107,17 @@ record level, and unsupported aux shapes are structured traversal failures.
 scope, including aux traversal structure, not biological correctness, external
 reference concordance, or full optional-field semantic validation.
 
+Milestone 8 transform and ingest commands are governed as one public command
+wave: `sort`, `merge`, `explode`, `checksum`, and `consume`. `sort` and
+`merge` report explicit ordering semantics, in-memory first-slice caveats,
+deferred index behavior, and checksum-verification state. `checksum` reports
+explicit checksum domains, algorithms, filters, excluded tags, and whether the
+reported domain is order-sensitive. `explode` reports shard boundaries and
+`FASTQ.GZI` planning evidence without claiming uniform shard sizes or generic
+random-access gzip inflate. `consume` reports ingest mode, dry-run discovery,
+mixed-format policy decisions, CRAM reference policy, deferred checksum
+verification, and deferred post-ingest index behavior.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

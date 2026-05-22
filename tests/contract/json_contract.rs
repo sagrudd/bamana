@@ -16,6 +16,8 @@ const M7_MUTATION_FORENSICS_COMMANDS: &[&str] = &[
     "forensic_inspect",
 ];
 
+const M8_TRANSFORM_INGEST_COMMANDS: &[&str] = &["sort", "merge", "explode", "checksum", "consume"];
+
 #[test]
 fn schema_files_parse_as_json() {
     for path in super::collect_json_files(&schema_dir()) {
@@ -421,6 +423,82 @@ fn inspection_command_contracts_have_docs_schemas_examples_and_behavior_notes() 
                 || json_doc.contains(required)
                 || readme.contains(required),
             "M6 command documentation is missing behavior note: {required}"
+        );
+    }
+}
+
+#[test]
+fn transform_ingest_command_contracts_have_docs_schemas_examples_and_behavior_notes() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let sphinx_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_transform_ingest.rst"),
+    );
+
+    for command in M8_TRANSFORM_INGEST_COMMANDS {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "M8 command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "M8 command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "M8 command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "M8 command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "M8 command {command} is missing from docs/cli.md"
+        );
+        assert!(
+            json_doc.contains(&format!("## `{command}`")),
+            "M8 command {command} is missing from docs/json-output.md"
+        );
+        assert!(
+            readme.contains(&format!("`{command}`")),
+            "M8 command {command} is missing from README.md"
+        );
+        assert!(
+            sphinx_doc.contains(&format!("``{command}``")),
+            "M8 command {command} is missing from Sphinx transform/ingest notes"
+        );
+    }
+
+    for required in [
+        "ordering semantics",
+        "checksum domains",
+        "shard boundaries",
+        "ingest mode",
+        "dry-run",
+        "CRAM reference policy",
+        "deferred index behavior",
+        "in-memory first-slice",
+        "FASTQ.GZI",
+        "not imply full BAM validity",
+    ] {
+        assert!(
+            commands_doc.contains(required)
+                || cli_doc.contains(required)
+                || json_doc.contains(required)
+                || readme.contains(required)
+                || sphinx_doc.contains(required),
+            "M8 command documentation is missing behavior note: {required}"
         );
     }
 }
@@ -937,6 +1015,33 @@ fn fixture_manifest_includes_duplication_and_forensics_trio() {
         assert!(
             ids.contains(required_id),
             "fixture manifest is missing required trio fixture {required_id}"
+        );
+    }
+}
+
+#[test]
+fn fixture_manifest_includes_m8_transform_ingest_baseline() {
+    let manifest = load_fixture_manifest();
+    let ids: BTreeSet<String> = manifest
+        .fixtures
+        .into_iter()
+        .map(|fixture| fixture.id)
+        .collect();
+
+    for required_id in [
+        "tiny.valid.queryname",
+        "tiny.tags.nm_rg",
+        "tiny.transforms.source",
+        "tiny.transforms.shard1",
+        "tiny.transforms.shard2",
+        "tiny.transforms.merged",
+        "tiny.valid.fastq_gz",
+        "tiny.consume.mixed_alignment_raw",
+        "tiny.consume.directory_tree",
+    ] {
+        assert!(
+            ids.contains(required_id),
+            "fixture manifest is missing required M8 transform/ingest fixture {required_id}"
         );
     }
 }

@@ -3598,7 +3598,7 @@ Completion evidence:
 
 ### M8.2 Freeze Transform, Checksum, Explode, And Ingest Contracts
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3622,7 +3622,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited JSON schemas and canonical success/failure examples for `sort`,
+  `merge`, `explode`, `checksum`, and `consume`;
+* added contract coverage requiring all five M8 commands to keep JSON schemas,
+  canonical success/failure examples, CLI contracts, JSON-output docs,
+  user-facing CLI docs, README coverage, and Sphinx transform/ingest notes;
+* added JSON-output documentation for `checksum`, `sort`, `merge`, and
+  `explode`, complementing the existing `consume` payload documentation;
+* confirmed CLI documentation describes ordering semantics, checksum domains,
+  shard boundaries, ingest policy, dry-run behavior, CRAM reference policy,
+  deferred checksum verification, deferred index behavior, `FASTQ.GZI`
+  planning, and in-memory first-slice caveats without overclaiming;
+* confirmed fixture manifest coverage for sorted BAMs, merge compatibility,
+  transform shard planning, checksum filters, FASTQ.GZ `FASTQ.GZI` planning,
+  and mixed-format ingest scenarios;
+* updated the M8 roadmap, Sphinx transform/ingest note, CLI docs, JSON-output
+  docs, and this task map without changing command behavior.
 
 ### M8.3 Harden `sort` Native Ordering And Rewrite Boundary
 

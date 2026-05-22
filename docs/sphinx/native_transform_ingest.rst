@@ -59,6 +59,21 @@ M8.1 records the following activation gaps for later M8 tasks:
   FASTQ.GZ, especially around checksums, index metadata, exact boundary claims,
   and uneven ``FASTQ.GZI`` checkpoint-aligned shard sizes.
 
+Contract Freeze
+---------------
+
+M8.2 freezes the governed contract surface for ``sort``, ``merge``,
+``explode``, ``checksum``, and ``consume``. The command set has JSON schemas,
+canonical success and failure examples, CLI contracts, JSON-output
+documentation, README coverage, Sphinx coverage, and fixture reservations for
+sorted BAMs, merge compatibility, shard planning, checksum filters,
+``FASTQ.GZI`` planning, and mixed-format ingest.
+
+The frozen contracts describe ordering semantics, checksum domains, shard
+boundaries, ingest policy, dry-run behavior, CRAM compatibility, deferred
+checksum verification, deferred index behavior, and in-memory first-slice
+caveats. They do not claim full external-tool parity or native CRAM ownership.
+
 Activation Boundary
 -------------------
 

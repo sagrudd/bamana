@@ -169,6 +169,88 @@ Key concepts:
 * `semantic_note` states that validation does not imply biological correctness
   or external reference concordance
 
+## `checksum`
+
+The `checksum` payload reports explicit checksum domains instead of a single
+ambiguous digest.
+
+Key concepts:
+
+* `algorithm` records the digest algorithm used for every result
+* `results[].mode` identifies the checksum domain, such as raw record order,
+  canonical record order, payload, header, or all requested domains
+* `filters` records mapped/primary filters as part of the checksum definition
+* `excluded_tags` records auxiliary tags omitted from record-content domains
+* `order_sensitive` states whether record encounter order affects the digest
+* `semantic_note` describes what the selected domain can and cannot compare
+
+Canonical record-order mode is order-insensitive but still multiplicity-aware:
+duplicate canonical records contribute duplicate per-record digests. It is not
+a full BAM-validity proof, a biological equivalence proof, or a guarantee for
+any checksum mode other than the one explicitly reported.
+
+## `sort`
+
+The `sort` payload records a transformational BAM rewrite.
+
+Key concepts:
+
+* `sort.requested_order` and `sort.produced_order` identify the requested and
+  emitted ordering contracts
+* `sort.queryname_suborder` records the queryname comparator family when
+  queryname ordering is requested
+* `records.read` and `records.written` expose the transformation count surface
+* `index` reports index intent and any deferred index behavior
+* `checksum_verification` reports whether canonical checksum verification was
+  requested, completed, and matched
+* `notes` carry caveats such as in-memory first-slice execution
+
+The payload does not imply full BAM validity, external comparator parity,
+content preservation without a matching checksum verification result, or index
+correctness when index writing is reported as deferred.
+
+## `merge`
+
+The `merge` payload records multi-BAM combination under explicit compatibility
+and ordering semantics.
+
+Key concepts:
+
+* `inputs` records all requested BAM inputs in deterministic order
+* `merge.requested_mode` and `merge.produced_mode` distinguish input-order,
+  coordinate, and queryname merge behavior
+* header compatibility failures are surfaced as structured failures rather than
+  partial merge success
+* `records.read` and `records.written` expose the merged count surface
+* `checksum_verification` compares a canonical multiset checksum of the inputs
+  against the output when requested
+* `notes` carry caveats such as in-memory first-slice execution and index
+  deferral
+
+The payload does not imply that every input was fully valid beyond what was
+parsed, that input-order output is suitable for coordinate indexing, or that
+content was preserved unless checksum verification completed and matched.
+
+## `explode`
+
+The `explode` payload records contiguous sharding of one input.
+
+Key concepts:
+
+* `input` records the detected input format and source path
+* `explode.requested_shards` and range fields describe the requested shard
+  count and emitted shard boundaries
+* `outputs` records every shard path and the record range assigned to it
+* `index` reports shard-planning metadata, including `FASTQ.GZI` use for
+  FASTQ.GZ inputs
+* `checksum_verification` records checksum intent and deferred behavior
+* `notes` carry shard-size and planning caveats
+
+The payload proves only the emitted contiguous shard plan and output list. It
+does not claim global reconstruction equivalence beyond the reported ranges,
+generic random-access parallel inflate for gzip, or uniform shard sizes when
+`FASTQ.GZI` checkpoint-aligned boundaries are uneven.
+
 ## `consume`
 
 The `consume` payload introduces an ingestion-oriented contract layer in
