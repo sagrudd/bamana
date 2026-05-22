@@ -144,6 +144,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Some(bamana_bin) => vec![
             measure_command("verify", bamana_bin, &fixture, args.iterations)?,
             measure_command("header", bamana_bin, &fixture, args.iterations)?,
+            measure_command("reheader", bamana_bin, &fixture, args.iterations)?,
         ],
         None => Vec::new(),
     };
@@ -301,10 +302,16 @@ fn measure_command(
 
     for _ in 0..iterations {
         let started = Instant::now();
-        let output = Command::new(bamana_bin)
-            .arg(command_name)
-            .arg("--bam")
-            .arg(fixture)
+        let mut command = Command::new(bamana_bin);
+        command.arg(command_name).arg("--bam").arg(fixture);
+        if command_name == "reheader" {
+            command
+                .arg("--add-comment")
+                .arg("header_microbench smoke")
+                .arg("--dry-run")
+                .arg("--rewrite-minimized");
+        }
+        let output = command
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .output()?;

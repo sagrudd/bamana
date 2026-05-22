@@ -3128,7 +3128,7 @@ Completion evidence:
 
 ### M7.3 Harden `reheader` Native Header Mutation Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3148,7 +3148,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/bam/reheader.rs` and confirmed the command remains backed by
+  native BAM header parsing, native SAM-style header serialization, native
+  record-layout serialization, and the native BGZF writer;
+* added `reheader` unit coverage for dry-run planning across `@RG`, `@PG`, and
+  `@CO` mutations, conservative in-place planning, rewrite execution, full
+  header replacement, checksum verification with header bytes excluded, BAM
+  index invalidation reporting, and preservation of per-record `RG:Z` bytes;
+* added a failing test for unproven true in-place execution without rewrite
+  fallback so true in-place safety is not overclaimed;
+* extended `header_microbench --bamana-bin` command smoke timings to include a
+  `reheader` dry-run path and updated the benchmark result schema and Sphinx
+  benchmark documentation;
+* kept the governed `reheader` JSON contract stable while adding hardening
+  tests and benchmark smoke coverage.
 
 ### M7.4 Harden `annotate_rg` Native Record Annotation Boundary
 

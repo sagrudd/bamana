@@ -63,7 +63,10 @@ The activation baseline found the following native paths already present:
 * `reheader` plans header-only mutations with the native BAM header codec,
   serializes replacement headers with Bamana's header serializer, rewrites BAM
   output through the native BGZF writer, and reports checksum and index
-  invalidation evidence. It does not modify per-record `RG:Z` tags.
+  invalidation evidence. It does not modify per-record `RG:Z` tags. M7.3 added
+  direct tests for header replacement, `@RG`/`@PG`/`@CO` mutation planning,
+  checksum verification, index invalidation reporting, and refusal to claim
+  true in-place safety when not proven.
 * `annotate_rg` uses the native BAM header codec, native aux-tag traversal,
   native record-layout serialization, and the native BGZF writer for
   record-level read-group annotation.
@@ -83,6 +86,9 @@ Hardening still required by the milestone:
   bridge APIs, since it still loads BAM through `BamReader`,
   `parse_bam_header_from_reader`, and `read_next_record_layout`;
 * add command-level smoke benchmark evidence for the complete M7 command set.
+
+M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
+as the first M7 command-level benchmark hook.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

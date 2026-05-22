@@ -830,3 +830,292 @@ fn describe_mode_notes(notes: &mut Vec<String>, mode_used: ReheaderExecutionMode
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use crate::{
+        bam::{
+            header::{
+                ReferenceHeaderFields, ReferenceRecord, parse_bam_header,
+                parse_bam_header_from_reader, serialize_bam_header_payload,
+            },
+            reader::BamReader,
+            records::{
+                RecordLayout, encode_bam_qualities, encode_bam_sequence, read_next_record_layout,
+            },
+            write::{BgzfWriter, serialize_record_layout},
+        },
+        error::AppError,
+    };
+
+    use super::*;
+
+    #[test]
+    fn dry_run_plans_rg_pg_comment_mutations_without_writing() {
+        let input = temp_path("reheader-plan", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n@RG\tID:rg0\tSM:old\n",
+            vec![test_record("read1", Some("rg0"))],
+        );
+
+        let config = ReheaderConfig {
+            input_path: input.clone(),
+            output_path: None,
+            requested_mode: ReheaderExecutionMode::InPlace,
+            rewrite_fallback_permitted: true,
+            dry_run: true,
+            force: false,
+            reindex: true,
+            verify_checksum: false,
+            header_path: None,
+            add_rgs: vec!["ID=rg1,SM=sample1,PL=ONT".to_string()],
+            set_rgs: vec!["ID=rg0,SM=sample0".to_string()],
+            remove_rgs: Vec::new(),
+            set_sample: None,
+            set_platform: None,
+            target_rg: None,
+            set_pgs: vec!["ID=pg1,PN=bamana,VN=0.1.0".to_string()],
+            add_comments: vec!["planned comment".to_string()],
+        };
+
+        let payload = execute(&config)
+            .expect("dry-run reheader should succeed")
+            .payload;
+        cleanup(&[input, default_output_path(&config.input_path)]);
+
+        assert_eq!(payload.mutation.operations.len(), 4);
+        assert_eq!(
+            payload.mutation.operations[0].operation,
+            ReheaderOperationKind::AddRg
+        );
+        assert_eq!(
+            payload.mutation.operations[1].operation,
+            ReheaderOperationKind::SetRg
+        );
+        assert_eq!(
+            payload.mutation.operations[2].operation,
+            ReheaderOperationKind::SetPg
+        );
+        assert_eq!(
+            payload.mutation.operations[3].operation,
+            ReheaderOperationKind::AddComment
+        );
+        assert_eq!(
+            payload.planning.mode_requested,
+            ReheaderExecutionMode::InPlace
+        );
+        assert!(!payload.planning.in_place_feasible);
+        assert_eq!(
+            payload.planning.recommended_mode,
+            ReheaderExecutionMode::RewriteMinimized
+        );
+        assert_eq!(payload.execution.mode_used, None);
+        assert!(payload.execution.dry_run);
+        assert!(!payload.output.written);
+        assert_eq!(payload.index.valid_after, None);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("No file modifications"))
+        );
+    }
+
+    #[test]
+    fn rewrite_replaces_header_and_preserves_record_rg_tag_bytes() {
+        let input = temp_path("reheader-rewrite-input", "bam");
+        let output = temp_path("reheader-rewrite-output", "bam");
+        let index = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+        fs::write(&index, b"BAI\x01").expect("index marker should write");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n@RG\tID:rg0\tSM:old\n",
+            vec![test_record("read1", Some("rg0"))],
+        );
+        let replacement = temp_path("reheader-replacement", "sam");
+        fs::write(
+            &replacement,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n@RG\tID:rg1\tSM:new\n@PG\tID:pg1\tPN:bamana\n@CO\treplaced\n",
+        )
+        .expect("replacement header should write");
+
+        let config = ReheaderConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            requested_mode: ReheaderExecutionMode::SafeRewrite,
+            rewrite_fallback_permitted: false,
+            dry_run: false,
+            force: true,
+            reindex: true,
+            verify_checksum: true,
+            header_path: Some(replacement.clone()),
+            add_rgs: Vec::new(),
+            set_rgs: Vec::new(),
+            remove_rgs: Vec::new(),
+            set_sample: None,
+            set_platform: None,
+            target_rg: None,
+            set_pgs: Vec::new(),
+            add_comments: Vec::new(),
+        };
+
+        let payload = execute(&config)
+            .expect("reheader rewrite should succeed")
+            .payload;
+        let output_header = parse_bam_header(&output).expect("rewritten header should parse");
+        let output_record = first_record(&output);
+        cleanup(&[input, output, index, replacement]);
+
+        assert_eq!(
+            payload.mutation.operations[0].operation,
+            ReheaderOperationKind::ReplaceHeader
+        );
+        assert_eq!(
+            payload.execution.mode_used,
+            Some(ReheaderExecutionMode::SafeRewrite)
+        );
+        assert!(payload.output.written);
+        assert!(payload.index.present_before);
+        assert_eq!(payload.index.valid_after, Some(false));
+        assert!(payload.index.reindex_requested);
+        assert!(!payload.index.reindexed);
+        assert_eq!(payload.index.kind, Some(IndexKind::Bai));
+        assert!(payload.checksum_verification.performed);
+        assert!(!payload.checksum_verification.header_included);
+        assert_eq!(payload.checksum_verification.r#match, Some(true));
+        assert_eq!(output_header.header.read_groups.len(), 1);
+        assert_eq!(
+            output_header.header.read_groups[0].id.as_deref(),
+            Some("rg1")
+        );
+        assert_eq!(output_header.header.programs[0].id.as_deref(), Some("pg1"));
+        assert_eq!(output_header.header.comments, vec!["replaced"]);
+        assert_eq!(output_record.read_name, "read1");
+        assert_eq!(output_record.aux_bytes, b"RGZrg0\0");
+    }
+
+    #[test]
+    fn true_in_place_execution_fails_when_not_proven_safe() {
+        let input = temp_path("reheader-in-place", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:100\n",
+            vec![test_record("read1", None)],
+        );
+        let config = ReheaderConfig {
+            input_path: input.clone(),
+            output_path: None,
+            requested_mode: ReheaderExecutionMode::InPlace,
+            rewrite_fallback_permitted: false,
+            dry_run: false,
+            force: false,
+            reindex: false,
+            verify_checksum: false,
+            header_path: None,
+            add_rgs: Vec::new(),
+            set_rgs: Vec::new(),
+            remove_rgs: Vec::new(),
+            set_sample: None,
+            set_platform: None,
+            target_rg: None,
+            set_pgs: Vec::new(),
+            add_comments: vec!["not in place".to_string()],
+        };
+
+        let error = execute(&config).expect_err("unsafe in-place reheader should fail");
+        cleanup(&[input, default_output_path(&config.input_path)]);
+
+        match error {
+            AppError::InPlaceNotFeasible { detail, .. } => {
+                assert!(detail.contains("true BGZF header patching"));
+            }
+            other => panic!("expected in-place feasibility error, got {other:?}"),
+        }
+    }
+
+    fn test_record(read_name: &str, read_group: Option<&str>) -> RecordLayout {
+        let mut aux_bytes = Vec::new();
+        if let Some(read_group) = read_group {
+            aux_bytes.extend_from_slice(b"RG");
+            aux_bytes.push(b'Z');
+            aux_bytes.extend_from_slice(read_group.as_bytes());
+            aux_bytes.push(0);
+        }
+
+        RecordLayout {
+            block_size: 0,
+            ref_id: 0,
+            pos: 0,
+            bin: 4680,
+            next_ref_id: -1,
+            next_pos: -1,
+            tlen: 0,
+            flags: 0,
+            mapping_quality: 60,
+            n_cigar_op: 0,
+            l_seq: 4,
+            read_name: read_name.to_string(),
+            cigar_bytes: Vec::new(),
+            sequence_bytes: encode_bam_sequence("ACGT").expect("sequence should encode"),
+            quality_bytes: encode_bam_qualities("!!!!").expect("quality should encode"),
+            aux_bytes,
+        }
+    }
+
+    fn write_test_bam(path: &Path, header_text: &str, records: Vec<RecordLayout>) {
+        let header_payload = serialize_bam_header_payload(
+            path,
+            header_text,
+            &[ReferenceRecord {
+                name: "chr1".to_string(),
+                length: 100,
+                index: 0,
+                header_fields: ReferenceHeaderFields::default(),
+                text_header_length: Some(100),
+            }],
+        )
+        .expect("header should serialize");
+        let mut writer = BgzfWriter::create(path).expect("writer should create");
+        writer
+            .write_all(&header_payload)
+            .expect("header should write");
+        for record in records {
+            writer
+                .write_all(&serialize_record_layout(&record))
+                .expect("record should write");
+        }
+        writer.finish().expect("writer should finish");
+    }
+
+    fn first_record(path: &Path) -> RecordLayout {
+        let mut reader = BamReader::open(path).expect("BAM should open");
+        let _ = parse_bam_header_from_reader(&mut reader).expect("header should parse");
+        read_next_record_layout(&mut reader)
+            .expect("record read should succeed")
+            .expect("record should exist")
+    }
+
+    fn temp_path(name: &str, suffix: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "bamana-{name}-{}-{nonce}.{suffix}",
+            std::process::id()
+        ))
+    }
+
+    fn cleanup(paths: &[PathBuf]) {
+        for path in paths {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
