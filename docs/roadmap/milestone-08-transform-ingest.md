@@ -110,6 +110,16 @@ domains, shard boundaries, ingest policy, dry-run behavior, CRAM compatibility,
 deferred checksum verification, deferred index behavior, and in-memory
 first-slice caveats without claiming full external-tool parity.
 
+M8.3 hardened `sort` as the first M8 implementation target. The BAM loading
+side now uses `BamScanner` plus `BamRecordView::to_record_layout` before the
+existing native record-layout writer bridge, preserving native header
+rewriting, BGZF output writing, and canonical checksum verification. Tests now
+cover coordinate ordering, unmapped placement, reverse/tie ordering,
+lexicographical queryname ordering, header sort metadata, overwrite safety,
+checksum verification reporting, and index deferral. `scanner_microbench
+--bamana-bin` now includes a `sort` command smoke timing for coordinate rewrite
+with canonical checksum verification.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

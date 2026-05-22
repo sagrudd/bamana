@@ -74,6 +74,23 @@ boundaries, ingest policy, dry-run behavior, CRAM compatibility, deferred
 checksum verification, deferred index behavior, and in-memory first-slice
 caveats. They do not claim full external-tool parity or native CRAM ownership.
 
+Sort Hardening
+--------------
+
+M8.3 hardens ``sort`` as the first M8 implementation target. The command now
+loads BAM records through ``BamScanner`` and bridges each ``BamRecordView`` into
+the native record-layout writer path before ordering and BGZF output. This
+keeps header parsing, record loading, ordering, serialization, BGZF writing,
+and optional canonical checksum verification within Bamana-native code.
+
+The hardened test surface covers coordinate ordering, unmapped placement,
+reverse/tie ordering, lexicographical queryname ordering, header sort metadata,
+overwrite safety, checksum verification reporting, and index deferral. The
+current implementation remains an in-memory first slice, and natural queryname
+ordering remains explicitly deferred. ``scanner_microbench --bamana-bin`` now
+includes a ``sort`` command smoke timing for coordinate rewrite with canonical
+checksum verification.
+
 Activation Boundary
 -------------------
 

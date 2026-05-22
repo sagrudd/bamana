@@ -3641,7 +3641,7 @@ Completion evidence:
 
 ### M8.3 Harden `sort` Native Ordering And Rewrite Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3664,7 +3664,21 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `sort` native header parsing, record loading, ordering,
+  serialization, BGZF writing, checksum verification, and index reporting;
+* migrated `sort` record loading from the older `BamReader` /
+  `read_next_record_layout` loop to `BamScanner` plus
+  `BamRecordView::to_record_layout`, while preserving the existing native
+  header rewrite and record-layout BGZF writer bridge;
+* strengthened sort tests for coordinate ordering, unmapped placement,
+  reverse/tie ordering, lexicographical queryname ordering, header sort
+  metadata, overwrite safety, checksum verification reporting, index deferral,
+  memory-limit caveats, and natural-queryname deferral;
+* extended `scanner_microbench --bamana-bin` with a `sort` command smoke timing
+  for coordinate rewrite with canonical checksum verification, and updated the
+  benchmark result schema and Sphinx benchmark notes;
+* updated M8 roadmap, Sphinx transform/ingest notes, and this task map with
+  the scanner-backed sort boundary and first-slice limitations.
 
 ### M8.4 Harden `merge` Native Compatibility And Ordering Boundary
 

@@ -313,3 +313,128 @@ fn map_transform_error(error: AppError, input_path: &std::path::Path) -> AppErro
         other => other,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::{SortRequest, run};
+    use crate::{
+        bam::sort::{QuerynameSubOrder, SortOrder},
+        bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+    };
+
+    #[test]
+    fn sort_reports_checksum_verification_and_index_deferral() {
+        let input = write_temp_file(
+            "sort-command-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:unsorted\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 4, "read2", 0),
+                    build_light_record(0, 1, "read1", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-command-output-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(SortRequest {
+            bam: input.clone(),
+            out: output.clone(),
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 1,
+            memory_limit: Some(1024),
+            create_index: true,
+            verify_checksum: true,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("success payload should exist");
+        assert!(payload.output.written);
+        assert_eq!(payload.sort.produced_order, Some(SortOrder::Coordinate));
+        assert_eq!(payload.records.records_read, Some(2));
+        assert_eq!(payload.records.records_written, Some(2));
+        assert!(payload.index.requested);
+        assert!(!payload.index.created);
+        assert!(payload.index.kind.is_some());
+        assert!(payload.checksum_verification.requested);
+        assert!(payload.checksum_verification.performed);
+        assert_eq!(payload.checksum_verification.r#match, Some(true));
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("BAI writing is not implemented"))
+        );
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("not yet enforced"))
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn queryname_sort_reports_coordinate_index_unsuitable() {
+        let input = write_temp_file(
+            "sort-command-queryname-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 2, "b", 0),
+                    build_light_record(0, 1, "a", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-command-queryname-output-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(SortRequest {
+            bam: input.clone(),
+            out: output.clone(),
+            order: SortOrder::Queryname,
+            queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
+            threads: 1,
+            memory_limit: None,
+            create_index: true,
+            verify_checksum: false,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("success payload should exist");
+        assert_eq!(payload.sort.produced_order, Some(SortOrder::Queryname));
+        assert_eq!(
+            payload.sort.produced_sub_order,
+            Some(QuerynameSubOrder::Lexicographical)
+        );
+        assert!(payload.index.requested);
+        assert!(!payload.index.created);
+        assert!(payload.index.kind.is_none());
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("not suitable for standard coordinate BAM indexing"))
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+}

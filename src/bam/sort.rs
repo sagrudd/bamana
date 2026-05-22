@@ -9,11 +9,9 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{
-            parse_bam_header_from_reader, rewrite_header_for_sort, serialize_bam_header_payload,
-        },
-        reader::BamReader,
-        records::{RecordLayout, read_next_record_layout},
+        header::{rewrite_header_for_sort, serialize_bam_header_payload},
+        records::RecordLayout,
+        scan::BamScanner,
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
@@ -91,8 +89,8 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         (SortOrder::Queryname, None) => Some(QuerynameSubOrder::Lexicographical),
     };
 
-    let mut reader = BamReader::open(&options.input_path)?;
-    let parsed_header = parse_bam_header_from_reader(&mut reader)?;
+    let mut scanner = BamScanner::open(&options.input_path)?;
+    let parsed_header = scanner.header();
     let rewritten_header_text = rewrite_header_for_sort(
         &parsed_header.header.raw_header_text,
         sort_order_name(options.order),
@@ -106,12 +104,20 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
 
     let mut records = Vec::new();
     let mut ordinal = 0_u64;
-    loop {
-        let Some(layout) = read_next_record_layout(&mut reader)? else {
-            break;
-        };
-        records.push(SortableRecord { layout, ordinal });
+    while let Some(record) = scanner.next_record()? {
+        records.push(SortableRecord {
+            layout: record.to_record_layout(),
+            ordinal,
+        });
         ordinal += 1;
+    }
+
+    if ordinal != scanner.records_read() {
+        return Err(AppError::InvalidRecord {
+            path: options.input_path.clone(),
+            detail: "Sort scanner record count diverged from records materialized for sorting."
+                .to_string(),
+        });
     }
 
     sort_records(&mut records, options.order, queryname_suborder);
@@ -287,6 +293,7 @@ mod tests {
     use crate::{
         bam::{
             header::parse_bam_header,
+            scan::BamScanner,
             sort::{QuerynameSubOrder, SortExecutionOptions, SortOrder, sort_bam},
         },
         formats::bgzf::test_support::{
@@ -327,6 +334,137 @@ mod tests {
         let header = parse_bam_header(&output).expect("output header should parse");
         assert_eq!(header.header.hd.sort_order.as_deref(), Some("coordinate"));
         assert_eq!(result.records_written, 2);
+        let records = read_sorted_records(&output);
+        assert_eq!(record_names(&records), vec!["aread", "zread"]);
+        assert_eq!(
+            records.iter().map(|record| record.pos).collect::<Vec<_>>(),
+            vec![1, 9]
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn coordinate_sort_places_mapped_before_unmapped_and_uses_stable_ties() {
+        let input = write_temp_file(
+            "sort-coordinate-unmapped-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:unsorted\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(-1, -1, "unmapped", 0x4),
+                    build_light_record(0, 5, "reverse", 0x10),
+                    build_light_record(0, 5, "forward", 0),
+                    build_light_record(0, 5, "forward2", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-coordinate-unmapped-output-{}.bam",
+            std::process::id()
+        ));
+
+        sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: true,
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 1,
+            memory_limit: None,
+        })
+        .expect("sort should succeed");
+
+        let records = read_sorted_records(&output);
+        assert_eq!(
+            record_names(&records),
+            vec!["forward", "forward2", "reverse", "unmapped"]
+        );
+        assert_eq!(records.last().expect("last record").flags & 0x4, 0x4);
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn queryname_lexicographical_sort_rewrites_header_and_orders_by_name() {
+        let input = write_temp_file(
+            "sort-queryname-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 3, "read2", 0),
+                    build_light_record(0, 2, "read10", 0),
+                    build_light_record(0, 1, "read1", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-queryname-output-{}.bam",
+            std::process::id()
+        ));
+
+        let result = sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: true,
+            order: SortOrder::Queryname,
+            queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
+            threads: 1,
+            memory_limit: None,
+        })
+        .expect("sort should succeed");
+
+        let header = parse_bam_header(&output).expect("output header should parse");
+        assert_eq!(header.header.hd.sort_order.as_deref(), Some("queryname"));
+        assert_eq!(
+            header.header.hd.sub_sort_order.as_deref(),
+            Some("queryname:lexicographical")
+        );
+        assert_eq!(
+            result.produced_sub_order,
+            Some(QuerynameSubOrder::Lexicographical)
+        );
+        let records = read_sorted_records(&output);
+        assert_eq!(record_names(&records), vec!["read1", "read10", "read2"]);
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn existing_output_requires_force_and_preserves_sentinel() {
+        let input = write_temp_file(
+            "sort-existing-output-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output = write_temp_file("sort-existing-output-sentinel", "bam", b"sentinel");
+
+        let error = sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: false,
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 1,
+            memory_limit: None,
+        })
+        .expect_err("existing output should require force");
+
+        assert_eq!(error.to_json_error().code, "output_exists");
+        assert_eq!(
+            fs::read(&output).expect("sentinel should still exist"),
+            b"sentinel"
+        );
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
@@ -362,5 +500,21 @@ mod tests {
         assert_eq!(error.to_json_error().code, "unimplemented");
 
         fs::remove_file(input).expect("fixture should be removable");
+    }
+
+    fn read_sorted_records(path: &std::path::Path) -> Vec<crate::bam::records::RecordLayout> {
+        let mut scanner = BamScanner::open(path).expect("sorted BAM should open through scanner");
+        let mut records = Vec::new();
+        while let Some(record) = scanner.next_record().expect("sorted record should scan") {
+            records.push(record.to_record_layout());
+        }
+        records
+    }
+
+    fn record_names(records: &[crate::bam::records::RecordLayout]) -> Vec<&str> {
+        records
+            .iter()
+            .map(|record| record.read_name.as_str())
+            .collect()
     }
 }

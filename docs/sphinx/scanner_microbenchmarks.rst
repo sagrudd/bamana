@@ -41,7 +41,7 @@ The JSON result contains:
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
-  ``check_tag``, ``subsample_bam``, ``inspect_duplication``, and
+  ``check_tag``, ``subsample_bam``, ``sort``, ``inspect_duplication``,
   ``deduplicate``, and ``forensic_inspect`` command timings when
   ``--bamana-bin`` is supplied
 
@@ -56,8 +56,9 @@ input. ``check_sort`` is run in strict mode. ``check_map`` and ``summary`` run
 without adjacent index sidecars, so they exercise scanner-derived evidence
 rather than index-derived evidence. ``check_tag`` performs a full scan for the
 synthetic ``NM`` auxiliary tag, ``validate`` runs the default full structural
-pass, ``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over
-the deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
+pass, ``sort`` runs a coordinate rewrite with canonical checksum verification,
+``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over the
+deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
 ``qname-seq-qual-rg`` CLI plan. ``forensic_inspect`` runs explicit full-scan
 header, read-group, program-chain, read-name, tag, and duplication-hallmark
 scopes. These timings do not exercise malformed-input paths and do not imply
@@ -67,6 +68,12 @@ comparator parity with external tools.
 fixture. It proves the BAM ``subsample`` CLI path is runnable through the
 benchmark hook, but it should be interpreted as command smoke timing rather
 than output-write throughput.
+
+``sort`` is a command-level rewrite timing over the generated BAM fixture. It
+proves the current scanner-backed load, in-memory coordinate ordering, native
+BGZF write, and canonical checksum verification path is runnable through the
+benchmark hook, but it should be interpreted as command smoke timing rather
+than external-memory sort throughput or comparator parity.
 
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path
