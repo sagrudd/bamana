@@ -78,8 +78,10 @@ The activation baseline found the following native paths already present:
   signatures, bounded scan caveats, malformed FASTQ parse uncertainty,
   BAM-only read-group identity semantics, and FASTQ rejection of RG identity.
 * `deduplicate` supports conservative BAM, FASTQ, and FASTQ.GZ remediation.
-  FASTQ output uses the native FASTQ writer and BAM output uses Bamana's
-  header serialization, record-layout serialization, and BGZF writer.
+  M7.6 moved BAM planning onto `BamScanner` with a native record-layout bridge,
+  while FASTQ output continues to use the native FASTQ writer and BAM output
+  continues to use Bamana's header serialization, record-layout serialization,
+  and BGZF writer.
 * `forensic_inspect` is BAM-first and uses `BamScanner` plus native header,
   record, aux-tag, read-name, and duplication-hallmark evidence.
 
@@ -87,15 +89,13 @@ Hardening still required by the milestone:
 
 * continue to distinguish `reheader` header-only behavior from `annotate_rg`
   record-level mutation;
-* reconcile BAM `deduplicate` loading with scanner-owned raw-record or writer
-  bridge APIs, since it still loads BAM through `BamReader`,
-  `parse_bam_header_from_reader`, and `read_next_record_layout`;
 * add command-level smoke benchmark evidence for the complete M7 command set.
 
 M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
 as the first M7 command-level benchmark hook. M7.4 added the corresponding
 `annotate_rg` dry-run smoke timing. M7.5 added `inspect_duplication` command
-smoke timing to `scanner_microbench --bamana-bin`.
+smoke timing to `scanner_microbench --bamana-bin`. M7.6 added `deduplicate`
+dry-run command smoke timing to the same scanner benchmark hook.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

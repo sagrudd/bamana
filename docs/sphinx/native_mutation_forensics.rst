@@ -36,10 +36,10 @@ collection-duplication and operator-error oriented; it is not biological
 duplicate marking.
 
 ``deduplicate`` supports conservative BAM, FASTQ, and FASTQ.GZ remediation.
-FASTQ output uses the native FASTQ writer. BAM output uses native header
-serialization, record-layout serialization, and the native BGZF writer, while
-the BAM loading path still needs M7 hardening toward scanner-owned raw-record
-or writer-bridge APIs.
+FASTQ input and output use the native FASTQ reader and writer. BAM planning
+uses ``BamScanner`` plus ``BamRecordView`` conversion into the native
+record-layout writer bridge, and BAM output uses native header serialization,
+record-layout serialization, and the native BGZF writer.
 
 ``forensic_inspect`` is BAM-first and uses ``BamScanner`` plus native header,
 record, aux-tag, read-name, and duplication-hallmark evidence. It remains

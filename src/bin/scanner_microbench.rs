@@ -166,6 +166,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let command_timings = match args.bamana_bin.as_deref() {
         Some(bamana_bin) => {
             let subsample_output = workdir.join("scanner-microbench-subsample-out.bam");
+            let deduplicate_output = workdir.join("scanner-microbench-deduplicate-out.bam");
             vec![
                 measure_command(
                     "summary",
@@ -240,6 +241,27 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     ],
                     args.iterations,
                 )?,
+                measure_command(
+                    "deduplicate",
+                    bamana_bin,
+                    &[
+                        "deduplicate",
+                        "--input",
+                        fixture_arg(&fixture),
+                        "--out",
+                        fixture_arg(&deduplicate_output),
+                        "--mode",
+                        "contiguous-block",
+                        "--identity",
+                        "qname-seq-qual-rg",
+                        "--min-block-size",
+                        "2",
+                        "--dry-run",
+                        "--full-scan",
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
             ]
         }
         None => Vec::new(),
@@ -252,11 +274,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, and inspect_duplication when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, inspect_duplication, and deduplicate dry-run when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, and inspect_duplication uses a full qname-seq-qual-rg CLI scan."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, inspect_duplication uses a full qname-seq-qual-rg CLI scan, and deduplicate uses a full dry-run qname-seq-qual-rg CLI plan."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {

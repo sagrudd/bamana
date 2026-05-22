@@ -2992,17 +2992,15 @@ Known present pieces:
   uses `BamScanner` plus native FASTQ helpers for current scan paths;
 * `deduplicate` already implements conservative remediation modes for BAM,
   FASTQ, and FASTQ.GZ inputs, with dry-run and applied modes;
-* FASTQ-side `deduplicate` uses the native FASTQ reader and writer, and
-  BAM-side `deduplicate` writes through native header serialization,
-  record-layout serialization, and BGZF writer primitives;
+* FASTQ-side `deduplicate` uses the native FASTQ reader and writer, and M7.6
+  moved BAM-side `deduplicate` planning onto `BamScanner` plus
+  `BamRecordView::to_record_layout` while preserving native header
+  serialization, record-layout serialization, and BGZF writer primitives;
 * `forensic_inspect` already uses scanner-backed BAM body evidence for
   read-group, read-name, aux-tag, and duplication-hallmark checks.
 
 Known gaps:
 
-* `deduplicate` BAM paths still use `BamReader::open`,
-  `parse_bam_header_from_reader`, and `read_next_record_layout` rather than a
-  scanner-owned raw-record or native writer bridge;
 * command contracts and examples need a fresh pass for mutation safety,
   dry-run/apply distinctions, remediation limits, and forensic caveats;
 * command-level benchmark smoke evidence is not yet recorded for the full M7
@@ -3245,7 +3243,7 @@ Completion evidence:
 
 ### M7.6 Harden `deduplicate` Conservative Remediation Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3269,7 +3267,25 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/forensics/deduplicate.rs` and confirmed FASTQ/FASTQ.GZ loading
+  and output use the Milestone 4 `open_fastq_reader`,
+  `read_next_fastq_record`, and `write_fastq_records` APIs;
+* migrated BAM planning from the older `BamReader`/`read_next_record_layout`
+  path to `BamScanner` plus `BamRecordView::to_record_layout`, preserving the
+  existing native BAM writer bridge through header serialization,
+  record-layout serialization, and `BgzfWriter`;
+* strengthened `deduplicate` unit coverage for dry-run plans, applied FASTQ
+  and BAM remediation, keep-first/keep-last behavior, whole-file append mode,
+  local contiguous-block handling, reserved `global-exact` mode, removed-record
+  report emission, checksum provenance, index invalidation reporting, and
+  malformed FASTQ parse uncertainty;
+* confirmed dry-run and applied payloads remain visibly distinct through
+  execution, summary, output, checksum, and notes fields;
+* extended `scanner_microbench --bamana-bin` command smoke timings to include
+  a full-scan `deduplicate` dry-run plan and updated the benchmark result
+  schema plus Sphinx benchmark documentation;
+* kept the governed `deduplicate` JSON contract stable while adding hardening
+  tests, native scanner migration, and benchmark smoke coverage.
 
 ### M7.7 Harden `forensic_inspect` Provenance Boundary
 

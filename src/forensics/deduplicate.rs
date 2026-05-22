@@ -14,13 +14,11 @@ use crate::{
             ChecksumAlgorithm, ChecksumFilters, ChecksumMode, ChecksumOptions, compute_checksums,
             extract_digest,
         },
-        header::{HeaderPayload, parse_bam_header_from_reader, serialize_bam_header_payload},
+        header::{HeaderPayload, serialize_bam_header_payload},
         index::{IndexKind, IndexResolution, ResolvedIndex, resolve_index_for_bam},
-        reader::BamReader,
-        records::{
-            RecordLayout, decode_bam_qualities, decode_bam_sequence, read_next_record_layout,
-        },
-        tags::extract_string_aux_tag,
+        records::{RecordLayout, decode_bam_qualities, decode_bam_sequence},
+        scan::BamScanner,
+        tags::extract_record_string_aux_tag,
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
@@ -482,12 +480,12 @@ fn load_bam(config: &DeduplicateConfig) -> Result<LoadedScan, AppError> {
         IndexResolution::NotFound => None,
     };
 
-    let mut reader = BamReader::open(&config.input)?;
-    let header =
-        parse_bam_header_from_reader(&mut reader).map_err(|error| AppError::ParseUncertainty {
+    let mut scanner =
+        BamScanner::open(&config.input).map_err(|error| AppError::ParseUncertainty {
             path: config.input.clone(),
-            detail: error.to_string(),
+            detail: app_error_detail(&error).unwrap_or_else(|| error.to_string()),
         })?;
+    let header = scanner.header().clone();
 
     let mut records = Vec::new();
     let mut identities = Vec::new();
@@ -496,8 +494,8 @@ fn load_bam(config: &DeduplicateConfig) -> Result<LoadedScan, AppError> {
     let mut reached_eof = false;
 
     while records_examined < record_limit {
-        let layout = match read_next_record_layout(&mut reader) {
-            Ok(Some(layout)) => layout,
+        let record = match scanner.next_record() {
+            Ok(Some(record)) => record,
             Ok(None) => {
                 reached_eof = true;
                 break;
@@ -513,21 +511,19 @@ fn load_bam(config: &DeduplicateConfig) -> Result<LoadedScan, AppError> {
             Err(error) => return Err(error),
         };
 
-        let sequence =
-            decode_bam_sequence(&layout.sequence_bytes, layout.l_seq).map_err(|detail| {
-                AppError::ParseUncertainty {
-                    path: config.input.clone(),
-                    detail,
-                }
+        let sequence = decode_bam_sequence(record.sequence_bytes(), record.sequence_len())
+            .map_err(|detail| AppError::ParseUncertainty {
+                path: config.input.clone(),
+                detail,
             })?;
-        let quality = decode_bam_qualities(&layout.quality_bytes).map_err(|detail| {
+        let quality = decode_bam_qualities(record.quality_bytes()).map_err(|detail| {
             AppError::ParseUncertainty {
                 path: config.input.clone(),
                 detail,
             }
         })?;
         let read_group = if config.identity_mode == DuplicationIdentityMode::QnameSeqQualRg {
-            extract_string_aux_tag(&layout.aux_bytes, *b"RG").map_err(|detail| {
+            extract_record_string_aux_tag(&record, *b"RG").map_err(|detail| {
                 AppError::ParseUncertainty {
                     path: config.input.clone(),
                     detail,
@@ -536,10 +532,12 @@ fn load_bam(config: &DeduplicateConfig) -> Result<LoadedScan, AppError> {
         } else {
             None
         };
+        let read_name = record.read_name().to_string();
+        let layout = record.to_record_layout();
 
         let key = build_duplication_identity_key(
             config.identity_mode,
-            &layout.read_name,
+            &read_name,
             &sequence,
             Some(quality.as_str()),
             read_group.as_deref(),
@@ -886,6 +884,17 @@ fn detected_format_from_error(config: &DeduplicateConfig, error: &AppError) -> D
     }
 }
 
+fn app_error_detail(error: &AppError) -> Option<String> {
+    match error {
+        AppError::InvalidHeader { detail, .. }
+        | AppError::InvalidRecord { detail, .. }
+        | AppError::InvalidBam { detail, .. }
+        | AppError::ParseUncertainty { detail, .. }
+        | AppError::TruncatedFile { detail, .. } => Some(detail.clone()),
+        _ => None,
+    }
+}
+
 fn base_payload(
     format: DetectedFormat,
     mode: DeduplicateMode,
@@ -909,7 +918,7 @@ fn base_payload(
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf};
+    use std::{fs, io::BufRead, path::PathBuf};
 
     use crate::{
         bam::{
@@ -923,11 +932,14 @@ mod tests {
             },
             write::{BgzfWriter, serialize_record_layout},
         },
+        error::AppError,
         fastq::{open_fastq_reader, read_next_fastq_record},
         forensics::duplication::DuplicationIdentityMode,
     };
 
-    use super::{DeduplicateConfig, DeduplicateKeepPolicy, DeduplicateMode, execute};
+    use super::{
+        ChecksumMode, DeduplicateConfig, DeduplicateKeepPolicy, DeduplicateMode, IndexKind, execute,
+    };
 
     #[test]
     fn dry_run_detects_whole_file_append_in_fastq() {
@@ -1061,6 +1073,215 @@ mod tests {
         assert_eq!(retained, 2);
     }
 
+    #[test]
+    fn keep_last_policy_removes_first_copy_of_fastq_block() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-keep-last-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-keep-last-out-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &input,
+            concat!(
+                "@lead\nAAAA\n+\n!!!!\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@tail\nTTTT\n+\nJJJJ\n",
+            ),
+        )
+        .expect("fixture should write");
+        let mut config = base_config(&input, &output, false);
+        config.keep_policy = DeduplicateKeepPolicy::Last;
+
+        let payload = execute(&config).expect("applied dedup should succeed");
+        let ranges = payload.ranges.expect("ranges should be present");
+        let mut reader = open_fastq_reader(&output).expect("output should open through reader");
+        let retained = read_all_fastq_names(&mut reader, &output);
+        let _ = fs::remove_file(input);
+        let _ = fs::remove_file(output);
+
+        assert_eq!(ranges[0].keep_range.start, 4);
+        assert_eq!(ranges[0].keep_range.end, 5);
+        assert_eq!(ranges[0].remove_range.start, 2);
+        assert_eq!(ranges[0].remove_range.end, 3);
+        assert_eq!(retained, vec!["lead", "b1", "b2", "tail"]);
+    }
+
+    #[test]
+    fn whole_file_append_mode_ignores_local_block() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-whole-mode-local-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-whole-mode-local-out-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &input,
+            concat!(
+                "@lead\nAAAA\n+\n!!!!\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@tail\nTTTT\n+\nJJJJ\n",
+            ),
+        )
+        .expect("fixture should write");
+        let mut config = base_config(&input, &output, true);
+        config.mode = DeduplicateMode::WholeFileAppend;
+
+        let payload = execute(&config).expect("dry run should succeed");
+        let _ = fs::remove_file(input);
+
+        assert_eq!(
+            payload
+                .summary
+                .as_ref()
+                .map(|summary| summary.duplicate_ranges_detected),
+            Some(0)
+        );
+        assert!(payload.ranges.as_ref().is_some_and(Vec::is_empty));
+        assert!(
+            payload
+                .execution
+                .as_ref()
+                .is_some_and(|execution| !execution.modified)
+        );
+    }
+
+    #[test]
+    fn global_exact_mode_is_explicitly_reserved() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-global-exact-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-global-exact-out-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(&input, "@r1\nACGT\n+\n!!!!\n").expect("fixture should write");
+        let mut config = base_config(&input, &output, true);
+        config.mode = DeduplicateMode::GlobalExact;
+
+        let failure = execute(&config).expect_err("global-exact should be reserved");
+        let _ = fs::remove_file(input);
+
+        assert!(matches!(failure.error, AppError::Unimplemented { .. }));
+        assert_eq!(failure.payload.mode, DeduplicateMode::GlobalExact);
+    }
+
+    #[test]
+    fn dry_run_writes_removed_report_without_output_file() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-report-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-report-out-{}.fastq",
+            std::process::id()
+        ));
+        let report = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-report-{}.json",
+            std::process::id()
+        ));
+        fs::write(
+            &input,
+            "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n",
+        )
+        .expect("fixture should write");
+        let mut config = base_config(&input, &output, true);
+        config.emit_removed_report = Some(report.clone());
+
+        let payload = execute(&config).expect("dry run should succeed");
+        let report_body = fs::read_to_string(&report).expect("report should be readable");
+        let report_json: serde_json::Value =
+            serde_json::from_str(&report_body).expect("report should parse");
+        let _ = fs::remove_file(input);
+        let _ = fs::remove_file(report);
+
+        assert!(!output.exists());
+        assert!(payload.output.is_none());
+        assert_eq!(report_json["dry_run"], true);
+        assert_eq!(report_json["summary"]["records_marked_for_removal"], 2);
+        assert_eq!(report_json["ranges"].as_array().map(Vec::len), Some(1));
+    }
+
+    #[test]
+    fn applied_bam_reports_index_and_checksum_evidence() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-bam-index-in-{}.bam",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-bam-index-out-{}.bam",
+            std::process::id()
+        ));
+        let index = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+        write_test_bam(
+            &input,
+            vec![
+                build_test_record("r1", "ACGT", "!!!!", Some("rg1")),
+                build_test_record("r2", "TGCA", "####", Some("rg1")),
+                build_test_record("r1", "ACGT", "!!!!", Some("rg1")),
+                build_test_record("r2", "TGCA", "####", Some("rg1")),
+            ],
+        );
+        fs::write(&index, b"BAI\x01").expect("index marker should write");
+        let mut config = base_config(&input, &output, false);
+        config.verify_checksum = true;
+        config.reindex = true;
+
+        let payload = execute(&config).expect("applied dedup should succeed");
+        let _ = fs::remove_file(input);
+        let _ = fs::remove_file(output);
+        let _ = fs::remove_file(index);
+
+        let index_info = payload.index.expect("index info should be present");
+        assert!(index_info.present_before);
+        assert!(!index_info.valid_after);
+        assert!(index_info.reindex_requested);
+        assert!(!index_info.reindexed);
+        assert_eq!(index_info.kind, Some(IndexKind::Bai));
+        let checksum = payload
+            .checksum_verification
+            .expect("checksum info should be present");
+        assert!(checksum.requested);
+        assert!(checksum.performed);
+        assert_eq!(checksum.mode, Some(ChecksumMode::CanonicalRecordOrder));
+        assert!(checksum.input_digest.is_some());
+        assert!(checksum.output_digest.is_some());
+        assert_eq!(checksum.matched, None);
+    }
+
+    #[test]
+    fn malformed_fastq_returns_parse_uncertainty_without_output() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-malformed-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-malformed-out-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(&input, "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n").expect("fixture should write");
+
+        let failure =
+            execute(&base_config(&input, &output, false)).expect_err("malformed input should fail");
+        let _ = fs::remove_file(input);
+
+        assert!(matches!(failure.error, AppError::ParseUncertainty { .. }));
+        assert!(!output.exists());
+        assert!(failure.payload.output.is_none());
+        assert!(failure.payload.summary.is_none());
+    }
+
     fn base_config(input: &PathBuf, out: &PathBuf, dry_run: bool) -> DeduplicateConfig {
         DeduplicateConfig {
             input: input.clone(),
@@ -1078,6 +1299,15 @@ mod tests {
             reindex: false,
             json_pretty: true,
         }
+    }
+
+    fn read_all_fastq_names(reader: &mut Box<dyn BufRead>, path: &PathBuf) -> Vec<String> {
+        let mut names = Vec::new();
+        while let Some(record) = read_next_fastq_record(reader, path).expect("record should parse")
+        {
+            names.push(record.read_name);
+        }
+        names
     }
 
     fn build_test_record(

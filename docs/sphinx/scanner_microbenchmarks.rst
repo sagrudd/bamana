@@ -41,8 +41,8 @@ The JSON result contains:
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
-  ``check_tag``, ``subsample_bam``, and ``inspect_duplication`` command
-  timings when ``--bamana-bin`` is supplied
+  ``check_tag``, ``subsample_bam``, ``inspect_duplication``, and
+  ``deduplicate`` command timings when ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
@@ -55,8 +55,9 @@ input. ``check_sort`` is run in strict mode. ``check_map`` and ``summary`` run
 without adjacent index sidecars, so they exercise scanner-derived evidence
 rather than index-derived evidence. ``check_tag`` performs a full scan for the
 synthetic ``NM`` auxiliary tag, ``validate`` runs the default full structural
-pass, and ``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over
-the deterministic BAM fixture. These timings do not exercise malformed-input
+pass, ``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over
+the deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
+``qname-seq-qual-rg`` CLI plan. These timings do not exercise malformed-input
 paths and do not imply comparator parity with external tools.
 
 ``subsample_bam`` is a command-level dry-run timing over the generated BAM
@@ -68,6 +69,11 @@ than output-write throughput.
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path
 is runnable through the benchmark hook, but it should be interpreted as command
 smoke timing rather than duplicate-detection sensitivity.
+
+``deduplicate`` is a command-level dry-run timing over the generated BAM
+fixture. It proves the conservative remediation CLI can build a native
+scanner-backed plan through the benchmark hook, but it should be interpreted as
+command smoke timing rather than applied output-write throughput.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived
