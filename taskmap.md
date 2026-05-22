@@ -3165,7 +3165,7 @@ Completion evidence:
 
 ### M7.4 Harden `annotate_rg` Native Record Annotation Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3185,7 +3185,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/bam/annotate_rg.rs` and confirmed the command remains backed by
+  native BAM header parsing, native SAM-style header serialization, native
+  aux-tag traversal, native record-layout serialization, and the native BGZF
+  writer;
+* added `annotate_rg` unit coverage for `only_missing`, `replace_existing`,
+  `fail_on_conflict`, `require_header_rg`, `create_header_rg`,
+  `add_header_rg`, `set_header_rg`, dry-run planning, checksum verification
+  with `RG` excluded, thread-count caveat reporting, and BAM index
+  invalidation reporting;
+* added record-output assertions proving `annotate_rg` mutates per-record
+  `RG:Z` tags while remaining distinct from header-only `reheader`;
+* extended `header_microbench --bamana-bin` command smoke timings to include an
+  `annotate_rg` dry-run path and updated the benchmark result schema and
+  Sphinx benchmark documentation;
+* kept the governed `annotate_rg` JSON contract stable while adding hardening
+  tests and benchmark smoke coverage.
 
 ### M7.5 Harden `inspect_duplication` Native Scan Boundary
 

@@ -32,8 +32,8 @@ The JSON result contains:
 
 * native header parse latency
 * deterministic native header serialization latency
-* optional ``verify``, ``header``, and ``reheader`` command timings when
-  ``--bamana-bin`` is supplied
+* optional ``verify``, ``header``, ``reheader``, and ``annotate_rg`` command
+  timings when ``--bamana-bin`` is supplied
 
 The codec timings and command timings answer different questions. Header parse
 latency measures native BGZF streaming plus native BAM header parsing for a
@@ -52,7 +52,7 @@ Milestone 2 Closeout
 
 The Milestone 2 closeout ran the ``small`` profile with one iteration and
 ``--bamana-bin`` so the JSON included both codec timings and command timings
-for ``verify`` and ``header``. Milestone 7 extends the same hook with a
-``reheader`` dry-run smoke path. Longer local runs should increase
-``--iterations`` and use ``medium`` or ``large`` when comparing header
-reference-dictionary scaling.
+for ``verify`` and ``header``. Milestone 7 extends the same hook with
+``reheader`` and ``annotate_rg`` dry-run smoke paths. Longer local runs should
+increase ``--iterations`` and use ``medium`` or ``large`` when comparing
+header reference-dictionary scaling.

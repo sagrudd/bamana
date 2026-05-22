@@ -71,5 +71,5 @@ Milestone 2 closeout evidence is recorded in ``taskmap.md``. The closeout run
 included ``cargo test``, ``cargo test --test contract``,
 ``header_microbench`` with ``verify`` and ``header`` command timings, JSON
 smoke validation for the benchmark output, and a Sphinx HTML build. Milestone 7
-later extends ``header_microbench --bamana-bin`` with a ``reheader`` dry-run
-command timing.
+later extends ``header_microbench --bamana-bin`` with ``reheader`` and
+``annotate_rg`` dry-run command timings.

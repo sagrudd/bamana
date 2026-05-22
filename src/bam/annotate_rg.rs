@@ -738,3 +738,311 @@ struct RecordRewriteSummary {
     records_missing_rg_before: u64,
     records_conflicting_before: u64,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use crate::{
+        bam::{
+            header::{
+                ReferenceHeaderFields, ReferenceRecord, parse_bam_header,
+                parse_bam_header_from_reader, serialize_bam_header_payload,
+            },
+            reader::BamReader,
+            records::{
+                RecordLayout, encode_bam_qualities, encode_bam_sequence, read_next_record_layout,
+            },
+            tags::extract_string_aux_tag,
+            write::{BgzfWriter, serialize_record_layout},
+        },
+        error::AppError,
+    };
+
+    use super::*;
+
+    #[test]
+    fn only_missing_create_header_rg_annotates_missing_records_only() {
+        let input = temp_path("annotate-rg-only-missing-input", "bam");
+        let output = temp_path("annotate-rg-only-missing-output", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n",
+            vec![
+                test_record("missing", None),
+                test_record("existing", Some("old")),
+            ],
+        );
+        let config = AnnotateRgConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            rg_id: "rg001".to_string(),
+            record_mode: AnnotateRgMode::OnlyMissing,
+            header_policy: AnnotateRgHeaderPolicy::CreateIfMissing,
+            add_header_rg: None,
+            set_header_rg: None,
+            dry_run: false,
+            force: true,
+            reindex: false,
+            verify_checksum: true,
+            threads: 1,
+        };
+
+        let payload = execute(&config)
+            .expect("only-missing annotate_rg should succeed")
+            .payload;
+        let output_header = parse_bam_header(&output).expect("output header should parse");
+        let records = read_records(&output);
+        cleanup(&[input, output]);
+
+        assert_eq!(
+            payload.execution.mode_used,
+            Some(AnnotateRgExecutionMode::SafeRewrite)
+        );
+        assert!(payload.execution.modified);
+        assert_eq!(payload.records.records_examined, Some(2));
+        assert_eq!(payload.records.records_annotated, Some(1));
+        assert_eq!(payload.records.records_missing_rg_before, Some(1));
+        assert_eq!(payload.records.records_conflicting_before, Some(1));
+        assert!(payload.header.header_modified);
+        assert!(payload.header.rg_present_after);
+        assert_eq!(payload.checksum_verification.excluded_tags, vec!["RG"]);
+        assert_eq!(payload.checksum_verification.r#match, Some(true));
+        assert_eq!(
+            output_header.header.read_groups[0].id.as_deref(),
+            Some("rg001")
+        );
+        assert_eq!(record_rg(&records[0]), Some("rg001".to_string()));
+        assert_eq!(record_rg(&records[1]), Some("old".to_string()));
+    }
+
+    #[test]
+    fn replace_existing_set_header_rg_reports_index_and_checksum_evidence() {
+        let input = temp_path("annotate-rg-replace-input", "bam");
+        let output = temp_path("annotate-rg-replace-output", "bam");
+        let index = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+        fs::write(&index, b"BAI\x01").expect("index marker should write");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n@RG\tID:rg001\tSM:old\n",
+            vec![
+                test_record("missing", None),
+                test_record("conflict", Some("old")),
+            ],
+        );
+        let config = AnnotateRgConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            rg_id: "rg001".to_string(),
+            record_mode: AnnotateRgMode::ReplaceExisting,
+            header_policy: AnnotateRgHeaderPolicy::SetHeaderRg,
+            add_header_rg: None,
+            set_header_rg: Some("SM=new,PL=ONT".to_string()),
+            dry_run: false,
+            force: true,
+            reindex: true,
+            verify_checksum: true,
+            threads: 4,
+        };
+
+        let payload = execute(&config)
+            .expect("replace-existing annotate_rg should succeed")
+            .payload;
+        let output_header = parse_bam_header(&output).expect("output header should parse");
+        let records = read_records(&output);
+        cleanup(&[input, output, index]);
+
+        assert_eq!(payload.records.records_examined, Some(2));
+        assert_eq!(payload.records.records_annotated, Some(2));
+        assert_eq!(payload.records.records_missing_rg_before, Some(1));
+        assert_eq!(payload.records.records_conflicting_before, Some(1));
+        assert!(payload.index.present_before);
+        assert_eq!(payload.index.valid_after, Some(false));
+        assert!(payload.index.reindex_requested);
+        assert!(!payload.index.reindexed);
+        assert_eq!(payload.index.kind, Some(IndexKind::Bai));
+        assert!(payload.checksum_verification.performed);
+        assert_eq!(payload.checksum_verification.r#match, Some(true));
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("single-stream rewrite"))
+        );
+        let rg = &output_header.header.read_groups[0];
+        assert_eq!(rg.id.as_deref(), Some("rg001"));
+        assert_eq!(rg.sample.as_deref(), Some("new"));
+        assert_eq!(rg.platform.as_deref(), Some("ONT"));
+        assert_eq!(record_rg(&records[0]), Some("rg001".to_string()));
+        assert_eq!(record_rg(&records[1]), Some("rg001".to_string()));
+    }
+
+    #[test]
+    fn fail_on_conflict_rejects_record_level_rg_mismatch() {
+        let input = temp_path("annotate-rg-conflict-input", "bam");
+        let output = temp_path("annotate-rg-conflict-output", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n@RG\tID:rg001\tSM:sample\n",
+            vec![test_record("conflict", Some("old"))],
+        );
+        let config = AnnotateRgConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            rg_id: "rg001".to_string(),
+            record_mode: AnnotateRgMode::FailOnConflict,
+            header_policy: AnnotateRgHeaderPolicy::RequireExisting,
+            add_header_rg: None,
+            set_header_rg: None,
+            dry_run: false,
+            force: true,
+            reindex: false,
+            verify_checksum: false,
+            threads: 1,
+        };
+
+        let error = execute(&config).expect_err("conflicting RG should fail");
+        cleanup(&[input, output.clone(), temporary_output_path(&output)]);
+
+        match error {
+            AppError::ConflictingReadGroupTags { detail, .. } => {
+                assert!(detail.contains("different from requested"));
+            }
+            other => panic!("expected conflicting RG error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn dry_run_add_header_rg_reports_header_plan_without_writing() {
+        let input = temp_path("annotate-rg-dry-run-input", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n",
+            vec![test_record("missing", None)],
+        );
+        let config = AnnotateRgConfig {
+            input_path: input.clone(),
+            output_path: None,
+            rg_id: "rg-dry".to_string(),
+            record_mode: AnnotateRgMode::OnlyMissing,
+            header_policy: AnnotateRgHeaderPolicy::AddHeaderRg,
+            add_header_rg: Some("SM=dry,PL=ONT".to_string()),
+            set_header_rg: None,
+            dry_run: true,
+            force: false,
+            reindex: true,
+            verify_checksum: true,
+            threads: 1,
+        };
+
+        let payload = execute(&config)
+            .expect("dry-run annotate_rg should succeed")
+            .payload;
+        let default_output = default_output_path(&config.input_path);
+        cleanup(&[input, default_output.clone()]);
+
+        assert!(payload.execution.dry_run);
+        assert_eq!(payload.execution.mode_used, None);
+        assert!(!payload.output.written);
+        assert!(!default_output.exists());
+        assert!(payload.header.header_modified);
+        assert!(payload.header.rg_present_after);
+        assert_eq!(payload.index.valid_after, None);
+        assert_eq!(payload.checksum_verification.excluded_tags, vec!["RG"]);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("No file modifications"))
+        );
+    }
+
+    fn test_record(read_name: &str, read_group: Option<&str>) -> RecordLayout {
+        let mut aux_bytes = Vec::new();
+        if let Some(read_group) = read_group {
+            aux_bytes.extend_from_slice(b"RG");
+            aux_bytes.push(b'Z');
+            aux_bytes.extend_from_slice(read_group.as_bytes());
+            aux_bytes.push(0);
+        }
+
+        RecordLayout {
+            block_size: 0,
+            ref_id: 0,
+            pos: 0,
+            bin: 4680,
+            next_ref_id: -1,
+            next_pos: -1,
+            tlen: 0,
+            flags: 0,
+            mapping_quality: 60,
+            n_cigar_op: 0,
+            l_seq: 4,
+            read_name: read_name.to_string(),
+            cigar_bytes: Vec::new(),
+            sequence_bytes: encode_bam_sequence("ACGT").expect("sequence should encode"),
+            quality_bytes: encode_bam_qualities("!!!!").expect("quality should encode"),
+            aux_bytes,
+        }
+    }
+
+    fn write_test_bam(path: &Path, header_text: &str, records: Vec<RecordLayout>) {
+        let header_payload = serialize_bam_header_payload(
+            path,
+            header_text,
+            &[ReferenceRecord {
+                name: "chr1".to_string(),
+                length: 100,
+                index: 0,
+                header_fields: ReferenceHeaderFields::default(),
+                text_header_length: Some(100),
+            }],
+        )
+        .expect("header should serialize");
+        let mut writer = BgzfWriter::create(path).expect("writer should create");
+        writer
+            .write_all(&header_payload)
+            .expect("header should write");
+        for record in records {
+            writer
+                .write_all(&serialize_record_layout(&record))
+                .expect("record should write");
+        }
+        writer.finish().expect("writer should finish");
+    }
+
+    fn read_records(path: &Path) -> Vec<RecordLayout> {
+        let mut reader = BamReader::open(path).expect("BAM should open");
+        let _ = parse_bam_header_from_reader(&mut reader).expect("header should parse");
+        let mut records = Vec::new();
+        while let Some(record) = read_next_record_layout(&mut reader).expect("record should read") {
+            records.push(record);
+        }
+        records
+    }
+
+    fn record_rg(record: &RecordLayout) -> Option<String> {
+        extract_string_aux_tag(&record.aux_bytes, *b"RG").expect("RG tag should parse")
+    }
+
+    fn temp_path(name: &str, suffix: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "bamana-{name}-{}-{nonce}.{suffix}",
+            std::process::id()
+        ))
+    }
+
+    fn cleanup(paths: &[PathBuf]) {
+        for path in paths {
+            let _ = fs::remove_file(path);
+        }
+    }
+}

@@ -69,7 +69,9 @@ The activation baseline found the following native paths already present:
   true in-place safety when not proven.
 * `annotate_rg` uses the native BAM header codec, native aux-tag traversal,
   native record-layout serialization, and the native BGZF writer for
-  record-level read-group annotation.
+  record-level read-group annotation. M7.4 added direct tests for record-mode
+  policies, header-policy choices, dry-run behavior, `RG`-excluded checksum
+  verification, index invalidation reporting, and output `RG:Z` mutation.
 * `inspect_duplication` scans BAM input through `BamScanner` and FASTQ or
   FASTQ.GZ input through the native FASTQ reader.
 * `deduplicate` supports conservative BAM, FASTQ, and FASTQ.GZ remediation.
@@ -88,7 +90,8 @@ Hardening still required by the milestone:
 * add command-level smoke benchmark evidence for the complete M7 command set.
 
 M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
-as the first M7 command-level benchmark hook.
+as the first M7 command-level benchmark hook. M7.4 added the corresponding
+`annotate_rg` dry-run smoke timing.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

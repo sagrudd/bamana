@@ -145,6 +145,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             measure_command("verify", bamana_bin, &fixture, args.iterations)?,
             measure_command("header", bamana_bin, &fixture, args.iterations)?,
             measure_command("reheader", bamana_bin, &fixture, args.iterations)?,
+            measure_command("annotate_rg", bamana_bin, &fixture, args.iterations)?,
         ],
         None => Vec::new(),
     };
@@ -310,6 +311,13 @@ fn measure_command(
                 .arg("header_microbench smoke")
                 .arg("--dry-run")
                 .arg("--rewrite-minimized");
+        } else if command_name == "annotate_rg" {
+            command
+                .arg("--rg-id")
+                .arg("rg0")
+                .arg("--only-missing")
+                .arg("--require-header-rg")
+                .arg("--dry-run");
         }
         let output = command
             .stdout(Stdio::null())
