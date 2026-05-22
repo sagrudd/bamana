@@ -2949,8 +2949,8 @@ Completion evidence:
   evidence;
 * confirmed production direct `noodles` usage remains isolated to documented
   CRAM compatibility through contract tests;
-* Milestone 6 is complete as of 2026-05-21, and Milestone 7 is the next active
-  milestone target.
+* Milestone 6 is complete as of 2026-05-21, and Milestone 7 became active on
+  2026-05-22 after that closeout was recorded.
 
 ## Milestone 7 Definition
 
@@ -2962,12 +2962,12 @@ inspection/validation wave because these commands have higher blast radius:
 they either mutate output, remediate duplicated collection blocks, or assemble
 operational provenance evidence.
 
-## Milestone 7 Planned State
+## Milestone 7 Current State
 
-Status: planned. Milestone 7 should not become active until Milestone 6 has
-closed, because the inspection/validation wave should establish the command
-contract, benchmark, and dependency-boundary discipline this mutation and
-forensics wave depends on.
+Status: active as of 2026-05-22. Milestone 7 became active only after
+Milestone 6 closed on 2026-05-21, so the inspection/validation wave's command
+contract, benchmark, and dependency-boundary discipline is available for this
+mutation and forensics wave.
 
 Known present pieces:
 
@@ -2976,32 +2976,33 @@ Known present pieces:
   forensic reports;
 * Milestone 3 native BAM scanner already backs BAM-body scans in
   `inspect_duplication` and `forensic_inspect`;
-* Milestone 4 is expected to stabilize native FASTQ/FASTQ.GZ parser and writer
-  APIs used by FASTQ-side duplication and deduplication paths;
+* Milestone 4 stabilized native FASTQ/FASTQ.GZ parser and writer APIs used by
+  FASTQ-side duplication and deduplication paths;
 * `reheader` command orchestration already separates header-only mutation from
   record-level `RG:Z` annotation and exposes dry-run, rewrite, reindex, and
   checksum verification controls;
+* `reheader` uses the native header codec, native header serialization, native
+  record-layout serialization, and native BGZF writer for current rewrite
+  paths;
 * `annotate_rg` command orchestration already enforces explicit record-mode and
   header-policy choices;
+* `annotate_rg` uses the native header codec, aux-tag traversal,
+  record-layout serialization, and native BGZF writer for safe rewrites;
 * `inspect_duplication` already supports BAM, FASTQ, and FASTQ.GZ inputs and
-  uses scanner/native FASTQ helpers for current scan paths;
+  uses `BamScanner` plus native FASTQ helpers for current scan paths;
 * `deduplicate` already implements conservative remediation modes for BAM,
   FASTQ, and FASTQ.GZ inputs, with dry-run and applied modes;
+* FASTQ-side `deduplicate` uses the native FASTQ reader and writer, and
+  BAM-side `deduplicate` writes through native header serialization,
+  record-layout serialization, and BGZF writer primitives;
 * `forensic_inspect` already uses scanner-backed BAM body evidence for
   read-group, read-name, aux-tag, and duplication-hallmark checks.
 
 Known gaps:
 
-* the M7 command set has not yet been audited as one governed mutation,
-  remediation, and forensics wave;
 * `deduplicate` BAM paths still use `BamReader::open`,
   `parse_bam_header_from_reader`, and `read_next_record_layout` rather than a
   scanner-owned raw-record or native writer bridge;
-* `reheader` and `annotate_rg` implementation modules need a fresh native-core
-  audit for header serialization, record serialization, checksum verification,
-  and index invalidation boundaries;
-* FASTQ-side duplication and deduplication paths need to be reconciled with the
-  stable Milestone 4 reader/writer APIs;
 * command contracts and examples need a fresh pass for mutation safety,
   dry-run/apply distinctions, remediation limits, and forensic caveats;
 * command-level benchmark smoke evidence is not yet recorded for the full M7
@@ -3040,7 +3041,7 @@ Command-surface scope:
 
 ### M7.1 Activate Milestone 7 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3066,7 +3067,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed Milestone 6 is recorded complete and Milestone 7 is active only
+  after the 2026-05-21 M6 closeout;
+* audited `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect` command and helper paths;
+* recorded that `reheader` and `annotate_rg` use native header, aux-tag,
+  record-layout, checksum-domain, and BGZF writer primitives while preserving
+  their header-only versus record-touching distinction;
+* recorded that `inspect_duplication` and `forensic_inspect` use `BamScanner`
+  for BAM body evidence, and that `inspect_duplication` plus `deduplicate` use
+  native FASTQ reader/writer paths for FASTQ and FASTQ.GZ inputs;
+* recorded the remaining BAM `deduplicate` hardening gap around
+  scanner-owned raw-record or writer-bridge loading;
+* updated README status text, current milestone notes, the Milestone 7 roadmap,
+  Sphinx technical notes, and this task map without changing command behavior.
 
 ### M7.2 Freeze Mutation And Forensics Contracts And Examples
 

@@ -4,11 +4,12 @@
 
 **Milestone 6: Native Inspection And Validation Commands** is complete as of
 2026-05-21. **Milestone 7: Native Mutation, Remediation, And Forensics
-Commands** is the next active milestone target.
+Commands** is active as of 2026-05-22.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
-completed on 2026-05-21.
+completed on 2026-05-21. Milestone 7 became active only after that M6
+closeout was recorded.
 
 See:
 
@@ -78,9 +79,10 @@ Closeout evidence:
 
 ## Command-Surface Boundary
 
-Milestone 6 evidence is limited to `check_eof`, `check_sort`, `check_map`,
-`summary`, `check_tag`, and `validate`.
+Milestone 7 evidence is limited to `reheader`, `annotate_rg`,
+`inspect_duplication`, `deduplicate`, and `forensic_inspect`.
 
-Mutation, rewrite, normalization, deduplication, forensic, checksum, sort,
-merge, explode, ingest, native CRAM, BAM index writing, and random-access work
-remain later milestones unless an explicit M6 task includes them.
+Large transform, ordering, merge, checksum, explode, ingest, native CRAM, BAM
+index writing, and random-access work remain later milestones unless an
+explicit M7 task includes them. The public contract commands `benchmark`,
+`fastq`, and `unmap` remain protected while M7 work proceeds.

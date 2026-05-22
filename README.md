@@ -423,9 +423,9 @@ bounded/full-scan evidence language, index-versus-scan distinctions, structural
 validation caveats, command smoke benchmark evidence, and explicit
 dependency-boundary protection for the M6 command paths.
 
-Milestone 7 is now the next active native-core milestone target. It focuses on
-native mutation, conservative remediation, and provenance-inspection command
-paths: `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+Milestone 7 is now the active native-core milestone. It focuses on native
+mutation, conservative remediation, and provenance-inspection command paths:
+`reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
 `forensic_inspect`.
 
 ## Specification Layer

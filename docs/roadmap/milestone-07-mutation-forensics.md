@@ -1,5 +1,7 @@
 # Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
+Status: active as of 2026-05-22, after Milestone 6 closed on 2026-05-21.
+
 ## Technical Goal
 
 Harden the next command wave on native BAM, FASTQ, scanner, and header
@@ -53,6 +55,38 @@ Primary beneficiaries:
 * `inspect_duplication`
 * `deduplicate`
 * `forensic_inspect`
+
+## M7.1 Baseline Audit
+
+The activation baseline found the following native paths already present:
+
+* `reheader` plans header-only mutations with the native BAM header codec,
+  serializes replacement headers with Bamana's header serializer, rewrites BAM
+  output through the native BGZF writer, and reports checksum and index
+  invalidation evidence. It does not modify per-record `RG:Z` tags.
+* `annotate_rg` uses the native BAM header codec, native aux-tag traversal,
+  native record-layout serialization, and the native BGZF writer for
+  record-level read-group annotation.
+* `inspect_duplication` scans BAM input through `BamScanner` and FASTQ or
+  FASTQ.GZ input through the native FASTQ reader.
+* `deduplicate` supports conservative BAM, FASTQ, and FASTQ.GZ remediation.
+  FASTQ output uses the native FASTQ writer and BAM output uses Bamana's
+  header serialization, record-layout serialization, and BGZF writer.
+* `forensic_inspect` is BAM-first and uses `BamScanner` plus native header,
+  record, aux-tag, read-name, and duplication-hallmark evidence.
+
+Hardening still required by the milestone:
+
+* freeze M7 schemas, examples, fixture coverage, and documentation language for
+  dry-run versus applied mutation and remediation;
+* continue to distinguish `reheader` header-only behavior from `annotate_rg`
+  record-level mutation;
+* reconcile BAM `deduplicate` loading with scanner-owned raw-record or writer
+  bridge APIs, since it still loads BAM through `BamReader`,
+  `parse_bam_header_from_reader`, and `read_next_record_layout`;
+* add command-level smoke benchmark evidence for the complete M7 command set;
+* ensure dependency-boundary tests name all five M7 command paths as a
+  protected milestone set.
 
 ## Acceptance Criteria
 
