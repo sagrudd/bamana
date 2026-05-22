@@ -73,7 +73,10 @@ The activation baseline found the following native paths already present:
   policies, header-policy choices, dry-run behavior, `RG`-excluded checksum
   verification, index invalidation reporting, and output `RG:Z` mutation.
 * `inspect_duplication` scans BAM input through `BamScanner` and FASTQ or
-  FASTQ.GZ input through the native FASTQ reader.
+  FASTQ.GZ input through the native FASTQ reader. M7.5 added direct tests for
+  clean full scans, whole-file append signatures, local contiguous-block
+  signatures, bounded scan caveats, malformed FASTQ parse uncertainty,
+  BAM-only read-group identity semantics, and FASTQ rejection of RG identity.
 * `deduplicate` supports conservative BAM, FASTQ, and FASTQ.GZ remediation.
   FASTQ output uses the native FASTQ writer and BAM output uses Bamana's
   header serialization, record-layout serialization, and BGZF writer.
@@ -91,7 +94,8 @@ Hardening still required by the milestone:
 
 M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
 as the first M7 command-level benchmark hook. M7.4 added the corresponding
-`annotate_rg` dry-run smoke timing.
+`annotate_rg` dry-run smoke timing. M7.5 added `inspect_duplication` command
+smoke timing to `scanner_microbench --bamana-bin`.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

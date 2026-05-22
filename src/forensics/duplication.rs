@@ -838,6 +838,215 @@ mod tests {
     }
 
     #[test]
+    fn clean_fastq_full_scan_reports_no_suspicious_duplication() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-clean-fastq-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &path,
+            "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n@r3\nGATT\n+\nIIII\n",
+        )
+        .expect("clean fastq fixture should write");
+
+        let payload = inspect_path(
+            &path,
+            DetectedFormat::Fastq,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect("clean inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(payload.scan_mode, Some(DuplicationScanMode::Full)));
+        assert_eq!(payload.records_examined, Some(3));
+        let summary = payload.summary.expect("summary should be present");
+        assert_eq!(summary.unique_identities, 3);
+        assert_eq!(summary.duplicate_identities, 0);
+        assert_eq!(summary.duplicate_records, 0);
+        assert!(
+            payload
+                .findings
+                .expect("findings should be present")
+                .is_empty()
+        );
+        let assessment = payload.assessment.expect("assessment should be present");
+        assert!(!assessment.duplication_detected);
+        assert!(!assessment.likely_operator_error);
+        assert_eq!(assessment.recommended_follow_up, None);
+    }
+
+    #[test]
+    fn detects_local_contiguous_block_without_whole_file_append_classification() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-local-block-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &path,
+            concat!(
+                "@lead\nAAAA\n+\n!!!!\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@b1\nCCCC\n+\n####\n",
+                "@b2\nGGGG\n+\nIIII\n",
+                "@tail\nTTTT\n+\nJJJJ\n",
+            ),
+        )
+        .expect("local block fastq fixture should write");
+
+        let payload = inspect_path(
+            &path,
+            DetectedFormat::Fastq,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect("local block inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let findings = payload.findings.expect("findings should be present");
+        assert!(findings.iter().any(|finding| {
+            finding.finding_type == DuplicationFindingType::ContiguousBlockDuplicate
+                && finding.record_range_1.as_ref().map(range_tuple) == Some((2, 3))
+                && finding.record_range_2.as_ref().map(range_tuple) == Some((4, 5))
+        }));
+        assert!(!findings.iter().any(|finding| {
+            finding.finding_type == DuplicationFindingType::WholeFileAppendDuplicate
+        }));
+    }
+
+    #[test]
+    fn bounded_fastq_scan_reports_scope_and_caveat_note() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-bounded-fastq-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(
+            &path,
+            "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n",
+        )
+        .expect("bounded fastq fixture should write");
+
+        let payload = inspect_path(
+            &path,
+            DetectedFormat::Fastq,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: 2,
+            },
+        )
+        .expect("bounded inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(
+            payload.scan_mode,
+            Some(DuplicationScanMode::Bounded)
+        ));
+        assert_eq!(payload.records_examined, Some(2));
+        assert!(
+            payload
+                .notes
+                .expect("notes should be present")
+                .iter()
+                .any(|note| note.contains("bounded record limit"))
+        );
+    }
+
+    #[test]
+    fn malformed_fastq_returns_parse_uncertainty_with_partial_payload() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-malformed-fastq-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(&path, "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n").expect("fixture should write");
+
+        let error = inspect_path(
+            &path,
+            DetectedFormat::Fastq,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect_err("malformed fastq should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(error.error, AppError::ParseUncertainty { .. }));
+        assert_eq!(error.payload.records_examined, Some(1));
+        assert!(error.payload.summary.is_some());
+        assert!(error.payload.findings.is_none());
+        assert!(error.payload.assessment.is_none());
+    }
+
+    #[test]
+    fn bam_read_group_identity_mode_keeps_distinct_read_groups_separate() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-inspect-duplication-rg-mode-{}.bam",
+            std::process::id()
+        ));
+        write_test_bam(
+            &path,
+            vec![
+                build_test_record("same", "ACGT", "!!!!", Some("rg1")),
+                build_test_record("same", "ACGT", "!!!!", Some("rg2")),
+            ],
+        );
+
+        let without_rg = inspect_path(
+            &path,
+            DetectedFormat::Bam,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQual,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect("non-rg identity inspection should succeed");
+        let with_rg = inspect_path(
+            &path,
+            DetectedFormat::Bam,
+            DuplicationScanOptions {
+                identity_mode: DuplicationIdentityMode::QnameSeqQualRg,
+                min_block_size: 2,
+                max_findings: 10,
+                record_limit: u64::MAX,
+            },
+        )
+        .expect("rg identity inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(
+            without_rg
+                .summary
+                .expect("summary should be present")
+                .duplicate_identities,
+            1
+        );
+        let rg_summary = with_rg.summary.expect("summary should be present");
+        assert_eq!(rg_summary.unique_identities, 2);
+        assert_eq!(rg_summary.duplicate_identities, 0);
+        assert!(
+            with_rg
+                .findings
+                .expect("findings should be present")
+                .is_empty()
+        );
+    }
+
+    #[test]
     fn rejects_rg_identity_mode_for_fastq() {
         let path = std::env::temp_dir().join(format!(
             "bamana-inspect-duplication-invalid-{}.fastq",

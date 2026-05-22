@@ -41,8 +41,8 @@ The JSON result contains:
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
-  ``check_tag``, and ``subsample_bam`` command timings when ``--bamana-bin``
-  is supplied
+  ``check_tag``, ``subsample_bam``, and ``inspect_duplication`` command
+  timings when ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
@@ -54,14 +54,20 @@ Milestone 6 command timings are smoke timings over deterministic synthetic BAM
 input. ``check_sort`` is run in strict mode. ``check_map`` and ``summary`` run
 without adjacent index sidecars, so they exercise scanner-derived evidence
 rather than index-derived evidence. ``check_tag`` performs a full scan for the
-synthetic ``NM`` auxiliary tag, and ``validate`` runs the default full
-structural pass. These timings do not exercise malformed-input paths and do
-not imply comparator parity with external tools.
+synthetic ``NM`` auxiliary tag, ``validate`` runs the default full structural
+pass, and ``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over
+the deterministic BAM fixture. These timings do not exercise malformed-input
+paths and do not imply comparator parity with external tools.
 
 ``subsample_bam`` is a command-level dry-run timing over the generated BAM
 fixture. It proves the BAM ``subsample`` CLI path is runnable through the
 benchmark hook, but it should be interpreted as command smoke timing rather
 than output-write throughput.
+
+``inspect_duplication`` is a command-level inspection timing over the generated
+BAM fixture. It proves the native scanner-backed duplication inspection CLI path
+is runnable through the benchmark hook, but it should be interpreted as command
+smoke timing rather than duplicate-detection sensitivity.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived

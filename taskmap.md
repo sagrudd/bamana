@@ -3204,7 +3204,7 @@ Completion evidence:
 
 ### M7.5 Harden `inspect_duplication` Native Scan Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3225,7 +3225,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/forensics/duplication.rs` and confirmed BAM inspection uses
+  `BamScanner`, borrowed native record views, native sequence/quality decoding,
+  and native aux-tag traversal, while FASTQ and FASTQ.GZ inspection uses the
+  Milestone 4 `open_fastq_reader` and `read_next_fastq_record` APIs;
+* strengthened `inspect_duplication` unit coverage for clean full scans,
+  whole-file append signatures, local contiguous-block signatures, bounded
+  scan caveat reporting, malformed FASTQ parse uncertainty with partial
+  payload evidence, BAM read-group identity semantics, and FASTQ rejection of
+  BAM-only `qname_seq_qual_rg` identity mode;
+* confirmed output remains explicit about `identity_mode`, `scan_mode`,
+  `records_examined`, collection-duplication/operator-error scope, and the
+  non-use of BAM duplicate flags as primary evidence;
+* extended `scanner_microbench --bamana-bin` command smoke timings to include
+  a full `inspect_duplication --identity qname_seq_qual_rg` scan and updated
+  the benchmark result schema plus Sphinx benchmark documentation;
+* kept the governed `inspect_duplication` JSON contract stable while adding
+  hardening tests and benchmark smoke coverage.
 
 ### M7.6 Harden `deduplicate` Conservative Remediation Boundary
 
