@@ -1421,12 +1421,13 @@ mod tests {
             records::{RecordLayout, encode_bam_qualities, encode_bam_sequence},
             write::{BgzfWriter, serialize_record_layout},
         },
+        error::AppError,
         formats::probe::DetectedFormat,
     };
 
     use super::{
-        ForensicFindingCategory, ForensicInspectConfig, ForensicRecommendation, ForensicScope,
-        inspect_path,
+        ForensicEvidenceScope, ForensicFindingCategory, ForensicInspectConfig,
+        ForensicRecommendation, ForensicScanMode, ForensicScope, inspect_path,
     };
 
     #[test]
@@ -1554,6 +1555,194 @@ mod tests {
                 .likely_concatenation_or_coercion,
             Some(false)
         );
+    }
+
+    #[test]
+    fn detects_read_name_regime_shift_in_full_scan() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-forensic-readname-shift-{}.bam",
+            std::process::id()
+        ));
+        let mut records = Vec::new();
+        for index in 0..300 {
+            records.push(build_test_record(
+                &format!("INST:RUN:FC:LANE:{index}"),
+                "ACGT",
+                "!!!!",
+                Some("rg1"),
+                &[("NM", b'i', &[0, 0, 0, 0])],
+            ));
+        }
+        for index in 0..300 {
+            records.push(build_test_record(
+                &format!("movie/{index}/ccs"),
+                "TGCA",
+                "####",
+                Some("rg1"),
+                &[("NM", b'i', &[0, 0, 0, 0])],
+            ));
+        }
+        write_test_bam(
+            &path,
+            "@HD\tVN:1.6\tSO:unknown\n@RG\tID:rg1\tSM:s1\tPL:ILLUMINA\n@PG\tID:pg1\tPN:bamana\n",
+            records,
+        );
+
+        let payload = inspect_path(&path, DetectedFormat::Bam, &full_scan_config(&path))
+            .expect("inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(payload.scan_mode, Some(ForensicScanMode::Full)));
+        let findings = payload.findings.expect("findings should be present");
+        assert!(findings.iter().any(|finding| {
+            finding.category == ForensicFindingCategory::ReadNameRegimeShift
+                && finding.evidence_scope == ForensicEvidenceScope::BodyFull
+        }));
+    }
+
+    #[test]
+    fn detects_aux_tag_regime_shift_when_tags_are_enabled() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-forensic-tags-{}.bam", std::process::id()));
+        let mut records = Vec::new();
+        for index in 0..300 {
+            records.push(build_test_record(
+                &format!("read:{index}:A"),
+                "ACGT",
+                "!!!!",
+                Some("rg1"),
+                &[("NM", b'i', &[0, 0, 0, 0]), ("AS", b'i', &[7, 0, 0, 0])],
+            ));
+        }
+        for index in 0..300 {
+            records.push(build_test_record(
+                &format!("read:{index}:B"),
+                "TGCA",
+                "####",
+                Some("rg1"),
+                &[("ms", b'i', &[9, 0, 0, 0])],
+            ));
+        }
+        write_test_bam(
+            &path,
+            "@HD\tVN:1.6\tSO:unknown\n@RG\tID:rg1\tSM:s1\tPL:ILLUMINA\n@PG\tID:pg1\tPN:bamana\n",
+            records,
+        );
+
+        let payload = inspect_path(&path, DetectedFormat::Bam, &full_scan_config(&path))
+            .expect("inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let findings = payload.findings.expect("findings should be present");
+        assert!(findings.iter().any(|finding| {
+            finding.category == ForensicFindingCategory::TagSchemaShift
+                && finding.message.contains("early prevalent tags")
+        }));
+    }
+
+    #[test]
+    fn bounded_scan_reports_bounded_scope_and_full_scan_follow_up() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-forensic-bounded-{}.bam",
+            std::process::id()
+        ));
+        let records = (0..20)
+            .map(|index| {
+                build_test_record(
+                    &format!("read:{index}:A"),
+                    "ACGT",
+                    "!!!!",
+                    Some("rg1"),
+                    &[("NM", b'i', &[1, 0, 0, 0])],
+                )
+            })
+            .collect::<Vec<_>>();
+        write_test_bam(
+            &path,
+            "@HD\tVN:1.6\tSO:unknown\n@RG\tID:rg1\tSM:s1\tPL:ILLUMINA\n@PG\tID:pg1\tPN:bamana\n",
+            records,
+        );
+        let mut config = full_scan_config(&path);
+        config.record_limit = 5;
+
+        let payload =
+            inspect_path(&path, DetectedFormat::Bam, &config).expect("inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(payload.scan_mode, Some(ForensicScanMode::Bounded)));
+        assert_eq!(payload.records_examined, Some(5));
+        assert!(
+            payload
+                .notes
+                .expect("notes should be present")
+                .iter()
+                .any(|note| note.contains("bounded record limit"))
+        );
+        assert!(
+            payload
+                .assessment
+                .expect("assessment should be present")
+                .recommended_follow_up
+                .is_some_and(|follow_up| {
+                    follow_up.contains(&ForensicRecommendation::ForensicInspectFullScan)
+                })
+        );
+    }
+
+    #[test]
+    fn max_findings_truncates_reported_findings_and_summary() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-forensic-max-{}.bam", std::process::id()));
+        write_test_bam(
+            &path,
+            concat!(
+                "@HD\tVN:1.6\tSO:unknown\n",
+                "@RG\tID:rg1\tSM:s1\tPL:ILLUMINA\n",
+                "@RG\tID:rg1\tSM:s1\tPL:ONT\n",
+                "@PG\tID:pg1\tPN:aligner\n",
+                "@PG\tID:pg1\tPN:other\tPP:missing\n",
+                "@PG\tID:pg2\tPN:other\n",
+            ),
+            vec![build_test_record(
+                "read1",
+                "ACGT",
+                "!!!!",
+                Some("unknown"),
+                &[],
+            )],
+        );
+        let mut config = full_scan_config(&path);
+        config.max_findings = 1;
+
+        let payload =
+            inspect_path(&path, DetectedFormat::Bam, &config).expect("inspection should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(payload.findings.as_ref().map(Vec::len), Some(1));
+        assert_eq!(
+            payload
+                .summary
+                .as_ref()
+                .map(|summary| summary.findings_total),
+            Some(1)
+        );
+    }
+
+    #[test]
+    fn rejects_non_bam_format_without_scanning() {
+        let path = std::env::temp_dir().join(format!(
+            "bamana-forensic-fastq-{}.fastq",
+            std::process::id()
+        ));
+        let failure = inspect_path(&path, DetectedFormat::Fastq, &full_scan_config(&path))
+            .expect_err("FASTQ should not be supported");
+
+        assert!(matches!(
+            failure.error,
+            AppError::UnsupportedInputForCommand { .. }
+        ));
+        assert_eq!(failure.payload.format, DetectedFormat::Fastq);
+        assert!(failure.payload.findings.is_none());
     }
 
     fn full_scan_config(_path: &PathBuf) -> ForensicInspectConfig {

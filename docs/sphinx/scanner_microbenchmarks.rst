@@ -42,7 +42,8 @@ The JSON result contains:
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
   ``check_tag``, ``subsample_bam``, ``inspect_duplication``, and
-  ``deduplicate`` command timings when ``--bamana-bin`` is supplied
+  ``deduplicate``, and ``forensic_inspect`` command timings when
+  ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
@@ -57,8 +58,10 @@ rather than index-derived evidence. ``check_tag`` performs a full scan for the
 synthetic ``NM`` auxiliary tag, ``validate`` runs the default full structural
 pass, ``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over
 the deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
-``qname-seq-qual-rg`` CLI plan. These timings do not exercise malformed-input
-paths and do not imply comparator parity with external tools.
+``qname-seq-qual-rg`` CLI plan. ``forensic_inspect`` runs explicit full-scan
+header, read-group, program-chain, read-name, tag, and duplication-hallmark
+scopes. These timings do not exercise malformed-input paths and do not imply
+comparator parity with external tools.
 
 ``subsample_bam`` is a command-level dry-run timing over the generated BAM
 fixture. It proves the BAM ``subsample`` CLI path is runnable through the
@@ -74,6 +77,11 @@ smoke timing rather than duplicate-detection sensitivity.
 fixture. It proves the conservative remediation CLI can build a native
 scanner-backed plan through the benchmark hook, but it should be interpreted as
 command smoke timing rather than applied output-write throughput.
+
+``forensic_inspect`` is a command-level inspection timing over the generated
+BAM fixture. It proves the native header and scanner-backed provenance
+inspection CLI path is runnable through the benchmark hook, but it should be
+interpreted as command smoke timing rather than forensic sensitivity.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived

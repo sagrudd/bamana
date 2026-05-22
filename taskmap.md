@@ -3289,7 +3289,7 @@ Completion evidence:
 
 ### M7.7 Harden `forensic_inspect` Provenance Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3310,7 +3310,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `src/forensics/forensic_inspect.rs` and confirmed BAM header
+  evidence comes from the native header payload while body evidence uses
+  `BamScanner`, `BamRecordView`, native read-name access, native aux-tag
+  traversal, and native sequence/quality decoding for duplication hallmarks;
+* strengthened `forensic_inspect` unit coverage for read-group/header mismatch
+  evidence, duplicate program-chain evidence, clean full-scan behavior,
+  read-name regime shifts, aux-tag regime shifts, duplication hallmarks,
+  bounded scan caveat reporting, full-scan evidence scopes,
+  `max_findings` truncation, and non-BAM format rejection;
+* confirmed findings remain evidence-scoped and caveated as provenance
+  inspection rather than structural validation, duplicate marking, biological
+  interpretation, or fraud attribution;
+* extended `scanner_microbench --bamana-bin` command smoke timings to include
+  a full-scan `forensic_inspect` path with explicit header, read-group,
+  program, read-name, tag, and duplication scopes, and updated the benchmark
+  result schema plus Sphinx benchmark documentation;
+* kept the governed `forensic_inspect` JSON contract stable while adding
+  hardening tests and benchmark smoke coverage.
 
 ### M7.8 Strengthen M7 Cross-Command Safety And Output Guarantees
 

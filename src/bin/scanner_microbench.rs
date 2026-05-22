@@ -262,6 +262,23 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     ],
                     args.iterations,
                 )?,
+                measure_command(
+                    "forensic_inspect",
+                    bamana_bin,
+                    &[
+                        "forensic_inspect",
+                        "--input",
+                        fixture_arg(&fixture),
+                        "--full-scan",
+                        "--inspect-header",
+                        "--inspect-rg",
+                        "--inspect-pg",
+                        "--inspect-readnames",
+                        "--inspect-tags",
+                        "--inspect-duplication",
+                    ],
+                    args.iterations,
+                )?,
             ]
         }
         None => Vec::new(),
@@ -274,11 +291,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, inspect_duplication, and deduplicate dry-run when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, inspect_duplication uses a full qname-seq-qual-rg CLI scan, and deduplicate uses a full dry-run qname-seq-qual-rg CLI plan."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {

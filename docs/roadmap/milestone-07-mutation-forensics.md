@@ -83,7 +83,10 @@ The activation baseline found the following native paths already present:
   continues to use Bamana's header serialization, record-layout serialization,
   and BGZF writer.
 * `forensic_inspect` is BAM-first and uses `BamScanner` plus native header,
-  record, aux-tag, read-name, and duplication-hallmark evidence.
+  record, aux-tag, read-name, and duplication-hallmark evidence. M7.7 added
+  direct tests for read-name regime shifts, aux-tag regime shifts, bounded
+  scan caveats, full-scan evidence scope, max-finding truncation, and
+  non-BAM format rejection.
 
 Hardening still required by the milestone:
 
@@ -95,7 +98,9 @@ M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
 as the first M7 command-level benchmark hook. M7.4 added the corresponding
 `annotate_rg` dry-run smoke timing. M7.5 added `inspect_duplication` command
 smoke timing to `scanner_microbench --bamana-bin`. M7.6 added `deduplicate`
-dry-run command smoke timing to the same scanner benchmark hook.
+dry-run command smoke timing to the same scanner benchmark hook. M7.7 added
+`forensic_inspect` full-scan command smoke timing with explicit provenance
+scopes.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

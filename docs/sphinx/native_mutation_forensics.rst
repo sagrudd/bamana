@@ -44,7 +44,8 @@ record-layout serialization, and the native BGZF writer.
 ``forensic_inspect`` is BAM-first and uses ``BamScanner`` plus native header,
 record, aux-tag, read-name, and duplication-hallmark evidence. It remains
 provenance inspection, not structural validation, duplicate marking, or fraud
-detection.
+detection. Findings are scoped to header-only, bounded-body, or full-body
+evidence so bounded scans do not overclaim whole-file absence.
 
 Remaining Hardening
 -------------------
