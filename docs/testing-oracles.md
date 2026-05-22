@@ -83,3 +83,28 @@ Malformed proof-command failure expectations must stay in native tests. Any
 future differential test for these commands must be clearly labelled as an
 oracle or compatibility comparison and must not define the production execution
 engine.
+
+## Milestone 7 Mutation And Forensics Oracle Boundary
+
+The Milestone 7 mutation and forensics command set is `reheader`,
+`annotate_rg`, `inspect_duplication`, `deduplicate`, and `forensic_inspect`.
+The production mutation, remediation, and forensics paths for these commands
+must remain Bamana-native and free of direct `noodles` imports.
+
+Test-only oracle usage remains limited to explicit oracle or compatibility
+surfaces:
+
+* `reheader` and `annotate_rg` expectations are owned by native header,
+  record-layout, aux-tag, checksum-domain, and BGZF writer tests;
+* BAM-side `inspect_duplication`, `deduplicate`, and `forensic_inspect`
+  expectations are owned by native scanner, `BamRecordView`, native aux-tag,
+  and record-layout bridge tests;
+* FASTQ-side `inspect_duplication` and `deduplicate` expectations are owned by
+  native FASTQ reader and writer tests;
+* BAM-side `deduplicate` must keep scanner-backed planning distinct from the
+  native writer bridge used for retained output records.
+
+Malformed mutation and forensics failure expectations must stay in native
+tests. Any future differential test for these commands must be clearly labelled
+as an oracle or compatibility comparison and must not define the production
+execution engine, mutation safety model, or remediation policy.

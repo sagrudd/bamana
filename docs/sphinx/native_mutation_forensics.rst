@@ -50,9 +50,14 @@ evidence so bounded scans do not overclaim whole-file absence.
 Remaining Hardening
 -------------------
 
-M7 still needs dependency-boundary tests that name all five M7 command paths as
-one protected milestone set. M7.8 hardened dry-run versus applied mutation
-guarantees and output preflight behavior: mutation and remediation commands use
-temporary outputs for applied writes, reject existing outputs without
-``--force``, keep dry-runs side-effect bounded, and validate deduplicate removed
-report paths before writing the primary output.
+M7.8 hardened dry-run versus applied mutation guarantees and output preflight
+behavior: mutation and remediation commands use temporary outputs for applied
+writes, reject existing outputs without ``--force``, keep dry-runs side-effect
+bounded, and validate deduplicate removed report paths before writing the
+primary output.
+
+M7.9 formalized dependency-boundary and benchmark guardrails for the full M7
+command set. Contract tests name all five M7 command paths as one protected
+milestone set, keep production direct ``noodles`` usage limited to documented
+CRAM compatibility, and require schema/documentation coverage for every M7
+command-level benchmark hook.

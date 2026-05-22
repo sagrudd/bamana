@@ -88,12 +88,6 @@ The activation baseline found the following native paths already present:
   scan caveats, full-scan evidence scope, max-finding truncation, and
   non-BAM format rejection.
 
-Hardening still required by the milestone:
-
-* continue to distinguish `reheader` header-only behavior from `annotate_rg`
-  record-level mutation;
-* add command-level smoke benchmark evidence for the complete M7 command set.
-
 M7.3 added `reheader` dry-run smoke timing to `header_microbench --bamana-bin`
 as the first M7 command-level benchmark hook. M7.4 added the corresponding
 `annotate_rg` dry-run smoke timing. M7.5 added `inspect_duplication` command
@@ -106,6 +100,13 @@ M7.8 hardened cross-command output safety: `reheader`, `annotate_rg`, and
 `deduplicate` have focused no-output-on-failure coverage for existing output
 paths, `deduplicate --emit-removed-report` validates the report path before
 writing the primary output, and dry-run paths remain side-effect bounded.
+
+M7.9 formalized dependency-boundary and benchmark interpretation guardrails:
+contract tests explicitly name all five M7 commands, protect their hot paths
+from direct `noodles` imports, require M7 command timing rows in the benchmark
+schemas and Sphinx benchmark docs, and record that smoke timings distinguish
+process startup, scan cost, rewrite cost, compression cost, checksum
+verification, and dry-run behavior without implying comparator parity.
 
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the

@@ -43,6 +43,13 @@ include process startup, CLI parsing, JSON envelope emission, file probing, and
 the command-specific path; use them for before/after command migration checks,
 not as pure codec measurements.
 
+Milestone 7 mutation timings are smoke timings, not throughput claims.
+``reheader`` and ``annotate_rg`` are run as dry-run command paths in this
+benchmark hook. They include process startup, planning, file probing, and JSON
+emission, but they do not include applied rewrite cost, BGZF compression cost,
+or checksum verification cost. They also do not imply comparator parity with
+external reheadering or read-group annotation tools.
+
 Results conform to
 ``benchmarks/results/header_microbench.schema.json`` and can be archived beside
 other benchmark result artifacts.

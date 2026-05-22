@@ -83,6 +83,16 @@ BAM fixture. It proves the native header and scanner-backed provenance
 inspection CLI path is runnable through the benchmark hook, but it should be
 interpreted as command smoke timing rather than forensic sensitivity.
 
+Milestone 7 scanner-backed command timings distinguish scan cost from rewrite
+cost. ``inspect_duplication`` and ``forensic_inspect`` perform inspection-only
+scan paths and never write output artifacts. ``deduplicate`` is run in
+dry-run mode, so it includes process startup, file probing, scanner traversal,
+planning, and JSON emission, but it does not include applied rewrite cost,
+output BGZF compression cost, removed-report writing, or checksum verification
+cost. These command timings are for regression smoke evidence and do not imply
+comparator parity with external duplicate-marking, remediation, or provenance
+tools.
+
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived
 beside other benchmark result artifacts.

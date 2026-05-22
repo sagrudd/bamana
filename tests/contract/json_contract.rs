@@ -704,6 +704,91 @@ fn proof_command_benchmark_schemas_include_m5_command_timings() {
 }
 
 #[test]
+fn mutation_forensics_benchmark_hooks_are_documented_and_schema_governed() {
+    let header_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("header_microbench.schema.json"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let header_doc = read_utf8(&docs_dir().join("sphinx").join("header_microbenchmarks.rst"));
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let roadmap = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-07-mutation-forensics.md"),
+    );
+
+    for (schema_name, schema, doc, command) in [
+        ("header_microbench", &header_schema, &header_doc, "reheader"),
+        (
+            "header_microbench",
+            &header_schema,
+            &header_doc,
+            "annotate_rg",
+        ),
+        (
+            "scanner_microbench",
+            &scanner_schema,
+            &scanner_doc,
+            "inspect_duplication",
+        ),
+        (
+            "scanner_microbench",
+            &scanner_schema,
+            &scanner_doc,
+            "deduplicate",
+        ),
+        (
+            "scanner_microbench",
+            &scanner_schema,
+            &scanner_doc,
+            "forensic_inspect",
+        ),
+    ] {
+        assert!(
+            schema.contains(&format!("\"{command}\"")),
+            "{schema_name} schema does not include M7 command timing row {command}"
+        );
+        assert!(
+            doc.contains(&format!("``{command}``")),
+            "{schema_name} docs do not describe M7 command timing row {command}"
+        );
+        assert!(
+            roadmap.contains(&format!("`{command}`")),
+            "M7 roadmap does not record benchmark hook evidence for {command}"
+        );
+    }
+
+    for required in [
+        "process startup",
+        "scan cost",
+        "rewrite cost",
+        "compression cost",
+        "checksum verification",
+        "dry-run",
+        "comparator parity",
+    ] {
+        assert!(
+            header_doc.contains(required)
+                || scanner_doc.contains(required)
+                || roadmap.contains(required),
+            "M7 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

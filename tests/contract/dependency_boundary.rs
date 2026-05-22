@@ -135,7 +135,10 @@ const M7_MUTATION_FORENSICS_HOT_PATHS: &[(&str, &[&str])] = &[
             "src/forensics/deduplicate.rs",
             "src/forensics/duplication.rs",
             "src/bam/header.rs",
+            "src/bam/record.rs",
             "src/bam/records.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
             "src/bam/write.rs",
             "src/bgzf/writer.rs",
             "src/fastq/reader.rs",
@@ -519,6 +522,34 @@ fn m5_proof_command_oracle_policy_is_documented() {
         assert!(
             oracle_policy.contains(required),
             "testing oracle policy is missing M5 proof-command boundary language: {required}"
+        );
+    }
+}
+
+#[test]
+fn m7_mutation_forensics_oracle_policy_is_documented() {
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+
+    for required in [
+        "Milestone 7 Mutation And Forensics Oracle Boundary",
+        "production mutation, remediation, and forensics paths",
+        "BAM-side `deduplicate`",
+        "FASTQ-side `inspect_duplication` and `deduplicate`",
+        "Malformed mutation and forensics failure expectations",
+    ] {
+        assert!(
+            oracle_policy.contains(required),
+            "testing oracle policy is missing M7 mutation/forensics boundary language: {required}"
+        );
+    }
+
+    for command in M7_MUTATION_FORENSICS_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+    {
+        assert!(
+            oracle_policy.contains(&format!("`{command}`")),
+            "testing oracle policy is missing M7 command name: {command}"
         );
     }
 }

@@ -3372,7 +3372,7 @@ Completion evidence:
 
 ### M7.9 Strengthen M7 Dependency Boundaries And Benchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3393,7 +3393,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* extended M7 dependency-boundary protection to include the scanner-backed
+  `deduplicate` BAM planning path (`BamScanner`, `BamRecordView`, and native
+  aux-tag traversal) alongside the existing writer bridge;
+* added a contract test requiring the M7 oracle policy to name `reheader`,
+  `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect` as one mutation/forensics boundary;
+* documented the M7 testing-oracle boundary, including native ownership of
+  mutation safety, remediation policy, scanner evidence, FASTQ
+  duplication/remediation expectations, and malformed-input failures;
+* added contract coverage requiring M7 command timing rows in
+  `header_microbench` and `scanner_microbench` result schemas and matching
+  Sphinx benchmark documentation for every M7 command;
+* updated header/scanner benchmark notes to distinguish process startup, scan
+  cost, rewrite cost, compression cost, checksum verification cost, dry-run
+  behavior, and the absence of comparator parity claims;
+* updated the M7 roadmap and Sphinx mutation-forensics notes with the
+  dependency-boundary and benchmark guardrails.
 
 ### M7.10 Close Milestone 7
 
