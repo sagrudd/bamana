@@ -89,7 +89,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * goal: harden native mutation, conservative remediation, and provenance
   inspection command paths
@@ -98,7 +98,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
 * goal: harden large native transform, checksum, sharding, and ingest command
   paths

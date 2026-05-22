@@ -789,6 +789,87 @@ fn mutation_forensics_benchmark_hooks_are_documented_and_schema_governed() {
 }
 
 #[test]
+fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m7 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-07-mutation-forensics.md"),
+    );
+    let m8 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+    let m7_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_mutation_forensics.rst"),
+    );
+    let m8_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_transform_ingest.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("current milestone", &current),
+        ("M7 roadmap", &m7),
+        ("M7 Sphinx", &m7_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 7 is complete")
+                || text.contains(
+                    "Milestone 7: Native Mutation, Remediation, And Forensics Commands\n\n* status: complete",
+                )
+                || text.contains("Commands** is complete as of 2026-05-22")
+                || text.contains("Status: complete as of 2026-05-22"),
+            "{name} does not record Milestone 7 completion"
+        );
+    }
+
+    for (name, text) in [
+        ("README", &readme),
+        ("current milestone", &current),
+        ("roadmap", &roadmap),
+        ("M8 roadmap", &m8),
+        ("M8 Sphinx", &m8_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 8 is now the active")
+                || text.contains("Milestone 8 is active")
+                || text.contains(
+                    "Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands\n\n* status: active",
+                )
+                || text.contains("Commands** is active as of 2026-05-22")
+                || text.contains("Status: active as of 2026-05-22")
+                || text.contains("Milestone 8 became active"),
+            "{name} does not record Milestone 8 activation"
+        );
+    }
+
+    for command in ["sort", "merge", "explode", "checksum", "consume"] {
+        assert!(
+            current.contains(&format!("`{command}`"))
+                && m8_sphinx.contains(&format!("``{command}``")),
+            "M8 activation docs do not name command: {command}"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_transform_ingest"),
+        "Sphinx index does not include the M8 technical note"
+    );
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

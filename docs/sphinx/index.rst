@@ -40,3 +40,4 @@ Build the site locally with:
    native_command_migration
    native_inspection_validation
    native_mutation_forensics
+   native_transform_ingest

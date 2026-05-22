@@ -423,10 +423,15 @@ bounded/full-scan evidence language, index-versus-scan distinctions, structural
 validation caveats, command smoke benchmark evidence, and explicit
 dependency-boundary protection for the M6 command paths.
 
-Milestone 7 is now the active native-core milestone. It focuses on native
-mutation, conservative remediation, and provenance-inspection command paths:
-`reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
-`forensic_inspect`.
+Milestone 7 is complete. Bamana's native mutation, conservative remediation,
+and provenance-inspection command wave is now hardened for `reheader`,
+`annotate_rg`, `inspect_duplication`, `deduplicate`, and `forensic_inspect`,
+with governed contracts, smoke benchmark evidence, output-safety guarantees,
+and dependency-boundary protection.
+
+Milestone 8 is now the active native-core milestone. It focuses on the large
+transform, checksum, explode, and ingest command wave: `sort`, `merge`,
+`explode`, `checksum`, and `consume`.
 
 ## Specification Layer
 

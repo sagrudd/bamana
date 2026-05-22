@@ -1,9 +1,8 @@
 Native Mutation, Remediation, And Forensics
 ===========================================
 
-Milestone 7 is active as of 2026-05-22, after Milestone 6 closed on
-2026-05-21. It hardens Bamana's native mutation, conservative remediation, and
-provenance-inspection command wave:
+Milestone 7 is complete as of 2026-05-22. It hardened Bamana's native
+mutation, conservative remediation, and provenance-inspection command wave:
 
 * ``reheader``
 * ``annotate_rg``
@@ -47,8 +46,8 @@ provenance inspection, not structural validation, duplicate marking, or fraud
 detection. Findings are scoped to header-only, bounded-body, or full-body
 evidence so bounded scans do not overclaim whole-file absence.
 
-Remaining Hardening
--------------------
+Closeout Evidence
+-----------------
 
 M7.8 hardened dry-run versus applied mutation guarantees and output preflight
 behavior: mutation and remediation commands use temporary outputs for applied
@@ -61,3 +60,7 @@ command set. Contract tests name all five M7 command paths as one protected
 milestone set, keep production direct ``noodles`` usage limited to documented
 CRAM compatibility, and require schema/documentation coverage for every M7
 command-level benchmark hook.
+
+M7.10 closed the milestone after full tests, contract tests, Sphinx, and M7
+command smoke benchmarks passed. Milestone 8 is now active for ``sort``,
+``merge``, ``explode``, ``checksum``, and ``consume``.

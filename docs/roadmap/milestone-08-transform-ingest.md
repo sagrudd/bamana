@@ -1,5 +1,7 @@
 # Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands
 
+Status: active as of 2026-05-22, after Milestone 7 closed on 2026-05-22.
+
 ## Technical Goal
 
 Harden Bamana's largest transform and ingest command wave on native

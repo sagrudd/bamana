@@ -2964,10 +2964,9 @@ operational provenance evidence.
 
 ## Milestone 7 Current State
 
-Status: active as of 2026-05-22. Milestone 7 became active only after
-Milestone 6 closed on 2026-05-21, so the inspection/validation wave's command
-contract, benchmark, and dependency-boundary discipline is available for this
-mutation and forensics wave.
+Status: complete as of 2026-05-22. Milestone 7 became active only after
+Milestone 6 closed on 2026-05-21, and closed after M7.1 through M7.10
+completed on 2026-05-22.
 
 Known present pieces:
 
@@ -2999,13 +2998,13 @@ Known present pieces:
 * `forensic_inspect` already uses scanner-backed BAM body evidence for
   read-group, read-name, aux-tag, and duplication-hallmark checks.
 
-Known gaps:
+Closed gaps:
 
-* command contracts and examples need a fresh pass for mutation safety,
+* M7 command contracts and examples were audited for mutation safety,
   dry-run/apply distinctions, remediation limits, and forensic caveats;
-* command-level benchmark smoke evidence is not yet recorded for the full M7
-  command set;
-* dependency-boundary tests do not yet name `reheader`, `annotate_rg`,
+* command-level benchmark smoke evidence is recorded for the full M7 command
+  set;
+* dependency-boundary tests name `reheader`, `annotate_rg`,
   `inspect_duplication`, `deduplicate`, and `forensic_inspect` as one
   protected milestone set.
 
@@ -3413,7 +3412,7 @@ Completion evidence:
 
 ### M7.10 Close Milestone 7
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3440,7 +3439,26 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* ran `cargo test`;
+* ran `cargo test --test contract`;
+* ran `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`;
+* ran `cargo build --bin bamana --bin header_microbench --bin
+  scanner_microbench`;
+* ran M7 command smoke profiles:
+  `header_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana` reported `verify:1/1`, `header:1/1`,
+  `reheader:1/1`, and `annotate_rg:1/1`, and `scanner_microbench --profile
+  small --iterations 1 --bamana-bin target/debug/bamana` reported
+  `summary:1/1`, `check_sort:1/1`, `check_map:1/1`, `validate:1/1`,
+  `check_tag:1/1`, `subsample_bam:1/1`, `inspect_duplication:1/1`,
+  `deduplicate:1/1`, and `forensic_inspect:1/1`;
+* updated Milestone 7 roadmap, current milestone notes, README status text,
+  Sphinx technical notes, and this task map with final Milestone 7 completion
+  evidence;
+* confirmed production direct `noodles` usage remains isolated to documented
+  CRAM compatibility through contract tests;
+* Milestone 7 is complete as of 2026-05-22, and Milestone 8 became active on
+  2026-05-22 after that closeout was recorded.
 
 ## Milestone 8 Definition
 
@@ -3453,9 +3471,10 @@ domains, or normalize heterogeneous inputs into BAM outputs.
 
 ## Milestone 8 Planned State
 
-Status: planned. Milestone 8 should not become active until Milestone 7 has
-closed, because the earlier command waves should establish stable native
-reader, writer, checksum, dependency-boundary, and benchmark conventions.
+Status: active as of 2026-05-22. Milestone 8 became active only after
+Milestone 7 closed on 2026-05-22, so the earlier command waves established
+stable native reader, writer, checksum, dependency-boundary, and benchmark
+conventions.
 
 Known present pieces:
 

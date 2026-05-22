@@ -1,6 +1,7 @@
 # Milestone 7: Native Mutation, Remediation, And Forensics Commands
 
-Status: active as of 2026-05-22, after Milestone 6 closed on 2026-05-21.
+Status: complete as of 2026-05-22. Milestone 8 became active after this
+closeout was recorded.
 
 ## Technical Goal
 
@@ -111,6 +112,12 @@ verification, and dry-run behavior without implying comparator parity.
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the
 five governed commands before later implementation hardening.
+
+M7.10 closed the milestone after full tests, contract tests, Sphinx, and M7
+command smoke benchmarks passed. The closeout recorded final evidence in the
+roadmap, current milestone notes, README, Sphinx technical notes, and task map,
+and activated Milestone 8 for the transform, checksum, explode, and ingest
+command wave.
 
 ## Acceptance Criteria
 
