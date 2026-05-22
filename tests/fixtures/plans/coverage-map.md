@@ -65,8 +65,8 @@ These commands depend on the transform fixture family:
 * `merge`
 * `explode`
 * canonical `checksum` preservation checks
-* future `reheader` header-only mutation checks
-* future `annotate_rg` record-level RG annotation checks
+* M7 `reheader` header-only mutation checks
+* M7 `annotate_rg` record-level RG annotation checks
 
 ### Consume coverage
 
@@ -192,7 +192,7 @@ Representative `reheader` contract scenarios:
   `bamana reheader --bam tiny.valid.coordinate.bam --set-sample s1 --target-rg rg_missing --rewrite-minimized --out out.bam`
   Expected outcome: failure, `error.code = missing_read_group`.
 
-Each future `reheader` fixture should support:
+Each M7 `reheader` fixture should support:
 
 * JSON schema validation against `reheader.schema.json`
 * golden-output testing for planning/execution fields and the header-only
@@ -227,7 +227,7 @@ Representative `annotate_rg` contract scenarios:
   `bamana annotate_rg --bam tiny.tags.nm_rg.bam --rg-id rg001 --fail-on-conflict --require-header-rg --out out.bam`
   Expected outcome: failure, `error.code = conflicting_read_group_tags`.
 
-Each future `annotate_rg` fixture should support:
+Each M7 `annotate_rg` fixture should support:
 
 * JSON schema validation against `annotate_rg.schema.json`
 * golden-output testing for request mode, header policy, and record summary

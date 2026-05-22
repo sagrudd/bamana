@@ -487,13 +487,16 @@
       "planned_status": "planned",
       "description": "Tiny clean BAM with normal header provenance and no suspicious duplicate block or regime-shift hallmarks.",
       "primary_commands": ["subsample", "inspect_duplication", "deduplicate", "forensic_inspect"],
-      "secondary_commands": [],
+      "secondary_commands": ["reheader", "annotate_rg"],
       "generated": true,
       "source_fixture_ids": [],
       "regeneration_strategy": "hand_authored_sam_to_bam",
       "expected_artifacts": [
         "expected/subsample/subsample.tiny.clean.bam.random.success.json",
         "expected/subsample/subsample.tiny.clean.bam.deterministic.success.json",
+        "expected/reheader/reheader.tiny.clean.bam.dry_run.success.json",
+        "expected/reheader/reheader.tiny.clean.bam.rewrite.success.json",
+        "expected/annotate_rg/annotate_rg.tiny.clean.bam.only_missing.success.json",
         "expected/inspect_duplication/inspect_duplication.tiny.clean.bam.success.json",
         "expected/deduplicate/deduplicate.tiny.clean.bam.noop.success.json",
         "expected/forensic_inspect/forensic_inspect.tiny.clean.bam.success.json"
@@ -509,6 +512,8 @@
         "subsample preserves BAM header bytes and retained record encounter order",
         "subsample reports BAM index invalidation when writing output",
         "subsample records eligible record counts when BAM filters are active",
+        "reheader remains header-only and does not modify per-record RG tags",
+        "annotate_rg reports record-level RG annotation separately from header-only reheader",
         "inspect_duplication reports no suspicious duplicate finding",
         "deduplicate reports deterministic no-op behavior",
         "forensic_inspect reports a clean BAM with no suspicious provenance findings"

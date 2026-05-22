@@ -77,16 +77,16 @@ The activation baseline found the following native paths already present:
 
 Hardening still required by the milestone:
 
-* freeze M7 schemas, examples, fixture coverage, and documentation language for
-  dry-run versus applied mutation and remediation;
 * continue to distinguish `reheader` header-only behavior from `annotate_rg`
   record-level mutation;
 * reconcile BAM `deduplicate` loading with scanner-owned raw-record or writer
   bridge APIs, since it still loads BAM through `BamReader`,
   `parse_bam_header_from_reader`, and `read_next_record_layout`;
-* add command-level smoke benchmark evidence for the complete M7 command set;
-* ensure dependency-boundary tests name all five M7 command paths as a
-  protected milestone set.
+* add command-level smoke benchmark evidence for the complete M7 command set.
+
+M7.2 froze the command schemas, canonical success/failure examples, fixture
+reservations, documentation caveats, and dependency-boundary protection for the
+five governed commands before later implementation hardening.
 
 ## Acceptance Criteria
 

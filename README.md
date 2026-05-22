@@ -245,7 +245,7 @@ header and body read-group mismatches, disconnected `@PG` histories, sparse or
 weak provenance metadata, read-name regime shifts, and selected aux-tag regime
 changes. Findings carry explicit category, severity, confidence, evidence
 strength, and evidence-scope fields so bounded body scans do not overclaim
-whole-file conclusions. This command does not assert fraud or intent; it
+conclusions. This command does not assert fraud or intent; it
 surfaces suspicious provenance and collection-hygiene anomalies with suggested
 follow-up commands.
 

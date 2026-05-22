@@ -8,6 +8,14 @@ use super::{
 };
 use crate::contract::support::fixture_manifest::load_fixture_manifest;
 
+const M7_MUTATION_FORENSICS_COMMANDS: &[&str] = &[
+    "reheader",
+    "annotate_rg",
+    "inspect_duplication",
+    "deduplicate",
+    "forensic_inspect",
+];
+
 #[test]
 fn schema_files_parse_as_json() {
     for path in super::collect_json_files(&schema_dir()) {
@@ -140,6 +148,14 @@ fn contract_docs_exist() {
             .join("README.md"),
         fixtures_dir()
             .join("expected")
+            .join("reheader")
+            .join("README.md"),
+        fixtures_dir()
+            .join("expected")
+            .join("annotate_rg")
+            .join("README.md"),
+        fixtures_dir()
+            .join("expected")
             .join("inspect_duplication")
             .join("README.md"),
         fixtures_dir()
@@ -171,6 +187,80 @@ fn contract_docs_exist() {
             path.exists(),
             "missing contract document {}",
             path.display()
+        );
+    }
+}
+
+#[test]
+fn mutation_forensics_command_contracts_have_docs_schemas_examples_and_behavior_notes() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let sphinx_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_mutation_forensics.rst"),
+    );
+
+    for command in M7_MUTATION_FORENSICS_COMMANDS {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "M7 command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "M7 command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "M7 command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "M7 command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "M7 command {command} is missing from docs/cli.md"
+        );
+        assert!(
+            json_doc.contains(&format!("## `{command}`")),
+            "M7 command {command} is missing from docs/json-output.md"
+        );
+        assert!(
+            readme.contains(&format!("`{command}`")),
+            "M7 command {command} is missing from README.md"
+        );
+        assert!(
+            sphinx_doc.contains(&format!("``{command}``")),
+            "M7 command {command} is missing from Sphinx mutation/forensics notes"
+        );
+    }
+
+    for required in [
+        "header-only",
+        "per-record `RG:Z` tags",
+        "record-level read-group annotation",
+        "dry-run",
+        "conservative remediation",
+        "not a molecular duplicate-marking contract",
+        "not a fraud-detection contract",
+        "whole-file",
+    ] {
+        assert!(
+            commands_doc.contains(required)
+                || cli_doc.contains(required)
+                || json_doc.contains(required)
+                || readme.contains(required)
+                || sphinx_doc.contains(required),
+            "M7 command documentation is missing behavior note: {required}"
         );
     }
 }
@@ -372,6 +462,82 @@ fn fixture_manifest_includes_m6_inspection_baseline() {
             .unwrap_or_else(|| {
                 panic!("fixture manifest is missing M6 inspection fixture {required_id}")
             });
+
+        assert_eq!(
+            fixture.format, expected_format,
+            "fixture {required_id} has unexpected format"
+        );
+        assert_eq!(
+            fixture.validity, expected_validity,
+            "fixture {required_id} has unexpected validity"
+        );
+        assert!(
+            fixture
+                .primary_commands
+                .iter()
+                .any(|command| command == expected_command)
+                || fixture
+                    .secondary_commands
+                    .iter()
+                    .any(|command| command == expected_command),
+            "fixture {required_id} is not mapped to {expected_command}"
+        );
+        assert!(
+            fixture
+                .expected_artifacts
+                .iter()
+                .any(|artifact| { artifact.starts_with(&format!("expected/{expected_command}/")) }),
+            "fixture {required_id} has no reserved {expected_command} expected artifact"
+        );
+    }
+}
+
+#[test]
+fn fixture_manifest_includes_m7_mutation_forensics_baseline() {
+    let manifest = load_fixture_manifest();
+
+    for (required_id, expected_format, expected_validity, expected_command) in [
+        ("tiny.clean.bam", "BAM", "valid", "reheader"),
+        ("tiny.clean.bam", "BAM", "valid", "annotate_rg"),
+        ("tiny.clean.bam", "BAM", "valid", "inspect_duplication"),
+        ("tiny.clean.bam", "BAM", "valid", "deduplicate"),
+        ("tiny.clean.bam", "BAM", "valid", "forensic_inspect"),
+        (
+            "tiny.duplicate.fastq.whole_append",
+            "FASTQ",
+            "parseable",
+            "inspect_duplication",
+        ),
+        (
+            "tiny.duplicate.fastq.whole_append",
+            "FASTQ",
+            "parseable",
+            "deduplicate",
+        ),
+        (
+            "tiny.duplicate.bam.local_block",
+            "BAM",
+            "parseable",
+            "inspect_duplication",
+        ),
+        (
+            "tiny.duplicate.bam.local_block",
+            "BAM",
+            "parseable",
+            "deduplicate",
+        ),
+        (
+            "tiny.forensic.bam.rg_pg_inconsistent",
+            "BAM",
+            "parseable",
+            "forensic_inspect",
+        ),
+    ] {
+        let fixture = manifest
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.id == required_id)
+            .unwrap_or_else(|| panic!("fixture manifest is missing M7 fixture {required_id}"));
 
         assert_eq!(
             fixture.format, expected_format,

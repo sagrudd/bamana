@@ -93,6 +93,69 @@ const M6_INSPECTION_COMMAND_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M7_MUTATION_FORENSICS_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "reheader",
+        &[
+            "src/commands/reheader.rs",
+            "src/bam/reheader.rs",
+            "src/bam/header.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+        ],
+    ),
+    (
+        "annotate_rg",
+        &[
+            "src/commands/annotate_rg.rs",
+            "src/bam/annotate_rg.rs",
+            "src/bam/header.rs",
+            "src/bam/records.rs",
+            "src/bam/tags.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+        ],
+    ),
+    (
+        "inspect_duplication",
+        &[
+            "src/commands/inspect_duplication.rs",
+            "src/forensics/duplication.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
+            "src/fastq/reader.rs",
+        ],
+    ),
+    (
+        "deduplicate",
+        &[
+            "src/commands/deduplicate.rs",
+            "src/forensics/deduplicate.rs",
+            "src/forensics/duplication.rs",
+            "src/bam/header.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+            "src/fastq/reader.rs",
+            "src/fastq/writer.rs",
+        ],
+    ),
+    (
+        "forensic_inspect",
+        &[
+            "src/commands/forensic_inspect.rs",
+            "src/forensics/forensic_inspect.rs",
+            "src/forensics/duplication.rs",
+            "src/bam/header.rs",
+            "src/bam/record.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -273,6 +336,49 @@ fn m6_inspection_command_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M6 inspection and validation hot paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m7_mutation_forensics_hot_paths_do_not_import_noodles() {
+    let mutation_forensics_commands: Vec<_> = M7_MUTATION_FORENSICS_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        mutation_forensics_commands,
+        [
+            "reheader",
+            "annotate_rg",
+            "inspect_duplication",
+            "deduplicate",
+            "forensic_inspect"
+        ],
+        "M7 dependency boundary must explicitly name the five mutation, remediation, and forensics commands"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M7_MUTATION_FORENSICS_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M7 mutation, remediation, and forensics hot paths must stay noodles-free:\n{}",
         violations.join("\n")
     );
 }

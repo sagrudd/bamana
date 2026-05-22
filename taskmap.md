@@ -3084,7 +3084,7 @@ Completion evidence:
 
 ### M7.2 Freeze Mutation And Forensics Contracts And Examples
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3108,7 +3108,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited the JSON schemas and canonical success/failure examples for
+  `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
+  `forensic_inspect`;
+* added contract tests that require all five M7 commands to keep schemas,
+  success/failure examples, CLI docs, JSON-output docs, README coverage, and
+  Sphinx mutation/forensics notes;
+* added dependency-boundary contract coverage that names the five M7 command
+  paths and keeps their mutation, remediation, and forensics hot paths free of
+  direct production `noodles` imports;
+* reserved expected-output fixture documentation for `reheader` and
+  `annotate_rg`, and updated the fixture manifest to map the clean BAM baseline
+  to those mutation commands;
+* confirmed duplication and forensics fixture reservations cover clean,
+  duplicated FASTQ/BAM, and provenance-anomaly scenarios without expanding
+  biological duplicate-marking or fraud-detection claims;
+* kept command behavior unchanged while freezing the governed M7 contract
+  surface for later implementation hardening.
 
 ### M7.3 Harden `reheader` Native Header Mutation Boundary
 
