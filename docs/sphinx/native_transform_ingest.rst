@@ -19,21 +19,45 @@ native CRAM ownership.
 Baseline Native Paths
 ---------------------
 
-``sort`` already rewrites BAM through Bamana's native sorting module, updates
-``@HD`` sort metadata, writes through native BAM/BGZF output paths, and can
-request canonical checksum verification.
+``sort`` already rewrites BAM through Bamana's native sorting module, supports
+coordinate and queryname ordering, updates ``@HD`` sort metadata, writes
+through native BAM/BGZF output paths, and can request canonical checksum
+verification.
 
 ``merge`` already combines BAM inputs with conservative reference-dictionary
-compatibility checks and native output writing.
+compatibility checks, supports input-order, coordinate, and queryname output
+modes, and writes through native output paths.
 
 ``checksum`` already uses deterministic native header and record serialization
-domains for raw and canonical checksums.
+domains for raw encounter-order, canonical order-insensitive, header, and
+payload checksums.
 
-``explode`` already has BAM, SAM, FASTQ, and FASTQ.GZ shard planning paths, but
-Milestone 8 must audit shard guarantees and output behavior across formats.
+``explode`` already has BAM, SAM, and FASTQ.GZ shard planning paths. The
+FASTQ.GZ path can create or reuse adjacent ``FASTQ.GZI`` metadata for
+contiguous shard planning.
 
-``consume`` already has native discovery and FASTQ/SAM/BAM ingest paths, while
-CRAM remains a documented compatibility boundary rather than native ownership.
+``consume`` already has discovery, format classification, policy enforcement,
+FASTQ/SAM/BAM normalization, threaded FASTQ.GZ import, dry-run reporting, and
+explicit CRAM reference-policy handling. CRAM remains a documented
+compatibility boundary rather than native ownership.
+
+Baseline Gaps
+-------------
+
+M8.1 records the following activation gaps for later M8 tasks:
+
+* ``sort``, ``merge``, ``checksum``, BAM-side ``explode``, and BAM-side
+  ``consume`` still use older ``BamReader::open``,
+  ``parse_bam_header_from_reader``, and ``read_next_record_layout`` paths in
+  several places.
+* ``sort``, ``merge``, canonical ``checksum``, and BAM/SAM sharding use
+  in-memory first-slice strategies that need documented limits, benchmark
+  interpretation, and later external-memory follow-up where appropriate.
+* ``consume --verify-checksum`` remains planned in this slice and needs either
+  implementation or precise deferral language during M8.
+* ``explode`` shard guarantees need a full M8 audit across BAM, SAM, and
+  FASTQ.GZ, especially around checksums, index metadata, exact boundary claims,
+  and uneven ``FASTQ.GZI`` checkpoint-aligned shard sizes.
 
 Activation Boundary
 -------------------

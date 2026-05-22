@@ -870,6 +870,50 @@ fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
 }
 
 #[test]
+fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
+    let m8 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+    let m8_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_transform_ingest.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for command in ["sort", "merge", "explode", "checksum", "consume"] {
+        assert!(
+            m8.contains(&format!("`{command}`"))
+                && taskmap.contains(&format!("`{command}`"))
+                && m8_sphinx.contains(&format!("``{command}``")),
+            "M8 baseline docs do not name command: {command}"
+        );
+    }
+
+    for required in [
+        "M8.1 Baseline Audit",
+        "JSON schemas",
+        "canonical examples",
+        "fixture reservations",
+        "BamReader::open",
+        "parse_bam_header_from_reader",
+        "read_next_record_layout",
+        "in-memory first-slice",
+        "consume --verify-checksum",
+        "FASTQ.GZI",
+        "dependency-boundary tests",
+        "command-level benchmark smoke hooks",
+    ] {
+        assert!(
+            m8.contains(required) || taskmap.contains(required) || m8_sphinx.contains(required),
+            "M8 baseline evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn fixture_manifest_includes_duplication_and_forensics_trio() {
     let manifest = load_fixture_manifest();
     let ids: BTreeSet<String> = manifest

@@ -3547,7 +3547,7 @@ Command-surface scope:
 
 ### M8.1 Activate Milestone 8 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3572,7 +3572,29 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed `docs/roadmap/current_milestone.md`, README, roadmap overview, and
+  Sphinx notes record Milestone 7 complete and Milestone 8 active only after
+  the M7 closeout;
+* audited `sort`, `merge`, `explode`, `checksum`, and `consume`
+  implementations, command orchestration, tests, schemas, examples, fixtures,
+  README coverage, CLI contracts, JSON-output docs, and Sphinx notes;
+* recorded that `sort` and `merge` already use native transform engines,
+  native header rewriting, native BGZF writing, and optional canonical
+  checksum verification;
+* recorded that `checksum` already exposes deterministic native header and
+  record checksum domains with explicit mode/filter semantics;
+* recorded that `explode` already supports BAM, SAM, and FASTQ.GZ sharding,
+  with `FASTQ.GZI` metadata available for FASTQ.GZ shard planning;
+* recorded that `consume` already performs discovery, classification,
+  mixed-format policy enforcement, FASTQ/SAM/BAM normalization, explicit CRAM
+  reference-policy handling, threaded FASTQ.GZ import, and dry-run reporting;
+* recorded M8 hardening gaps around older `BamReader::open`,
+  `parse_bam_header_from_reader`, and `read_next_record_layout` use,
+  in-memory first-slice strategies, `consume --verify-checksum`,
+  `explode` shard guarantees, dependency-boundary coverage, and command-level
+  benchmark smoke hooks;
+* kept command behavior unchanged while updating roadmap, Sphinx, and task-map
+  baseline evidence.
 
 ### M8.2 Freeze Transform, Checksum, Explode, And Ingest Contracts
 

@@ -58,6 +58,47 @@ Primary beneficiaries:
 * `checksum`
 * `consume`
 
+## M8.1 Baseline Audit
+
+The activation baseline found the following native paths already present:
+
+* `sort` uses Bamana's sort engine to build coordinate or queryname orderings,
+  rewrites `@HD` sort metadata, writes BAM output through the native BGZF
+  writer, and can request canonical checksum verification.
+* `merge` combines BAM inputs with conservative reference-dictionary
+  compatibility checks, supports input-order, coordinate, and queryname output
+  modes, writes through the native BGZF writer, and can request canonical
+  multiset checksum verification.
+* `checksum` exposes deterministic native checksum domains over serialized BAM
+  header and record payloads, including raw encounter-order, canonical
+  order-insensitive, header, and payload modes plus primary/mapped/tag filters.
+* `explode` supports BAM, SAM, and FASTQ.GZ inputs. The FASTQ.GZ path can
+  create or reuse adjacent `FASTQ.GZI` metadata for contiguous shard planning,
+  and the BAM/SAM paths preserve encounter order within each shard.
+* `consume` performs discovery, format classification, mixed-format policy
+  enforcement, FASTQ/SAM/BAM normalization, explicit CRAM reference-policy
+  handling, threaded FASTQ.GZ import, and dry-run reporting.
+* JSON schemas, canonical examples, README coverage, CLI contracts, JSON-output
+  notes, and fixture reservations already exist for the M8 command set.
+
+The baseline also records the hardening gaps that later M8 tasks must resolve
+or explicitly defer:
+
+* `sort`, `merge`, `checksum`, BAM-side `explode`, and BAM-side `consume`
+  still use older `BamReader::open`, `parse_bam_header_from_reader`, and
+  `read_next_record_layout` paths in several places rather than consistently
+  using scanner-owned raw-record or writer-bridge ownership.
+* `sort`, `merge`, canonical `checksum`, and BAM/SAM sharding use in-memory
+  first-slice strategies that need documented limits, benchmark
+  interpretation, and later external-memory follow-up where appropriate.
+* `consume --verify-checksum` remains planned in this slice and must either be
+  implemented in M8 or documented as a precise deferral.
+* `explode` shard guarantees need a full audit across BAM, SAM, and FASTQ.GZ,
+  especially around checksum intent, index metadata, exact boundary claims,
+  and uneven `FASTQ.GZI` checkpoint-aligned shard sizes.
+* M8 dependency-boundary tests and command-level benchmark smoke hooks are not
+  yet complete for the full command set.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and
