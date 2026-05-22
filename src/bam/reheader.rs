@@ -1040,6 +1040,46 @@ mod tests {
         }
     }
 
+    #[test]
+    fn existing_output_without_force_fails_without_touching_output_or_temp() {
+        let input = temp_path("reheader-existing-output-input", "bam");
+        let output = temp_path("reheader-existing-output", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:100\n",
+            vec![test_record("read1", None)],
+        );
+        fs::write(&output, b"sentinel").expect("sentinel output should write");
+        let config = ReheaderConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            requested_mode: ReheaderExecutionMode::SafeRewrite,
+            rewrite_fallback_permitted: true,
+            dry_run: false,
+            force: false,
+            reindex: false,
+            verify_checksum: false,
+            header_path: None,
+            add_rgs: Vec::new(),
+            set_rgs: Vec::new(),
+            remove_rgs: Vec::new(),
+            set_sample: None,
+            set_platform: None,
+            target_rg: None,
+            set_pgs: Vec::new(),
+            add_comments: vec!["blocked".to_string()],
+        };
+
+        let error = execute(&config).expect_err("existing output should fail");
+        let output_body = fs::read(&output).expect("sentinel output should remain");
+        let temp = temporary_output_path(&output);
+        cleanup(&[input, output]);
+
+        assert!(matches!(error, AppError::OutputExists { .. }));
+        assert_eq!(output_body, b"sentinel");
+        assert!(!temp.exists());
+    }
+
     fn test_record(read_name: &str, read_group: Option<&str>) -> RecordLayout {
         let mut aux_bytes = Vec::new();
         if let Some(read_group) = read_group {

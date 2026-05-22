@@ -961,6 +961,41 @@ mod tests {
         );
     }
 
+    #[test]
+    fn existing_output_without_force_fails_without_touching_output_or_temp() {
+        let input = temp_path("annotate-rg-existing-output-input", "bam");
+        let output = temp_path("annotate-rg-existing-output", "bam");
+        write_test_bam(
+            &input,
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n",
+            vec![test_record("missing", None)],
+        );
+        fs::write(&output, b"sentinel").expect("sentinel output should write");
+        let config = AnnotateRgConfig {
+            input_path: input.clone(),
+            output_path: Some(output.clone()),
+            rg_id: "rg001".to_string(),
+            record_mode: AnnotateRgMode::OnlyMissing,
+            header_policy: AnnotateRgHeaderPolicy::CreateIfMissing,
+            add_header_rg: None,
+            set_header_rg: None,
+            dry_run: false,
+            force: false,
+            reindex: false,
+            verify_checksum: false,
+            threads: 1,
+        };
+
+        let error = execute(&config).expect_err("existing output should fail");
+        let output_body = fs::read(&output).expect("sentinel output should remain");
+        let temp = temporary_output_path(&output);
+        cleanup(&[input, output]);
+
+        assert!(matches!(error, AppError::OutputExists { .. }));
+        assert_eq!(output_body, b"sentinel");
+        assert!(!temp.exists());
+    }
+
     fn test_record(read_name: &str, read_group: Option<&str>) -> RecordLayout {
         let mut aux_bytes = Vec::new();
         if let Some(read_group) = read_group {

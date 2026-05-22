@@ -202,6 +202,19 @@ pub fn execute(config: &DeduplicateConfig) -> Result<DeduplicatePayload, Dedupli
     let detected_format = crate::formats::probe::probe_path(&config.input)
         .map(|probe| probe.detected_format)
         .unwrap_or(DetectedFormat::Unknown);
+    if let Some(report_path) = &config.emit_removed_report {
+        validate_removed_report_request(config, report_path).map_err(|error| {
+            DeduplicateFailure {
+                payload: base_payload(
+                    detected_format,
+                    config.mode,
+                    config.identity_mode,
+                    config.keep_policy,
+                ),
+                error,
+            }
+        })?;
+    }
 
     if config.mode == DeduplicateMode::GlobalExact {
         return Err(DeduplicateFailure {
@@ -763,12 +776,6 @@ fn write_removed_report(
     ranges: &[DeduplicateRange],
     report_path: &Path,
 ) -> Result<(), AppError> {
-    if report_path.exists() && !config.force {
-        return Err(AppError::OutputExists {
-            path: report_path.to_path_buf(),
-        });
-    }
-
     let report = RemovedReport {
         input_path: config.input.to_string_lossy().into_owned(),
         output_path: payload.output.as_ref().map(|output| output.path.clone()),
@@ -794,6 +801,18 @@ fn write_removed_report(
         message: error.to_string(),
     })?;
 
+    Ok(())
+}
+
+fn validate_removed_report_request(
+    config: &DeduplicateConfig,
+    report_path: &Path,
+) -> Result<(), AppError> {
+    if report_path.exists() && !config.force {
+        return Err(AppError::OutputExists {
+            path: report_path.to_path_buf(),
+        });
+    }
     Ok(())
 }
 
@@ -1280,6 +1299,42 @@ mod tests {
         assert!(!output.exists());
         assert!(failure.payload.output.is_none());
         assert!(failure.payload.summary.is_none());
+    }
+
+    #[test]
+    fn existing_removed_report_path_fails_before_primary_output_write() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-existing-report-in-{}.fastq",
+            std::process::id()
+        ));
+        let output = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-existing-report-out-{}.fastq",
+            std::process::id()
+        ));
+        let report = std::env::temp_dir().join(format!(
+            "bamana-deduplicate-existing-report-{}.json",
+            std::process::id()
+        ));
+        fs::write(
+            &input,
+            "@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n@r1\nACGT\n+\n!!!!\n@r2\nTGCA\n+\n####\n",
+        )
+        .expect("fixture should write");
+        fs::write(&report, "{}").expect("report sentinel should write");
+        let mut config = base_config(&input, &output, false);
+        config.emit_removed_report = Some(report.clone());
+        config.force = false;
+
+        let failure = execute(&config).expect_err("existing report should fail before write");
+        let report_body = fs::read_to_string(&report).expect("report should remain readable");
+        let _ = fs::remove_file(input);
+        let _ = fs::remove_file(report);
+
+        assert!(matches!(failure.error, AppError::OutputExists { .. }));
+        assert!(!output.exists());
+        assert_eq!(report_body, "{}");
+        assert!(failure.payload.output.is_none());
+        assert!(failure.payload.execution.is_none());
     }
 
     fn base_config(input: &PathBuf, out: &PathBuf, dry_run: bool) -> DeduplicateConfig {

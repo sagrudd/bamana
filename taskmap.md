@@ -3331,7 +3331,7 @@ Completion evidence:
 
 ### M7.8 Strengthen M7 Cross-Command Safety And Output Guarantees
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3353,7 +3353,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited output temp-file, overwrite, `--force`, dry-run,
+  checksum-verification, and reindex behavior across `reheader`,
+  `annotate_rg`, and `deduplicate`;
+* confirmed `reheader` and `annotate_rg` applied writes use temporary BAM
+  outputs before rename and reject existing output paths without `--force`
+  before creating temporary output files;
+* moved `deduplicate --emit-removed-report` path validation ahead of primary
+  output writing so report-path failures do not leave applied remediation
+  outputs behind;
+* added focused no-output-on-failure coverage for `reheader`, `annotate_rg`,
+  and `deduplicate`, including sentinel preservation, temp-output absence, and
+  failure payload checks;
+* confirmed dry-run paths remain side-effect bounded for mutation/remediation
+  outputs, with checksum and reindex work reported as deferred when applicable;
+* updated M7 roadmap and Sphinx mutation-forensics documentation with the
+  cross-command output-safety guarantees.
 
 ### M7.9 Strengthen M7 Dependency Boundaries And Benchmarks
 

@@ -102,6 +102,11 @@ dry-run command smoke timing to the same scanner benchmark hook. M7.7 added
 `forensic_inspect` full-scan command smoke timing with explicit provenance
 scopes.
 
+M7.8 hardened cross-command output safety: `reheader`, `annotate_rg`, and
+`deduplicate` have focused no-output-on-failure coverage for existing output
+paths, `deduplicate --emit-removed-report` validates the report path before
+writing the primary output, and dry-run paths remain side-effect bounded.
+
 M7.2 froze the command schemas, canonical success/failure examples, fixture
 reservations, documentation caveats, and dependency-boundary protection for the
 five governed commands before later implementation hardening.
