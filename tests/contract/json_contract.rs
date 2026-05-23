@@ -17,6 +17,7 @@ const M7_MUTATION_FORENSICS_COMMANDS: &[&str] = &[
 ];
 
 const M8_TRANSFORM_INGEST_COMMANDS: &[&str] = &["sort", "merge", "explode", "checksum", "consume"];
+const M9_INDEX_COMMANDS: &[&str] = &["index", "check_index"];
 
 #[test]
 fn schema_files_parse_as_json() {
@@ -1438,6 +1439,162 @@ fn milestone_9_activation_baseline_records_index_random_access_scope() {
         sphinx_index.contains("native_bam_index_random_access"),
         "Sphinx index does not include the M9 technical note"
     );
+}
+
+#[test]
+fn milestone_9_index_contracts_and_fixtures_are_frozen() {
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let cli_doc = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let fixtures_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let fixture_matrix = read_utf8(&fixtures_dir().join("plans").join("fixture-matrix.md"));
+    let coverage_map = read_utf8(&fixtures_dir().join("plans").join("coverage-map.md"));
+    let m9_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_bam_index_random_access.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for command in M9_INDEX_COMMANDS {
+        assert!(
+            schema_path_for_command(command).exists(),
+            "M9 index command {command} is missing a JSON schema"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.success.json"))
+                .exists(),
+            "M9 index command {command} is missing a canonical success example"
+        );
+        assert!(
+            spec_dir()
+                .join("examples")
+                .join(format!("{command}.failure.json"))
+                .exists(),
+            "M9 index command {command} is missing a canonical failure example"
+        );
+        assert!(
+            commands_doc.contains(&format!("## `{command}`")),
+            "M9 index command {command} is missing from spec/cli/commands.md"
+        );
+        assert!(
+            cli_doc.contains(&format!("`{command}`")),
+            "M9 index command {command} is missing from docs/cli.md"
+        );
+        assert!(
+            json_doc.contains(&format!("## `{command}`")),
+            "M9 index command {command} is missing from docs/json-output.md"
+        );
+        assert!(
+            readme.contains(&format!("`{command}`")),
+            "M9 index command {command} is missing from README.md"
+        );
+        assert!(
+            m9_sphinx.contains(&format!("``{command}``")),
+            "M9 index command {command} is missing from Sphinx M9 notes"
+        );
+    }
+
+    for required in [
+        "BAI/CSI writing remains deferred",
+        "FASTQ.GZI",
+        "overwrite",
+        "--force",
+        "timestamp based",
+        "shallow",
+        "CSI",
+        "detected-but-not-supported",
+        "output_index.created",
+        "created = false",
+        "BAM index creation still reports BAI/CSI writing as unimplemented",
+    ] {
+        assert!(
+            commands_doc.contains(required)
+                || cli_doc.contains(required)
+                || json_doc.contains(required)
+                || readme.contains(required)
+                || m9_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M9 index contract docs are missing behavior note: {required}"
+        );
+    }
+
+    let manifest = load_fixture_manifest();
+    for (required_id, expected_format, expected_validity, expected_command) in [
+        ("tiny.valid.coordinate.bai", "BAI", "valid", "check_index"),
+        ("tiny.invalid.bad_bai", "BAI", "invalid", "check_index"),
+        (
+            "tiny.invalid.mismatched_reference_count.bai",
+            "BAI",
+            "invalid",
+            "check_index",
+        ),
+        (
+            "tiny.valid.coordinate.stale_bai",
+            "BAI",
+            "stale",
+            "check_index",
+        ),
+        (
+            "tiny.valid.coordinate.csi_header",
+            "CSI",
+            "unsupported",
+            "check_index",
+        ),
+        ("tiny.invalid.bad_csi", "CSI", "invalid", "check_index"),
+        ("tiny.valid.coordinate", "BAM", "valid", "index"),
+        (
+            "tiny.invalid.unsorted_coordinate",
+            "BAM",
+            "invalid",
+            "index",
+        ),
+        ("tiny.valid.fastq_gz", "FASTQ.GZ", "valid", "index"),
+        ("tiny.valid.fastq_gz.gzi", "GZI", "valid", "index"),
+    ] {
+        let fixture = manifest
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.id == required_id)
+            .unwrap_or_else(|| panic!("fixture manifest is missing M9 fixture {required_id}"));
+
+        assert_eq!(
+            fixture.format, expected_format,
+            "fixture {required_id} has unexpected format"
+        );
+        assert_eq!(
+            fixture.validity, expected_validity,
+            "fixture {required_id} has unexpected validity"
+        );
+        assert!(
+            fixture
+                .primary_commands
+                .iter()
+                .any(|command| command == expected_command)
+                || fixture
+                    .secondary_commands
+                    .iter()
+                    .any(|command| command == expected_command),
+            "fixture {required_id} is not mapped to {expected_command}"
+        );
+        assert!(
+            fixture
+                .expected_artifacts
+                .iter()
+                .any(|artifact| { artifact.starts_with(&format!("expected/{expected_command}/")) }),
+            "fixture {required_id} has no reserved {expected_command} expected artifact"
+        );
+        assert!(
+            fixtures_doc.contains(required_id)
+                || fixture_matrix.contains(required_id)
+                || coverage_map.contains(required_id)
+                || m9_sphinx.contains(required_id),
+            "fixture {required_id} is not documented in the M9 fixture plan"
+        );
+    }
 }
 
 #[test]

@@ -128,10 +128,15 @@ Milestone 9 is active for native BAM index and random-access work. Current
 FASTQ.GZ indexing creates FASTQ.GZI sidecars, BAM index creation still reports
 BAI/CSI writing as unimplemented, and BAM index inspection is limited to
 adjacent sidecar discovery, shallow BAI metadata, CSI header detection, and
-timestamp-based staleness. `check_map` and `summary` may use parsed BAI
-metadata as index-derived evidence, but indexed random-access acceleration is
-not claimed until M9 adds scanner virtual-offset capture, BAI chunk validation,
-and random-access traversal.
+timestamp-based staleness. `index` refuses to overwrite existing sidecars
+unless `--force` is supplied, and BAM responses must keep
+`output_index.created: false` until a real BAI/CSI sidecar is written.
+BAM index creation still reports BAI/CSI writing as unimplemented.
+BAI/CSI writing remains deferred for BAM inputs.
+`check_map` and `summary` may use parsed BAI metadata as index-derived
+evidence, but indexed random-access acceleration is not claimed until M9 adds
+scanner virtual-offset capture, BAI chunk validation, and random-access
+traversal.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

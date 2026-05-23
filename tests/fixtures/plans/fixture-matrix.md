@@ -17,6 +17,10 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.valid.coordinate.bai` | Valid adjacent BAI | Index-backed mapping/summary | `check_index`, `check_map`, `summary` | success |
 | `tiny.valid.coordinate.stale_bai` | Timestamp-based stale heuristic | Index compatibility notes | `check_index` | success + warning semantics |
 | `tiny.invalid.bad_bai` | Malformed index failure | Index-backed failure fallback | `check_index`, `check_map` | failure |
+| `tiny.invalid.mismatched_reference_count.bai` | BAI reference-count mismatch | Scan fallback after unusable index | `check_index`, `check_map`, `summary` | failure + fallback |
+| `tiny.valid.coordinate.csi_header` | CSI header detection | Unsupported-index fallback | `check_index`, `check_map`, `summary` | unsupported + fallback |
+| `tiny.invalid.bad_csi` | Malformed CSI failure | Unsupported-index failure fallback | `check_index`, `check_map` | failure |
+| `tiny.invalid.unsorted_coordinate` | Coordinate-sort violation | BAM index rejection before BAI writing | `check_sort`, `index` | failure |
 | `tiny.transforms.source` | Transform source BAM | Checksum baseline | `sort`, `explode`, `checksum` | success |
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |
@@ -31,7 +35,8 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.valid.bam.incompatible_refdict` | BAM companion with a conflicting reference dictionary | Conservative header-incompatibility failure coverage | `consume`, `identify` | failure |
 | `tiny.valid.cram.no_external_ref` | Optional conservative no-external-reference CRAM | Future `allow-embedded` or `auto-conservative` coverage | `consume`, `identify` | deferred or skip if fixture unavailable |
 | `tiny.valid.fastq` | Unmapped FASTQ ingest | Identify/format coverage | `consume`, `identify` | success |
-| `tiny.valid.fastq_gz` | Unmapped FASTQ.GZ ingest | Identify/format coverage | `consume`, `identify` | success |
+| `tiny.valid.fastq_gz` | Unmapped FASTQ.GZ ingest | Identify/format and FASTQ.GZI source coverage | `consume`, `identify`, `index`, `enumerate`, `explode` | success |
+| `tiny.valid.fastq_gz.gzi` | Generated FASTQ.GZI sidecar | Indexed enumeration and shard-planning metadata | `index`, `enumerate`, `explode`, `consume` | success |
 | `tiny.consume.mixed_alignment_raw` | Strict mixed-format rejection | Policy failure coverage | `consume` | failure |
 | `tiny.consume.directory_tree` | Deterministic directory traversal | Recursive/non-recursive discovery coverage | `consume` | success + mixed discovery semantics |
 

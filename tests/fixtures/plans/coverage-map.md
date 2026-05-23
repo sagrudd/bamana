@@ -57,6 +57,26 @@ These commands depend on the BAI fixtures:
 * index-aware `summary`
 * `index` once writer support is present
 
+M9.2 freezes the planned index fixture taxonomy before BAM index writing lands:
+
+* valid BAI: `tiny.valid.coordinate.bai`
+* malformed BAI: `tiny.invalid.bad_bai`
+* mismatched BAI reference count:
+  `tiny.invalid.mismatched_reference_count.bai`
+* stale BAI timestamp heuristic: `tiny.valid.coordinate.stale_bai`
+* CSI header detection with unsupported fallback:
+  `tiny.valid.coordinate.csi_header`
+* malformed CSI: `tiny.invalid.bad_csi`
+* coordinate-sorted BAM source: `tiny.valid.coordinate`
+* unsorted BAM index rejection: `tiny.invalid.unsorted_coordinate`
+* FASTQ.GZ source and FASTQ.GZI sidecar:
+  `tiny.valid.fastq_gz`, `tiny.valid.fastq_gz.gzi`
+
+Until M9 implements native BAM BAI writing, BAM `index` fixture expectations
+must assert `output_index.created = false` on BAM failure paths. FASTQ.GZI
+success fixtures may assert `output_index.created = true` because that sidecar
+is implemented.
+
 ### Transform coverage
 
 These commands depend on the transform fixture family:
@@ -75,7 +95,8 @@ These commands depend on a small consume-specific fixture family:
 * `tiny.valid.coordinate` for alignment-mode BAM ingest
 * `tiny.valid.sam` for alignment-mode SAM ingest
 * `tiny.valid.fastq` for unmapped FASTQ ingest
-* `tiny.valid.fastq_gz` for unmapped FASTQ.GZ ingest
+* `tiny.valid.fastq_gz` for unmapped FASTQ.GZ ingest and FASTQ.GZI source
+  coverage
 * `tiny.consume.mixed_alignment_raw` for strict mixed-format rejection
 * `tiny.consume.directory_tree` for deterministic directory traversal
 

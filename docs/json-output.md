@@ -120,6 +120,40 @@ Key concepts:
   full scan path
 * `semantic_note` describes the limits of the reported evidence source
 
+## `check_index`
+
+The `check_index` payload reports adjacent BAM index discovery and the current
+validation depth without claiming full random-access proof.
+
+Key concepts:
+
+* `index.present` and `candidates` describe adjacent sidecar discovery
+* `index.kind` distinguishes BAI, CSI, GZI, unknown, or absent sidecars
+* `syntactically_valid` is shallow: BAI magic, reference-count agreement,
+  top-level parseability, and metadata summaries where available; CSI is header
+  detection only until scoped support lands
+* `stale` and `bam_newer_than_index` are timestamp heuristics, not semantic
+  proof that offsets match the BAM
+* `usable` is false for stale, malformed, unsupported, absent, GZI, or unknown
+  sidecars
+
+## `index`
+
+The `index` payload reports sidecar intent and whether an output was actually
+created.
+
+Key concepts:
+
+* `format` distinguishes BAM from FASTQ.GZ input behavior
+* `requested_index_kind` records BAI, CSI, or GZI intent
+* `output_index.created` is true only when a sidecar was actually written
+* BAM BAI/CSI writing is still unimplemented, so BAM failure responses must not
+  claim sidecar creation and keep `created = false`
+* FASTQ.GZ indexing writes FASTQ.GZI sidecars with sampled, record-boundary
+  checkpoint metadata for enumeration, explode planning, and consume planning
+* `output_index.overwritten` reports whether `--force` replaced an existing
+  sidecar
+
 ## `summary`
 
 The `summary` payload is an operational overview, not a validation certificate.

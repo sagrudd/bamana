@@ -4103,7 +4103,7 @@ Completion evidence:
 
 ### M9.2 Freeze Index Command Contracts And Fixtures
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -4126,7 +4126,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `spec/jsonschema/index.schema.json`,
+  `spec/jsonschema/check_index.schema.json`,
+  `spec/examples/index.success.json`, `spec/examples/index.failure.json`,
+  `spec/examples/check_index.success.json`, and
+  `spec/examples/check_index.failure.json`;
+* confirmed governed docs describe BAM BAI/CSI deferral, FASTQ.GZI creation,
+  overwrite behavior, timestamp-based stale-index heuristics, and current
+  shallow validation depth;
+* froze planned index fixtures for valid BAI, malformed BAI, mismatched BAI
+  reference counts, stale BAI, CSI header detection, malformed CSI,
+  coordinate-sorted BAM, unsorted BAM index rejection, FASTQ.GZ source, and
+  FASTQ.GZI sidecar behavior;
+* added contract coverage requiring the `index` and `check_index` docs,
+  schemas, examples, and M9.2 fixture taxonomy to stay present;
+* recorded no intentional command behavior changes before index implementation
+  work; BAM index creation still cannot claim a created sidecar until native
+  BAI/CSI writing lands.
 
 ### M9.3 Expose BGZF Virtual Offsets During Native Scans
 

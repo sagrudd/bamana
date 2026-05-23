@@ -578,7 +578,12 @@ Synopsis:
 
 Semantics:
 Inspects adjacent BAM index files for presence, type, shallow validity, and
-plausible usability.
+plausible usability. BAI inspection currently validates magic, reference-count
+agreement, shallow top-level structure, and metadata summaries where present.
+CSI inspection currently detects and parses the header enough to report
+detected-but-not-supported behavior. Stale-index detection is timestamp based:
+if the BAM modification time is newer than the selected sidecar, the selected
+index is reported as stale and not usable.
 
 Does prove:
 Index discovery and shallow structure checks only.
@@ -598,8 +603,9 @@ Synopsis:
 
 Semantics:
 Creates a format-appropriate sidecar index for supported inputs. BAM input still
-validates plausibility and resolves output rules honestly, but BAI/CSI writing
-remains deferred in the current slice. `FASTQ.GZ` input writes a binary
+validates plausibility and resolves output rules honestly, including refusing to
+overwrite an existing output path unless `--force` is supplied, but BAI/CSI
+writing remains deferred in the current slice. `FASTQ.GZ` input writes a binary
 `FASTQ.GZI` sidecar by scanning the gzip stream once and sampling checkpoint
 boundaries at approximately 0.1% compressed-offset intervals by default, pinned
 to completed FASTQ record boundaries rather than arbitrary byte positions. The
@@ -614,6 +620,8 @@ track approximate compressed-stream progress at record-safe boundaries.
 
 Does not prove:
 That BAM index creation occurred unless `created: true` is returned.
+For BAM failure responses, `output_index.created` remains `false`; a BAM
+sidecar must not be claimed until native BAI/CSI writing actually creates it.
 That a `FASTQ.GZI` checkpoint exists for every read or every gzip member
 boundary; the sidecar is intentionally sampled rather than exhaustive.
 

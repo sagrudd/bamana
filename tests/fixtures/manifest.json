@@ -28,7 +28,8 @@
         "expected/check_index/tiny.valid.coordinate.success.json",
         "expected/summary/tiny.valid.coordinate.success.json",
         "expected/validate/tiny.valid.coordinate.success.json",
-        "expected/checksum/tiny.valid.coordinate.success.json"
+        "expected/checksum/tiny.valid.coordinate.success.json",
+        "expected/index/tiny.valid.coordinate.failure.json"
       ],
       "has_index": true,
       "sort_order": "coordinate",
@@ -70,12 +71,13 @@
       "status": "planned",
       "description": "Coordinate-declared BAM with an intentional out-of-order alignment pair for check_sort violation evidence.",
       "primary_commands": ["check_sort"],
-      "secondary_commands": ["summary", "validate"],
+      "secondary_commands": ["summary", "validate", "index"],
       "generated": true,
       "source_fixture_ids": ["tiny.valid.coordinate"],
       "regeneration_strategy": "swap_adjacent_coordinate_records",
       "expected_artifacts": [
-        "expected/check_sort/tiny.invalid.unsorted_coordinate.failure.json"
+        "expected/check_sort/tiny.invalid.unsorted_coordinate.failure.json",
+        "expected/index/tiny.invalid.unsorted_coordinate.failure.json"
       ],
       "has_index": false,
       "sort_order": "coordinate",
@@ -336,6 +338,77 @@
       "expected_artifacts": [
         "expected/check_index/tiny.invalid.bad.failure.json",
         "expected/check_map/tiny.invalid.bad.failure.json"
+      ],
+      "has_index": true,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
+      "id": "tiny.invalid.mismatched_reference_count.bai",
+      "path": "bam/indexing/tiny.invalid.mismatched_reference_count.bam.bai",
+      "format": "BAI",
+      "category": "indexing",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "BAI whose declared reference count intentionally disagrees with tiny.valid.coordinate for check_index mismatch reporting.",
+      "primary_commands": ["check_index"],
+      "secondary_commands": ["check_map", "summary"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate.bai"],
+      "regeneration_strategy": "rewrite_bai_reference_count_to_mismatch_bam_header",
+      "expected_artifacts": [
+        "expected/check_index/tiny.invalid.mismatched_reference_count.failure.json",
+        "expected/check_map/tiny.invalid.mismatched_reference_count.fallback.success.json",
+        "expected/summary/tiny.invalid.mismatched_reference_count.fallback.success.json"
+      ],
+      "has_index": true,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
+      "id": "tiny.valid.coordinate.csi_header",
+      "path": "bam/indexing/tiny.valid.coordinate.bam.csi",
+      "format": "CSI",
+      "category": "indexing",
+      "validity": "unsupported",
+      "status": "planned",
+      "description": "Minimal CSI header companion for detected-but-not-supported check_index behavior before scoped CSI support lands.",
+      "primary_commands": ["check_index"],
+      "secondary_commands": ["check_map", "summary"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate"],
+      "regeneration_strategy": "write_minimal_csi_header_with_matching_reference_count",
+      "expected_artifacts": [
+        "expected/check_index/tiny.valid.coordinate.csi_header.unsupported.json",
+        "expected/check_map/tiny.valid.coordinate.csi_header.fallback.success.json",
+        "expected/summary/tiny.valid.coordinate.csi_header.fallback.success.json"
+      ],
+      "has_index": true,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
+      "id": "tiny.invalid.bad_csi",
+      "path": "bam/indexing/tiny.invalid.bad.bam.csi",
+      "format": "CSI",
+      "category": "indexing",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "Malformed CSI sidecar reserved for check_index invalid CSI reporting after header detection.",
+      "primary_commands": ["check_index"],
+      "secondary_commands": ["check_map"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate.csi_header"],
+      "regeneration_strategy": "truncate_csi_header_or_mutate_csi_magic",
+      "expected_artifacts": [
+        "expected/check_index/tiny.invalid.bad_csi.failure.json",
+        "expected/check_map/tiny.invalid.bad_csi.fallback.success.json"
       ],
       "has_index": true,
       "sort_order": "coordinate",
@@ -1088,14 +1161,38 @@
       "status": "planned",
       "description": "Tiny FASTQ.GZ input reserved for unmapped-mode consume coverage.",
       "primary_commands": ["consume", "subsample"],
-      "secondary_commands": ["identify"],
+      "secondary_commands": ["identify", "index", "enumerate", "explode"],
       "generated": true,
       "source_fixture_ids": ["tiny.valid.fastq"],
       "regeneration_strategy": "gzip_wrap_tiny_fastq",
       "expected_artifacts": [
         "expected/consume/consume.tiny.valid.fastq_gz.dry_run.success.json",
         "expected/subsample/subsample.tiny.valid.fastq_gz.deterministic.success.json",
-        "expected/subsample/subsample.tiny.valid.fastq_gz.random.success.json"
+        "expected/subsample/subsample.tiny.valid.fastq_gz.random.success.json",
+        "expected/index/tiny.valid.fastq_gz.gzi.success.json",
+        "expected/enumerate/tiny.valid.fastq_gz.with_gzi.success.json",
+        "expected/explode/tiny.valid.fastq_gz.with_gzi.success.json"
+      ],
+      "size_class": "tiny"
+    },
+    {
+      "id": "tiny.valid.fastq_gz.gzi",
+      "path": "consume/tiny.valid.fastq.gzi",
+      "format": "GZI",
+      "category": "consume",
+      "validity": "valid",
+      "status": "planned",
+      "description": "FASTQ.GZI sidecar generated from tiny.valid.fastq_gz to prove indexed enumeration, explode planning, and consume planning semantics.",
+      "primary_commands": ["index", "enumerate", "explode"],
+      "secondary_commands": ["consume"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.fastq_gz"],
+      "regeneration_strategy": "run_bamana_index_gzi_over_tiny_fastq_gz",
+      "expected_artifacts": [
+        "expected/index/tiny.valid.fastq_gz.gzi.success.json",
+        "expected/enumerate/tiny.valid.fastq_gz.with_gzi.success.json",
+        "expected/explode/tiny.valid.fastq_gz.with_gzi.success.json",
+        "expected/consume/consume.tiny.valid.fastq_gz.with_gzi.success.json"
       ],
       "size_class": "tiny"
     },

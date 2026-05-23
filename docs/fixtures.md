@@ -135,6 +135,13 @@ and validation command wave:
   evidence;
 * `tiny.valid.coordinate.bai` covers index-derived `check_map` and `summary`
   evidence;
+* `tiny.invalid.mismatched_reference_count.bai` covers BAI reference-count
+  mismatch reporting;
+* `tiny.valid.coordinate.csi_header` covers detected-but-not-supported CSI
+  behavior;
+* `tiny.invalid.bad_csi` covers malformed CSI reporting;
+* `tiny.valid.fastq_gz.gzi` covers implemented FASTQ.GZI sidecar behavior for
+  `index`, `enumerate`, `explode`, and `consume`;
 * `tiny.tags.nm_rg`, `tiny.tags.mixed_aux_types`, and
   `tiny.tags.absent_requested` cover observed, typed, malformed, and absent
   `check_tag` evidence;

@@ -19,8 +19,14 @@ The repository already has the following native index groundwork:
   detected-but-not-supported status.
 * ``check_index`` reports adjacent index presence, selected path, kind,
   shallow syntactic validity, timestamp-based staleness, and compatibility.
+  BAI inspection is currently limited to magic, reference-count agreement,
+  top-level parseability, and metadata summaries where present. CSI inspection
+  is header-only detection until scoped support lands.
 * ``index`` creates real FASTQ.GZI sidecars for FASTQ.GZ inputs and reports
   BAM BAI/CSI writing as unimplemented instead of claiming sidecar creation.
+  Existing sidecars are not overwritten unless ``--force`` is supplied, and
+  BAM responses keep ``output_index.created`` false until a real BAI/CSI
+  sidecar is written.
 * ``check_map`` and ``summary`` distinguish index-derived BAI metadata evidence
   from scan-derived evidence and fall back to scanner evidence when index
   metadata is absent or insufficient.
@@ -42,6 +48,24 @@ The current M9 gaps are intentional and must remain visible until implemented:
   records a precise deferral.
 * ``check_map`` and ``summary`` do not yet use validated chunks for indexed
   acceleration.
+
+Frozen Fixture Plan
+-------------------
+
+M9.2 freezes the planned index fixture taxonomy before implementation work:
+
+* valid BAI: ``tiny.valid.coordinate.bai``
+* malformed BAI: ``tiny.invalid.bad_bai``
+* mismatched BAI reference count:
+  ``tiny.invalid.mismatched_reference_count.bai``
+* stale BAI timestamp heuristic: ``tiny.valid.coordinate.stale_bai``
+* CSI header detection with unsupported fallback:
+  ``tiny.valid.coordinate.csi_header``
+* malformed CSI: ``tiny.invalid.bad_csi``
+* coordinate-sorted BAM source: ``tiny.valid.coordinate``
+* unsorted BAM index rejection: ``tiny.invalid.unsorted_coordinate``
+* FASTQ.GZ source and FASTQ.GZI sidecar:
+  ``tiny.valid.fastq_gz`` and ``tiny.valid.fastq_gz.gzi``
 
 Contract Boundary
 -----------------
