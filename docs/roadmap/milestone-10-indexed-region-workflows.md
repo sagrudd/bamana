@@ -226,8 +226,30 @@ The region-scoped fields are deliberately distinct from whole-file
 `total_mapped_reads`, `total_unmapped_reads`, and scan `records_examined`
 fields. Unknown references, empty intervals, reversed intervals, and other
 unsupported region strings fail with precise `invalid_region` errors.
-`summary --region <REGION>`, region files, and standalone indexed region
-selection remain deferred.
+## M10.7 Region-Aware `summary`
+
+`summary --region <REGION>` is public command behavior. Region requests reuse
+the M10.2 parser, M10.4 chunk planner, and M10.5 traversal layer used by
+region-aware `check_map`.
+
+Command behavior:
+
+* usable BAI sidecars produce `region_scope.execution: indexed`;
+* indexed payloads include `index_path`, `chunks_traversed`,
+  `raw_records_seen`, and `duplicate_records_suppressed`;
+* missing, stale, unsupported, or invalid index state produces
+  `region_scope.execution: scan_fallback`;
+* fallback payloads include `fallback_mode: native_scan_required` and
+  `scan_records_limit`;
+* region-scoped `counts`, `fractions_observed`, `mapq`, `mapping`,
+  `anomalies`, and optional `flag_categories` describe only requested
+  intervals;
+* whole-file BAI totals are intentionally omitted from region-scoped
+  `index_derived`; the index is used only to find records.
+
+Unknown references, empty intervals, reversed intervals, and other unsupported
+region strings fail with precise `invalid_region` errors. Region files and
+standalone indexed region selection remain deferred.
 
 ## Acceptance Criteria
 

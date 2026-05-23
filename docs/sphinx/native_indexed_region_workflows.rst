@@ -141,13 +141,29 @@ Region-scoped counts use ``region_records_examined``,
 ``region_mapped_records_observed``, and
 ``region_unmapped_records_observed``. They are not whole-file totals.
 Unsupported region requests fail with precise ``invalid_region`` errors.
-``summary --region <REGION>``, region files, and standalone indexed region
-selection remain deferred.
+M10.7 Region-Aware summary
+--------------------------
+
+``summary --region <REGION>`` is public command behavior. The command reuses
+the region parser, validated BAI chunk planning, and typed ``VirtualOffset``
+traversal used by region-aware ``check_map``.
+
+Indexed payloads report ``region_scope.execution: indexed`` together with
+``index_path``, ``chunks_traversed``, ``raw_records_seen``, and
+``duplicate_records_suppressed``. Fallback payloads report
+``region_scope.execution: scan_fallback``, ``fallback_mode:
+native_scan_required``, and ``scan_records_limit``.
+
+Region-scoped ``counts``, ``fractions_observed``, ``mapq``, ``mapping``,
+``anomalies``, and optional ``flag_categories`` describe only requested
+intervals. Whole-file BAI totals are intentionally omitted from region-scoped
+``index_derived`` because the index is used only to find records. Unsupported
+region requests fail with precise ``invalid_region`` errors. Region files and
+standalone indexed region selection remain deferred.
 
 Known Gaps
 ----------
 
-``summary --region <REGION>`` is still planned but not accepted by the binary.
 Indexed-region benchmark rows do not yet compare random-access lookup behavior
 with scan fallback. CSI large-reference behavior remains unsupported until a
 later scoped decision.

@@ -744,6 +744,9 @@ pub struct SummaryArgs {
     /// Include a detailed flag-category section in the output.
     #[arg(long = "include-flags")]
     pub include_flags: bool,
+    /// Restrict summary evidence to one M10 region string. May be repeated.
+    #[arg(long = "region")]
+    pub regions: Vec<String>,
 }
 
 #[derive(Debug, Args)]

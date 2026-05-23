@@ -342,11 +342,11 @@ Traversal behavior:
 
 ## Milestone 10 Region-Aware Check Map
 
-M10.6 promotes `check_map --region <REGION>` to public command behavior. The
-command normalizes repeated region strings with the M10.2 parser, uses a
-validated BAI sidecar and M10.4/M10.5 traversal when possible, and falls back
-to native scan evidence when the index is missing, stale, unsupported, or
-invalid.
+M10.6 promotes `check_map --region <REGION>` to public command behavior, and
+M10.7 promotes `summary --region <REGION>` to public command behavior. Both
+commands normalize repeated region strings with the M10.2 parser, use a
+validated BAI sidecar and M10.4/M10.5 traversal when possible, and fall back to
+native scan evidence when the index is missing, stale, unsupported, or invalid.
 
 Payload behavior:
 
@@ -360,5 +360,8 @@ Payload behavior:
   `region_unmapped_records_observed`, not as whole-file totals.
 
 Unsupported region requests such as unknown references and empty intervals
-fail deterministically with `invalid_region`. `summary --region <REGION>`,
-region files, and standalone indexed region selection remain deferred.
+fail deterministically with `invalid_region`. Region-scoped `summary` omits
+whole-file BAI totals and reports requested-interval `counts`,
+`fractions_observed`, `mapq`, `mapping`, `anomalies`, and optional
+`flag_categories` only. Region files and standalone indexed region selection
+remain deferred.

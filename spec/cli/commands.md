@@ -654,11 +654,7 @@ Key output concepts:
 ## `summary`
 
 Current synopsis:
-`bamana summary --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--include-mapq-hist] [--include-flags]`
-
-M10 governed region synopsis, not accepted by the binary until the later
-region-aware implementation task:
-`bamana summary --bam <bamfile> [--region <REGION> ...] [--prefer-index] [--include-mapq-hist] [--include-flags]`
+`bamana summary --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--include-mapq-hist] [--include-flags] [--region <REGION> ...]`
 
 Semantics:
 Produces a fast operational BAM overview from header metadata, optional index
@@ -679,14 +675,21 @@ full BAM structural validity.
 
 M10 region contract:
 
-* `--region` will use the M10.2 grammar: `reference` or
-  `reference:start-end`
+* `--region` uses the M10.2 grammar: `reference` or `reference:start-end`
 * interval input is 1-based closed and reported in normalized form as 0-based
   half-open coordinates
 * repeated `--region` values preserve request order and are not merged or
   deduplicated
-* region-aware output will add `region_scope` and must keep region-scoped
+* region-aware output adds `region_scope` and must keep region-scoped
   operational metrics distinct from whole-file totals
+* usable BAI sidecars drive indexed traversal; missing, stale, unsupported, or
+  invalid index state falls back to native scan evidence with explicit scan
+  limits
+* region-scoped `counts`, `fractions_observed`, `mapq`, `mapping`,
+  `anomalies`, and optional `flag_categories` describe only requested
+  intervals
+* whole-file BAI totals are intentionally omitted from region-scoped summary
+  `index_derived`; the index is used only to find records
 * region files remain deferred and must fail precisely until a later task
   promotes them
 

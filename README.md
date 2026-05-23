@@ -122,14 +122,15 @@ Milestone 10 is active for native indexed-region workflow development. M10.2
 defines the internal region grammar as `reference` and `reference:start-end`,
 where interval input is 1-based closed and normalized internally to 0-based
 half-open coordinates. M10.3 freezes the first region-aware workflow contracts
-for `check_map --region <REGION>` and future `summary --region <REGION>`
-support, including `region_scope` JSON payload examples and fixture plans.
-M10.6 promotes `check_map --region <REGION>` to public command behavior:
-usable BAI sidecars drive indexed traversal, while missing, stale, unsupported,
-or invalid index state falls back to native scan evidence with explicit scan
-limits. `summary --region`, region files, and indexed region selection commands
-remain deferred. The public contract commands `benchmark`, `fastq`, and
-`unmap` remain protected while M10 work proceeds.
+for `check_map --region <REGION>` and `summary --region <REGION>` support,
+including `region_scope` JSON payload examples and fixture plans. M10.6
+promotes `check_map --region <REGION>` to public command behavior, and M10.7
+promotes `summary --region <REGION>` to public command behavior: usable BAI
+sidecars drive indexed traversal, while missing, stale, unsupported, or
+invalid index state falls back to native scan evidence with explicit scan
+limits. Region files and indexed region selection commands remain deferred.
+The public contract commands `benchmark`, `fastq`, and `unmap` remain protected
+while M10 work proceeds.
 M10.4 adds internal validated-BAI chunk planning for those future workflows:
 candidate bins are expanded, chunks are coalesced by typed virtual offsets, and
 unsupported, stale, incompatible, or impossible index inputs are rejected before
@@ -143,6 +144,9 @@ fallback payload is explicit as `NativeScanRequired` when no usable index is
 available. M10.6 wires that traversal into `check_map --region <REGION>` and
 keeps region-scoped `region_records_examined` evidence separate from whole-file
 mapping totals.
+M10.7 wires the same traversal into `summary --region <REGION>` and keeps
+region-scoped operational counts, observed fractions, MAPQ, flag categories,
+and mapping status separate from whole-file totals.
 
 ## Benchmark Framework
 
@@ -200,6 +204,7 @@ cargo run -- index --input reads.fastq.gz --format gzi --out reads.fastq.gzi
 cargo run -- summary --bam example.bam
 cargo run -- summary --bam example.bam --sample-records 250000 --include-mapq-hist --include-flags
 cargo run -- summary --bam example.bam --full-scan --prefer-index
+cargo run -- summary --bam example.bam --region chr1:100-200 --include-flags
 cargo run -- check_tag --tag NM --bam example.bam
 cargo run -- check_tag --tag RG --require-type Z --bam example.bam --count-hits
 cargo run -- check_tag --tag SA --bam example.bam --full-scan

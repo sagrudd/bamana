@@ -310,6 +310,7 @@ fn main() -> ExitCode {
                 prefer_index: args.prefer_index,
                 include_mapq_hist: args.include_mapq_hist,
                 include_flags: args.include_flags,
+                regions: args.regions,
             })
         }),
         Commands::Validate(args) => emit_timed_response(cli.global.json_pretty, || {

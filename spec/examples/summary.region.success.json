@@ -43,6 +43,10 @@
       "interval_semantics": "start and end are inclusive in input; normalized end is exclusive",
       "duplicate_policy": "preserve_request_order_without_merging_or_deduplication",
       "execution": "indexed",
+      "index_path": "example.bam.bai",
+      "chunks_traversed": 1,
+      "raw_records_seen": 120,
+      "duplicate_records_suppressed": 0,
       "regions": [
         {
           "original": "chr1:100-200",

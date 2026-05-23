@@ -101,6 +101,15 @@
           "type": "string",
           "enum": ["indexed", "scan_fallback", "rejected"]
         },
+        "index_path": { "type": "string" },
+        "fallback_mode": {
+          "type": "string",
+          "enum": ["native_scan_required"]
+        },
+        "scan_records_limit": { "type": "integer", "minimum": 1 },
+        "chunks_traversed": { "type": "integer", "minimum": 0 },
+        "raw_records_seen": { "type": "integer", "minimum": 0 },
+        "duplicate_records_suppressed": { "type": "integer", "minimum": 0 },
         "notes": {
           "type": "array",
           "items": { "type": "string" }

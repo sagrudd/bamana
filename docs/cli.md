@@ -150,12 +150,13 @@ half-open coordinates. Multiple regions preserve request order and are not
 merged or deduplicated yet. M10.3 freezes `check_map --region <REGION>` and
 `summary --region <REGION>` as the first planned region-aware command
 surfaces, with `region_scope` JSON schema and examples. M10.6 promotes
-`check_map --region <REGION>` to public command behavior: usable BAI sidecars
+`check_map --region <REGION>` to public command behavior, and M10.7 promotes
+`summary --region <REGION>` to public command behavior: usable BAI sidecars
 drive indexed traversal, while missing, stale, unsupported, or invalid index
-state falls back to native scan evidence with explicit scan limits. `summary
---region`, region files, and indexed region selection commands remain
-explicitly deferred. The public contract commands `benchmark`, `fastq`, and
-`unmap` remain protected while this region surface is developed.
+state falls back to native scan evidence with explicit scan limits. Region
+files and indexed region selection commands remain explicitly deferred. The
+public contract commands `benchmark`, `fastq`, and `unmap` remain protected
+while this region surface is developed.
 
 M10.4 adds internal BAI chunk planning for those future region workflows. The
 planner expands normalized intervals to candidate BAI bins, collects chunks
@@ -173,6 +174,9 @@ represented explicitly as the scan fallback `NativeScanRequired`. M10.6 wires
 that traversal into `check_map --region <REGION>` and keeps
 `region_records_examined` separate from whole-file scan counters and index
 metadata totals.
+M10.7 wires the same traversal into `summary --region <REGION>` and keeps
+region-scoped operational counts, observed fractions, MAPQ, flag categories,
+and mapping status separate from whole-file totals.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

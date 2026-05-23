@@ -4802,7 +4802,7 @@ Completion evidence:
 
 ### M10.7 Add Region-Aware `summary`
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4825,7 +4825,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added public `summary --region <REGION>` CLI handling for repeated M10.2
+  region strings;
+* wired usable BAI sidecars through M10.4 chunk planning and M10.5
+  random-access traversal;
+* added native scan fallback for missing, stale, unsupported, or invalid index
+  state with `fallback_mode: native_scan_required` and `scan_records_limit`;
+* kept region-scoped operational `counts`, `fractions_observed`, `mapq`,
+  `mapping`, `anomalies`, and optional `flag_categories` separate from
+  whole-file totals;
+* omitted whole-file BAI mapped/unmapped totals from region-scoped
+  `index_derived` because the index is used only to find records;
+* added tests for indexed success, scan fallback, MAPQ/flag options,
+  overlapping intervals, unknown reference, empty interval, and stale-index
+  fallback;
+* updated the `summary` JSON schema, region example, CLI contract, README, CLI
+  docs, JSON docs, roadmap docs, Sphinx notes, and this task map.
 
 ### M10.8 Decide And Implement First Indexed Selection Surface
 

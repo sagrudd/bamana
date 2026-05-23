@@ -195,11 +195,19 @@ Key concepts:
 * `fractions_observed` is scoped to examined records when the scan is bounded
 * malformed-record failures can return an `indeterminate` payload because no
   stable operational summary was completed
-* M10.3 freezes the region-aware output contract for future `summary` wiring:
-  when region evidence is requested, `region_scope` records the normalized
+* `summary --region <REGION>` records `region_scope` with the normalized
   M10.2 intervals, `input_1_based_closed_output_0_based_half_open` coordinate
   model, request-order duplicate policy, and whether execution used indexed
   traversal, scan fallback, or precise rejection
+* indexed region execution reports `index_path`, `chunks_traversed`,
+  `raw_records_seen`, and `duplicate_records_suppressed`
+* scan fallback reports `fallback_mode: native_scan_required` and
+  `scan_records_limit`
+* region-scoped `counts`, `fractions_observed`, `mapq`, `mapping`,
+  `anomalies`, and optional `flag_categories` describe only requested
+  intervals
+* whole-file BAI totals are intentionally omitted from region-scoped
+  `index_derived`; the index is used only to find records
 * region-scoped operational metrics must not be interpreted as full-file totals
 
 ## `check_tag`

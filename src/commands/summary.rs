@@ -7,8 +7,12 @@ use crate::{
         header::HeaderPayload,
         index::{
             BaiIndexSummary, IndexKind, IndexResolution, bam_newer_than_index, parse_bai,
-            resolve_index_for_bam,
+            parse_bai_index, resolve_index_for_bam,
         },
+        record::BamRecordView,
+        region::{NormalizedRegion, NormalizedRegionSet, normalize_region_strings},
+        region_plan::plan_bai_region_chunks,
+        region_traversal::{RegionMatchedRecord, traverse_planned_region_chunks},
         scan::BamScanner,
         summary::{SummaryAccumulator, SummarySnapshot},
     },
@@ -25,6 +29,7 @@ pub struct SummaryRequest {
     pub prefer_index: bool,
     pub include_mapq_hist: bool,
     pub include_flags: bool,
+    pub regions: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -48,6 +53,8 @@ pub struct SummaryPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mapping: Option<SummaryMappingInfo>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub region_scope: Option<RegionScope>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub anomalies: Option<AnomalySummary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flag_categories: Option<FlagCategorySummary>,
@@ -65,6 +72,38 @@ pub enum SummaryMode {
     BoundedScan,
     FullScan,
     Indeterminate,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RegionExecution {
+    Indexed,
+    ScanFallback,
+    Rejected,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegionScope {
+    pub requested: bool,
+    pub source: &'static str,
+    pub coordinate_base: &'static str,
+    pub interval_semantics: &'static str,
+    pub duplicate_policy: &'static str,
+    pub regions: Vec<NormalizedRegion>,
+    pub execution: RegionExecution,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_mode: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scan_records_limit: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub chunks_traversed: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw_records_seen: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duplicate_records_suppressed: Option<usize>,
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -243,6 +282,20 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         }
     };
 
+    if !request.regions.is_empty() {
+        let regions = match normalize_region_strings(
+            &request.regions,
+            &scanner.header().header.references,
+            &request.bam,
+        ) {
+            Ok(regions) => regions,
+            Err(error) => {
+                return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
+            }
+        };
+        return run_region_summary(request, scanner, regions);
+    }
+
     let (index_summary, index_note) = if request.prefer_index {
         match attempt_index_summary(&request.bam, scanner.header().header.references.len()) {
             Ok(summary) => summary,
@@ -274,6 +327,7 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
                 fractions_observed: None,
                 mapq: None,
                 mapping: None,
+                region_scope: None,
                 anomalies: None,
                 flag_categories: None,
                 index_derived: None,
@@ -352,9 +406,226 @@ fn attempt_index_summary(
     }
 }
 
+fn run_region_summary(
+    request: SummaryRequest,
+    mut scanner: BamScanner,
+    regions: NormalizedRegionSet,
+) -> CommandResponse<SummaryPayload> {
+    let references_defined = scanner.header().header.references.len();
+    if request.prefer_index {
+        match attempt_region_index_summary(&request, scanner.header(), references_defined, &regions)
+        {
+            Ok(Some(payload)) => {
+                return CommandResponse::success("summary", Some(request.bam.as_path()), payload);
+            }
+            Ok(None) => {}
+            Err(error) => {
+                return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
+            }
+        }
+    }
+
+    let (index_present, index_kind, fallback_reason) =
+        match region_fallback_index_context(&request, references_defined) {
+            Ok(context) => context,
+            Err(error) => {
+                return CommandResponse::failure("summary", Some(request.bam.as_path()), error);
+            }
+        };
+    let scan_result = match scan_region_summary_records(&mut scanner, &request, &regions.regions) {
+        Ok(result) => result,
+        Err(error) => {
+            return CommandResponse::failure(
+                "summary",
+                Some(request.bam.as_path()),
+                AppError::SummaryUncertainty {
+                    path: request.bam.clone(),
+                    detail: error,
+                },
+            );
+        }
+    };
+    let note = if scan_result.reached_eof || request.full_scan {
+        "Region-scoped summary metrics are derived from native scan fallback and cannot be interpreted as full-file totals."
+    } else {
+        "Region-scoped summary metrics are derived from bounded native scan fallback and cannot be interpreted as full-file totals."
+    };
+    let note = match fallback_reason {
+        Some(reason) => format!("{note} {reason}"),
+        None => note.to_string(),
+    };
+    let payload = build_region_payload(
+        scanner.header(),
+        scan_result,
+        &request,
+        RegionScopeOptions {
+            regions,
+            execution: RegionExecution::ScanFallback,
+            index_path: None,
+            fallback_mode: Some("native_scan_required"),
+            scan_records_limit: Some(if request.full_scan {
+                usize::MAX
+            } else {
+                request.sample_records.max(1)
+            }),
+            chunks_traversed: None,
+            raw_records_seen: None,
+            duplicate_records_suppressed: None,
+            note,
+        },
+        IndexDerivedSummary {
+            present: index_present,
+            kind: index_kind,
+            used: false,
+            total_mapped_reads: None,
+            total_unmapped_reads: None,
+            references_with_mapped_reads: None,
+            note: None,
+        },
+    );
+    CommandResponse::success("summary", Some(request.bam.as_path()), payload)
+}
+
+fn attempt_region_index_summary(
+    request: &SummaryRequest,
+    header: &HeaderPayload,
+    references_defined: usize,
+    regions: &NormalizedRegionSet,
+) -> Result<Option<SummaryPayload>, AppError> {
+    let resolved = match resolve_index_for_bam(&request.bam) {
+        IndexResolution::Present(resolved) => resolved,
+        IndexResolution::Unsupported(_) | IndexResolution::NotFound => return Ok(None),
+    };
+    if bam_newer_than_index(&request.bam, &resolved.path) == Some(true) {
+        return Ok(None);
+    }
+
+    let index = match parse_bai_index(&resolved.path, references_defined) {
+        Ok(index) => index,
+        Err(AppError::UnsupportedIndex { .. }) | Err(AppError::InvalidIndex { .. }) => {
+            return Ok(None);
+        }
+        Err(error) => return Err(error),
+    };
+    let plan = match plan_bai_region_chunks(regions, &index, &resolved.path, resolved.kind, false) {
+        Ok(plan) => plan,
+        Err(AppError::UnsupportedIndex { .. })
+        | Err(AppError::MissingIndex { .. })
+        | Err(AppError::InvalidIndex { .. }) => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    let traversal = traverse_planned_region_chunks(&request.bam, regions, &plan)?;
+    let scan_result = scan_result_from_region_records(
+        &traversal.records,
+        request.include_mapq_hist,
+        &request.bam,
+    )?;
+    Ok(Some(build_region_payload(
+        header,
+        scan_result,
+        request,
+        RegionScopeOptions {
+            regions: regions.clone(),
+            execution: RegionExecution::Indexed,
+            index_path: Some(resolved.path.to_string_lossy().to_string()),
+            fallback_mode: None,
+            scan_records_limit: None,
+            chunks_traversed: Some(traversal.chunks_traversed),
+            raw_records_seen: Some(traversal.raw_records_seen),
+            duplicate_records_suppressed: Some(traversal.duplicate_records_suppressed),
+            note: "Region-scoped summary metrics are derived from validated indexed traversal and cannot be interpreted as full-file totals.".to_string(),
+        },
+        IndexDerivedSummary {
+            present: true,
+            kind: Some(resolved.kind),
+            used: true,
+            total_mapped_reads: None,
+            total_unmapped_reads: None,
+            references_with_mapped_reads: None,
+            note: Some(
+                "Index was used for region traversal only; whole-file BAI mapped/unmapped totals are intentionally omitted from region-scoped summary output."
+                    .to_string(),
+            ),
+        },
+    )))
+}
+
+fn region_fallback_index_context(
+    request: &SummaryRequest,
+    references_defined: usize,
+) -> Result<(bool, Option<IndexKind>, Option<String>), AppError> {
+    if !request.prefer_index {
+        return Ok((
+            false,
+            None,
+            Some("Index preference was disabled for region-scoped summary.".to_string()),
+        ));
+    }
+
+    match resolve_index_for_bam(&request.bam) {
+        IndexResolution::Present(resolved) => {
+            if bam_newer_than_index(&request.bam, &resolved.path) == Some(true) {
+                return Ok((
+                    true,
+                    Some(resolved.kind),
+                    Some(
+                        "BAI index was present but timestamp-stale for region traversal."
+                            .to_string(),
+                    ),
+                ));
+            }
+            match parse_bai_index(&resolved.path, references_defined) {
+                Ok(_) => Ok((
+                    true,
+                    Some(resolved.kind),
+                    Some(
+                        "BAI index was present but could not supply indexed region evidence; summary used native scan fallback."
+                            .to_string(),
+                    ),
+                )),
+                Err(AppError::UnsupportedIndex { detail, .. })
+                | Err(AppError::InvalidIndex { detail, .. }) => Ok((
+                    true,
+                    Some(resolved.kind),
+                    Some(format!(
+                        "BAI index was present but unusable for region traversal: {detail}"
+                    )),
+                )),
+                Err(error) => Err(error),
+            }
+        }
+        IndexResolution::Unsupported(resolved) => Ok((
+            true,
+            Some(resolved.kind),
+            Some(format!(
+                "{} index detected, but it is not usable for region traversal.",
+                index_kind_label(resolved.kind)
+            )),
+        )),
+        IndexResolution::NotFound => Ok((
+            false,
+            None,
+            Some("No usable BAM index was found for region traversal.".to_string()),
+        )),
+    }
+}
+
 struct ScanResult {
     snapshot: SummarySnapshot,
     reached_eof: bool,
+    scanned_records: u64,
+}
+
+struct RegionScopeOptions {
+    regions: NormalizedRegionSet,
+    execution: RegionExecution,
+    index_path: Option<String>,
+    fallback_mode: Option<&'static str>,
+    scan_records_limit: Option<usize>,
+    chunks_traversed: Option<usize>,
+    raw_records_seen: Option<usize>,
+    duplicate_records_suppressed: Option<usize>,
+    note: String,
 }
 
 fn scan_summary_records(
@@ -368,10 +639,14 @@ fn scan_summary_records(
         request.sample_records.max(1) as u64
     };
     let mut reached_eof = false;
+    let mut scanned_records = 0;
 
     while accumulator.snapshot().records_examined < record_limit {
         match scanner.next_record() {
-            Ok(Some(record)) => accumulator.observe_view(&record),
+            Ok(Some(record)) => {
+                scanned_records += 1;
+                accumulator.observe_view(&record);
+            }
             Ok(None) => {
                 reached_eof = true;
                 break;
@@ -390,6 +665,72 @@ fn scan_summary_records(
     Ok(ScanResult {
         snapshot: accumulator.snapshot(),
         reached_eof,
+        scanned_records,
+    })
+}
+
+fn scan_region_summary_records(
+    scanner: &mut BamScanner,
+    request: &SummaryRequest,
+    regions: &[NormalizedRegion],
+) -> Result<ScanResult, String> {
+    let mut accumulator = SummaryAccumulator::new(request.include_mapq_hist);
+    let record_limit = if request.full_scan {
+        u64::MAX
+    } else {
+        request.sample_records.max(1) as u64
+    };
+    let mut reached_eof = false;
+    let mut scanned_records = 0;
+
+    while scanned_records < record_limit {
+        match scanner.next_record() {
+            Ok(Some(record)) => {
+                scanned_records += 1;
+                if record_overlaps_regions(&record, regions).map_err(|error| error.to_string())? {
+                    accumulator.observe_view(&record);
+                }
+            }
+            Ok(None) => {
+                reached_eof = true;
+                break;
+            }
+            Err(AppError::TruncatedFile { .. }) => {
+                return Err(
+                    "Alignment stream was truncated before a stable summary could be completed."
+                        .to_string(),
+                );
+            }
+            Err(AppError::InvalidRecord { detail, .. }) => return Err(detail),
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+
+    Ok(ScanResult {
+        snapshot: accumulator.snapshot(),
+        reached_eof,
+        scanned_records,
+    })
+}
+
+fn scan_result_from_region_records(
+    records: &[RegionMatchedRecord],
+    include_mapq_hist: bool,
+    path: &std::path::Path,
+) -> Result<ScanResult, AppError> {
+    let mut accumulator = SummaryAccumulator::new(include_mapq_hist);
+    for record in records {
+        let view =
+            BamRecordView::parse(&record.raw_record).map_err(|error| AppError::InvalidRecord {
+                path: path.to_path_buf(),
+                detail: error.detail().to_string(),
+            })?;
+        accumulator.observe_view(&view);
+    }
+    Ok(ScanResult {
+        snapshot: accumulator.snapshot(),
+        reached_eof: false,
+        scanned_records: records.len() as u64,
     })
 }
 
@@ -511,11 +852,123 @@ fn build_payload(
         fractions_observed: (!full_file_scanned).then_some(fraction_summary),
         mapq: Some(mapq),
         mapping: Some(mapping),
+        region_scope: None,
         anomalies: Some(anomalies),
         flag_categories,
         index_derived,
         confidence: Some(confidence),
         semantic_note: Some(semantic_note),
+    }
+}
+
+fn build_region_payload(
+    header: &HeaderPayload,
+    scan_result: ScanResult,
+    request: &SummaryRequest,
+    options: RegionScopeOptions,
+    index_derived: IndexDerivedSummary,
+) -> SummaryPayload {
+    let mode = if scan_result.reached_eof || request.full_scan {
+        SummaryMode::FullScan
+    } else {
+        SummaryMode::BoundedScan
+    };
+    let header_summary = HeaderSummary {
+        references_defined: header.header.references.len(),
+        sort_order: header.header.hd.sort_order.clone(),
+        sub_sort_order: header.header.hd.sub_sort_order.clone(),
+        group_order: header.header.hd.group_order.clone(),
+    };
+    let references = build_references(header, None, &scan_result.snapshot.mapped_reference_ids);
+    let counts = RecordCountSummary {
+        records_examined: scan_result.snapshot.records_examined,
+        records_total_known: None,
+        mapped_records: scan_result.snapshot.mapped_records,
+        unmapped_records: scan_result.snapshot.unmapped_records,
+        primary_records: scan_result.snapshot.primary_records,
+        secondary_records: scan_result.snapshot.secondary_records,
+        supplementary_records: scan_result.snapshot.supplementary_records,
+        duplicate_records: scan_result.snapshot.duplicate_records,
+        qc_fail_records: scan_result.snapshot.qc_fail_records,
+        paired_records: scan_result.snapshot.paired_records,
+        properly_paired_records: scan_result.snapshot.properly_paired_records,
+        read1_records: scan_result.snapshot.read1_records,
+        read2_records: scan_result.snapshot.read2_records,
+    };
+    let fraction_summary = build_fraction_summary(&counts);
+    let mapq = MapqSummary {
+        min: scan_result.snapshot.mapq_min,
+        max: scan_result.snapshot.mapq_max,
+        mean: (scan_result.snapshot.records_examined > 0).then_some(
+            scan_result.snapshot.mapq_sum as f64 / scan_result.snapshot.records_examined as f64,
+        ),
+        zero_count: scan_result.snapshot.mapq_zero_count,
+        histogram: scan_result.snapshot.mapq_histogram.clone(),
+    };
+    let mapping = build_mapping_summary(&scan_result.snapshot, None, false);
+    let anomalies = AnomalySummary {
+        contradictory_mapping_state_records: scan_result
+            .snapshot
+            .contradictory_mapping_state_records,
+    };
+    let flag_categories = request.include_flags.then_some(FlagCategorySummary {
+        paired_records: scan_result.snapshot.paired_records,
+        properly_paired_records: scan_result.snapshot.properly_paired_records,
+        secondary_records: scan_result.snapshot.secondary_records,
+        supplementary_records: scan_result.snapshot.supplementary_records,
+        duplicate_records: scan_result.snapshot.duplicate_records,
+        qc_fail_records: scan_result.snapshot.qc_fail_records,
+        read1_records: scan_result.snapshot.read1_records,
+        read2_records: scan_result.snapshot.read2_records,
+        reverse_strand_records: scan_result.snapshot.reverse_strand_records,
+    });
+    let confidence = if scan_result.snapshot.records_examined == 0 {
+        ConfidenceLevel::Low
+    } else if matches!(options.execution, RegionExecution::Indexed)
+        || scan_result.reached_eof
+        || request.full_scan
+    {
+        ConfidenceLevel::High
+    } else {
+        ConfidenceLevel::Medium
+    };
+    SummaryPayload {
+        format: "BAM",
+        mode,
+        evidence: Some(SummaryEvidence {
+            header_used: true,
+            index_used: matches!(options.execution, RegionExecution::Indexed),
+            records_scanned: scan_result.scanned_records,
+            full_file_scanned: false,
+        }),
+        header: Some(header_summary),
+        references: Some(references),
+        counts: Some(counts),
+        fractions: None,
+        fractions_observed: Some(fraction_summary),
+        mapq: Some(mapq),
+        mapping: Some(mapping),
+        region_scope: Some(RegionScope {
+            requested: true,
+            source: "cli_regions",
+            coordinate_base: options.regions.coordinate_base,
+            interval_semantics: options.regions.interval_semantics,
+            duplicate_policy: options.regions.duplicate_policy,
+            regions: options.regions.regions,
+            execution: options.execution,
+            index_path: options.index_path,
+            fallback_mode: options.fallback_mode,
+            scan_records_limit: options.scan_records_limit,
+            chunks_traversed: options.chunks_traversed,
+            raw_records_seen: options.raw_records_seen,
+            duplicate_records_suppressed: options.duplicate_records_suppressed,
+            notes: vec![options.note.clone()],
+        }),
+        anomalies: Some(anomalies),
+        flag_categories,
+        index_derived: Some(index_derived),
+        confidence: Some(confidence),
+        semantic_note: Some(options.note),
     }
 }
 
@@ -636,6 +1089,66 @@ fn build_mapping_summary(
     }
 }
 
+fn record_overlaps_regions(
+    record: &BamRecordView<'_>,
+    regions: &[NormalizedRegion],
+) -> Result<bool, AppError> {
+    let Some((reference_index, start, end)) = mapped_record_interval(record)? else {
+        return Ok(false);
+    };
+    Ok(regions.iter().any(|region| {
+        region.reference_index == reference_index
+            && start < region.end_0_based_exclusive
+            && end > region.start_0_based
+    }))
+}
+
+fn mapped_record_interval(
+    record: &BamRecordView<'_>,
+) -> Result<Option<(usize, u32, u32)>, AppError> {
+    if record.flag_summary().is_unmapped || record.ref_id() < 0 || record.pos() < 0 {
+        return Ok(None);
+    }
+    let reference_index =
+        usize::try_from(record.ref_id()).map_err(|_| AppError::InvalidRecord {
+            path: PathBuf::from("<summary-region>"),
+            detail: "Mapped BAM record reference id could not be represented as an index."
+                .to_string(),
+        })?;
+    let start = record.pos() as u32;
+    let span = reference_span(record.cigar_bytes())?;
+    let end = start
+        .checked_add(span)
+        .ok_or_else(|| AppError::InvalidRecord {
+            path: PathBuf::from("<summary-region>"),
+            detail: "Mapped BAM record reference interval overflowed u32.".to_string(),
+        })?;
+    Ok(Some((reference_index, start, end)))
+}
+
+fn reference_span(cigar_bytes: &[u8]) -> Result<u32, AppError> {
+    if cigar_bytes.is_empty() {
+        return Ok(1);
+    }
+
+    let mut span = 0_u32;
+    for chunk in cigar_bytes.chunks_exact(4) {
+        let raw = u32::from_le_bytes(chunk.try_into().expect("chunk size checked"));
+        let op_len = raw >> 4;
+        let op = raw & 0x0f;
+        if matches!(op, 0 | 2 | 3 | 7 | 8) {
+            span = span
+                .checked_add(op_len)
+                .ok_or_else(|| AppError::InvalidRecord {
+                    path: PathBuf::from("<summary-region>"),
+                    detail: "BAM CIGAR reference span overflowed u32.".to_string(),
+                })?;
+        }
+    }
+
+    Ok(span.max(1))
+}
+
 fn fraction(value: u64, denominator: f64) -> Option<f64> {
     (denominator > 0.0).then_some(value as f64 / denominator)
 }
@@ -657,6 +1170,10 @@ mod tests {
 
     use super::{ConfidenceLevel, MappingStatus, SummaryMode, SummaryRequest, run};
 
+    fn region_values(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| (*value).to_string()).collect()
+    }
+
     #[test]
     fn header_only_full_summary_reports_empty_body_evidence() {
         let bam_path = write_temp_file(
@@ -672,6 +1189,7 @@ mod tests {
             prefer_index: true,
             include_mapq_hist: true,
             include_flags: true,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -717,6 +1235,7 @@ mod tests {
             prefer_index: false,
             include_mapq_hist: true,
             include_flags: true,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -767,6 +1286,7 @@ mod tests {
             prefer_index: false,
             include_mapq_hist: false,
             include_flags: false,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -814,6 +1334,7 @@ mod tests {
             prefer_index: true,
             include_mapq_hist: false,
             include_flags: false,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -870,6 +1391,7 @@ mod tests {
             prefer_index: true,
             include_mapq_hist: false,
             include_flags: false,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -897,6 +1419,241 @@ mod tests {
                 .semantic_note
                 .expect("semantic note should be present")
                 .contains("header/index metadata")
+        );
+    }
+
+    #[test]
+    fn region_summary_uses_indexed_traversal_when_bai_is_usable() {
+        let bam_path = write_temp_file(
+            "summary-region-indexed",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 5, "read1", 0),
+                    build_light_record(0, 8, "read2", 1024),
+                    build_light_record(0, 50, "read3", 0),
+                ],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: true,
+            include_flags: true,
+            regions: region_values(&["chr1:6-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(evidence.index_used);
+        assert_eq!(evidence.records_scanned, 2);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_examined, 2);
+        assert_eq!(counts.mapped_records, 2);
+        assert_eq!(counts.records_total_known, None);
+        assert!(payload.fractions.is_none());
+        assert!(payload.fractions_observed.is_some());
+        assert!(
+            payload
+                .mapq
+                .expect("mapq should be present")
+                .histogram
+                .is_some()
+        );
+        assert_eq!(
+            payload
+                .flag_categories
+                .expect("flag categories should be present")
+                .duplicate_records,
+            1
+        );
+        let region_scope = payload
+            .region_scope
+            .expect("region scope should be present");
+        assert!(matches!(
+            region_scope.execution,
+            super::RegionExecution::Indexed
+        ));
+        assert!(region_scope.index_path.is_some());
+        assert!(region_scope.chunks_traversed.unwrap_or(0) > 0);
+        let index_derived = payload
+            .index_derived
+            .expect("index-derived status should be present");
+        assert!(index_derived.used);
+        assert_eq!(index_derived.total_mapped_reads, None);
+    }
+
+    #[test]
+    fn region_summary_deduplicates_overlapping_intervals() {
+        let bam_path = write_temp_file(
+            "summary-region-overlap",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 5, "read1", 0),
+                    build_light_record(0, 8, "read2", 0),
+                ],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:6-9", "chr1:8-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        assert_eq!(
+            payload
+                .counts
+                .expect("counts should be present")
+                .records_examined,
+            2
+        );
+        assert_eq!(
+            payload
+                .region_scope
+                .expect("region scope should be present")
+                .regions
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn region_summary_falls_back_to_scan_without_index() {
+        let bam_path = write_temp_file(
+            "summary-region-scan",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 5, "read1", 0),
+                    build_light_record(0, 50, "read2", 0),
+                ],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:6-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(!evidence.index_used);
+        assert_eq!(evidence.records_scanned, 2);
+        assert_eq!(
+            payload
+                .counts
+                .expect("counts should be present")
+                .records_examined,
+            1
+        );
+        let region_scope = payload
+            .region_scope
+            .expect("region scope should be present");
+        assert!(matches!(
+            region_scope.execution,
+            super::RegionExecution::ScanFallback
+        ));
+        assert_eq!(region_scope.fallback_mode, Some("native_scan_required"));
+        assert_eq!(region_scope.scan_records_limit, Some(10));
+    }
+
+    #[test]
+    fn region_summary_unknown_reference_fails_deterministically() {
+        let bam_path = write_temp_file(
+            "summary-region-unknown",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 5, "read1", 0)],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["missing:1-10"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        assert_eq!(
+            response.error.expect("error should be present").code,
+            "invalid_region"
+        );
+    }
+
+    #[test]
+    fn region_summary_empty_interval_fails_deterministically() {
+        let bam_path = write_temp_file(
+            "summary-region-empty",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 5, "read1", 0)],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:10-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        assert_eq!(
+            response.error.expect("error should be present").code,
+            "invalid_region"
         );
     }
 
@@ -929,6 +1686,7 @@ mod tests {
             prefer_index: true,
             include_mapq_hist: false,
             include_flags: false,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -940,6 +1698,67 @@ mod tests {
         assert!(!evidence.index_used);
         assert_eq!(evidence.records_scanned, 1);
         assert!(payload.index_derived.is_none());
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("timestamp-stale")
+        );
+    }
+
+    #[test]
+    fn region_summary_stale_bai_falls_back_to_scan() {
+        let bam_path = write_temp_file(
+            "summary-region-stale-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 5, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+        thread::sleep(Duration::from_millis(1100));
+        fs::OpenOptions::new()
+            .append(true)
+            .open(&bam_path)
+            .expect("bam should open")
+            .write_all(b"x")
+            .expect("bam mtime should update");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:6-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(!evidence.index_used);
+        assert_eq!(
+            payload
+                .counts
+                .expect("counts should be present")
+                .records_examined,
+            1
+        );
+        assert!(matches!(
+            payload
+                .region_scope
+                .expect("region scope should be present")
+                .execution,
+            super::RegionExecution::ScanFallback
+        ));
         assert!(
             payload
                 .semantic_note
@@ -970,6 +1789,7 @@ mod tests {
             prefer_index: false,
             include_mapq_hist: false,
             include_flags: false,
+            regions: Vec::new(),
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
