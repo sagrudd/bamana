@@ -162,6 +162,14 @@ ranges, preserves provenance, and rejects unsupported, stale, incompatible, or
 impossible index inputs before indexed evidence may be reported. This is still
 not a public CLI behavior change.
 
+M10.5 adds the internal traversal baseline in `src/bam/region_traversal.rs`.
+`traverse_planned_region_chunks` consumes planned `VirtualOffset` ranges through
+`raw_records_in_virtual_range`, filters records against normalized intervals by
+overlap, and deduplicate by virtual-offset range so broad bins and overlapping
+region requests do not double-count records. Missing or unusable index state is
+represented explicitly as the scan fallback `NativeScanRequired`. This is still
+not public CLI behavior.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

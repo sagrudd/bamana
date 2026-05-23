@@ -105,6 +105,26 @@ reference-count incompatibility, empty region sets, and impossible
 virtual-offset chunks are rejected before any command may claim indexed-region
 evidence.
 
+M10.5 Region-Bounded Traversal
+------------------------------
+
+``src/bam/region_traversal.rs`` provides the internal traversal baseline above
+the chunk planner. ``traverse_planned_region_chunks`` consumes planned
+``VirtualOffset`` ranges with ``raw_records_in_virtual_range`` rather than raw
+byte offsets.
+
+Traversal filters retrieved records against normalized intervals by reference
+and overlap because broad BAI bins and coalesced chunks may include records
+outside the requested region. Overlapping chunks and overlapping region
+requests are deduplicate by virtual-offset range, while matched region strings
+are merged onto the returned record.
+
+Fallback remains explicit. When no usable index exists, the internal payload
+records ``NativeScanRequired`` as the scan fallback instead of claiming indexed
+evidence. This remains internal; the binary still does not accept
+``check_map --region <REGION>`` or ``summary --region <REGION>`` until later
+M10 tasks wire those command payloads.
+
 Known Gaps
 ----------
 

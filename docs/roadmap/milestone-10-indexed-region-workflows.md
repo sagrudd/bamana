@@ -183,6 +183,30 @@ Structured rejection happens before indexed evidence can be claimed:
 * empty region sets;
 * impossible virtual-offset chunks where the start is not before the end.
 
+## M10.5 Region-Bounded Traversal
+
+`src/bam/region_traversal.rs` implements the internal traversal baseline above
+M10.4 chunk plans. `traverse_planned_region_chunks` walks coalesced chunk
+ranges with typed `VirtualOffset` values and `raw_records_in_virtual_range`,
+not raw byte offsets.
+
+Traversal rules:
+
+* each retrieved record is parsed through the native BAM record view;
+* records are filtered against normalized intervals by reference and overlap,
+  because broad BAI bins and coalesced chunks may include records outside the
+  requested regions;
+* duplicate records from overlapping chunks or overlapping region requests are
+  deduplicate by virtual-offset range;
+* matched region strings are merged onto the returned record when one record
+  overlaps more than one requested interval;
+* no usable index remains visible as an explicit scan fallback through
+  `NativeScanRequired`.
+
+This is not public CLI behavior yet. The planned `check_map --region <REGION>`
+and `summary --region <REGION>` surfaces will consume this traversal layer only
+after their command payloads are wired and verified.
+
 ## Acceptance Criteria
 
 * region strings and optional region files are parsed into a documented

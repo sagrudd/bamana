@@ -14,6 +14,7 @@ pub mod record;
 pub mod records;
 pub mod region;
 pub mod region_plan;
+pub mod region_traversal;
 pub mod reheader;
 pub mod scan;
 pub mod sort;

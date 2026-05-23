@@ -4725,7 +4725,7 @@ Completion evidence:
 
 ### M10.5 Implement Region-Bounded Random-Access Traversal
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4747,7 +4747,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/bam/region_traversal.rs` with
+  `traverse_planned_region_chunks` for planned `VirtualOffset` traversal
+  through `raw_records_in_virtual_range`;
+* filtered retrieved records against normalized intervals by reference and
+  overlap so broad BAI bins do not leak records into region results;
+* deduplicate records by virtual-offset range and merge matched region strings
+  when overlapping chunks or overlapping region requests select the same
+  record;
+* represented missing or unusable index state as the explicit scan fallback
+  `NativeScanRequired`;
+* added traversal unit tests for region filtering, overlapping-region
+  deduplication, and native fallback reporting;
+* documented M10.5 in README, CLI docs, roadmap docs, Sphinx notes, and this
+  task map.
 
 ### M10.6 Add Region-Aware `check_map`
 

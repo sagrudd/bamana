@@ -320,3 +320,26 @@ The planner rejects unsupported index kinds such as CSI, stale BAI sidecars,
 reference-count incompatibility, empty region sets, and impossible virtual
 offset chunks before any later command may claim indexed-region evidence.
 No-hit intervals are represented as empty chunk plans rather than parse errors.
+
+## Milestone 10 Region Traversal Baseline
+
+M10.5 added `src/bam/region_traversal.rs` as the internal random-access
+traversal layer above M10.4 plans. It consumes planned BAI chunk ranges through
+typed `VirtualOffset` values and `raw_records_in_virtual_range`; raw byte
+offsets are not part of the traversal contract.
+
+Traversal behavior:
+
+* retrieved records are parsed natively and filtered against normalized
+  intervals by reference and overlap, because broad BAI bins can return records
+  outside the requested interval;
+* overlapping chunks and overlapping region requests are deduplicate by
+  virtual-offset range before records are returned;
+* matched region strings are retained on each returned record so later command
+  payloads can explain why a record was selected;
+* missing or unusable index state remains visible as the explicit scan fallback
+  `NativeScanRequired`.
+
+This is still an internal baseline. `check_map --region <REGION>` and
+`summary --region <REGION>` are not accepted by the binary until later M10
+tasks wire traversal into those commands and their public payloads.

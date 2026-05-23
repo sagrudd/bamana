@@ -132,6 +132,13 @@ M10.4 adds internal validated-BAI chunk planning for those future workflows:
 candidate bins are expanded, chunks are coalesced by typed virtual offsets, and
 unsupported, stale, incompatible, or impossible index inputs are rejected before
 indexed evidence can be claimed. This is not yet public CLI behavior.
+M10.5 adds internal region-bounded traversal in `src/bam/region_traversal.rs`.
+`traverse_planned_region_chunks` uses planned `VirtualOffset` chunk ranges and
+`raw_records_in_virtual_range`, filters retrieved records against normalized
+intervals by overlap, and deduplicate by virtual-offset range when broad BAI
+bins or overlapping region requests return the same record more than once. The
+fallback payload is explicit as `NativeScanRequired` when no usable index is
+available. This is still not public CLI behavior.
 
 ## Benchmark Framework
 

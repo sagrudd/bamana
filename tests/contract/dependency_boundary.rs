@@ -274,15 +274,28 @@ const M9_INDEX_RANDOM_ACCESS_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
-const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[(
-    "indexed_region_chunk_planning",
-    &[
-        "src/bam/region.rs",
-        "src/bam/region_plan.rs",
-        "src/bam/index.rs",
-        "src/bgzf/virtual_offset.rs",
-    ],
-)];
+const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "indexed_region_chunk_planning",
+        &[
+            "src/bam/region.rs",
+            "src/bam/region_plan.rs",
+            "src/bam/index.rs",
+            "src/bgzf/virtual_offset.rs",
+        ],
+    ),
+    (
+        "indexed_region_traversal",
+        &[
+            "src/bam/region.rs",
+            "src/bam/region_plan.rs",
+            "src/bam/region_traversal.rs",
+            "src/bam/scan.rs",
+            "src/bgzf/reader.rs",
+            "src/bgzf/virtual_offset.rs",
+        ],
+    ),
+];
 
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
@@ -599,8 +612,8 @@ fn m10_indexed_region_hot_paths_do_not_import_noodles() {
         .collect();
     assert_eq!(
         indexed_region_paths,
-        ["indexed_region_chunk_planning"],
-        "M10 dependency boundary must explicitly name indexed-region chunk planning"
+        ["indexed_region_chunk_planning", "indexed_region_traversal"],
+        "M10 dependency boundary must explicitly name indexed-region planning and traversal"
     );
 
     let mut violations = Vec::new();
@@ -623,7 +636,7 @@ fn m10_indexed_region_hot_paths_do_not_import_noodles() {
 
     assert!(
         violations.is_empty(),
-        "M10 indexed-region chunk planning paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        "M10 indexed-region planning and traversal paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }

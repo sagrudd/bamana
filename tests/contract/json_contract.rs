@@ -2091,6 +2091,78 @@ fn milestone_10_chunk_planning_contract_is_documented_and_native() {
 }
 
 #[test]
+fn milestone_10_region_traversal_contract_is_documented_and_native() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let bam_mod = read_utf8(&super::repo_root().join("src").join("bam").join("mod.rs"));
+    let traversal_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bam")
+            .join("region_traversal.rs"),
+    );
+    let scan_source = read_utf8(&super::repo_root().join("src").join("bam").join("scan.rs"));
+
+    for required in [
+        "src/bam/region_traversal.rs",
+        "traverse_planned_region_chunks",
+        "raw_records_in_virtual_range",
+        "VirtualOffset",
+        "normalized intervals",
+        "overlap",
+        "deduplicate by virtual-offset",
+        "matched region strings",
+        "NativeScanRequired",
+        "scan fallback",
+        "not public CLI behavior",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M10.5 region traversal documentation is missing: {required}"
+        );
+    }
+
+    for required in [
+        "pub mod region_traversal",
+        "pub struct RegionTraversalResult",
+        "pub struct RegionMatchedRecord",
+        "pub enum RegionFallback",
+        "NativeScanRequired",
+        "pub fn traverse_planned_region_chunks",
+        "pub fn scan_fallback_required",
+        "raw_records_in_virtual_range",
+        "virtual_offsets.start.packed()",
+        "matching_regions",
+        "merge_region_matches",
+        "does_not_double_count_overlapping_region_chunks",
+    ] {
+        assert!(
+            bam_mod.contains(required)
+                || traversal_source.contains(required)
+                || scan_source.contains(required),
+            "M10.5 native traversal source is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
     let m8 = read_utf8(
         &docs_dir()
