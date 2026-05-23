@@ -4474,14 +4474,14 @@ chunk planning, random-access retrieval evidence, region-aware `check_map` and
 `summary` behavior, and any first public indexed-region command or flag that is
 explicitly promoted into the CLI contract.
 
-## Milestone 10 Planned State
+## Milestone 10 Active State
 
-Status: planned. Milestone 10 should become active only when explicitly
-started after Milestone 9 closeout, because region workflows must rely on real
-native BAI validation, correct virtual offsets, and proved random-access
-helpers rather than shallow sidecar discovery.
+Status: active as of 2026-05-23. Milestone 10 became active through M10.1 only
+after Milestone 9 closeout recorded native BAI writing, deeper BAI validation,
+typed virtual offsets, random-access helper limits, and index-aware
+`check_map`/`summary` evidence.
 
-Known present pieces:
+Present baseline:
 
 * Milestone 1 introduced `VirtualOffset` groundwork for later random-access
   paths;
@@ -4489,10 +4489,18 @@ Known present pieces:
 * Milestone 6 established native `check_map` and `summary` inspection payloads;
 * Milestone 9 completed native BAM index writing, deeper index validation, and
   minimal random-access reader helpers;
-* `check_map` and `summary` already have index-aware evidence paths, but those
-  paths are not region-scoped public workflows;
-* the fixture plan already names valid coordinate BAM and adjacent BAI fixtures
-  as important index-backed evidence.
+* `src/bam/index.rs` owns BAI parsing, implemented-depth BAI validation,
+  CSI-header detection, `bai_bin_for_region`, BAI bin/chunk representation,
+  and linear-index metadata needed for chunk planning;
+* `src/bgzf/reader.rs` seeks by typed `VirtualOffset`, and `src/bam/scan.rs`
+  exposes `raw_records_in_virtual_range` for internal random-access retrieval
+  bounded by virtual offsets;
+* `src/commands/check_map.rs` and `src/commands/summary.rs` already have
+  index-aware evidence paths, but those paths are not region-scoped public
+  workflows;
+* the fixture plan already names valid coordinate BAM/BAI pairs, stale BAI,
+  malformed BAI, mismatched-reference BAI, and CSI-header fixtures as important
+  index-backed evidence.
 
 Known gaps:
 
@@ -4538,7 +4546,7 @@ Command-surface scope:
 
 ### M10.1 Activate Milestone 10 Scope And Baseline
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4565,7 +4573,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* activated Milestone 10 only after Milestone 9 closeout was recorded as
+  complete;
+* updated README, CLI docs, roadmap summary, current milestone notes, the M10
+  roadmap detail, Sphinx technical notes, and this task map to record M10 as
+  active;
+* audited and recorded present M10 substrate in `src/bam/index.rs`,
+  `src/bgzf/reader.rs`, `src/bam/scan.rs`, `src/commands/check_map.rs`,
+  `src/commands/summary.rs`, and fixture plans;
+* recorded remaining M10 gaps for region syntax, region-file input, BAI chunk
+  planning, overlapping and multi-reference semantics, region-aware payloads,
+  indexed-versus-scan benchmarks, and CSI large-reference behavior;
+* made no command behavior changes in the M10.1 baseline;
+* kept public contract commands `benchmark`, `fastq`, and `unmap` explicitly
+  protected.
 
 ### M10.2 Define Region Syntax And Interval Normalization
 

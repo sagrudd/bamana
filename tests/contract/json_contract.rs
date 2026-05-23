@@ -1768,6 +1768,86 @@ fn milestone_9_closeout_docs_are_consistent() {
 }
 
 #[test]
+fn milestone_10_activation_baseline_records_indexed_region_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M10 roadmap", &m10),
+        ("M10 Sphinx", &m10_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 10 is active")
+                || text.contains("status: active")
+                || text.contains("Status: active as of 2026-05-23"),
+            "{name} does not record Milestone 10 activation"
+        );
+    }
+
+    for required in [
+        "Milestone 9 closeout",
+        "M10.1",
+        "src/bam/index.rs",
+        "src/bgzf/reader.rs",
+        "src/bam/scan.rs",
+        "src/commands/check_map.rs",
+        "src/commands/summary.rs",
+        "VirtualOffset",
+        "raw_records_in_virtual_range",
+        "bai_bin_for_region",
+        "valid coordinate BAM/BAI",
+        "stale BAI",
+        "malformed BAI",
+        "mismatched-reference BAI",
+        "CSI-header",
+        "region syntax",
+        "region-file",
+        "BAI chunk planning",
+        "overlapping-region",
+        "multi-reference semantics",
+        "indexed-region benchmark",
+        "CSI large-reference",
+        "benchmark",
+        "fastq",
+        "unmap",
+    ] {
+        assert!(
+            current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required)
+                || readme.contains(required)
+                || cli.contains(required),
+            "M10 activation baseline evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_indexed_region_workflows"),
+        "Sphinx index does not include the M10 technical note"
+    );
+}
+
+#[test]
 fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
     let m8 = read_utf8(
         &docs_dir()

@@ -9,6 +9,9 @@ Checksum, Explode, And Ingest Commands** is complete as of 2026-05-23.
 **Milestone 9: Native BAM Index And Random Access** is complete as of
 2026-05-23. It was activated by M9.1 only after the M8 closeout commit was in
 place and closed after M9.1 through M9.10 completed on 2026-05-23.
+**Milestone 10: Native Indexed Region Workflows** is active as of 2026-05-23.
+It was activated by M10.1 only after the Milestone 9 closeout evidence was
+recorded.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -16,12 +19,14 @@ completed on 2026-05-21. Milestone 7 became active only after that M6
 closeout was recorded, and closed after M7.1 through M7.10 completed on
 2026-05-22. Milestone 8 became active only after that M7 closeout was
 recorded, and closed after M8.1 through M8.10 completed on 2026-05-23.
-Milestone 9 became active only after that M8 closeout was recorded.
+Milestone 9 became active only after that M8 closeout was recorded. Milestone
+10 became active only after that M9 closeout was recorded.
 
 See:
 
 * [milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
 * [milestone-09-bam-index-random-access.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-09-bam-index-random-access.md)
+* [milestone-10-indexed-region-workflows.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-10-indexed-region-workflows.md)
 * [milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * [milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
@@ -141,11 +146,12 @@ Milestone 9 evidence is limited to BAM index writing, BAM index inspection,
 virtual-offset random-access groundwork, and first index-aware command evidence
 in `check_map` and `summary`.
 
-Native CRAM parsing, indexed region selection commands, broad random-access
-APIs, external comparator parity, and FASTQ.GZI work beyond existing sidecar
-behavior remain later work unless a specific M9 task explicitly includes them.
-The public contract commands `benchmark`, `fastq`, and `unmap` remain
-protected after M9 activation.
+Milestone 10 evidence is limited to BAM indexed-region workflows above that
+native index and random-access substrate. Native CRAM parsing, CRAM indexed
+queries, broad random-access APIs, external comparator parity, and FASTQ.GZI
+work beyond existing sidecar behavior remain later work unless a specific M10
+task explicitly includes them. The public contract commands `benchmark`,
+`fastq`, and `unmap` remain protected after M10 activation.
 
 ## Milestone 9 Baseline
 
@@ -218,3 +224,38 @@ Milestone 9 closed after M9.1 through M9.10 completed. Closeout evidence:
   production `noodles` imports outside CRAM compatibility;
 * closeout verification passed with full tests, contract tests, Sphinx, and M9
   command benchmark smoke checks.
+
+## Milestone 10 Baseline
+
+Milestone 10 is active for native indexed-region workflows. The baseline audit
+confirmed that M10 starts from real M9 substrate rather than from shallow
+sidecar discovery.
+
+Present substrate:
+
+* `src/bam/index.rs` can parse and validate BAI sidecars to the implemented
+  depth, detect CSI headers as unsupported, expose `bai_bin_for_region`, and
+  retain BAI bin/chunk and linear-index evidence for chunk planning;
+* `src/bgzf/reader.rs` can seek to typed `VirtualOffset` values, and
+  `src/bam/scan.rs` exposes `raw_records_in_virtual_range` for internal
+  random-access retrieval experiments;
+* `src/commands/check_map.rs` and `src/commands/summary.rs` already separate
+  index-derived mapped/unmapped evidence from scan-derived evidence and fall
+  back when an index is stale, malformed, unsupported, or incomplete;
+* fixture plans and manifests already include valid coordinate BAM/BAI pairs,
+  stale BAI sidecars, malformed BAI sidecars, mismatched-reference BAI
+  sidecars, and CSI-header fixtures for region-workflow expansion.
+
+Known M10 gaps:
+
+* no public region syntax or interval-normalization contract is frozen yet;
+* no region-file input contract exists yet;
+* BAI chunk planning is not yet promoted into public command behavior;
+* overlapping-region, duplicate-region, and multi-reference semantics are not
+  specified;
+* `check_map` and `summary` payloads do not yet distinguish requested-region
+  scope from whole-file scope;
+* indexed-region benchmark rows do not yet compare random-access lookup with
+  scan fallback;
+* CSI large-reference behavior remains unsupported until a later scoped
+  decision.

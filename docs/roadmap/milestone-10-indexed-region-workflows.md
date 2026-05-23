@@ -1,5 +1,10 @@
 # Milestone 10: Native Indexed Region Workflows
 
+Status: active as of 2026-05-23. M10.1 activated this milestone only after
+Milestone 9 closeout evidence recorded native BAI writing, BAI validation,
+typed virtual offsets, internal random-access helpers, and index-aware
+`check_map`/`summary` evidence.
+
 ## Technical Goal
 
 Turn the Milestone 9 index and random-access substrate into bounded,
@@ -48,6 +53,38 @@ Primary beneficiaries:
 * region-aware `check_map`
 * region-aware `summary`
 * future indexed region selection command, if promoted into the public CLI
+
+## M10.1 Baseline Audit
+
+Present substrate:
+
+* `src/bam/index.rs` owns native BAI parsing, implemented-depth validation,
+  BAI bin/chunk and linear-index representation, `bai_bin_for_region`, CSI
+  header detection, and adjacent sidecar classification.
+* `src/bgzf/reader.rs` seeks by typed `VirtualOffset`, and `src/bam/scan.rs`
+  exposes `raw_records_in_virtual_range` for bounded internal record retrieval
+  between virtual offsets.
+* `src/commands/check_map.rs` and `src/commands/summary.rs` already use usable
+  BAI mapped/unmapped metadata as index-derived evidence and otherwise explain
+  native scan fallback.
+* fixture plans include valid coordinate BAM/BAI pairs, stale BAI, malformed
+  BAI, mismatched-reference BAI, and CSI-header fixtures.
+
+Known gaps:
+
+* no public region syntax, coordinate-base, inclusivity, or
+  interval-normalization contract is frozen yet;
+* no region-file contract is defined yet;
+* random-access chunk planning has not yet been promoted into public command
+  behavior;
+* overlapping-region, duplicate-region, and multi-reference semantics remain
+  unspecified;
+* region-aware `check_map` and `summary` payloads do not yet distinguish
+  requested-region evidence from whole-file evidence;
+* indexed-region benchmark rows do not yet compare lookup behavior with scan
+  fallback;
+* CSI large-reference behavior remains unsupported until a later scoped
+  decision.
 
 ## Acceptance Criteria
 

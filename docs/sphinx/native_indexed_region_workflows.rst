@@ -1,0 +1,60 @@
+Native Indexed Region Workflows
+===============================
+
+Milestone 10 is active as of 2026-05-23. M10.1 activated the milestone only
+after Milestone 9 closed with native BAI writing, BAI validation, typed virtual
+offsets, internal random-access helpers, and index-aware ``check_map`` and
+``summary`` evidence recorded.
+
+Scope
+-----
+
+Milestone 10 turns the native BAM index and random-access substrate into
+bounded, user-visible indexed-region workflows. The intended surface includes
+region syntax and normalization, optional region-file input, validated-index
+chunk planning, region-aware ``check_map`` and ``summary`` evidence, and a
+first public indexed-region command or flag only if one is explicitly promoted
+into the CLI contract.
+
+Present Substrate
+-----------------
+
+``src/bam/index.rs`` owns native BAI parsing, implemented-depth BAI
+validation, BAI bin/chunk representation, linear-index metadata,
+``bai_bin_for_region``, CSI header detection, and adjacent sidecar
+classification.
+
+``src/bgzf/reader.rs`` can seek by typed ``VirtualOffset`` values, and
+``src/bam/scan.rs`` exposes ``raw_records_in_virtual_range`` for bounded
+internal record retrieval between virtual offsets.
+
+``src/commands/check_map.rs`` and ``src/commands/summary.rs`` already use
+usable BAI mapped/unmapped metadata as index-derived evidence and otherwise
+report native scan fallback. These paths are not yet region-scoped public
+workflows.
+
+Fixture plans include valid coordinate BAM/BAI pairs, stale BAI, malformed
+BAI, mismatched-reference BAI, and CSI-header fixtures for region-workflow
+expansion.
+
+Known Gaps
+----------
+
+No public region syntax, coordinate-base, inclusivity, interval-normalization,
+or region-file contract is frozen yet. Random-access chunk planning has not
+yet been promoted into public command behavior. Overlapping-region,
+duplicate-region, and multi-reference semantics remain unspecified.
+
+Region-aware ``check_map`` and ``summary`` payloads do not yet distinguish
+requested-region evidence from whole-file evidence. Indexed-region benchmark
+rows do not yet compare random-access lookup behavior with scan fallback. CSI
+large-reference behavior remains unsupported until a later scoped decision.
+
+Command Boundary
+----------------
+
+The public contract commands ``benchmark``, ``fastq``, and ``unmap`` remain
+protected while M10 work proceeds. Native CRAM parsing, CRAM indexed queries,
+broad random-access APIs, pileup or genotyping semantics, and external
+comparator parity remain outside M10 unless a later M10 task explicitly
+promotes them.
