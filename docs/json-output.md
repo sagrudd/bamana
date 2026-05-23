@@ -276,6 +276,10 @@ Key concepts:
 The contract is designed so automation can reason about dry-run discovery
 results, mixed-format rejection, CRAM reference decisions, and staged
 normalization behavior without needing to infer semantics from ad hoc log text.
+BAM alignment consume uses scanner-backed record loading, SAM/FASTQ/FASTQ.GZ
+use their native ingest paths, and CRAM remains a reference-policy-governed
+compatibility path. Checksum verification and post-ingest index creation remain
+reported intent rather than performed work in this slice.
 
 ## `annotate_rg`
 

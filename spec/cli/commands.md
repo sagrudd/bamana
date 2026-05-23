@@ -110,6 +110,11 @@ directories deterministically, classifies supported inputs, enforces a
 conservative mixed-format policy, and normalizes them into BAM according to an
 explicit ingest mode.
 
+BAM alignment inputs are loaded through `BamScanner` and written through
+Bamana's native BGZF writer. SAM alignment inputs use the native SAM parser.
+FASTQ and FASTQ.GZ unmapped inputs use the native FASTQ readers. CRAM remains a
+compatibility path governed by explicit reference policy.
+
 Mixed-format policy:
 
 * `alignment` accepts alignment-bearing inputs only (`BAM`, `SAM`, `CRAM`)
@@ -159,8 +164,10 @@ Does not prove:
 Successful BAM normalization unless the response explicitly reports a written
 output. It does not imply alignment for raw-read inputs, and it does not imply
 reference independence for CRAM unless that is explicitly reported. Cache-backed
-CRAM decoding, include/exclude glob filtering, checksum verification, and
-post-ingest BAM index creation remain deferred in the current slice.
+CRAM decoding beyond the selected reference policy, include/exclude glob
+filtering, checksum verification, and post-ingest BAM index creation remain
+deferred in the current slice. `--verify-checksum` reports requested but
+unperformed checksum state and fails before writing in this slice.
 
 Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,

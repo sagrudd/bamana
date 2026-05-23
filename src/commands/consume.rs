@@ -610,3 +610,165 @@ fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::{ConsumeRequest, run};
+    use crate::{
+        formats::bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+        ingest::{
+            consume::{ConsumeMode, ConsumePlatform, ConsumeSortOrder},
+            cram::ConsumeReferencePolicy,
+        },
+    };
+
+    fn base_request(input: Vec<std::path::PathBuf>, out: std::path::PathBuf) -> ConsumeRequest {
+        ConsumeRequest {
+            input,
+            out,
+            mode: ConsumeMode::Alignment,
+            recursive: false,
+            threads: 1,
+            force: true,
+            sort: ConsumeSortOrder::None,
+            create_index: false,
+            verify_checksum: false,
+            dry_run: false,
+            reference: None,
+            reference_cache: None,
+            reference_policy: ConsumeReferencePolicy::Strict,
+            sample: None,
+            read_group: None,
+            platform: None,
+            include_glob: Vec::new(),
+            exclude_glob: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn dry_run_reports_recursive_directory_discovery_without_writing() {
+        let root = std::env::temp_dir().join(format!(
+            "bamana-consume-command-tree-{}",
+            std::process::id()
+        ));
+        let nested = root.join("nested");
+        fs::create_dir_all(&nested).expect("fixture dir should create");
+        let fastq = nested.join("reads.fastq");
+        fs::write(&fastq, "@read1\nAC\n+\n!!\n").expect("fastq should write");
+        let output = root.join("out.bam");
+
+        let mut request = base_request(vec![root.clone()], output.clone());
+        request.mode = ConsumeMode::Unmapped;
+        request.recursive = true;
+        request.dry_run = true;
+        request.sample = Some("sample1".to_string());
+        request.read_group = Some("rg1".to_string());
+        request.platform = Some(ConsumePlatform::Illumina);
+
+        let response = run(request);
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should be present");
+        assert!(payload.dry_run);
+        assert!(!payload.output.written);
+        assert_eq!(payload.inputs.directories_scanned, 2);
+        assert_eq!(payload.inputs.files_discovered, 1);
+        assert_eq!(payload.inputs.files_consumed, 1);
+        assert_eq!(
+            payload.discovery.consumed_files[0].path,
+            fastq.display().to_string()
+        );
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("Dry-run mode"))
+        );
+        assert!(!output.exists());
+
+        fs::remove_file(fastq).expect("fastq should remove");
+        fs::remove_dir(nested).expect("nested dir should remove");
+        fs::remove_dir(root).expect("root dir should remove");
+    }
+
+    #[test]
+    fn mixed_alignment_and_raw_inputs_are_rejected_with_payload() {
+        let bam = write_temp_file(
+            "consume-command-mixed-bam",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let fastq = std::env::temp_dir().join(format!(
+            "bamana-consume-command-mixed-{}.fastq",
+            std::process::id()
+        ));
+        fs::write(&fastq, "@read1\nAC\n+\n!!\n").expect("fastq should write");
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-command-mixed-out-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(base_request(vec![bam.clone(), fastq.clone()], output));
+
+        assert!(!response.ok);
+        assert_eq!(
+            response.error.as_ref().unwrap().code,
+            "mixed_input_modes_not_allowed"
+        );
+        let payload = response.data.expect("failure payload should be present");
+        assert_eq!(payload.inputs.files_rejected, 2);
+        assert!(
+            payload
+                .discovery
+                .rejected_files
+                .iter()
+                .all(|file| file.reason.as_deref() == Some("mixed_input_modes_not_allowed"))
+        );
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(fastq).expect("fastq should remove");
+    }
+
+    #[test]
+    fn checksum_verification_remains_explicitly_deferred() {
+        let bam = write_temp_file(
+            "consume-command-checksum-bam",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-command-checksum-out-{}.bam",
+            std::process::id()
+        ));
+        let mut request = base_request(vec![bam.clone()], output);
+        request.verify_checksum = true;
+
+        let response = run(request);
+
+        assert!(!response.ok);
+        assert_eq!(response.error.as_ref().unwrap().code, "unimplemented");
+        let payload = response.data.expect("failure payload should be present");
+        assert!(payload.checksum_verification.requested);
+        assert!(!payload.checksum_verification.performed);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("not yet performed"))
+        );
+
+        fs::remove_file(bam).expect("bam should remove");
+    }
+}

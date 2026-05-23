@@ -157,6 +157,27 @@ random-access parallel gzip inflate. ``scanner_microbench --bamana-bin`` now
 includes an ``explode`` command smoke timing for scanner-backed BAM contiguous
 shard writing.
 
+Consume Hardening
+-----------------
+
+M8.7 hardens ``consume`` at the native ingest and policy boundary. BAM
+alignment inputs now use ``BamScanner`` and bridge scanner-owned records into
+Bamana's native BGZF writer. SAM alignment ingest remains on the native SAM
+parser, FASTQ and FASTQ.GZ unmapped ingest remain on the native FASTQ readers,
+and CRAM remains a documented compatibility path governed by explicit reference
+policy.
+
+The command keeps policy decisions explicit: mixed alignment/raw inputs are
+rejected with per-file reasons, include/exclude glob filtering remains
+deferred, coordinate indexing after consume remains deferred, and checksum
+verification remains explicitly unimplemented in this slice with requested but
+unperformed checksum state in the payload. The hardened test surface covers
+recursive directory dry-run discovery, mixed-format rejection, FASTQ.GZ
+parallel and indexed import, BAM/SAM alignment mode, CRAM reference policy,
+force/overwrite safety, and checksum deferral. ``scanner_microbench
+--bamana-bin`` now includes a ``consume`` command smoke timing for
+scanner-backed BAM alignment ingest with explicit policy reporting.
+
 Activation Boundary
 -------------------
 

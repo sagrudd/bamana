@@ -116,7 +116,9 @@ reported domain is order-sensitive. `explode` reports shard boundaries and
 `FASTQ.GZI` planning evidence without claiming uniform shard sizes or generic
 random-access gzip inflate. `consume` reports ingest mode, dry-run discovery,
 mixed-format policy decisions, CRAM reference policy, deferred checksum
-verification, and deferred post-ingest index behavior.
+verification, and deferred post-ingest index behavior. BAM alignment consume
+uses scanner-backed record loading, while SAM, FASTQ, FASTQ.GZ, and CRAM keep
+separate native or documented compatibility paths.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

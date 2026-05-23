@@ -3817,7 +3817,7 @@ Completion evidence:
 
 ### M8.7 Harden `consume` Native Ingest And Policy Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3842,7 +3842,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited discovery, format probing, mixed-format policy, alignment and
+  unmapped modes, FASTQ/FASTQ.GZ import, SAM import, BAM pass-through,
+  sorting, output writing, dry-run, thread handling, and CRAM reference policy;
+* migrated BAM alignment consume from the older BAM reader/layout path to
+  `BamScanner` plus scanner-owned records bridged into Bamana's native BGZF
+  writer;
+* kept checksum verification explicitly deferred in M8.7 with a failure path
+  that reports requested but unperformed checksum state before writing output;
+* strengthened tests for recursive directory dry-run discovery, mixed-format
+  rejection, FASTQ.GZ parallel import, indexed FASTQ.GZ import, BAM/SAM
+  alignment mode, CRAM policy, dry-run behavior, checksum deferral, and
+  force/overwrite behavior;
+* extended `scanner_microbench --bamana-bin` with a `consume` command smoke
+  timing for scanner-backed BAM alignment ingest, and updated the benchmark
+  result schema and Sphinx benchmark notes;
+* updated M8 roadmap, Sphinx transform/ingest notes, and this task map with
+  the scanner-backed consume boundary and explicit deferred checksum/index
+  behavior.
 
 ### M8.8 Strengthen M8 Cross-Command Output Safety
 

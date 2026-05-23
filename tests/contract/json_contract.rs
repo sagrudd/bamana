@@ -1057,6 +1057,53 @@ fn explode_benchmark_hook_is_documented_and_schema_governed() {
 }
 
 #[test]
+fn consume_benchmark_hook_is_documented_and_schema_governed() {
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let roadmap = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+
+    assert!(
+        scanner_schema.contains("\"consume\""),
+        "scanner_microbench schema does not include M8 consume command timing row"
+    );
+    assert!(
+        scanner_doc.contains("``consume``"),
+        "scanner_microbench docs do not describe M8 consume command timing row"
+    );
+    assert!(
+        roadmap.contains("`consume` command smoke timing"),
+        "M8 roadmap does not record consume benchmark hook evidence"
+    );
+
+    for required in [
+        "scanner-backed BAM alignment ingest",
+        "mixed-format policy",
+        "native BGZF",
+        "deferred checksum",
+        "CRAM reference-policy",
+        "post-ingest checksum verification",
+    ] {
+        assert!(
+            scanner_doc.contains(required) || roadmap.contains(required),
+            "M8 consume benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

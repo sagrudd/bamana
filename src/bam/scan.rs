@@ -21,11 +21,15 @@ pub struct BamScanner {
 
 impl BamScanner {
     pub fn open(path: &Path) -> Result<Self, AppError> {
+        Self::open_with_label(path, path)
+    }
+
+    pub fn open_with_label(path: &Path, label: &Path) -> Result<Self, AppError> {
         let mut reader = BamReader::open_native_bgzf(path)?;
         let header = parse_bam_header_from_reader(&mut reader)?;
 
         Ok(Self {
-            path: path.to_path_buf(),
+            path: label.to_path_buf(),
             reader,
             header,
             raw_record: Vec::new(),

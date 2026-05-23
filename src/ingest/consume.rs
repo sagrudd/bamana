@@ -11,8 +11,8 @@ use serde::Serialize;
 use crate::{
     bam::{
         header::{ReferenceRecord, rewrite_header_for_sort, serialize_bam_header_payload},
-        reader::BamReader,
-        records::{RecordLayout, read_next_record_layout},
+        records::RecordLayout,
+        scan::BamScanner,
         sort::{compare_coordinate_layouts, compare_queryname_layouts},
         write::{BgzfWriter, serialize_record_layout},
     },
@@ -205,6 +205,8 @@ fn execute_alignment_consume(
         "Alignment-bearing inputs were normalized into BAM.".to_string(),
         "Alignment compatibility currently requires identical reference dictionaries across all alignment inputs."
             .to_string(),
+        "BAM alignment inputs were loaded through BamScanner and bridged into Bamana's native BGZF writer path."
+            .to_string(),
     ];
     let mut reference_source_used = None;
     let mut decode_without_external_reference = None;
@@ -212,8 +214,8 @@ fn execute_alignment_consume(
     for file in &options.files {
         match file.detected_format {
             DetectedFormat::Bam => {
-                let mut reader = BamReader::open_with_label(&file.path, &file.logical_path)?;
-                let header = crate::bam::header::parse_bam_header_from_reader(&mut reader)?;
+                let mut scanner = BamScanner::open_with_label(&file.path, &file.logical_path)?;
+                let header = scanner.header().clone();
 
                 if let Some(expected) = base_references.as_ref() {
                     ensure_compatible_reference_dictionary(
@@ -226,8 +228,18 @@ fn execute_alignment_consume(
                     base_references = Some(header.header.references.clone());
                 }
 
-                while let Some(layout) = read_next_record_layout(&mut reader)? {
-                    records.push(layout);
+                let mut records_materialized = 0_u64;
+                while let Some(record) = scanner.next_record()? {
+                    records.push(record.to_record_layout());
+                    records_materialized += 1;
+                }
+                if records_materialized != scanner.records_read() {
+                    return Err(AppError::InvalidRecord {
+                        path: file.logical_path.clone(),
+                        detail:
+                            "Consume scanner record count diverged from records materialized for ingestion."
+                                .to_string(),
+                    });
                 }
             }
             DetectedFormat::Cram => {
@@ -682,7 +694,7 @@ mod tests {
     use std::{fs, io::Write};
 
     use crate::{
-        bam::{header::parse_bam_header, reader::BamReader, records::read_next_record_layout},
+        bam::{header::parse_bam_header, scan::BamScanner},
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -785,17 +797,8 @@ mod tests {
         assert_eq!(header.header.hd.sort_order.as_deref(), Some("queryname"));
         assert_eq!(header.header.read_groups.len(), 1);
 
-        let mut reader = BamReader::open(&output).expect("output BAM should reopen");
-        let _ = crate::bam::header::parse_bam_header_from_reader(&mut reader)
-            .expect("output header should parse from reader");
-        let first = read_next_record_layout(&mut reader)
-            .expect("record read should succeed")
-            .expect("first record should exist");
-        let second = read_next_record_layout(&mut reader)
-            .expect("record read should succeed")
-            .expect("second record should exist");
-        assert_eq!(first.read_name, "aread");
-        assert_eq!(second.read_name, "zread");
+        let names = read_bam_names(&output);
+        assert_eq!(names, vec!["aread", "zread"]);
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
@@ -964,5 +967,61 @@ mod tests {
 
         fs::remove_file(stdin_staged).expect("fixture should be removable");
         fs::remove_file(other).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn existing_output_without_force_fails_before_write() {
+        let input = write_temp_file(
+            "consume-force-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-force-output-{}.bam",
+            std::process::id()
+        ));
+        fs::write(&output, b"sentinel").expect("sentinel should write");
+
+        let error = execute_consume(&ConsumeExecutionOptions {
+            mode: ConsumeMode::Alignment,
+            files: vec![DiscoveredFile {
+                path: input.clone(),
+                logical_path: input.clone(),
+                detected_format: crate::formats::probe::DetectedFormat::Bam,
+            }],
+            output_path: output.clone(),
+            threads: 0,
+            force: false,
+            sort: ConsumeSortOrder::None,
+            reference: None,
+            reference_cache: None,
+            reference_policy: crate::ingest::cram::ConsumeReferencePolicy::Strict,
+            sample: None,
+            read_group: None,
+            platform: None,
+        })
+        .expect_err("existing output should fail without force");
+
+        assert_eq!(error.to_json_error().code, "output_exists");
+        assert_eq!(
+            fs::read(&output).expect("sentinel should remain"),
+            b"sentinel"
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    fn read_bam_names(path: &std::path::Path) -> Vec<String> {
+        let mut scanner = BamScanner::open(path).expect("output BAM should reopen");
+        let mut names = Vec::new();
+        while let Some(record) = scanner.next_record().expect("record should parse") {
+            names.push(record.read_name().to_string());
+        }
+        names
     }
 }

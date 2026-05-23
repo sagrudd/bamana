@@ -433,7 +433,10 @@ and dependency-boundary protection.
 
 Milestone 8 is now the active native-core milestone. It focuses on the large
 transform, checksum, explode, and ingest command wave: `sort`, `merge`,
-`explode`, `checksum`, and `consume`.
+`explode`, `checksum`, and `consume`. BAM alignment consume uses
+scanner-backed record loading through the native BGZF writer; SAM, FASTQ,
+FASTQ.GZ, and CRAM retain separate native or explicitly documented
+compatibility paths.
 
 ## Specification Layer
 

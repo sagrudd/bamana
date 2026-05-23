@@ -41,9 +41,9 @@ The JSON result contains:
   access to core fields, read name, sequence length, and ``NM`` aux-tag
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
-  ``check_tag``, ``subsample_bam``, ``sort``, ``merge``, ``checksum``, ``explode``,
-  ``inspect_duplication``, ``deduplicate``, and ``forensic_inspect`` command timings when
-  ``--bamana-bin`` is supplied
+  ``check_tag``, ``subsample_bam``, ``sort``, ``merge``, ``checksum``,
+  ``explode``, ``consume``, ``inspect_duplication``, ``deduplicate``, and
+  ``forensic_inspect`` command timings when ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
@@ -60,8 +60,9 @@ pass, ``sort`` runs a coordinate rewrite with canonical checksum verification,
 ``merge`` runs a coordinate merge with canonical checksum verification over two
 copies of the deterministic fixture, ``checksum`` runs all checksum domains
 with header inclusion, ``NM`` tag exclusion, and mapped-only filtering,
-``explode`` writes scanner-backed BAM contiguous shards, ``inspect_duplication``
-runs a full ``qname-seq-qual-rg`` CLI scan over the
+``explode`` writes scanner-backed BAM contiguous shards, ``consume`` runs
+scanner-backed BAM alignment ingest with explicit policy reporting,
+``inspect_duplication`` runs a full ``qname-seq-qual-rg`` CLI scan over the
 deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
 ``qname-seq-qual-rg`` CLI plan.
 ``forensic_inspect`` runs explicit full-scan header, read-group, program-chain,
@@ -100,6 +101,14 @@ preservation, native BGZF shard writing, contiguous shard ranges, and encounter
 order preservation within each shard are runnable through the benchmark hook.
 It should be interpreted as command smoke timing rather than FASTQ.GZI planning
 throughput, reconstruction proof, or random-access parallel inflate evidence.
+
+``consume`` is a command-level alignment ingest timing over the generated BAM
+fixture. It proves scanner-backed BAM alignment loading, explicit mode and
+mixed-format policy reporting, native BGZF output writing, and deferred
+checksum/index reporting are runnable through the benchmark hook. It should be
+interpreted as command smoke timing rather than broad mixed-format ingest
+coverage, CRAM reference-policy coverage, or post-ingest checksum verification
+evidence.
 
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path
