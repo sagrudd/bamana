@@ -9,9 +9,10 @@ Checksum, Explode, And Ingest Commands** is complete as of 2026-05-23.
 **Milestone 9: Native BAM Index And Random Access** is complete as of
 2026-05-23. It was activated by M9.1 only after the M8 closeout commit was in
 place and closed after M9.1 through M9.10 completed on 2026-05-23.
-**Milestone 10: Native Indexed Region Workflows** is active as of 2026-05-23.
-It was activated by M10.1 only after the Milestone 9 closeout evidence was
-recorded.
+**Milestone 10: Native Indexed Region Workflows** is complete as of
+2026-05-23. It was activated by M10.1 only after the Milestone 9 closeout
+evidence was recorded and closed after M10.1 through M10.10 completed on
+2026-05-23.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -20,7 +21,10 @@ closeout was recorded, and closed after M7.1 through M7.10 completed on
 2026-05-22. Milestone 8 became active only after that M7 closeout was
 recorded, and closed after M8.1 through M8.10 completed on 2026-05-23.
 Milestone 9 became active only after that M8 closeout was recorded. Milestone
-10 became active only after that M9 closeout was recorded.
+10 became active only after that M9 closeout was recorded and closed with
+region syntax, chunk planning, random-access traversal, read-only
+`check_map --region <REGION>` and `summary --region <REGION>` evidence,
+dependency guardrails, and smoke benchmark evidence in place.
 
 See:
 
@@ -227,7 +231,7 @@ Milestone 9 closed after M9.1 through M9.10 completed. Closeout evidence:
 
 ## Milestone 10 Baseline
 
-Milestone 10 is active for native indexed-region workflows. The baseline audit
+Milestone 10 is complete for native indexed-region workflows. The baseline audit
 confirmed that M10 starts from real M9 substrate rather than from shallow
 sidecar discovery.
 
@@ -402,3 +406,34 @@ workflows:
   traversal, region filtering, scan fallback, command startup, and JSON
   emission without claiming broad comparator parity, native CRAM indexed
   queries, biological interpretation, or selected-record output.
+
+## Milestone 10 Closeout
+
+Milestone 10 closed after M10.1 through M10.10 completed. Closeout evidence:
+
+* native region syntax and normalization are implemented in `src/bam/region.rs`
+  for `reference` and `reference:start-end`, using 1-based closed input and
+  reporting normalized 0-based half-open intervals;
+* region files remain explicitly deferred and fail as unsupported region input;
+* `src/bam/region_plan.rs` plans validated BAI chunks for normalized regions,
+  rejects stale, unsupported, incompatible, or impossible index evidence, and
+  keeps CSI large-reference behavior out of scope;
+* `src/bam/region_traversal.rs` uses typed `VirtualOffset` ranges and
+  `raw_records_in_virtual_range` for random-access retrieval, then filters
+  records by requested interval and suppresses duplicate virtual-offset ranges;
+* `check_map --region <REGION>` and `summary --region <REGION>` are promoted
+  read-only public behavior with governed JSON, schema, example, CLI, README,
+  Sphinx, roadmap, fixture-plan, and contract-test coverage;
+* a public indexed region selection command is deliberately deferred until
+  output semantics, header preservation, record ordering, duplicate-region
+  behavior, index invalidation or regeneration, and write-safety are specified;
+* dependency-boundary tests keep M10 BAM indexed-region hot paths free of
+  direct production `noodles` imports outside documented CRAM compatibility;
+* `scanner_microbench --bamana-bin` M10 smoke timings passed for
+  `check_map_region_scan_fallback`, `summary_region_scan_fallback`,
+  `check_map_region_indexed`, and `summary_region_indexed`;
+* closeout verification passed: `cargo test`, `cargo test --test contract`,
+  `cargo build --bin bamana --bin scanner_microbench`, release
+  `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+  output with all four M10 rows reporting `1/1`, Sphinx HTML build,
+  `cargo fmt --check`, and `git diff --check`.

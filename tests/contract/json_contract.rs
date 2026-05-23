@@ -1903,8 +1903,11 @@ fn milestone_10_activation_baseline_records_indexed_region_scope() {
         assert!(
             text.contains("Milestone 10 is active")
                 || text.contains("status: active")
-                || text.contains("Status: active as of 2026-05-23"),
-            "{name} does not record Milestone 10 activation"
+                || text.contains("Status: active as of 2026-05-23")
+                || text.contains("Milestone 10 is complete")
+                || text.contains("status: complete")
+                || text.contains("Status: complete as of 2026-05-23"),
+            "{name} does not record Milestone 10 activation or completion"
         );
     }
 
@@ -1950,6 +1953,76 @@ fn milestone_10_activation_baseline_records_indexed_region_scope() {
         sphinx_index.contains("native_indexed_region_workflows"),
         "Sphinx index does not include the M10 technical note"
     );
+}
+
+#[test]
+fn milestone_10_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M10 roadmap", &m10),
+        ("M10 Sphinx", &m10_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 10 is complete")
+                || text.contains(
+                    "Milestone 10: Native Indexed Region Workflows\n\n* status: complete",
+                )
+                || text.contains("Status: complete as of 2026-05-23"),
+            "{name} does not record Milestone 10 completion"
+        );
+    }
+
+    for required in [
+        "M10.10",
+        "M10.1 through M10.10",
+        "src/bam/region.rs",
+        "src/bam/region_plan.rs",
+        "src/bam/region_traversal.rs",
+        "check_map --region <REGION>",
+        "summary --region <REGION>",
+        "read-only public",
+        "scanner_microbench --bamana-bin",
+        "check_map_region_scan_fallback",
+        "summary_region_scan_fallback",
+        "check_map_region_indexed",
+        "summary_region_indexed",
+        "1/1",
+        "cargo test",
+        "cargo test --test contract",
+        "Sphinx HTML build",
+        "git diff --check",
+        "direct `noodles` imports",
+        "CRAM compatibility",
+        "selected-record output",
+    ] {
+        assert!(
+            readme.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M10 closeout evidence is missing: {required}"
+        );
+    }
 }
 
 #[test]

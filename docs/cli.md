@@ -143,7 +143,7 @@ fallback in the payload note. Public indexed random-access acceleration is not
 claimed until a later task promotes the M9.7 internal virtual-offset seek and
 chunk traversal helpers into command behavior.
 
-Milestone 10 is active for indexed-region workflow development. M10.2 defines
+Milestone 10 is complete for indexed-region workflow development. M10.2 defines
 the internal region string grammar as `reference` for a whole-reference request
 and `reference:start-end` for a 1-based closed interval normalized to 0-based
 half-open coordinates. Multiple regions preserve request order and are not

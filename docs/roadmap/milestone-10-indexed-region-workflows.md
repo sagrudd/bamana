@@ -1,9 +1,10 @@
 # Milestone 10: Native Indexed Region Workflows
 
-Status: active as of 2026-05-23. M10.1 activated this milestone only after
+Status: complete as of 2026-05-23. M10.1 activated this milestone only after
 Milestone 9 closeout evidence recorded native BAI writing, BAI validation,
 typed virtual offsets, internal random-access helpers, and index-aware
-`check_map`/`summary` evidence.
+`check_map`/`summary` evidence. M10.10 closed the milestone after M10.1
+through M10.10 completed.
 
 ## Technical Goal
 
@@ -296,6 +297,33 @@ indexed queries, biological interpretation, or selected-record output.
 * scan fallback remains explicit, native, and bounded by documented behavior
 * any new public command or flag is added to JSON schemas, examples, CLI docs,
   Sphinx docs, and contract tests before being treated as stable
+
+## M10.10 Closeout
+
+Milestone 10 is complete. Final evidence:
+
+* M10.1 through M10.10 are complete in `taskmap.md`;
+* `src/bam/region.rs` implements and tests the bounded region syntax and
+  normalization model;
+* `src/bam/region_plan.rs` implements validated BAI chunk planning for
+  normalized intervals;
+* `src/bam/region_traversal.rs` implements random-access traversal over typed
+  virtual-offset chunk ranges with interval filtering and duplicate suppression;
+* `check_map --region <REGION>` and `summary --region <REGION>` are promoted
+  read-only public command behavior with governed documentation, schema,
+  example, fixture-plan, and contract-test coverage;
+* region files, CSI large-reference behavior, CRAM indexed queries, and public
+  selected-record output remain explicitly deferred;
+* production direct `noodles` imports remain isolated to documented CRAM
+  compatibility;
+* M10 smoke benchmark evidence passed for `check_map_region_scan_fallback`,
+  `summary_region_scan_fallback`, `check_map_region_indexed`, and
+  `summary_region_indexed`, each reporting `1/1` in the small release smoke
+  run;
+* closeout verification passed: `cargo test`, `cargo test --test contract`,
+  `cargo build --bin bamana --bin scanner_microbench`, release
+  `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+  output, Sphinx HTML build, `cargo fmt --check`, and `git diff --check`.
 
 ## Benchmark Hooks
 

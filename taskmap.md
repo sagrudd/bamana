@@ -4476,10 +4476,11 @@ explicitly promoted into the CLI contract.
 
 ## Milestone 10 Active State
 
-Status: active as of 2026-05-23. Milestone 10 became active through M10.1 only
-after Milestone 9 closeout recorded native BAI writing, deeper BAI validation,
-typed virtual offsets, random-access helper limits, and index-aware
-`check_map`/`summary` evidence.
+Status: complete as of 2026-05-23. Milestone 10 became active through M10.1
+only after Milestone 9 closeout recorded native BAI writing, deeper BAI
+validation, typed virtual offsets, random-access helper limits, and index-aware
+`check_map`/`summary` evidence. M10.10 closed the milestone after M10.1 through
+M10.10 completed.
 
 Present baseline:
 
@@ -4502,7 +4503,7 @@ Present baseline:
   malformed BAI, mismatched-reference BAI, and CSI-header fixtures as important
   index-backed evidence.
 
-Known gaps:
+Known gaps at activation:
 
 * M10.2 defines the internal region string grammar and interval normalization
   model, but no public command flag consumes it yet;
@@ -4931,7 +4932,7 @@ Completion evidence:
 
 ### M10.10 Close Milestone 10
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4958,4 +4959,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* confirmed M10.1 through M10.10 are complete;
+* recorded final Milestone 10 completion evidence in README, roadmap summary,
+  current milestone notes, the M10 roadmap detail, Sphinx technical notes, and
+  this task map;
+* kept M10 public behavior scoped to read-only `check_map --region <REGION>`
+  and `summary --region <REGION>` evidence;
+* kept region files, CSI large-reference behavior, native CRAM indexed queries,
+  public selected-record output, and broad comparator parity explicitly
+  deferred;
+* verified production direct `noodles` usage remains isolated to documented
+  CRAM compatibility;
+* ran M10 smoke benchmark evidence with all four M10 scanner microbenchmark
+  rows reporting `1/1`: `check_map_region_scan_fallback`,
+  `summary_region_scan_fallback`, `check_map_region_indexed`, and
+  `summary_region_indexed`;
+* closeout verification passed: `cargo test`, `cargo test --test contract`,
+  `cargo build --bin bamana --bin scanner_microbench`, release
+  `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+  output, Sphinx HTML build, `cargo fmt --check`, and `git diff --check`.

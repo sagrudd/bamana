@@ -118,7 +118,7 @@ limited to the canonical BGZF EOF marker.
 `benchmark` does not imply broad comparator parity; each profile reports the exact command paths and comparison scope it ran.
 `subsample` does not imply exact-count sampling, quality filtering, duplicate marking, provenance cleanup, or BAM index regeneration unless those behaviors are reported explicitly.
 
-Milestone 10 is active for native indexed-region workflow development. M10.2
+Milestone 10 is complete for native indexed-region workflow development. M10.2
 defines the internal region grammar as `reference` and `reference:start-end`,
 where interval input is 1-based closed and normalized internally to 0-based
 half-open coordinates. M10.3 freezes the first region-aware workflow contracts
@@ -514,6 +514,17 @@ fallback, random-access deferral, startup, JSON emission, and comparator
 non-parity. M9.10 closes the milestone with full tests, contract tests,
 Sphinx, and M9 benchmark smoke checks passing. CSI writing and public
 indexed-region command acceleration remain deferred beyond M9.
+
+Milestone 10 is complete for native indexed-region workflows. Bamana now owns
+the bounded region syntax and normalization layer, validated BAI chunk
+planning, random-access traversal over typed virtual offsets, and read-only
+public region evidence for `check_map --region <REGION>` and
+`summary --region <REGION>`. Those commands distinguish indexed traversal,
+scan fallback, precise `invalid_region` rejection, and region-scoped evidence
+from whole-file totals. `scanner_microbench --bamana-bin` records M10 smoke
+timings for scan fallback and indexed-region paths. Region files, CSI
+large-reference behavior, CRAM indexed queries, public selected-record output,
+and broad comparator parity remain explicitly deferred.
 
 ## Specification Layer
 
