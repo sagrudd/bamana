@@ -72,9 +72,9 @@ Present substrate:
 
 Known gaps:
 
-* no public region syntax, coordinate-base, inclusivity, or
-  interval-normalization contract is frozen yet;
-* no region-file contract is defined yet;
+* M10.2 defines the internal region-string grammar and interval-normalization
+  model, but no public command flag consumes it yet;
+* region-file input is explicitly deferred after M10.2;
 * random-access chunk planning has not yet been promoted into public command
   behavior;
 * overlapping-region, duplicate-region, and multi-reference semantics remain
@@ -85,6 +85,44 @@ Known gaps:
   fallback;
 * CSI large-reference behavior remains unsupported until a later scoped
   decision.
+
+## M10.2 Region Syntax And Normalization
+
+`src/bam/region.rs` defines the first native region syntax layer without
+wiring it into public command behavior.
+
+Supported region strings:
+
+* `reference` requests a whole reference by exact BAM header dictionary name.
+* `reference:start-end` requests a 1-based closed interval. Normalized output
+  uses 0-based half-open coordinates with the original 1-based closed
+  coordinates retained for reporting.
+* multiple regions are accepted as an ordered list by `normalize_region_strings`
+  and are preserved exactly in request order. M10.2 does not merge,
+  deduplicate, sort, or overlap-resolve them.
+
+Reference resolution:
+
+* names are matched against the parsed BAM header reference dictionary;
+* duplicate reference names are ambiguous and rejected;
+* reference names containing colons are supported when the split is
+  unambiguous;
+* a string that is both an exact reference name and a valid
+  `reference:start-end` interval is rejected as ambiguous.
+
+Rejected region strings:
+
+* empty strings or strings with leading/trailing whitespace;
+* unknown references;
+* non-numeric, zero, reversed, or out-of-range coordinates;
+* zero-length whole-reference requests;
+* ambiguous reference resolution.
+
+Region-file status:
+
+* BED-like and line-oriented region files are explicitly deferred for M10.2.
+  `reject_region_file_request` returns a precise unimplemented error rather
+  than silently treating a file as a region string.
 
 ## Acceptance Criteria
 

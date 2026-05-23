@@ -1848,6 +1848,80 @@ fn milestone_10_activation_baseline_records_indexed_region_scope() {
 }
 
 #[test]
+fn milestone_10_region_syntax_contract_is_documented_and_native() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let region_source = read_utf8(&super::repo_root().join("src").join("bam").join("region.rs"));
+    let bam_mod = read_utf8(&super::repo_root().join("src").join("bam").join("mod.rs"));
+    let error_source = read_utf8(&super::repo_root().join("src").join("error.rs"));
+
+    for required in [
+        "src/bam/region.rs",
+        "`reference`",
+        "`reference:start-end`",
+        "1-based closed",
+        "0-based half-open",
+        "preserve request order",
+        "not merged",
+        "deduplicated",
+        "duplicate reference names",
+        "unknown references",
+        "zero coordinates",
+        "reversed intervals",
+        "out-of-range",
+        "Region-file",
+        "explicitly deferred",
+        "no public command behavior change",
+        "benchmark",
+        "fastq",
+        "unmap",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M10.2 region syntax documentation is missing: {required}"
+        );
+    }
+
+    for required in [
+        "pub mod region",
+        "pub struct NormalizedRegion",
+        "pub struct NormalizedRegionSet",
+        "pub fn normalize_region_string",
+        "pub fn normalize_region_strings",
+        "pub fn reject_region_file_request",
+        "RegionInputKind",
+        "input_1_based_closed_output_0_based_half_open",
+        "preserve_request_order_without_merging_or_deduplication",
+        "InvalidRegion",
+        "\"invalid_region\"",
+    ] {
+        assert!(
+            region_source.contains(required)
+                || bam_mod.contains(required)
+                || error_source.contains(required),
+            "M10.2 native region source is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
     let m8 = read_utf8(
         &docs_dir()

@@ -248,8 +248,9 @@ Present substrate:
 
 Known M10 gaps:
 
-* no public region syntax or interval-normalization contract is frozen yet;
-* no region-file input contract exists yet;
+* M10.2 defines the internal region-string grammar and normalization model,
+  but no public command flag consumes it yet;
+* region-file input is explicitly deferred after M10.2;
 * BAI chunk planning is not yet promoted into public command behavior;
 * overlapping-region, duplicate-region, and multi-reference semantics are not
   specified;
@@ -259,3 +260,23 @@ Known M10 gaps:
   scan fallback;
 * CSI large-reference behavior remains unsupported until a later scoped
   decision.
+
+## Milestone 10 Region Syntax Baseline
+
+M10.2 added `src/bam/region.rs` as the native region parser and normalization
+layer. Supported region strings are deliberately small:
+
+* `reference` requests a whole reference by exact BAM header dictionary name;
+* `reference:start-end` requests a 1-based closed interval and normalizes it
+  to 0-based half-open coordinates;
+* multiple regions are represented as an ordered list and are not merged,
+  deduplicated, or overlap-resolved in M10.2;
+* reference names are resolved against the binary BAM header dictionary, and
+  duplicate names or exact-reference-versus-interval ambiguity are rejected.
+
+The parser rejects empty strings, leading or trailing whitespace, unknown
+references, duplicate reference names, zero coordinates, reversed intervals,
+non-numeric coordinates, coordinates beyond the reference length, and
+zero-length whole-reference requests. BED-like and line-oriented region files
+are explicitly deferred with a precise unimplemented error until a later M10
+task promotes a region-file contract.

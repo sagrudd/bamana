@@ -46,6 +46,8 @@ pub enum AppError {
     InvalidRecord { path: PathBuf, detail: String },
     #[error("bam index could not be parsed: {path}")]
     InvalidIndex { path: PathBuf, detail: String },
+    #[error("requested bam region is invalid: {path}")]
+    InvalidRegion { path: PathBuf, detail: String },
     #[error("index format is not supported: {path}")]
     UnsupportedIndex { path: PathBuf, detail: String },
     #[error("no usable bam index was found: {path}")]
@@ -165,6 +167,7 @@ impl AppError {
             Self::InvalidForensicScope { .. } => "invalid_forensic_scope",
             Self::InvalidRecord { .. } => "invalid_record",
             Self::InvalidIndex { .. } => "invalid_index",
+            Self::InvalidRegion { .. } => "invalid_region",
             Self::UnsupportedIndex { .. } => "unsupported_index",
             Self::MissingIndex { .. } => "missing_index",
             Self::IncompatibleHeaders { .. } => "incompatible_headers",
@@ -242,6 +245,7 @@ impl AppError {
             }
             Self::InvalidRecord { .. } => "BAM record could not be parsed.".to_string(),
             Self::InvalidIndex { .. } => "BAM index could not be parsed.".to_string(),
+            Self::InvalidRegion { .. } => "Requested BAM region is invalid.".to_string(),
             Self::UnsupportedIndex { .. } => "Index format is not supported.".to_string(),
             Self::MissingIndex { .. } => "No usable BAM index was found.".to_string(),
             Self::IncompatibleHeaders { .. } => {
@@ -345,6 +349,7 @@ impl AppError {
             Self::InvalidForensicScope { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
             Self::InvalidIndex { detail, .. } => Some(detail.clone()),
+            Self::InvalidRegion { detail, .. } => Some(detail.clone()),
             Self::UnsupportedIndex { detail, .. } => Some(detail.clone()),
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::IncompatibleHeaders { detail, .. } => Some(detail.clone()),
@@ -448,6 +453,10 @@ impl AppError {
             ),
             Self::InvalidIndex { .. } => Some(
                 "Use scan mode or regenerate the BAM index before retrying this command."
+                    .to_string(),
+            ),
+            Self::InvalidRegion { .. } => Some(
+                "Use reference or reference:start-end with 1-based closed coordinates that fit the BAM header dictionary."
                     .to_string(),
             ),
             Self::UnsupportedIndex { .. } => Some(

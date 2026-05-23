@@ -12,6 +12,7 @@ pub mod merge;
 pub mod reader;
 pub mod record;
 pub mod records;
+pub mod region;
 pub mod reheader;
 pub mod scan;
 pub mod sort;

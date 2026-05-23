@@ -143,13 +143,17 @@ fallback in the payload note. Public indexed random-access acceleration is not
 claimed until a later task promotes the M9.7 internal virtual-offset seek and
 chunk traversal helpers into command behavior.
 
-Milestone 10 is active for indexed-region workflow development. At the M10.1
-baseline, no public region syntax, region-file syntax, region flag, or indexed
-region selection command is stable yet. Existing `check_map` and `summary`
-behavior remains whole-file or bounded-scan behavior with optional BAI metadata
-evidence until a later M10 task freezes region contracts, schemas, examples,
-and payload fields. The public contract commands `benchmark`, `fastq`, and
-`unmap` remain protected while this region surface is developed.
+Milestone 10 is active for indexed-region workflow development. M10.2 defines
+the internal region string grammar as `reference` for a whole-reference request
+and `reference:start-end` for a 1-based closed interval normalized to 0-based
+half-open coordinates. Multiple regions preserve request order and are not
+merged or deduplicated yet. Region files remain explicitly deferred, and no
+public region flag or indexed region selection command is stable yet. Existing
+`check_map` and `summary` behavior remains whole-file or bounded-scan behavior
+with optional BAI metadata evidence until a later M10 task freezes public
+region contracts, schemas, examples, and payload fields. The public contract
+commands `benchmark`, `fastq`, and `unmap` remain protected while this region
+surface is developed.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

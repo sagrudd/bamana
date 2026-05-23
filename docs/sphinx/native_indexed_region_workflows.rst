@@ -37,13 +37,40 @@ Fixture plans include valid coordinate BAM/BAI pairs, stale BAI, malformed
 BAI, mismatched-reference BAI, and CSI-header fixtures for region-workflow
 expansion.
 
+M10.2 Region Syntax
+-------------------
+
+``src/bam/region.rs`` defines the first native region parser and normalization
+layer without wiring it into public command behavior.
+
+Supported strings are deliberately small. ``reference`` requests a whole
+reference by exact BAM header dictionary name. ``reference:start-end`` requests
+a 1-based closed interval and normalizes it to 0-based half-open coordinates
+while retaining the original 1-based closed coordinates for reporting.
+
+Multiple regions are represented as an ordered list by
+``normalize_region_strings``. M10.2 preserves request order and does not merge,
+deduplicate, sort, or overlap-resolve regions.
+
+Reference names are resolved against the parsed BAM header dictionary.
+Duplicate reference names are rejected as ambiguous. Reference names containing
+colons are supported when the split is unambiguous. A string that is both an
+exact reference name and a valid ``reference:start-end`` interval is also
+rejected as ambiguous.
+
+The parser rejects empty strings, leading or trailing whitespace, unknown
+references, non-numeric coordinates, zero coordinates, reversed intervals,
+coordinates beyond the reference length, zero-length whole-reference requests,
+and ambiguous reference resolution. BED-like and line-oriented region files are
+explicitly deferred for M10.2 through ``reject_region_file_request``.
+
 Known Gaps
 ----------
 
-No public region syntax, coordinate-base, inclusivity, interval-normalization,
-or region-file contract is frozen yet. Random-access chunk planning has not
-yet been promoted into public command behavior. Overlapping-region,
-duplicate-region, and multi-reference semantics remain unspecified.
+No public command flag consumes the M10.2 region syntax yet. Random-access
+chunk planning has not yet been promoted into public command behavior.
+Overlapping-region, duplicate-region, and multi-reference semantics remain
+unspecified beyond preserving request order in the normalized region set.
 
 Region-aware ``check_map`` and ``summary`` payloads do not yet distinguish
 requested-region evidence from whole-file evidence. Indexed-region benchmark

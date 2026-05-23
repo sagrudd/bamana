@@ -4504,8 +4504,9 @@ Present baseline:
 
 Known gaps:
 
-* no public region syntax or interval normalization contract exists yet;
-* no region-file contract exists for BED-like or line-oriented interval input;
+* M10.2 defines the internal region string grammar and interval normalization
+  model, but no public command flag consumes it yet;
+* region-file input remains explicitly deferred after M10.2;
 * random-access chunk planning has not yet been promoted into command behavior;
 * overlapping-region, duplicate-region, and multi-reference semantics are not
   specified;
@@ -4590,7 +4591,7 @@ Completion evidence:
 
 ### M10.2 Define Region Syntax And Interval Normalization
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4615,7 +4616,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/bam/region.rs` with native `reference` and
+  `reference:start-end` parsing;
+* normalized 1-based closed interval input to 0-based half-open coordinates
+  while retaining original 1-based coordinates for reporting;
+* resolved references against the BAM header dictionary and rejected duplicate
+  names, unknown names, exact-reference-versus-interval ambiguity, empty
+  strings, leading/trailing whitespace, zero coordinates, reversed intervals,
+  non-numeric coordinates, out-of-range intervals, and zero-length
+  whole-reference requests;
+* preserved multiple requested regions in order without merging,
+  deduplicating, or overlap resolution;
+* explicitly deferred BED-like and line-oriented region files through
+  `reject_region_file_request`;
+* documented the M10.2 grammar and non-goals in README, CLI docs, roadmap
+  docs, Sphinx notes, and this task map;
+* added contract coverage for the M10.2 source and documentation baseline;
+* made no public command behavior change and kept `benchmark`, `fastq`, and
+  `unmap` protected.
 
 ### M10.3 Freeze Region Workflow Contracts And Fixtures
 
