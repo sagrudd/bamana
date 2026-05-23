@@ -106,7 +106,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 9: Native BAM Index And Random Access
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-09-bam-index-random-access.md](roadmap/milestone-09-bam-index-random-access.md)
 * goal: own BAM index writing, deeper index validation, and virtual-offset
   random-access groundwork

@@ -123,7 +123,7 @@ The M8 writer commands publish completed temporary files through final rename
 steps, so `written: true` should be interpreted as completed command reporting
 rather than early write intent.
 
-Milestone 9 is active for native BAM index and random-access work. Current
+Milestone 9 is complete for native BAM index and random-access groundwork. Current
 `index` and `check_index` behavior remains intentionally conservative:
 FASTQ.GZ indexing creates FASTQ.GZI sidecars, BAM index creation writes native
 BAI sidecars for coordinate-sorted BAM inputs, and BAM index inspection covers

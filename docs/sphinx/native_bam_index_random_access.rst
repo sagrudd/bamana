@@ -1,9 +1,9 @@
 Native BAM Index And Random Access
 ==================================
 
-Milestone 9 is active as of 2026-05-23 after Milestone 8 closed the transform,
-checksum, explode, and ingest command wave. The active M9 scope is native BAM
-index writing, deeper BAM index validation, virtual-offset-backed
+Milestone 9 is complete as of 2026-05-23 after Milestone 8 closed the
+transform, checksum, explode, and ingest command wave. The completed M9 scope
+is native BAM index writing, deeper BAM index validation, virtual-offset-backed
 random-access groundwork, and first index-aware consumer evidence.
 
 Current Baseline
@@ -49,16 +49,16 @@ The repository already has the following native index groundwork:
   provenance marker. Absent, stale, unsupported, malformed, or incomplete
   sidecars fall back to scanner evidence with a payload note.
 
-Outstanding M9 Work
--------------------
+Deferred Beyond M9
+------------------
 
-The current M9 gaps are intentional and must remain visible until implemented:
+The following gaps are intentional post-M9 deferrals:
 
 * BAM ``index`` cannot yet write CSI sidecars.
 * Public commands do not yet use random-access chunk traversal for acceleration
   or region filtering.
-* CSI remains header-only detection until M9 implements a scoped contract or
-  records a precise deferral.
+* CSI remains header-only detection until a later scoped contract or precise
+  long-term deferral is recorded.
 * ``check_map`` and ``summary`` do not yet use validated chunks for indexed
   acceleration.
 
@@ -168,6 +168,19 @@ created. The M9 timing notes distinguish BAM index construction, BAI structural
 validation, index metadata-backed consumer evidence, scan fallback timings,
 random-access lookup deferral, process startup, JSON emission, and comparator
 non-parity.
+
+Closeout Evidence
+-----------------
+
+M9.10 closes the milestone with native BAI sidecar creation, hardened
+``check_index`` validation, typed virtual-offset capture, internal range
+retrieval helpers, first index-aware ``check_map`` and ``summary`` evidence,
+dependency-boundary protection, and M9 command benchmark smoke rows in place.
+
+Full tests, contract tests, Sphinx, and the M9 scanner microbenchmark smoke
+profile passed at closeout. CSI writing, public indexed-region command
+acceleration, broad random-access APIs, and comparator parity remain deferred
+beyond M9.
 
 Contract Boundary
 -----------------

@@ -3985,12 +3985,13 @@ as `check_map` and `summary`.
 
 ## Milestone 9 Active State
 
-Status: active as of 2026-05-23. Milestone 9 became active through M9.1 after
-Milestone 8 closed, because transform and ingest commands have settled output
-safety, sorting semantics, and checksum evidence enough for generated BAM
-indices to become the next dependable contract.
+Status: complete as of 2026-05-23. Milestone 9 became active through M9.1
+after Milestone 8 closed, because transform and ingest commands had settled
+output safety, sorting semantics, and checksum evidence enough for generated
+BAM indices to become the next dependable contract. M9 closed after M9.1
+through M9.10 completed.
 
-Known present pieces:
+Completed pieces:
 
 * Milestone 1 introduced `VirtualOffset` groundwork for future BAI/CSI and
   random-access work;
@@ -4009,19 +4010,14 @@ Known present pieces:
   and `FASTQ.GZI` sidecars for FASTQ.GZ inputs;
 * BAM `index` explicitly reports CSI writing as unimplemented.
 
-Known gaps:
+Deferred beyond M9:
 
 * BAM `index` cannot yet write real CSI output;
 * public commands do not yet exercise random-access chunk traversal for
   acceleration or region filtering;
-* CSI support remains header-only detection rather than scoped parsing/writing
-  or an explicit long-term deferral;
-* index-aware `check_map` and `summary` evidence remains limited to currently
-  parsed BAI metadata and scan fallback behavior;
-* dependency-boundary tests do not yet name BAM index writing, validation, and
-  random-access paths as one protected milestone set;
-* command-level benchmark smoke evidence is not yet recorded for BAM `index`,
-  `check_index`, indexed `check_map`, or indexed `summary`.
+* CSI support remains header-only detection rather than scoped parsing/writing;
+* index-aware `check_map` and `summary` evidence remains limited to validated
+  BAI metadata and native scan fallback behavior.
 
 Milestone 9 closeout evidence must include:
 
@@ -4426,7 +4422,7 @@ Completion evidence:
 
 ### M9.10 Close Milestone 9
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4452,7 +4448,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* updated README, CLI docs, roadmap docs, Sphinx technical notes, and this task
+  map to record Milestone 9 as complete as of 2026-05-23;
+* recorded final M9 evidence for native BAI sidecar creation, hardened
+  `check_index` validation, typed virtual-offset capture, first index-aware
+  `check_map` and `summary` evidence, dependency-boundary guardrails, and M9
+  benchmark smoke timings;
+* preserved explicit deferrals for CSI writing, public indexed-region command
+  acceleration, broad random-access APIs, and comparator parity beyond M9;
+* verified production `noodles` usage remains isolated to documented CRAM
+  compatibility, tests, oracles, and fixtures;
+* closeout verification: `cargo test`; `cargo test --test contract`;
+  `cargo build --bin bamana --bin scanner_microbench`;
+  `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana --out /tmp/bamana-m9-10-scanner.json`;
+  `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+  `git diff --check`.
 
 ## Milestone 10 Definition
 
@@ -4465,10 +4476,10 @@ explicitly promoted into the CLI contract.
 
 ## Milestone 10 Planned State
 
-Status: planned. Milestone 10 should not become active until Milestone 9 has
-closed, because region workflows must rely on real native BAI/CSI validation,
-correct virtual offsets, and proved random-access helpers rather than shallow
-sidecar discovery.
+Status: planned. Milestone 10 should become active only when explicitly
+started after Milestone 9 closeout, because region workflows must rely on real
+native BAI validation, correct virtual offsets, and proved random-access
+helpers rather than shallow sidecar discovery.
 
 Known present pieces:
 
@@ -4476,8 +4487,8 @@ Known present pieces:
   paths;
 * Milestone 3 introduced native BAM record scanning and borrowed record views;
 * Milestone 6 established native `check_map` and `summary` inspection payloads;
-* Milestone 9 is planned to provide native BAM index writing, deeper index
-  validation, and minimal random-access reader helpers;
+* Milestone 9 completed native BAM index writing, deeper index validation, and
+  minimal random-access reader helpers;
 * `check_map` and `summary` already have index-aware evidence paths, but those
   paths are not region-scoped public workflows;
 * the fixture plan already names valid coordinate BAM and adjacent BAI fixtures

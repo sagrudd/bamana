@@ -1441,7 +1441,6 @@ fn milestone_8_closeout_docs_are_consistent() {
         "M8.10",
         "scanner_microbench",
         "all command timings reporting `1/1`",
-        "Milestone 9 is active",
         "activated by M9.1",
     ] {
         assert!(
@@ -1449,6 +1448,12 @@ fn milestone_8_closeout_docs_are_consistent() {
             "M8 closeout evidence is missing: {required}"
         );
     }
+    assert!(
+        current.contains("Milestone 9 became active")
+            || current.contains("Milestone 9 is active")
+            || current.contains("Milestone 9: Native BAM Index And Random Access** is complete"),
+        "M8 closeout evidence is missing Milestone 9 activation/completion handoff"
+    );
 
     for command in ["sort", "merge", "explode", "checksum", "consume"] {
         assert!(
@@ -1490,8 +1495,10 @@ fn milestone_9_activation_baseline_records_index_random_access_scope() {
     ] {
         assert!(
             text.contains("Milestone 9 is active")
+                || text.contains("Milestone 9 is complete")
                 || text.contains("Status: active as of 2026-05-23")
                 || text.contains("status: active")
+                || text.contains("status: complete")
                 || text.contains("Status: complete as of 2026-05-23"),
             "{name} does not record Milestone 9 activation"
         );
@@ -1688,6 +1695,74 @@ fn milestone_9_index_contracts_and_fixtures_are_frozen() {
                 || coverage_map.contains(required_id)
                 || m9_sphinx.contains(required_id),
             "fixture {required_id} is not documented in the M9 fixture plan"
+        );
+    }
+}
+
+#[test]
+fn milestone_9_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m9 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-09-bam-index-random-access.md"),
+    );
+    let m9_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_bam_index_random_access.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M9 roadmap", &m9),
+        ("M9 Sphinx", &m9_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 9 is complete")
+                || text.contains(
+                    "Milestone 9: Native BAM Index And Random Access\n\n* status: complete"
+                )
+                || text.contains("Status: complete as of 2026-05-23"),
+            "{name} does not record Milestone 9 completion"
+        );
+    }
+
+    for required in [
+        "M9.10",
+        "index_bam",
+        "check_index",
+        "check_map_indexed",
+        "summary_indexed",
+        "full tests",
+        "contract tests",
+        "Sphinx",
+        "benchmark smoke",
+        "CSI writing",
+        "deferred beyond M9",
+    ] {
+        assert!(
+            current.contains(required)
+                || m9.contains(required)
+                || m9_sphinx.contains(required)
+                || taskmap.contains(required)
+                || readme.contains(required),
+            "M9 closeout evidence is missing: {required}"
+        );
+    }
+
+    for command in ["index", "check_index", "check_map", "summary"] {
+        assert!(
+            current.contains(&format!("`{command}`"))
+                && m9.contains(&format!("`{command}`"))
+                && m9_sphinx.contains(&format!("``{command}``")),
+            "M9 closeout docs do not name command: {command}"
         );
     }
 }

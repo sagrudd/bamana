@@ -1,8 +1,8 @@
 # Milestone 9: Native BAM Index And Random Access
 
-Status: active as of 2026-05-23. M9 was activated by M9.1 only after
+Status: complete as of 2026-05-23. M9 was activated by M9.1 only after
 Milestone 8 closed and recorded transform, checksum, explode, and ingest output
-safety.
+safety. It closed after M9.1 through M9.10 completed.
 
 ## Technical Goal
 
@@ -90,13 +90,13 @@ Present implementation pieces:
   complete for mapped/unmapped reference metadata; absent, stale, unsupported,
   malformed, or incomplete sidecars fall back to native scanning.
 
-Outstanding M9 gaps:
+Deferred beyond M9:
 
 * BAM `index` cannot yet write real CSI output.
 * public commands do not yet exercise random-access chunk traversal for
   acceleration or region filtering.
-* CSI support remains header-only detection until M9 either implements a scoped
-  parser/writer contract or records precise deferral.
+* CSI support remains header-only detection until a later scoped parser/writer
+  contract or long-term deferral is recorded.
 * `check_map` and `summary` do not yet use validated chunks for indexed
   acceleration; their index path is limited to parsed BAI metadata.
 * M9 dependency-boundary and benchmark evidence names BAM index writing, BAM
@@ -184,6 +184,26 @@ interpretation notes distinguish BAM index construction, BAI structural
 validation, index metadata-backed consumer evidence, scan fallback timings,
 random-access lookup deferral, process startup, JSON emission, and comparator
 non-parity.
+
+## M9.10 Closeout
+
+Milestone 9 completed the native BAM index and random-access groundwork slice.
+The closeout records:
+
+* native BAI sidecar creation for supported coordinate-sorted BAM inputs;
+* hardened `check_index` BAI/CSI validation to the implemented structural
+  depth;
+* typed virtual-offset capture and internal BGZF/BAM random-access helpers;
+* first index-aware `check_map` and `summary` consumer evidence using validated
+  BAI metadata with native scan fallback;
+* M9 dependency-boundary protection for index writing, index validation,
+  indexed consumers, and the random-access substrate;
+* M9 command smoke benchmark rows for `index_bam`, `check_index`,
+  `check_map_indexed`, and `summary_indexed`;
+* full tests, contract tests, Sphinx, and M9 benchmark smoke checks passing.
+
+CSI writing, public indexed-region command acceleration, and broad
+random-access APIs remain deferred beyond M9.
 
 ## Remaining `noodles` Surface
 

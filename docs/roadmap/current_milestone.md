@@ -6,8 +6,9 @@
 2026-05-21. **Milestone 7: Native Mutation, Remediation, And Forensics
 Commands** is complete as of 2026-05-22. **Milestone 8: Native Transform,
 Checksum, Explode, And Ingest Commands** is complete as of 2026-05-23.
-**Milestone 9: Native BAM Index And Random Access** is active as of
-2026-05-23, activated by M9.1 only after the M8 closeout commit was in place.
+**Milestone 9: Native BAM Index And Random Access** is complete as of
+2026-05-23. It was activated by M9.1 only after the M8 closeout commit was in
+place and closed after M9.1 through M9.10 completed on 2026-05-23.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -15,6 +16,7 @@ completed on 2026-05-21. Milestone 7 became active only after that M6
 closeout was recorded, and closed after M7.1 through M7.10 completed on
 2026-05-22. Milestone 8 became active only after that M7 closeout was
 recorded, and closed after M8.1 through M8.10 completed on 2026-05-23.
+Milestone 9 became active only after that M8 closeout was recorded.
 
 See:
 
@@ -147,7 +149,7 @@ protected after M9 activation.
 
 ## Milestone 9 Baseline
 
-Milestone 9 is active for native BAM index writing, deeper index validation,
+Milestone 9 is complete for native BAM index writing, deeper index validation,
 and virtual-offset-backed random-access groundwork.
 
 Present baseline:
@@ -175,12 +177,12 @@ Present baseline:
   non-stale, structurally valid, and complete for mapped/unmapped metadata, and
   fall back to native scan evidence otherwise.
 
-Known M9 gaps:
+Post-M9 deferrals:
 
 * BAM `index` cannot yet write real CSI sidecars;
 * public commands do not yet exercise random-access chunk traversal for
   acceleration or region filtering;
-* CSI support remains header-only detection until a scoped M9 decision.
+* CSI support remains header-only detection until a later scoped decision.
 
 M9.9 benchmark and dependency-boundary evidence now protects the active
 index/random-access set:
@@ -195,3 +197,24 @@ index/random-access set:
   index metadata-backed consumer evidence, scan fallback timings,
   random-access lookup deferral, process startup, JSON emission, and comparator
   non-parity.
+
+## Milestone 9 Closeout
+
+Milestone 9 closed after M9.1 through M9.10 completed. Closeout evidence:
+
+* `index` creates native BAI sidecars for supported coordinate-sorted BAM
+  inputs and rejects unsupported BAM index requests precisely;
+* `check_index` validates BAI and CSI sidecars to the implemented depth while
+  avoiding claims that every random-access offset has been exercised;
+* native BGZF reader and BAM scanner paths expose typed virtual-offset capture
+  and internal range retrieval for later indexed-region work;
+* `check_map` and `summary` use validated BAI metadata as index-derived
+  evidence only when usable and otherwise report native scan fallback evidence;
+* CSI writing and public indexed-region command acceleration are explicitly
+  deferred beyond M9;
+* `scanner_microbench --bamana-bin` emits M9 smoke timing rows for
+  `index_bam`, `check_index`, `check_map_indexed`, and `summary_indexed`;
+* dependency-boundary tests protect the M9 command/substrate set from direct
+  production `noodles` imports outside CRAM compatibility;
+* closeout verification passed with full tests, contract tests, Sphinx, and M9
+  command benchmark smoke checks.
