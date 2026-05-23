@@ -552,8 +552,12 @@ Key output concepts:
 
 ## `check_map`
 
-Synopsis:
+Current synopsis:
 `bamana check_map --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index]`
+
+M10 governed region synopsis, not accepted by the binary until the later
+region-aware implementation task:
+`bamana check_map --bam <bamfile> [--region <REGION> ...] [--prefer-index]`
 
 Semantics:
 Assesses mapping state using the header, a selected BAI sidecar only when it is
@@ -569,9 +573,22 @@ prove only what was observed in the examined alignment records.
 Does not prove:
 Full BAM validity or complete mapping semantics beyond the examined data.
 
+M10 region contract:
+
+* `--region` will use the M10.2 grammar: `reference` or
+  `reference:start-end`
+* interval input is 1-based closed and reported in normalized form as 0-based
+  half-open coordinates
+* repeated `--region` values preserve request order and are not merged or
+  deduplicated
+* region-aware output will add `region_scope` and must keep region-scoped
+  mapping evidence distinct from whole-file mapping evidence
+* region files remain deferred and must fail precisely until a later task
+  promotes them
+
 Key output concepts:
-`mapping_status`, `evidence_source`, `index`, `references`, `summary`,
-`confidence`.
+`mapping_status`, `evidence_source`, `index`, `references`, `region_scope`,
+`summary`, `confidence`.
 
 ## `check_index`
 
@@ -636,8 +653,12 @@ Key output concepts:
 
 ## `summary`
 
-Synopsis:
+Current synopsis:
 `bamana summary --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--include-mapq-hist] [--include-flags]`
+
+M10 governed region synopsis, not accepted by the binary until the later
+region-aware implementation task:
+`bamana summary --bam <bamfile> [--region <REGION> ...] [--prefer-index] [--include-mapq-hist] [--include-flags]`
 
 Semantics:
 Produces a fast operational BAM overview from header metadata, optional index
@@ -656,9 +677,22 @@ Does not prove:
 Full-file totals when the command explicitly reports bounded scan evidence, or
 full BAM structural validity.
 
+M10 region contract:
+
+* `--region` will use the M10.2 grammar: `reference` or
+  `reference:start-end`
+* interval input is 1-based closed and reported in normalized form as 0-based
+  half-open coordinates
+* repeated `--region` values preserve request order and are not merged or
+  deduplicated
+* region-aware output will add `region_scope` and must keep region-scoped
+  operational metrics distinct from whole-file totals
+* region files remain deferred and must fail precisely until a later task
+  promotes them
+
 Key output concepts:
-`mode`, `evidence`, `counts`, `fractions`, `mapq`, `mapping`, `anomalies`,
-`confidence`.
+`mode`, `evidence`, `counts`, `fractions`, `mapq`, `mapping`, `region_scope`,
+`anomalies`, `confidence`.
 
 ## `check_tag`
 

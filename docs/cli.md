@@ -147,13 +147,13 @@ Milestone 10 is active for indexed-region workflow development. M10.2 defines
 the internal region string grammar as `reference` for a whole-reference request
 and `reference:start-end` for a 1-based closed interval normalized to 0-based
 half-open coordinates. Multiple regions preserve request order and are not
-merged or deduplicated yet. Region files remain explicitly deferred, and no
-public region flag or indexed region selection command is stable yet. Existing
-`check_map` and `summary` behavior remains whole-file or bounded-scan behavior
-with optional BAI metadata evidence until a later M10 task freezes public
-region contracts, schemas, examples, and payload fields. The public contract
-commands `benchmark`, `fastq`, and `unmap` remain protected while this region
-surface is developed.
+merged or deduplicated yet. M10.3 freezes `check_map --region <REGION>` and
+`summary --region <REGION>` as the first planned region-aware command
+surfaces, with `region_scope` JSON schema and examples. Those flags are not
+accepted by the binary until later M10 implementation tasks wire them. Region
+files and indexed region selection commands remain explicitly deferred. The
+public contract commands `benchmark`, `fastq`, and `unmap` remain protected
+while this region surface is developed.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

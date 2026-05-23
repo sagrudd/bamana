@@ -135,6 +135,14 @@ and validation command wave:
   evidence;
 * `tiny.valid.coordinate.bai` covers index-derived `check_map` and `summary`
   evidence;
+* M10 region-workflow fixture plans reserve the coordinate BAM/BAI pair for
+  single-region indexed success, multi-region indexed success, and
+  overlapping-region request-order behavior once `check_map --region` and
+  `summary --region` are wired;
+* M10 region negative fixtures cover unknown-reference rejection, empty-region
+  rejection, stale-index scan fallback, missing-index scan fallback, and
+  unsupported-index scan fallback without adding a standalone region-selection
+  command;
 * `tiny.invalid.mismatched_reference_count.bai` covers BAI reference-count
   mismatch reporting;
 * `tiny.valid.coordinate.csi_header` covers detected-but-not-supported CSI

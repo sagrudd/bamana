@@ -15,6 +15,14 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.invalid.bad_aux` | Malformed aux traversal | Canonicalization failure | `check_tag`, `validate`, `checksum` | failure |
 | `tiny.invalid.header_mismatch` | Header consistency mismatch | Header extraction warning/error policy | `header`, `validate` | failure + mixed |
 | `tiny.valid.coordinate.bai` | Valid adjacent BAI | Index-backed mapping/summary | `check_index`, `check_map`, `summary` | success |
+| `tiny.region.single_indexed` | Planned single-region indexed request over valid coordinate BAM/BAI | M10 region `check_map` and `summary` payload shape | `check_map --region`, `summary --region` | planned success |
+| `tiny.region.multi_indexed` | Planned repeated-region indexed request over valid coordinate BAM/BAI | Request-order preservation | `check_map --region`, `summary --region` | planned success |
+| `tiny.region.overlap_ordered` | Planned overlapping-region request over valid coordinate BAM/BAI | Non-merged, non-deduplicated region semantics | `check_map --region`, `summary --region` | planned success + caveat |
+| `tiny.region.unknown_reference` | Planned unknown-reference rejection | Precise `invalid_region` reporting | `check_map --region`, `summary --region` | planned failure |
+| `tiny.region.empty` | Planned empty-region rejection | Precise `invalid_region` reporting | `check_map --region`, `summary --region` | planned failure |
+| `tiny.region.stale_index_fallback` | Planned region request with stale BAI | Scan fallback reporting | `check_map --region`, `summary --region` | planned fallback |
+| `tiny.region.missing_index_fallback` | Planned region request without usable sidecar | Scan fallback reporting | `check_map --region`, `summary --region` | planned fallback |
+| `tiny.region.unsupported_index_fallback` | Planned region request with CSI header sidecar | Unsupported-index scan fallback reporting | `check_map --region`, `summary --region` | planned fallback |
 | `tiny.valid.coordinate.stale_bai` | Timestamp-based stale heuristic | Index compatibility notes | `check_index` | success + warning semantics |
 | `tiny.invalid.bad_bai` | Malformed index failure | Index-backed failure fallback | `check_index`, `check_map` | failure |
 | `tiny.invalid.mismatched_reference_count.bai` | BAI reference-count mismatch | Scan fallback after unusable index | `check_index`, `check_map`, `summary` | failure + fallback |

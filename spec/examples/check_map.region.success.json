@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "command": "check_map",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "mapping_status": "mapped",
+    "has_mapped_reads": true,
+    "evidence_source": "index",
+    "index": {
+      "present": true,
+      "kind": "BAI",
+      "used": true
+    },
+    "references": [
+      {
+        "name": "chr1",
+        "length": 248956422,
+        "mapped_reads": 120,
+        "unmapped_reads": 0,
+        "observed": null
+      }
+    ],
+    "region_scope": {
+      "requested": true,
+      "source": "cli_regions",
+      "coordinate_base": "input_1_based_closed_output_0_based_half_open",
+      "interval_semantics": "start and end are inclusive in input; normalized end is exclusive",
+      "duplicate_policy": "preserve_request_order_without_merging_or_deduplication",
+      "execution": "indexed",
+      "regions": [
+        {
+          "original": "chr1:100-200",
+          "reference_name": "chr1",
+          "reference_index": 0,
+          "reference_length": 248956422,
+          "start_0_based": 99,
+          "end_0_based_exclusive": 200,
+          "start_1_based_inclusive": 100,
+          "end_1_based_inclusive": 200,
+          "input_kind": "explicit_interval"
+        }
+      ],
+      "notes": [
+        "Region-scoped mapping evidence is distinct from whole-file mapping evidence."
+      ]
+    },
+    "summary": {
+      "references_defined": 25,
+      "references_with_mapped_reads": 1,
+      "total_mapped_reads": 120,
+      "total_unmapped_reads": 0
+    },
+    "confidence": "high",
+    "semantic_note": "Mapping summary is scoped to requested regions and derived from validated indexed traversal."
+  },
+  "error": null
+}

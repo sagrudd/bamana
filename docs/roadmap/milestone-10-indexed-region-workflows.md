@@ -124,6 +124,39 @@ Region-file status:
   `reject_region_file_request` returns a precise unimplemented error rather
   than silently treating a file as a region string.
 
+## M10.3 Region Workflow Contracts And Fixtures
+
+M10.3 freezes region-aware `check_map` and region-aware `summary` as the first
+planned public command surfaces. A standalone indexed selection command remains
+deferred.
+
+Planned command flags:
+
+* `check_map --region <REGION>` for mapping evidence scoped to one or more
+  M10.2 region strings;
+* `summary --region <REGION>` for operational summary evidence scoped to one
+  or more M10.2 region strings;
+* repeated `--region` values preserve request order and are not merged or
+  deduplicated;
+* region files remain deferred until a later M10 task promotes a file syntax.
+
+Frozen payload contract:
+
+* `region_scope.requested` records that region behavior was requested;
+* `region_scope.source` is `cli_regions` for repeated `--region` values;
+* `region_scope.coordinate_base` is
+  `input_1_based_closed_output_0_based_half_open`;
+* `region_scope.duplicate_policy` is
+  `preserve_request_order_without_merging_or_deduplication`;
+* `region_scope.regions` contains ordered normalized M10.2 intervals;
+* `region_scope.execution` distinguishes `indexed`, `scan_fallback`, and
+  `rejected`.
+
+Fixture plan coverage must distinguish single-region indexed success,
+multi-region indexed success, overlapping-region request-order behavior,
+unknown-reference rejection, empty-region rejection, stale-index scan fallback,
+missing-index scan fallback, and unsupported-index scan fallback.
+
 ## Acceptance Criteria
 
 * region strings and optional region files are parsed into a documented

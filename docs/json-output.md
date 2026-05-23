@@ -125,6 +125,13 @@ Key concepts:
 * stale, unsupported, malformed, or incomplete sidecars leave `index.used:
   false`, switch `evidence_source` to `scan`, and describe the fallback in
   `semantic_note`
+* M10.3 freezes the region-aware output contract for future `check_map`
+  wiring: when region evidence is requested, `region_scope` records the
+  normalized M10.2 intervals, `input_1_based_closed_output_0_based_half_open`
+  coordinate model, request-order duplicate policy, and whether execution used
+  indexed traversal, scan fallback, or precise rejection
+* region-scoped mapping evidence must not be interpreted as whole-file mapping
+  evidence
 
 ## `check_index`
 
@@ -182,6 +189,12 @@ Key concepts:
 * `fractions_observed` is scoped to examined records when the scan is bounded
 * malformed-record failures can return an `indeterminate` payload because no
   stable operational summary was completed
+* M10.3 freezes the region-aware output contract for future `summary` wiring:
+  when region evidence is requested, `region_scope` records the normalized
+  M10.2 intervals, `input_1_based_closed_output_0_based_half_open` coordinate
+  model, request-order duplicate policy, and whether execution used indexed
+  traversal, scan fallback, or precise rejection
+* region-scoped operational metrics must not be interpreted as full-file totals
 
 ## `check_tag`
 

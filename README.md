@@ -121,10 +121,13 @@ limited to the canonical BGZF EOF marker.
 Milestone 10 is active for native indexed-region workflow development. M10.2
 defines the internal region grammar as `reference` and `reference:start-end`,
 where interval input is 1-based closed and normalized internally to 0-based
-half-open coordinates. Region files, public region flags, and indexed region
-selection commands are still deferred until later M10 tasks freeze CLI docs,
-JSON schemas, examples, Sphinx docs, and tests. The public contract commands
-`benchmark`, `fastq`, and `unmap` remain protected while M10 work proceeds.
+half-open coordinates. M10.3 freezes the first region-aware workflow contracts
+for future `check_map --region <REGION>` and `summary --region <REGION>`
+support, including `region_scope` JSON payload examples and fixture plans.
+Those flags are not accepted by the binary until later M10 implementation
+tasks wire them. Region files and indexed region selection commands remain
+deferred. The public contract commands `benchmark`, `fastq`, and `unmap`
+remain protected while M10 work proceeds.
 
 ## Benchmark Framework
 

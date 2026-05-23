@@ -78,6 +78,31 @@ assert `output_index.created = true` for BAI output. BAM CSI and unsupported
 failure fixtures must still assert `output_index.created = false`. FASTQ.GZI
 success fixtures may also assert `output_index.created = true`.
 
+### M10 indexed-region workflow coverage
+
+M10.3 freezes region-aware `check_map` and region-aware `summary` as the first
+planned public surfaces. Region fixture coverage is scenario-based over the
+existing tiny coordinate BAM/BAI family until implementation tasks materialize
+additional files:
+
+* single-region indexed success: `tiny.valid.coordinate` with
+  `tiny.valid.coordinate.bai`, `--region chr1:1-10`;
+* multi-region indexed success: `tiny.valid.coordinate` with
+  `tiny.valid.coordinate.bai`, repeated `--region` values;
+* overlapping-region request-order behavior: repeated overlapping `--region`
+  values preserve request order and are not merged or deduplicated;
+* unknown-reference rejection: `--region missing_reference:1-10`;
+* empty-region rejection: empty or whitespace-only region request;
+* stale-index scan fallback: `tiny.valid.coordinate.stale_bai`;
+* missing-index scan fallback: `tiny.valid.coordinate` without a usable
+  adjacent sidecar;
+* unsupported-index scan fallback: `tiny.valid.coordinate.csi_header`.
+
+Region-aware payload fixtures must include `region_scope` and distinguish
+`indexed`, `scan_fallback`, and `rejected` execution outcomes. Region-scoped
+`check_map` evidence must not claim whole-file mapping state, and
+region-scoped `summary` metrics must not claim full-file totals.
+
 ### Transform coverage
 
 These commands depend on the transform fixture family:

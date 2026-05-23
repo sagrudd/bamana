@@ -64,13 +64,36 @@ coordinates beyond the reference length, zero-length whole-reference requests,
 and ambiguous reference resolution. BED-like and line-oriented region files are
 explicitly deferred for M10.2 through ``reject_region_file_request``.
 
+M10.3 Region Workflow Contract
+------------------------------
+
+M10.3 freezes region-aware ``check_map`` and region-aware ``summary`` as the
+first planned public command surfaces. ``check_map --region <REGION>`` will
+report mapping evidence scoped to one or more M10.2 region strings.
+``summary --region <REGION>`` will report operational summary evidence scoped
+to one or more M10.2 region strings. A standalone indexed selection command is
+deferred.
+
+The governed payload field is ``region_scope``. It records whether region
+behavior was requested, that the source was repeated CLI regions, the
+``input_1_based_closed_output_0_based_half_open`` coordinate model, the
+``preserve_request_order_without_merging_or_deduplication`` duplicate policy,
+the ordered normalized regions, and whether execution used indexed traversal,
+scan fallback, or precise rejection.
+
+Region-scoped ``check_map`` evidence must not be interpreted as whole-file
+mapping evidence. Region-scoped ``summary`` metrics must not be interpreted as
+full-file totals. Region files remain deferred until a later M10 task promotes
+a file syntax.
+
 Known Gaps
 ----------
 
-No public command flag consumes the M10.2 region syntax yet. Random-access
+The M10.3 command flags are frozen as a planned contract but are not accepted
+by the binary until later M10 implementation tasks wire them. Random-access
 chunk planning has not yet been promoted into public command behavior.
 Overlapping-region, duplicate-region, and multi-reference semantics remain
-unspecified beyond preserving request order in the normalized region set.
+limited to preserving request order in the normalized region set.
 
 Region-aware ``check_map`` and ``summary`` payloads do not yet distinguish
 requested-region evidence from whole-file evidence. Indexed-region benchmark

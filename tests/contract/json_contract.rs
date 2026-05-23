@@ -1922,6 +1922,99 @@ fn milestone_10_region_syntax_contract_is_documented_and_native() {
 }
 
 #[test]
+fn milestone_10_region_workflow_contracts_and_fixture_plans_are_frozen() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let fixture_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let fixture_matrix = read_utf8(&fixtures_dir().join("plans").join("fixture-matrix.md"));
+    let coverage_map = read_utf8(&fixtures_dir().join("plans").join("coverage-map.md"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let check_map_schema = read_utf8(&schema_path_for_command("check_map"));
+    let summary_schema = read_utf8(&schema_path_for_command("summary"));
+    let check_map_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("check_map.region.success.json"),
+    );
+    let summary_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("summary.region.success.json"),
+    );
+
+    for required in [
+        "check_map --region <REGION>",
+        "summary --region <REGION>",
+        "region_scope",
+        "cli_regions",
+        "input_1_based_closed_output_0_based_half_open",
+        "preserve_request_order_without_merging_or_deduplication",
+        "indexed",
+        "scan_fallback",
+        "rejected",
+        "not accepted by the binary",
+        "standalone indexed selection command",
+        "region files remain deferred",
+        "whole-file mapping evidence",
+        "full-file totals",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_doc.contains(required)
+                || commands_doc.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required)
+                || check_map_schema.contains(required)
+                || summary_schema.contains(required)
+                || check_map_region_example.contains(required)
+                || summary_region_example.contains(required),
+            "M10.3 region workflow contract is missing: {required}"
+        );
+    }
+
+    for scenario in [
+        "single-region indexed success",
+        "multi-region indexed success",
+        "overlapping-region request-order behavior",
+        "unknown-reference rejection",
+        "empty-region rejection",
+        "stale-index scan fallback",
+        "missing-index scan fallback",
+        "unsupported-index scan fallback",
+    ] {
+        assert!(
+            fixture_doc.contains(scenario)
+                || fixture_matrix.contains(scenario)
+                || coverage_map.contains(scenario)
+                || taskmap.contains(scenario),
+            "M10.3 fixture plan is missing scenario: {scenario}"
+        );
+    }
+
+    for example in [&check_map_region_example, &summary_region_example] {
+        assert!(example.contains("\"region_scope\""));
+        assert!(example.contains("\"execution\": \"indexed\""));
+        assert!(example.contains("\"original\": \"chr1:100-200\""));
+    }
+}
+
+#[test]
 fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
     let m8 = read_utf8(
         &docs_dir()

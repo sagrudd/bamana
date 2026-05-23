@@ -280,3 +280,20 @@ non-numeric coordinates, coordinates beyond the reference length, and
 zero-length whole-reference requests. BED-like and line-oriented region files
 are explicitly deferred with a precise unimplemented error until a later M10
 task promotes a region-file contract.
+
+## Milestone 10 Region Workflow Contract
+
+M10.3 freezes the first region-aware workflow contract before command wiring:
+
+* `check_map --region <REGION>` and `summary --region <REGION>` are the first
+  planned region-aware command surfaces;
+* `--region` uses the M10.2 grammar and may be repeated;
+* normalized regions are reported in `region_scope` with the coordinate model,
+  interval semantics, duplicate policy, ordered regions, and execution mode;
+* `region_scope.execution` distinguishes `indexed`, `scan_fallback`, and
+  `rejected` outcomes;
+* region-aware `check_map` evidence must not be confused with whole-file
+  mapping evidence;
+* region-aware `summary` metrics must not be confused with full-file totals;
+* region files, a standalone indexed selection command, and CLI flag
+  acceptance remain deferred until later M10 tasks wire and verify behavior.

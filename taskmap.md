@@ -4637,7 +4637,7 @@ Completion evidence:
 
 ### M10.3 Freeze Region Workflow Contracts And Fixtures
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4663,7 +4663,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* selected region-aware `check_map` and region-aware `summary` as the first
+  planned public command surfaces, while deferring a standalone indexed
+  selection command;
+* froze the future repeated `--region <REGION>` CLI contract in
+  `spec/cli/commands.md` without making the binary accept the flag yet;
+* added `region_scope` schema definitions to `check_map` and `summary` JSON
+  schemas with normalized region objects, coordinate model, duplicate policy,
+  ordered region list, and `indexed`/`scan_fallback`/`rejected` execution
+  outcomes;
+* added canonical region success examples for `check_map` and `summary`;
+* updated README, CLI docs, JSON-output docs, roadmap docs, Sphinx notes, and
+  fixture plans with M10.3 region workflow contracts;
+* updated fixture plans for single-region indexed success, multi-region
+  indexed success, overlapping-region request-order behavior,
+  unknown-reference rejection, empty-region rejection, stale-index fallback,
+  missing-index fallback, and unsupported-index fallback;
+* added contract coverage so region workflow docs, schemas, examples, and
+  fixture-plan scenarios cannot disappear silently.
 
 ### M10.4 Implement Indexed Chunk Planning
 

@@ -1,0 +1,70 @@
+{
+  "ok": true,
+  "command": "summary",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "mode": "bounded_scan",
+    "evidence": {
+      "header_used": true,
+      "index_used": true,
+      "records_scanned": 120,
+      "full_file_scanned": false
+    },
+    "header": {
+      "references_defined": 25,
+      "sort_order": "coordinate",
+      "sub_sort_order": null,
+      "group_order": null
+    },
+    "counts": {
+      "records_examined": 120,
+      "records_total_known": null,
+      "mapped_records": 120,
+      "unmapped_records": 0
+    },
+    "fractions_observed": {
+      "fraction_mapped": 1.0
+    },
+    "mapq": {
+      "min": 20,
+      "max": 60,
+      "mean": 48.2,
+      "zero_count": 0
+    },
+    "mapping": {
+      "status": "mapped",
+      "references_with_mapped_reads_observed": 1
+    },
+    "region_scope": {
+      "requested": true,
+      "source": "cli_regions",
+      "coordinate_base": "input_1_based_closed_output_0_based_half_open",
+      "interval_semantics": "start and end are inclusive in input; normalized end is exclusive",
+      "duplicate_policy": "preserve_request_order_without_merging_or_deduplication",
+      "execution": "indexed",
+      "regions": [
+        {
+          "original": "chr1:100-200",
+          "reference_name": "chr1",
+          "reference_index": 0,
+          "reference_length": 248956422,
+          "start_0_based": 99,
+          "end_0_based_exclusive": 200,
+          "start_1_based_inclusive": 100,
+          "end_1_based_inclusive": 200,
+          "input_kind": "explicit_interval"
+        }
+      ],
+      "notes": [
+        "Region-scoped summary metrics describe requested intervals, not full-file totals."
+      ]
+    },
+    "anomalies": {
+      "contradictory_mapping_state_records": 0
+    },
+    "confidence": "high",
+    "semantic_note": "Summary metrics are scoped to requested regions and cannot be interpreted as full-file totals."
+  },
+  "error": null
+}
