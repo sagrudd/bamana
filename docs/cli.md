@@ -133,9 +133,9 @@ unless `--force` is supplied, and BAM BAI responses report
 `output_index.created: true` only after the sidecar is finalized.
 CSI writing remains deferred for BAM inputs and still returns `unimplemented`.
 `check_map` and `summary` may use parsed BAI metadata as index-derived
-evidence, but indexed random-access acceleration is not claimed until M9 adds
-scanner virtual-offset capture, BAI chunk validation, and random-access
-traversal.
+evidence, but public indexed random-access acceleration is not claimed until a
+later task promotes the M9.7 internal virtual-offset seek and chunk traversal
+helpers into command behavior.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

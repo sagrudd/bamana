@@ -70,10 +70,13 @@ Present implementation pieces:
   construction, bounds checks, ordering, and tests.
 * `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
   checks, BAM-magic probing, and virtual-offset reporting based on compressed
-  member starts plus uncompressed in-block offsets.
+  member starts plus uncompressed in-block offsets. It can seek to typed
+  virtual offsets by loading the referenced BGZF member and positioning the
+  in-block cursor.
 * `src/bam/scan.rs` owns sequential scanner traversal over native BGZF and BAM
   header parsing, while reporting records read and positioned record start/end
-  virtual offsets for native scans.
+  virtual offsets for native scans. It also exposes internal raw-record range
+  retrieval over typed virtual-offset bounds.
 * `src/commands/index.rs` validates BAM plausibility and output path behavior,
   creates native BAI sidecars for coordinate-sorted BAM inputs, creates real
   FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports CSI writing as
@@ -88,8 +91,8 @@ Present implementation pieces:
 Outstanding M9 gaps:
 
 * BAM `index` cannot yet write real CSI output.
-* `check_index` does not yet exercise random-access reads from validated chunks
-  or prove reference span plausibility against fetched records.
+* public commands do not yet exercise random-access chunk traversal for
+  acceleration or region filtering.
 * CSI support remains header-only detection until M9 either implements a scoped
   parser/writer contract or records precise deferral.
 * `check_map` and `summary` do not yet use validated chunks for indexed
@@ -145,6 +148,18 @@ unmapped reads.
 M9.5 now serializes this builder output into BAI bytes, emits metadata
 pseudo-bins, and makes `bamana index` report BAM sidecar creation only after
 the final output path is published.
+
+## M9.7 Random-Access Groundwork
+
+M9.7 adds typed virtual-offset seek and chunk traversal helpers without changing
+public command behavior. `NativeBgzfReader::seek_virtual_offset` consumes a
+`VirtualOffset`, seeks to the compressed member, inflates it, and positions the
+reader at the requested uncompressed in-block offset. `BamScanner` exposes
+`seek_virtual_offset` and `raw_records_in_virtual_range` so internal consumers
+can read positioned raw BAM records from validated BAI chunk ranges.
+
+Tests prove valid virtual-offset seeks, invalid in-block offsets, manual
+virtual-offset range traversal, BAI chunk traversal, and empty-range rejection.
 
 ## Benchmark Hooks
 

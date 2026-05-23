@@ -32,6 +32,12 @@ pub struct PositionedBamRecord<'a> {
     pub virtual_offsets: BamRecordVirtualOffsets,
 }
 
+#[derive(Debug, Clone)]
+pub struct PositionedRawBamRecord {
+    pub raw_record: Vec<u8>,
+    pub virtual_offsets: BamRecordVirtualOffsets,
+}
+
 impl BamScanner {
     pub fn open(path: &Path) -> Result<Self, AppError> {
         Self::open_with_label(path, path)
@@ -67,6 +73,76 @@ impl BamScanner {
     pub fn next_record_with_virtual_offsets(
         &mut self,
     ) -> Result<Option<PositionedBamRecord<'_>>, AppError> {
+        let Some(virtual_offsets) = self.read_record_bytes_with_virtual_offsets()? else {
+            return Ok(None);
+        };
+
+        let view =
+            BamRecordView::parse(&self.raw_record).map_err(|error| AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: error.detail().to_string(),
+            })?;
+        self.records_read += 1;
+        Ok(Some(PositionedBamRecord {
+            record: view,
+            virtual_offsets,
+        }))
+    }
+
+    pub fn next_raw_record_with_virtual_offsets(
+        &mut self,
+    ) -> Result<Option<PositionedRawBamRecord>, AppError> {
+        let Some(virtual_offsets) = self.read_record_bytes_with_virtual_offsets()? else {
+            return Ok(None);
+        };
+
+        BamRecordView::parse(&self.raw_record).map_err(|error| AppError::InvalidRecord {
+            path: self.path.clone(),
+            detail: error.detail().to_string(),
+        })?;
+        self.records_read += 1;
+        Ok(Some(PositionedRawBamRecord {
+            raw_record: self.raw_record.clone(),
+            virtual_offsets,
+        }))
+    }
+
+    pub fn seek_virtual_offset(&mut self, offset: VirtualOffset) -> Result<(), AppError> {
+        self.reader.seek_virtual_offset(offset)
+    }
+
+    pub fn raw_records_in_virtual_range(
+        &mut self,
+        start: VirtualOffset,
+        end: VirtualOffset,
+    ) -> Result<Vec<PositionedRawBamRecord>, AppError> {
+        if start >= end {
+            return Err(AppError::InvalidIndex {
+                path: self.path.clone(),
+                detail: format!(
+                    "Virtual-offset range start {} must be before end {}.",
+                    start.packed(),
+                    end.packed()
+                ),
+            });
+        }
+
+        self.seek_virtual_offset(start)?;
+        let mut records = Vec::new();
+        while let Some(record) = self.next_raw_record_with_virtual_offsets()? {
+            if record.virtual_offsets.start >= end {
+                break;
+            }
+            if record.virtual_offsets.end > start {
+                records.push(record);
+            }
+        }
+        Ok(records)
+    }
+
+    fn read_record_bytes_with_virtual_offsets(
+        &mut self,
+    ) -> Result<Option<BamRecordVirtualOffsets>, AppError> {
         self.raw_record.clear();
 
         let record_start = self.current_virtual_offset()?;
@@ -98,18 +174,9 @@ impl BamScanner {
         self.raw_record.extend_from_slice(&payload);
         let record_end = self.current_virtual_offset()?;
 
-        let view =
-            BamRecordView::parse(&self.raw_record).map_err(|error| AppError::InvalidRecord {
-                path: self.path.clone(),
-                detail: error.detail().to_string(),
-            })?;
-        self.records_read += 1;
-        Ok(Some(PositionedBamRecord {
-            record: view,
-            virtual_offsets: BamRecordVirtualOffsets {
-                start: record_start,
-                end: record_end,
-            },
+        Ok(Some(BamRecordVirtualOffsets {
+            start: record_start,
+            end: record_end,
         }))
     }
 
@@ -127,12 +194,15 @@ impl BamScanner {
 #[cfg(test)]
 mod tests {
     use crate::{
+        bam::index::build_bai_index_from_bam,
+        bam::record::BamRecordView,
         bam::scan::BamScanner,
         bgzf::BGZF_EOF_MARKER,
         bgzf::test_support::{
             build_bam_file_with_header_and_records, build_bgzf_member, build_light_record,
             write_temp_file,
         },
+        bgzf::virtual_offset::VirtualOffset,
     };
 
     #[test]
@@ -405,6 +475,104 @@ mod tests {
         );
 
         std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn fetches_records_from_indexed_virtual_range() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 8, "read2", 0);
+        let third = build_light_record(0, 12, "read3", 0);
+        let header_payload = build_bam_payload("@SQ\tSN:chr1\tLN:20\n", &[("chr1", 20)], &[]);
+        let mut first_record_payload = Vec::new();
+        first_record_payload.extend_from_slice(&first);
+        first_record_payload.extend_from_slice(&second);
+        let second_record_payload = third.clone();
+        let header_member = build_bgzf_member(&header_payload);
+        let first_record_member = build_bgzf_member(&first_record_payload);
+        let second_record_member = build_bgzf_member(&second_record_payload);
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&header_member);
+        bytes.extend_from_slice(&first_record_member);
+        bytes.extend_from_slice(&second_record_member);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("scanner-indexed-range", "bam", &bytes);
+        let start =
+            VirtualOffset::new(header_member.len() as u64, 0).expect("start offset should fit");
+        let end = VirtualOffset::new(
+            header_member.len() as u64 + first_record_member.len() as u64,
+            0,
+        )
+        .expect("end offset should fit");
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let records = scanner
+            .raw_records_in_virtual_range(start, end)
+            .expect("indexed range should read");
+        let names = records
+            .iter()
+            .map(|record| {
+                BamRecordView::parse(&record.raw_record)
+                    .expect("raw record should parse")
+                    .read_name()
+                    .to_string()
+            })
+            .collect::<Vec<_>>();
+
+        std::fs::remove_file(path).expect("fixture should be removable");
+        assert_eq!(names, vec!["read1", "read2"]);
+    }
+
+    #[test]
+    fn fetches_records_from_native_bai_chunk() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 8, "read2", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:20\n",
+            &[("chr1", 20)],
+            &[first, second],
+        );
+        let path = write_temp_file("scanner-bai-chunk-range", "bam", &bytes);
+        let index = build_bai_index_from_bam(&path).expect("bai index should build");
+        let chunk = index.references[0]
+            .bins
+            .values()
+            .flat_map(|chunks| chunks.iter())
+            .next()
+            .expect("chunk should exist")
+            .clone();
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let records = scanner
+            .raw_records_in_virtual_range(chunk.start, chunk.end)
+            .expect("bai chunk should read");
+        let names = records
+            .iter()
+            .map(|record| {
+                BamRecordView::parse(&record.raw_record)
+                    .expect("raw record should parse")
+                    .read_name()
+                    .to_string()
+            })
+            .collect::<Vec<_>>();
+
+        std::fs::remove_file(path).expect("fixture should be removable");
+        assert_eq!(names, vec!["read1", "read2"]);
+    }
+
+    #[test]
+    fn rejects_empty_virtual_range() {
+        let bytes =
+            build_bam_file_with_header_and_records("@SQ\tSN:chr1\tLN:10\n", &[("chr1", 10)], &[]);
+        let path = write_temp_file("scanner-empty-range", "bam", &bytes);
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let offset = VirtualOffset::ZERO;
+
+        let error = scanner
+            .raw_records_in_virtual_range(offset, offset)
+            .expect_err("empty range should fail");
+
+        std::fs::remove_file(path).expect("fixture should be removable");
+        assert_eq!(error.to_json_error().code, "invalid_index");
     }
 
     #[test]

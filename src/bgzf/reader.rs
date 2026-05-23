@@ -72,6 +72,54 @@ impl NativeBgzfReader {
             .map_err(|error| virtual_offset_error(&self.path, error))
     }
 
+    pub fn seek_virtual_offset(&mut self, offset: VirtualOffset) -> Result<(), AppError> {
+        self.file
+            .seek(SeekFrom::Start(offset.compressed_block_offset()))
+            .map_err(|error| AppError::from_io(&self.path, error))?;
+        self.payload.clear();
+        self.offset = 0;
+        self.eof = false;
+        self.current_block_start = offset.compressed_block_offset();
+        self.current_block_end = offset.compressed_block_offset();
+        self.has_current_block = false;
+
+        let member =
+            read_bgzf_member(&mut self.file, &self.path)?.ok_or_else(|| AppError::InvalidBam {
+                path: self.path.clone(),
+                detail: format!(
+                    "BGZF virtual offset {} points beyond the end of the compressed stream.",
+                    offset.packed()
+                ),
+            })?;
+
+        if member.bytes == BGZF_EOF_MARKER {
+            return Err(AppError::InvalidBam {
+                path: self.path.clone(),
+                detail: "BGZF virtual offset points at the EOF marker, not a data member."
+                    .to_string(),
+            });
+        }
+
+        let payload = decompress_member(&member.bytes, &self.path)?;
+        let in_block_offset = usize::from(offset.uncompressed_block_offset());
+        if in_block_offset > payload.len() {
+            return Err(AppError::InvalidBam {
+                path: self.path.clone(),
+                detail: format!(
+                    "BGZF virtual offset in-block component {in_block_offset} exceeds inflated member length {}.",
+                    payload.len()
+                ),
+            });
+        }
+
+        self.current_block_start = member.compressed_offset;
+        self.current_block_end = member.compressed_offset + member.bytes.len() as u64;
+        self.has_current_block = true;
+        self.payload = payload;
+        self.offset = in_block_offset;
+        Ok(())
+    }
+
     fn load_next_payload(&mut self) -> Result<(), AppError> {
         loop {
             let Some(member) = read_bgzf_member(&mut self.file, &self.path)? else {
@@ -270,7 +318,10 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use crate::{bgzf::block::build_bgzf_member, error::AppError};
+    use crate::{
+        bgzf::{block::build_bgzf_member, virtual_offset::VirtualOffset},
+        error::AppError,
+    };
 
     use super::{
         BGZF_EOF_MARKER, NativeBgzfReader, decompress_member, first_member_starts_with_bam_magic,
@@ -410,6 +461,44 @@ mod tests {
         assert_eq!(in_second_block.uncompressed_block_offset(), 2);
 
         fs::remove_file(path).expect("fixture should be removed");
+    }
+
+    #[test]
+    fn native_reader_seeks_to_virtual_offset_inside_member() {
+        let first = member(b"abcdefghij");
+        let second = member(b"klmnopqrst");
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&first);
+        bytes.extend_from_slice(&second);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("seek-virtual-offset", &bytes);
+        let mut reader = NativeBgzfReader::open(&path).expect("reader should open");
+        let offset = VirtualOffset::new(first.len() as u64, 3).expect("offset should fit");
+
+        reader
+            .seek_virtual_offset(offset)
+            .expect("seek should succeed");
+        let mut buffer = [0_u8; 4];
+        assert_eq!(reader.read(&mut buffer).expect("read should work"), 4);
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(&buffer, b"nopq");
+    }
+
+    #[test]
+    fn native_reader_rejects_virtual_offset_beyond_inflated_member() {
+        let mut bytes = member(b"abc");
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("seek-invalid-in-block", &bytes);
+        let mut reader = NativeBgzfReader::open(&path).expect("reader should open");
+        let offset = VirtualOffset::new(0, 4).expect("offset should fit");
+
+        let error = reader
+            .seek_virtual_offset(offset)
+            .expect_err("invalid in-block offset should fail");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_invalid_bam_detail_contains(error, "exceeds inflated member length");
     }
 
     #[test]

@@ -15,10 +15,12 @@ The repository already has the following native index groundwork:
   checks and ordering.
 * ``src/bgzf/reader.rs`` exposes typed virtual offsets for the current native
   BGZF read cursor by combining compressed member starts with uncompressed
-  in-block offsets.
+  in-block offsets. It can also seek back to a typed ``VirtualOffset`` by
+  reopening a BGZF member and setting the in-block cursor.
 * ``src/bam/scan.rs`` exposes ``next_record_with_virtual_offsets`` so scanner
   and future index code can obtain typed start/end offsets for each alignment
-  record.
+  record. It also exposes internal raw-record range helpers for reading records
+  from validated virtual-offset chunk ranges.
 * ``src/bam/index.rs`` exposes ``build_bai_index_from_bam`` for native
   in-memory BAI bin, chunk, linear-index, and unmapped-count construction from
   scanner-owned record traversal.
@@ -49,8 +51,8 @@ Outstanding M9 Work
 The current M9 gaps are intentional and must remain visible until implemented:
 
 * BAM ``index`` cannot yet write CSI sidecars.
-* ``check_index`` does not yet exercise random-access reads from validated
-  chunks or prove reference span plausibility against fetched records.
+* Public commands do not yet use random-access chunk traversal for acceleration
+  or region filtering.
 * CSI remains header-only detection until M9 implements a scoped contract or
   records a precise deferral.
 * ``check_map`` and ``summary`` do not yet use validated chunks for indexed
@@ -116,6 +118,23 @@ regular bins, the metadata pseudo-bin with mapped/unmapped counts, the linear
 index, and trailing unplaced unmapped counts. ``bamana index`` writes BAI
 through a temporary file and final rename, rejects existing outputs unless
 ``--force`` is supplied, and rejects header-declared non-coordinate BAM order.
+
+Random-Access Groundwork
+------------------------
+
+M9.7 adds the first native random-access substrate without promoting a public
+region-query command. ``NativeBgzfReader::seek_virtual_offset`` consumes a
+``VirtualOffset``, seeks to the compressed BGZF member, inflates that member,
+and positions the uncompressed cursor at the in-block component. Invalid
+members, EOF-marker targets, and impossible in-block offsets fail as structured
+BAM errors.
+
+``BamScanner`` exposes ``seek_virtual_offset`` plus
+``raw_records_in_virtual_range`` for internal consumers. The range helper
+accepts typed start/end virtual offsets, rejects empty or reversed ranges, and
+returns positioned raw BAM records that tests can parse back into
+``BamRecordView`` values. M9.7 tests prove both a manually constructed
+virtual-offset range and a native BAI chunk can retrieve expected records.
 
 Contract Boundary
 -----------------

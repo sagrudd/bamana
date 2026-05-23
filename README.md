@@ -448,8 +448,10 @@ sidecars, and distinguish index-derived evidence from scan-derived evidence.
 M9.3 adds scanner-exposed virtual offsets, M9.4 adds native in-memory BAI
 bin/chunk/linear-index construction, M9.5 writes native BAI sidecars for
 coordinate-sorted BAM input, and M9.6 hardens BAI structural validation in
-`check_index`. CSI writing and indexed random-access acceleration remain
-outstanding M9 work.
+`check_index`. M9.7 adds typed BGZF virtual-offset seeking and scanner helpers
+that can read records from validated chunk ranges for internal consumers. CSI
+writing and public indexed-region command acceleration remain outstanding M9
+work.
 
 ## Specification Layer
 

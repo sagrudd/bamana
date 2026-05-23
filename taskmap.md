@@ -4012,8 +4012,8 @@ Known present pieces:
 Known gaps:
 
 * BAM `index` cannot yet write real CSI output;
-* `check_index` does not yet exercise random-access reads from validated chunks
-  or prove reference span plausibility against fetched records;
+* public commands do not yet exercise random-access chunk traversal for
+  acceleration or region filtering;
 * CSI support remains header-only detection rather than scoped parsing/writing
   or an explicit long-term deferral;
 * index-aware `check_map` and `summary` evidence remains limited to currently
@@ -4294,7 +4294,7 @@ Completion evidence:
 
 ### M9.7 Add Random-Access Reader Groundwork
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4316,7 +4316,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `NativeBgzfReader::seek_virtual_offset`, which consumes typed
+  `VirtualOffset` values, seeks to the compressed BGZF member, inflates it, and
+  positions the in-block cursor;
+* added native BAM reader and scanner seek plumbing for BGZF-backed inputs;
+* added `BamScanner::raw_records_in_virtual_range` for internal consumers to
+  retrieve positioned raw BAM records from typed virtual-offset ranges;
+* kept public region-query command behavior out of scope;
+* added tests for valid BGZF virtual-offset seeks, impossible in-block offsets,
+  manual virtual-offset range traversal, native BAI chunk traversal, and
+  empty-range rejection;
+* updated roadmap, Sphinx, CLI, README, and taskmap documentation to describe
+  the internal random-access substrate without claiming public command
+  acceleration.
 
 ### M9.8 Integrate Index-Aware Evidence In First Consumers
 

@@ -155,7 +155,8 @@ Present baseline:
 * `VirtualOffset` already models packed BGZF virtual offsets with bounds and
   ordering checks;
 * BGZF reader and BAM scanner paths expose typed record start/end virtual
-  offsets for future BAI chunk and linear-index construction;
+  offsets for future BAI chunk and linear-index construction, and the BGZF
+  reader can seek to typed virtual offsets for internal random-access helpers;
 * `src/bam/index.rs` can build native in-memory BAI bins, chunks, linear-index
   windows, and mapped/unmapped counts from scanner-owned record traversal, and
   serialize native BAI sidecars;
@@ -175,8 +176,8 @@ Present baseline:
 Known M9 gaps:
 
 * BAM `index` cannot yet write real CSI sidecars;
-* `check_index` does not yet exercise random-access reads from validated chunks
-  or prove reference span plausibility against fetched records;
+* public commands do not yet exercise random-access chunk traversal for
+  acceleration or region filtering;
 * CSI support remains header-only detection until a scoped M9 decision;
 * benchmark and dependency-boundary evidence for the M9 index/random-access set
   is not yet recorded.

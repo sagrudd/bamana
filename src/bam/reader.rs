@@ -56,6 +56,17 @@ impl BamReader {
         }
     }
 
+    pub fn seek_virtual_offset(&mut self, offset: VirtualOffset) -> Result<(), AppError> {
+        match &mut self.backend {
+            BamReaderBackend::Gzip(_) => Err(AppError::InvalidBam {
+                path: self.path.clone(),
+                detail: "BAM reader backend does not support BGZF virtual-offset seeking."
+                    .to_string(),
+            }),
+            BamReaderBackend::NativeBgzf(reader) => reader.seek_virtual_offset(offset),
+        }
+    }
+
     pub fn read_magic(&mut self) -> Result<[u8; 4], AppError> {
         let mut magic = [0_u8; 4];
         self.read_exact_into(&mut magic)?;
