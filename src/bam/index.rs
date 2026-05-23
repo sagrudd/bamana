@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     fs::File,
     io::{BufReader, Read},
     path::{Path, PathBuf},
@@ -7,11 +7,17 @@ use std::{
 
 use serde::Serialize;
 
-use crate::error::AppError;
+use crate::{
+    bam::scan::{BamRecordVirtualOffsets, BamScanner},
+    bgzf::virtual_offset::VirtualOffset,
+    error::AppError,
+};
 
 const BAI_MAGIC: &[u8; 4] = b"BAI\x01";
 const CSI_MAGIC: &[u8; 4] = b"CSI\x01";
 const BAI_METADATA_BIN: u32 = 37_450;
+const BAI_LINEAR_WINDOW_SHIFT: u32 = 14;
+const BAI_MAX_POSITION: u32 = 1 << 29;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum IndexKind {
@@ -41,6 +47,26 @@ pub struct BaiReferenceSummary {
 pub struct BaiIndexSummary {
     pub reference_summaries: Vec<Option<BaiReferenceSummary>>,
     pub unplaced_unmapped_reads: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BaiChunk {
+    pub start: VirtualOffset,
+    pub end: VirtualOffset,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BaiReferenceIndex {
+    pub bins: BTreeMap<u32, Vec<BaiChunk>>,
+    pub linear_index: Vec<VirtualOffset>,
+    pub mapped_reads: u64,
+    pub unmapped_reads: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BaiIndex {
+    pub references: Vec<BaiReferenceIndex>,
+    pub unplaced_unmapped_reads: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -287,6 +313,234 @@ pub fn parse_csi_header(path: &Path) -> Result<CsiHeaderSummary, AppError> {
     })
 }
 
+pub fn build_bai_index_from_bam(path: &Path) -> Result<BaiIndex, AppError> {
+    let mut scanner = BamScanner::open(path)?;
+    let reference_count = scanner.header().header.references.len();
+    let mut builder = BaiIndexBuilder::new(path, reference_count);
+
+    while let Some(positioned) = scanner.next_record_with_virtual_offsets()? {
+        builder.add_record(
+            positioned.record.ref_id(),
+            positioned.record.pos(),
+            positioned.record.flag_summary().is_unmapped,
+            positioned.record.cigar_bytes(),
+            positioned.virtual_offsets,
+        )?;
+    }
+
+    Ok(builder.finish())
+}
+
+pub fn bai_bin_for_region(start: u32, end: u32) -> Result<u32, AppError> {
+    let end = normalize_region_end(start, end, Path::new("<region>"))?;
+    Ok(bai_bin_for_normalized_region(start, end))
+}
+
+#[derive(Debug)]
+struct BaiIndexBuilder {
+    path: PathBuf,
+    references: Vec<BaiReferenceIndex>,
+    unplaced_unmapped_reads: u64,
+    last_mapped_coordinate: Option<(i32, i32)>,
+}
+
+impl BaiIndexBuilder {
+    fn new(path: &Path, reference_count: usize) -> Self {
+        Self {
+            path: path.to_path_buf(),
+            references: (0..reference_count)
+                .map(|_| BaiReferenceIndex {
+                    bins: BTreeMap::new(),
+                    linear_index: Vec::new(),
+                    mapped_reads: 0,
+                    unmapped_reads: 0,
+                })
+                .collect(),
+            unplaced_unmapped_reads: 0,
+            last_mapped_coordinate: None,
+        }
+    }
+
+    fn add_record(
+        &mut self,
+        ref_id: i32,
+        pos: i32,
+        is_unmapped: bool,
+        cigar_bytes: &[u8],
+        offsets: BamRecordVirtualOffsets,
+    ) -> Result<(), AppError> {
+        if is_unmapped {
+            if ref_id >= 0 {
+                let reference = self.reference_mut(ref_id)?;
+                reference.unmapped_reads += 1;
+            } else {
+                self.unplaced_unmapped_reads += 1;
+            }
+            return Ok(());
+        }
+
+        if ref_id < 0 {
+            return Err(AppError::InvalidIndex {
+                path: self.path.clone(),
+                detail: "Mapped BAM record had a negative reference id.".to_string(),
+            });
+        }
+        if pos < 0 {
+            return Err(AppError::InvalidIndex {
+                path: self.path.clone(),
+                detail: "Mapped BAM record had a negative coordinate.".to_string(),
+            });
+        }
+
+        if let Some((last_ref, last_pos)) = self.last_mapped_coordinate {
+            if ref_id < last_ref || (ref_id == last_ref && pos < last_pos) {
+                return Err(AppError::InvalidIndex {
+                    path: self.path.clone(),
+                    detail:
+                        "BAM records are not in coordinate order; BAI construction requires sorted mapped records."
+                            .to_string(),
+                });
+            }
+        }
+        self.last_mapped_coordinate = Some((ref_id, pos));
+
+        let start = pos as u32;
+        let span = reference_span(cigar_bytes, &self.path)?;
+        let end = start
+            .checked_add(span)
+            .ok_or_else(|| AppError::InvalidIndex {
+                path: self.path.clone(),
+                detail: "Mapped BAM record reference span overflowed u32.".to_string(),
+            })?;
+        let end = normalize_region_end(start, end, &self.path)?;
+        let bin = bai_bin_for_normalized_region(start, end);
+
+        let reference = self.reference_mut(ref_id)?;
+        reference.mapped_reads += 1;
+        push_chunk(
+            &mut reference.bins,
+            bin,
+            BaiChunk {
+                start: offsets.start,
+                end: offsets.end,
+            },
+        );
+        update_linear_index(&mut reference.linear_index, start, end, offsets.start);
+
+        Ok(())
+    }
+
+    fn reference_mut(&mut self, ref_id: i32) -> Result<&mut BaiReferenceIndex, AppError> {
+        let index = usize::try_from(ref_id).map_err(|_| AppError::InvalidIndex {
+            path: self.path.clone(),
+            detail: "BAM record reference id could not be represented as an index.".to_string(),
+        })?;
+        self.references
+            .get_mut(index)
+            .ok_or_else(|| AppError::InvalidIndex {
+                path: self.path.clone(),
+                detail: format!(
+                    "BAM record reference id {ref_id} is outside the header reference dictionary."
+                ),
+            })
+    }
+
+    fn finish(self) -> BaiIndex {
+        BaiIndex {
+            references: self.references,
+            unplaced_unmapped_reads: self.unplaced_unmapped_reads,
+        }
+    }
+}
+
+fn reference_span(cigar_bytes: &[u8], path: &Path) -> Result<u32, AppError> {
+    if cigar_bytes.is_empty() {
+        return Ok(1);
+    }
+
+    let mut span = 0_u32;
+    for chunk in cigar_bytes.chunks_exact(4) {
+        let raw = u32::from_le_bytes(chunk.try_into().expect("chunk size checked"));
+        let op_len = raw >> 4;
+        let op = raw & 0x0f;
+        if matches!(op, 0 | 2 | 3 | 7 | 8) {
+            span = span
+                .checked_add(op_len)
+                .ok_or_else(|| AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: "BAM CIGAR reference span overflowed u32.".to_string(),
+                })?;
+        }
+    }
+
+    Ok(span.max(1))
+}
+
+fn normalize_region_end(start: u32, end: u32, path: &Path) -> Result<u32, AppError> {
+    let end = end.max(start.saturating_add(1));
+    if end > BAI_MAX_POSITION {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: format!(
+                "BAI supports coordinates below {BAI_MAX_POSITION}; record ended at {end}."
+            ),
+        });
+    }
+    Ok(end)
+}
+
+fn bai_bin_for_normalized_region(start: u32, end: u32) -> u32 {
+    let end = end - 1;
+    if start >> 14 == end >> 14 {
+        return 4_681 + (start >> 14);
+    }
+    if start >> 17 == end >> 17 {
+        return 585 + (start >> 17);
+    }
+    if start >> 20 == end >> 20 {
+        return 73 + (start >> 20);
+    }
+    if start >> 23 == end >> 23 {
+        return 9 + (start >> 23);
+    }
+    if start >> 26 == end >> 26 {
+        return 1 + (start >> 26);
+    }
+    0
+}
+
+fn push_chunk(bins: &mut BTreeMap<u32, Vec<BaiChunk>>, bin: u32, chunk: BaiChunk) {
+    let chunks = bins.entry(bin).or_default();
+    if let Some(last) = chunks.last_mut() {
+        if chunk.start <= last.end {
+            if chunk.end > last.end {
+                last.end = chunk.end;
+            }
+            return;
+        }
+    }
+    chunks.push(chunk);
+}
+
+fn update_linear_index(
+    linear_index: &mut Vec<VirtualOffset>,
+    start: u32,
+    end: u32,
+    record_start: VirtualOffset,
+) {
+    let first_window = (start >> BAI_LINEAR_WINDOW_SHIFT) as usize;
+    let last_window = ((end - 1) >> BAI_LINEAR_WINDOW_SHIFT) as usize;
+    if linear_index.len() <= last_window {
+        linear_index.resize(last_window + 1, VirtualOffset::ZERO);
+    }
+
+    for entry in &mut linear_index[first_window..=last_window] {
+        if *entry == VirtualOffset::ZERO || record_start < *entry {
+            *entry = record_start;
+        }
+    }
+}
+
 fn candidate_paths(path: &Path, prefer_csi: bool) -> Vec<PathBuf> {
     let bam_bai = PathBuf::from(format!("{}.bai", path.to_string_lossy()));
     let mut plain_bai = path.to_path_buf();
@@ -404,11 +658,17 @@ pub mod test_support {
 mod tests {
     use std::{fs, path::PathBuf};
 
-    use crate::formats::bgzf::test_support::write_temp_file;
+    use crate::{
+        error::AppError,
+        formats::bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+    };
 
     use super::{
-        IndexKind, IndexResolution, detect_index_kind, discover_index_candidates, parse_bai,
-        parse_csi_header, resolve_index_for_bam, test_support,
+        IndexKind, IndexResolution, bai_bin_for_region, build_bai_index_from_bam,
+        detect_index_kind, discover_index_candidates, parse_bai, parse_csi_header,
+        resolve_index_for_bam, test_support,
     };
 
     #[test]
@@ -435,6 +695,134 @@ mod tests {
         fs::remove_file(path).expect("fixture should be removable");
 
         assert_eq!(summary.reference_count, 7);
+    }
+
+    #[test]
+    fn computes_representative_bai_bins() {
+        assert_eq!(bai_bin_for_region(0, 1).expect("bin should compute"), 4_681);
+        assert_eq!(
+            bai_bin_for_region(16_384, 16_385).expect("bin should compute"),
+            4_682
+        );
+        assert_eq!(
+            bai_bin_for_region(0, 20_000).expect("bin should compute"),
+            585
+        );
+        assert_eq!(
+            bai_bin_for_region(0, 140_000).expect("bin should compute"),
+            73
+        );
+    }
+
+    #[test]
+    fn builds_bai_chunks_and_linear_index_from_scanner_offsets() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 8, "read2", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[first, second],
+        );
+        let path = write_temp_file("bai-build-basic", "bam", &bytes);
+
+        let index = build_bai_index_from_bam(&path).expect("index should build");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let reference = &index.references[0];
+        assert_eq!(reference.mapped_reads, 2);
+        assert_eq!(reference.unmapped_reads, 0);
+        assert_eq!(reference.bins.len(), 1);
+        let chunks = reference.bins.get(&4_681).expect("bin should exist");
+        assert_eq!(chunks.len(), 1, "adjacent chunks should merge");
+        assert!(chunks[0].start < chunks[0].end);
+        assert_eq!(reference.linear_index.len(), 1);
+        assert_eq!(reference.linear_index[0], chunks[0].start);
+    }
+
+    #[test]
+    fn builds_linear_index_across_windows() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 20_000, "read2", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[first, second],
+        );
+        let path = write_temp_file("bai-build-linear", "bam", &bytes);
+
+        let index = build_bai_index_from_bam(&path).expect("index should build");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let reference = &index.references[0];
+        assert_eq!(reference.mapped_reads, 2);
+        assert!(reference.bins.contains_key(&4_681));
+        assert!(reference.bins.contains_key(&4_682));
+        assert_eq!(reference.linear_index.len(), 2);
+        assert!(reference.linear_index[0] < reference.linear_index[1]);
+    }
+
+    #[test]
+    fn accounts_for_reference_unmapped_and_unplaced_reads() {
+        let mapped = build_light_record(0, 5, "mapped", 0);
+        let reference_unmapped = build_light_record(0, 0, "ref_unmapped", 0x4);
+        let unplaced = build_light_record(-1, -1, "unplaced", 0x4);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[mapped, reference_unmapped, unplaced],
+        );
+        let path = write_temp_file("bai-build-unmapped", "bam", &bytes);
+
+        let index = build_bai_index_from_bam(&path).expect("index should build");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(index.references[0].mapped_reads, 1);
+        assert_eq!(index.references[0].unmapped_reads, 1);
+        assert_eq!(index.unplaced_unmapped_reads, 1);
+    }
+
+    #[test]
+    fn rejects_unsorted_mapped_records() {
+        let first = build_light_record(0, 20, "read1", 0);
+        let second = build_light_record(0, 10, "read2", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[first, second],
+        );
+        let path = write_temp_file("bai-build-unsorted", "bam", &bytes);
+
+        let error = build_bai_index_from_bam(&path).expect_err("unsorted BAM should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(matches!(error, AppError::InvalidIndex { .. }));
+        assert!(
+            error
+                .to_json_error()
+                .detail
+                .is_some_and(|detail| detail.contains("coordinate order"))
+        );
+    }
+
+    #[test]
+    fn rejects_mapped_record_outside_reference_dictionary() {
+        let record = build_light_record(1, 5, "read1", 0);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[record],
+        );
+        let path = write_temp_file("bai-build-bad-ref", "bam", &bytes);
+
+        let error = build_bai_index_from_bam(&path).expect_err("bad reference id should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(
+            error
+                .to_json_error()
+                .detail
+                .is_some_and(|detail| detail.contains("outside the header reference dictionary"))
+        );
     }
 
     #[test]

@@ -1422,6 +1422,7 @@ fn milestone_9_activation_baseline_records_index_random_access_scope() {
         "FASTQ.GZI",
         "BAM `index` cannot yet write real BAI or CSI",
         "next_record_with_virtual_offsets",
+        "build_bai_index_from_bam",
         "typed start/end offsets",
         "BAI chunks",
         "linear-index",

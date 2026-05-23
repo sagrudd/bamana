@@ -4181,7 +4181,7 @@ Completion evidence:
 
 ### M9.4 Implement Native BAI Binning And Linear Index Construction
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -4201,7 +4201,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added native in-memory BAI data structures for chunks, per-reference indexes,
+  linear-index windows, mapped counts, reference-associated unmapped counts, and
+  unplaced-unmapped counts;
+* implemented `build_bai_index_from_bam` over
+  `BamScanner::next_record_with_virtual_offsets`;
+* implemented BAI bin calculation, reference-consuming CIGAR span calculation,
+  chunk accumulation/coalescing, and 16kb linear-index construction;
+* added precise failures for mapped records with negative reference ids,
+  negative coordinates, reference ids outside the header dictionary,
+  coordinates outside BAI's addressable range, and coordinate-order violations;
+* added tests for representative bins, merged chunks, linear windows,
+  reference-associated unmapped reads, unplaced unmapped reads, unsorted mapped
+  records, and out-of-dictionary reference ids;
+* documented that M9.4 builds data structures only; M9.5 remains responsible
+  for BAI serialization, metadata pseudo-bin emission, atomic sidecar writing,
+  and `bamana index` payload changes.
 
 ### M9.5 Implement BAM `index` BAI Writing
 

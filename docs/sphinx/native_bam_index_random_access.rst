@@ -19,6 +19,9 @@ The repository already has the following native index groundwork:
 * ``src/bam/scan.rs`` exposes ``next_record_with_virtual_offsets`` so scanner
   and future index code can obtain typed start/end offsets for each alignment
   record.
+* ``src/bam/index.rs`` exposes ``build_bai_index_from_bam`` for native
+  in-memory BAI bin, chunk, linear-index, and unmapped-count construction from
+  scanner-owned record traversal.
 * ``src/bam/index.rs`` detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent index candidates, parses shallow BAI reference-count and
   pseudo-bin metadata summaries, and parses CSI headers enough to report
@@ -43,8 +46,7 @@ Outstanding M9 Work
 The current M9 gaps are intentional and must remain visible until implemented:
 
 * BAM ``index`` cannot yet write real BAI or CSI sidecars.
-* BAI binning, chunk coalescing, metadata pseudo-bin emission, linear-index
-  construction, and unplaced-unmapped accounting remain to be implemented.
+* BAI serialization and metadata pseudo-bin emission remain to be implemented.
 * ``check_index`` does not yet validate chunks, virtual-offset ordering,
   linear-index monotonicity, reference span plausibility, or random-access
   usability.
@@ -89,6 +91,27 @@ The offsets feed index construction as follows:
 * A record ending exactly at a BGZF member boundary is represented as the next
   compressed member start with in-block offset zero, matching BGZF
   virtual-offset semantics.
+
+Native BAI Builder
+------------------
+
+M9.4 adds native BAI data construction but does not yet change public command
+behavior. ``build_bai_index_from_bam`` traverses BAM records through
+``BamScanner::next_record_with_virtual_offsets`` and produces in-memory
+reference indexes with:
+
+* BAI bin assignment from mapped record start/end coordinates.
+* Per-reference, per-bin chunks using typed virtual-offset record spans.
+* Adjacent or overlapping chunk coalescing.
+* 16kb linear-index windows populated from record start offsets.
+* Counts for mapped reads, reference-associated unmapped reads, and unplaced
+  unmapped reads.
+
+The builder rejects mapped records outside the header reference dictionary,
+negative mapped coordinates, coordinates outside the BAI addressable range, and
+mapped records that violate coordinate order. M9.5 remains responsible for BAI
+serialization, metadata pseudo-bin emission, atomic sidecar writing, and
+``bamana index`` payload changes.
 
 Contract Boundary
 -----------------

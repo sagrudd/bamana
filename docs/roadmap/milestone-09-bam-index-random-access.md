@@ -62,8 +62,9 @@ Present implementation pieces:
 * `src/bam/index.rs` detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent `.bam.bai`, `.bai`, `.bam.csi`, and `.csi` candidates
   with CSI preference support, parses shallow BAI reference-count and
-  pseudo-bin metadata summaries, and parses CSI headers enough to report
-  detected-but-not-supported status.
+  pseudo-bin metadata summaries, parses CSI headers enough to report
+  detected-but-not-supported status, and can build native in-memory BAI data
+  structures from scanner-owned record traversal.
 * `src/bgzf/virtual_offset.rs` owns a `VirtualOffset` type with packed
   construction, bounds checks, ordering, and tests.
 * `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
@@ -85,8 +86,7 @@ Present implementation pieces:
 Outstanding M9 gaps:
 
 * BAM `index` cannot yet write real BAI or CSI output.
-* BAI binning, chunk coalescing, metadata pseudo-bin emission, linear-index
-  construction, and unplaced-unmapped accounting remain unimplemented.
+* BAI serialization and metadata pseudo-bin emission remain unimplemented.
 * `check_index` does not yet validate BAI chunks, virtual-offset ordering,
   linear-index monotonicity, reference span plausibility, or random-access
   usability.
@@ -131,6 +131,20 @@ These offsets are the substrate for later BAI/CSI work:
 * offsets at the end of a BGZF member are normalized to the next compressed
   block start with in-block offset zero, preserving BGZF virtual-offset
   packing semantics.
+
+## M9.4 Native BAI Builder
+
+M9.4 adds native in-memory BAI construction without changing the public
+`index` command behavior. `build_bai_index_from_bam` scans records through
+`BamScanner::next_record_with_virtual_offsets`, validates coordinate order for
+mapped records, computes BAI bins from reference-consuming CIGAR span, merges
+adjacent or overlapping chunks per reference/bin, populates 16kb linear-index
+windows, and accounts for mapped, reference-associated unmapped, and unplaced
+unmapped reads.
+
+This builder is the input for M9.5 BAI writing. It does not yet serialize BAI
+bytes, emit metadata pseudo-bins, or make `bamana index` report BAM sidecar
+creation.
 
 ## Benchmark Hooks
 
