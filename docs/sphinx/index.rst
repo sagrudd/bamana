@@ -41,3 +41,4 @@ Build the site locally with:
    native_inspection_validation
    native_mutation_forensics
    native_transform_ingest
+   native_bam_index_random_access

@@ -442,8 +442,12 @@ keep checksum/index payloads limited to work actually performed. Dependency
 guardrails explicitly protect the M8 command set from direct production
 `noodles` imports outside CRAM compatibility, and scanner microbenchmark smoke
 timings cover each M8 command without claiming external comparator parity.
-Milestone 9 remains planned for native BAM index and random-access work and
-should be activated explicitly by M9.1.
+Milestone 9 is active for native BAM index and random-access work. M9.1 records
+the baseline: Bamana can detect and shallowly inspect BAI/CSI sidecars, create
+FASTQ.GZI sidecars, and distinguish index-derived evidence from scan-derived
+evidence, but BAM BAI/CSI writing, deeper BAI validation, scanner-exposed
+virtual offsets, and indexed random-access acceleration remain outstanding M9
+work.
 
 ## Specification Layer
 

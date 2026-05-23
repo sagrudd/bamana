@@ -123,6 +123,16 @@ The M8 writer commands publish completed temporary files through final rename
 steps, so `written: true` should be interpreted as completed command reporting
 rather than early write intent.
 
+Milestone 9 is active for native BAM index and random-access work. Current
+`index` and `check_index` behavior remains intentionally conservative:
+FASTQ.GZ indexing creates FASTQ.GZI sidecars, BAM index creation still reports
+BAI/CSI writing as unimplemented, and BAM index inspection is limited to
+adjacent sidecar discovery, shallow BAI metadata, CSI header detection, and
+timestamp-based staleness. `check_map` and `summary` may use parsed BAI
+metadata as index-derived evidence, but indexed random-access acceleration is
+not claimed until M9 adds scanner virtual-offset capture, BAI chunk validation,
+and random-access traversal.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

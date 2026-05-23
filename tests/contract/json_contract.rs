@@ -1350,8 +1350,8 @@ fn milestone_8_closeout_docs_are_consistent() {
         "M8.10",
         "scanner_microbench",
         "all command timings reporting `1/1`",
-        "Milestone 9 remains planned",
-        "activation by M9.1",
+        "Milestone 9 is active",
+        "activated by M9.1",
     ] {
         assert!(
             current.contains(required) || m8.contains(required) || taskmap.contains(required),
@@ -1367,6 +1367,77 @@ fn milestone_8_closeout_docs_are_consistent() {
             "M8 closeout docs do not name command: {command}"
         );
     }
+}
+
+#[test]
+fn milestone_9_activation_baseline_records_index_random_access_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m9 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-09-bam-index-random-access.md"),
+    );
+    let m9_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_bam_index_random_access.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M9 roadmap", &m9),
+        ("M9 Sphinx", &m9_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 9 is active")
+                || text.contains("Status: active as of 2026-05-23")
+                || text.contains("status: active")
+                || text.contains("Status: complete as of 2026-05-23"),
+            "{name} does not record Milestone 9 activation"
+        );
+    }
+
+    for required in [
+        "Milestone 8 closed",
+        "VirtualOffset",
+        "src/bam/index.rs",
+        "src/bgzf/reader.rs",
+        "src/bam/scan.rs",
+        "src/commands/index.rs",
+        "src/commands/check_index.rs",
+        "check_map",
+        "summary",
+        "BAI",
+        "CSI",
+        "FASTQ.GZI",
+        "BAM `index` cannot yet write real BAI or CSI",
+        "random-access",
+        "benchmark",
+        "fastq",
+        "unmap",
+    ] {
+        assert!(
+            current.contains(required)
+                || m9.contains(required)
+                || m9_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M9 activation baseline evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_bam_index_random_access"),
+        "Sphinx index does not include the M9 technical note"
+    );
 }
 
 #[test]

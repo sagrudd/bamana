@@ -3983,12 +3983,12 @@ inputs, `check_index` hardening, virtual-offset-backed reader/scanner
 plumbing, scoped CSI decisions, and index-aware evidence paths in commands such
 as `check_map` and `summary`.
 
-## Milestone 9 Planned State
+## Milestone 9 Active State
 
-Status: planned. Milestone 9 should become active through M9.1 now that
-Milestone 8 has closed, because transform and ingest commands have settled
-output safety, sorting semantics, and checksum evidence enough for generated
-BAM indices to become the next dependable contract.
+Status: active as of 2026-05-23. Milestone 9 became active through M9.1 after
+Milestone 8 closed, because transform and ingest commands have settled output
+safety, sorting semantics, and checksum evidence enough for generated BAM
+indices to become the next dependable contract.
 
 Known present pieces:
 
@@ -4058,7 +4058,7 @@ Command-surface scope:
 
 ### M9.1 Activate Milestone 9 Scope And Baseline
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -4084,7 +4084,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* recorded Milestone 9 as active in README, CLI docs, roadmap docs,
+  `docs/roadmap/current_milestone.md`, the M9 roadmap detail, Sphinx, and this
+  task map after Milestone 8 closeout;
+* audited `src/bam/index.rs`, `src/bgzf/virtual_offset.rs`,
+  `src/bgzf/reader.rs`, `src/bam/scan.rs`, `src/commands/index.rs`,
+  `src/commands/check_index.rs`, `check_map`, and `summary`;
+* recorded present M9 evidence: virtual-offset type groundwork, index sidecar
+  detection, BAI shallow metadata parsing, CSI header detection, check_index
+  shallow validation/staleness reporting, FASTQ.GZI sidecar creation, BAM
+  index honest deferral, and index-versus-scan evidence distinctions;
+* recorded M9 gaps: BAM BAI/CSI writing, scanner-exposed record virtual
+  offsets, BAI bin/chunk/linear-index construction, deeper `check_index`
+  validation, scoped CSI decision, indexed `check_map`/`summary` acceleration,
+  and M9 dependency/benchmark evidence;
+* made no command behavior changes and left the public contract commands
+  `benchmark`, `fastq`, and `unmap` protected.
 
 ### M9.2 Freeze Index Command Contracts And Fixtures
 

@@ -6,8 +6,8 @@
 2026-05-21. **Milestone 7: Native Mutation, Remediation, And Forensics
 Commands** is complete as of 2026-05-22. **Milestone 8: Native Transform,
 Checksum, Explode, And Ingest Commands** is complete as of 2026-05-23.
-**Milestone 9: Native BAM Index And Random Access** remains planned and should
-be activated by M9.1 only after the M8 closeout commit is in place.
+**Milestone 9: Native BAM Index And Random Access** is active as of
+2026-05-23, activated by M9.1 only after the M8 closeout commit was in place.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -135,15 +135,45 @@ Closeout evidence:
 
 ## Command-Surface Boundary
 
-Milestone 8 evidence is limited to `sort`, `merge`, `explode`, `checksum`, and
-`consume`.
+Milestone 9 evidence is limited to BAM index writing, BAM index inspection,
+virtual-offset random-access groundwork, and first index-aware command evidence
+in `check_map` and `summary`.
 
-Native CRAM, BAM index writing, and random-access work remain later milestones
-unless an explicit M8 task includes them. The public contract commands
-`benchmark`, `fastq`, and `unmap` remain protected after M8 closeout.
+Native CRAM parsing, indexed region selection commands, broad random-access
+APIs, external comparator parity, and FASTQ.GZI work beyond existing sidecar
+behavior remain later work unless a specific M9 task explicitly includes them.
+The public contract commands `benchmark`, `fastq`, and `unmap` remain
+protected after M9 activation.
 
-## Next Planned Milestone
+## Milestone 9 Baseline
 
-Milestone 9 is planned for native BAM index writing, deeper index validation,
-and virtual-offset-backed random-access groundwork. M9 should become active
-only through M9.1 after this M8 closeout is recorded.
+Milestone 9 is active for native BAM index writing, deeper index validation,
+and virtual-offset-backed random-access groundwork.
+
+Present baseline:
+
+* `VirtualOffset` already models packed BGZF virtual offsets with bounds and
+  ordering checks;
+* `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic,
+  discovers adjacent index candidates, parses shallow BAI metadata summaries,
+  and parses CSI headers enough to report detected-but-not-supported status;
+* `check_index` already reports adjacent index presence, selected path, kind,
+  shallow syntactic validity, staleness, and compatibility status;
+* `index` already creates FASTQ.GZI sidecars for FASTQ.GZ inputs and validates
+  BAM plausibility plus output-path behavior before honestly reporting BAI/CSI
+  writing as unimplemented;
+* `check_map` and `summary` already keep index-derived evidence distinct from
+  scan-derived evidence when usable BAI metadata is present.
+
+Known M9 gaps:
+
+* BAM `index` cannot yet write real BAI or CSI sidecars;
+* BGZF reader and BAM scanner paths do not yet expose record virtual offsets
+  for BAI chunk and linear-index construction;
+* BAI binning, chunk merging, metadata pseudo-bin emission, linear-index
+  construction, and unplaced-unmapped accounting remain to be implemented;
+* `check_index` does not yet validate chunks, virtual-offset ordering, linear
+  index monotonicity, reference span plausibility, or random-access usability;
+* CSI support remains header-only detection until a scoped M9 decision;
+* benchmark and dependency-boundary evidence for the M9 index/random-access set
+  is not yet recorded.

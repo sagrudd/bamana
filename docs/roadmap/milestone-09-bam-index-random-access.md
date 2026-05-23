@@ -1,5 +1,9 @@
 # Milestone 9: Native BAM Index And Random Access
 
+Status: active as of 2026-05-23. M9 was activated by M9.1 only after
+Milestone 8 closed and recorded transform, checksum, explode, and ingest output
+safety.
+
 ## Technical Goal
 
 Implement native BAM index ownership and random-access groundwork above the
@@ -50,6 +54,50 @@ Primary beneficiaries:
 * `check_index`
 * `check_map`
 * `summary`
+
+## M9.1 Baseline Audit
+
+Present implementation pieces:
+
+* `src/bam/index.rs` detects BAI, CSI, GZI, and unknown sidecar magic,
+  discovers adjacent `.bam.bai`, `.bai`, `.bam.csi`, and `.csi` candidates
+  with CSI preference support, parses shallow BAI reference-count and
+  pseudo-bin metadata summaries, and parses CSI headers enough to report
+  detected-but-not-supported status.
+* `src/bgzf/virtual_offset.rs` owns a `VirtualOffset` type with packed
+  construction, bounds checks, ordering, and tests.
+* `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
+  checks, and BAM-magic probing, but currently keeps compressed block positions
+  internal.
+* `src/bam/scan.rs` owns sequential scanner traversal over native BGZF and BAM
+  header parsing, while reporting records read.
+* `src/commands/index.rs` validates BAM plausibility and output path behavior,
+  creates real FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports BAM BAI/CSI
+  writing as unimplemented rather than pretending an index was created.
+* `src/commands/check_index.rs` reports adjacent index discovery, selected
+  index kind, shallow BAI/CSI syntax status, timestamp-based staleness, and
+  compatibility.
+* `check_map` and `summary` already distinguish BAI metadata-derived evidence
+  from scan-derived evidence and fall back to scanning when index metadata is
+  absent or insufficient.
+
+Outstanding M9 gaps:
+
+* BAM `index` cannot yet write real BAI or CSI output.
+* Native BGZF and BAM scanner paths do not yet expose stable virtual offsets
+  for each alignment record.
+* BAI binning, chunk coalescing, metadata pseudo-bin emission, linear-index
+  construction, and unplaced-unmapped accounting remain unimplemented.
+* `check_index` does not yet validate BAI chunks, virtual-offset ordering,
+  linear-index monotonicity, reference span plausibility, or random-access
+  usability.
+* CSI support remains header-only detection until M9 either implements a scoped
+  parser/writer contract or records precise deferral.
+* `check_map` and `summary` do not yet use validated chunks for indexed
+  acceleration; their index path is limited to parsed BAI metadata.
+* M9 dependency-boundary and benchmark evidence still need to name BAM index
+  writing, BAM index validation, virtual-offset random-access groundwork, and
+  first index-aware consumers as one protected set.
 
 ## Acceptance Criteria
 
