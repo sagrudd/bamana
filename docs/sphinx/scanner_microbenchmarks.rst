@@ -150,6 +150,20 @@ consumers can use validated BAI mapped/unmapped metadata and keep that evidence
 separate from scanner evidence. They do not exercise random-access chunk
 traversal or region filtering; those remain later indexed-region work.
 
+``check_map_region_scan_fallback`` and ``summary_region_scan_fallback`` are
+command-level M10 region timings before the generated BAI sidecar exists. They
+prove that ``check_map --region <REGION>`` and ``summary --region <REGION>``
+can parse a region, fall back to native scan evidence, filter records by the
+requested interval, and emit region-scoped JSON through the benchmark hook.
+
+``check_map_region_indexed`` and ``summary_region_indexed`` are command-level
+M10 indexed-region timings after ``index_bam`` has created a BAI sidecar. They
+exercise index lookup, BAI chunk planning, random-access traversal, region
+filtering, process startup, and JSON emission for the promoted read-only
+region evidence surfaces. They do not claim selected-record output, biological
+interpretation, broad comparator parity, native CRAM indexed queries, or
+exhaustive validation of every index offset.
+
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path
 is runnable through the benchmark hook, but it should be interpreted as command
@@ -174,6 +188,12 @@ output BGZF compression cost, removed-report writing, or checksum verification
 cost. These command timings are for regression smoke evidence and do not imply
 comparator parity with external duplicate-marking, remediation, or provenance
 tools.
+
+Milestone 10 indexed-region timings distinguish scan fallback, index lookup,
+BAI chunk planning, random-access traversal, region filtering, command startup,
+and JSON emission. They are smoke timings over deterministic synthetic BAM
+fixtures, not comparator-parity claims, native CRAM indexed-query support, or
+biological interpretation.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived

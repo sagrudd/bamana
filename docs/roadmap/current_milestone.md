@@ -256,8 +256,9 @@ Known M10 gaps:
   specified;
 * `check_map` and `summary` payloads do not yet distinguish requested-region
   scope from whole-file scope;
-* indexed-region benchmark rows do not yet compare random-access lookup with
-  scan fallback;
+* M10.9 now adds indexed-region benchmark smoke timing rows that compare
+  random-access traversal with scan fallback for the promoted read-only
+  evidence commands;
 * CSI large-reference behavior remains unsupported until a later scoped
   decision.
 
@@ -382,3 +383,22 @@ planning, M10.5 supplies region-bounded traversal, M10.6 supplies
 `check_map --region <REGION>` evidence, and M10.7 supplies
 `summary --region <REGION>` evidence. Region files remain deferred with the
 same contract boundary.
+
+## Milestone 10 Dependency And Benchmark Guardrails
+
+M10.9 strengthens the dependency and benchmark boundary for indexed-region
+workflows:
+
+* `tests/contract/dependency_boundary.rs` names the M10 substrate set:
+  region parsing, BAI chunk planning, random-access traversal,
+  `check_map --region <REGION>`, `summary --region <REGION>`, and scan
+  fallback;
+* production direct `noodles` imports remain limited to the documented CRAM
+  compatibility path;
+* `scanner_microbench --bamana-bin` emits smoke timing rows for
+  `check_map_region_scan_fallback`, `summary_region_scan_fallback`,
+  `check_map_region_indexed`, and `summary_region_indexed`;
+* benchmark notes distinguish index lookup, BAI chunk planning, random-access
+  traversal, region filtering, scan fallback, command startup, and JSON
+  emission without claiming broad comparator parity, native CRAM indexed
+  queries, biological interpretation, or selected-record output.

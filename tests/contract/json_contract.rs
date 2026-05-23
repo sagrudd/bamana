@@ -1315,6 +1315,111 @@ fn milestone_9_dependency_and_benchmark_guardrails_are_documented() {
 }
 
 #[test]
+fn milestone_10_dependency_and_benchmark_guardrails_are_documented() {
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for substrate in [
+        "indexed_region_parser",
+        "indexed_region_chunk_planning",
+        "indexed_region_random_access_traversal",
+        "check_map_region_indexed",
+        "summary_region_indexed",
+        "indexed_region_scan_fallback",
+    ] {
+        assert!(
+            dependency_tests.contains(&format!("\"{substrate}\"")),
+            "M10 dependency guardrails do not explicitly name substrate: {substrate}"
+        );
+    }
+
+    for command in [
+        "check_map_region_scan_fallback",
+        "summary_region_scan_fallback",
+        "check_map_region_indexed",
+        "summary_region_indexed",
+    ] {
+        assert!(
+            scanner_source.contains(&format!("\"{command}\""))
+                && scanner_doc.contains(&format!("``{command}``"))
+                && scanner_schema.contains(&format!("\"{command}\""))
+                && benchmark_results.contains(&format!("`{command}`")),
+            "M10 benchmark hooks do not explicitly name command timing row: {command}"
+        );
+    }
+
+    for required in [
+        "check_map --region <REGION>",
+        "summary --region <REGION>",
+        "production direct `noodles` imports remain limited",
+        "index lookup",
+        "BAI chunk planning",
+        "random-access traversal",
+        "region filtering",
+        "scan fallback",
+        "command startup",
+        "JSON emission",
+        "broad comparator parity",
+        "native CRAM indexed queries",
+        "biological interpretation",
+        "selected-record output",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || scanner_source.contains(required)
+                || scanner_doc.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M10 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

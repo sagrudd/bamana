@@ -275,6 +275,7 @@ const M9_INDEX_RANDOM_ACCESS_HOT_PATHS: &[(&str, &[&str])] = &[
 ];
 
 const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
+    ("indexed_region_parser", &["src/bam/region.rs"]),
     (
         "indexed_region_chunk_planning",
         &[
@@ -285,7 +286,7 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
         ],
     ),
     (
-        "indexed_region_traversal",
+        "indexed_region_random_access_traversal",
         &[
             "src/bam/region.rs",
             "src/bam/region_plan.rs",
@@ -296,7 +297,7 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
         ],
     ),
     (
-        "check_map_region",
+        "check_map_region_indexed",
         &[
             "src/commands/check_map.rs",
             "src/bam/region.rs",
@@ -309,7 +310,7 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
         ],
     ),
     (
-        "summary_region",
+        "summary_region_indexed",
         &[
             "src/commands/summary.rs",
             "src/bam/region.rs",
@@ -320,6 +321,16 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
             "src/bam/summary.rs",
             "src/bgzf/reader.rs",
             "src/bgzf/virtual_offset.rs",
+        ],
+    ),
+    (
+        "indexed_region_scan_fallback",
+        &[
+            "src/commands/check_map.rs",
+            "src/commands/summary.rs",
+            "src/bam/region.rs",
+            "src/bam/scan.rs",
+            "src/bam/record.rs",
         ],
     ),
 ];
@@ -640,12 +651,14 @@ fn m10_indexed_region_hot_paths_do_not_import_noodles() {
     assert_eq!(
         indexed_region_paths,
         [
+            "indexed_region_parser",
             "indexed_region_chunk_planning",
-            "indexed_region_traversal",
-            "check_map_region",
-            "summary_region"
+            "indexed_region_random_access_traversal",
+            "check_map_region_indexed",
+            "summary_region_indexed",
+            "indexed_region_scan_fallback"
         ],
-        "M10 dependency boundary must explicitly name indexed-region planning, traversal, and command wiring"
+        "M10 dependency boundary must explicitly name indexed-region parsing, planning, random-access traversal, command wiring, and scan fallback"
     );
 
     let mut violations = Vec::new();

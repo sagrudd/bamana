@@ -314,6 +314,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     args.iterations,
                 )?,
                 measure_command(
+                    "check_map_region_scan_fallback",
+                    bamana_bin,
+                    &[
+                        "check_map",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "summary_region_scan_fallback",
+                    bamana_bin,
+                    &[
+                        "summary",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
                     "index_bam",
                     bamana_bin,
                     &[
@@ -357,6 +385,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         "--sample-records",
                         "1",
                         "--prefer-index",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "check_map_region_indexed",
+                    bamana_bin,
+                    &[
+                        "check_map",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "summary_region_indexed",
+                    bamana_bin,
+                    &[
+                        "summary",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
                     ],
                     args.iterations,
                 )?,
@@ -425,11 +481,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, region-aware check_map scan fallback, region-aware summary scan fallback, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, indexed-region check_map traversal, indexed-region summary traversal, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, check_map_region_scan_fallback and summary_region_scan_fallback measure region parsing, region filtering, native scan fallback, process startup, and JSON emission before a sidecar exists, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, check_map_region_indexed and summary_region_indexed measure region parsing, BAI chunk planning, random-access traversal, region filtering, process startup, and JSON emission after the sidecar exists, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+            .to_string(),
+        "Indexed-region smoke timings distinguish index lookup, BAI chunk planning, random-access traversal, region filtering, scan fallback, command startup, and JSON emission, but they do not claim broad comparator parity, native CRAM indexed queries, biological interpretation, or selected-record output."
             .to_string(),
         "The scanner_microbench consume timing does not exercise CRAM compatibility behavior; CRAM remains covered by explicit reference-policy tests and documentation rather than this synthetic BAM smoke hook."
             .to_string(),

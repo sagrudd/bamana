@@ -81,8 +81,9 @@ Known gaps:
   unspecified;
 * region-aware `check_map` and `summary` payloads do not yet distinguish
   requested-region evidence from whole-file evidence;
-* indexed-region benchmark rows do not yet compare lookup behavior with scan
-  fallback;
+* M10.9 now adds indexed-region benchmark smoke timing rows that compare
+  lookup and random-access traversal behavior with scan fallback for the
+  promoted read-only evidence commands;
 * CSI large-reference behavior remains unsupported until a later scoped
   decision.
 
@@ -264,6 +265,23 @@ invalidation or regeneration notes, and output write-safety behavior. Future
 selection work can build on the completed M10 substrate: the M10.2 region
 parser, M10.4 BAI chunk planner, M10.5 region traversal, M10.6
 `check_map --region <REGION>`, and M10.7 `summary --region <REGION>`.
+
+## M10.9 Dependency And Benchmark Guardrails
+
+M10.9 strengthens the dependency and benchmark boundary for indexed-region
+workflows. The protected substrate set is region parsing, BAI chunk planning,
+random-access traversal, `check_map --region <REGION>`,
+`summary --region <REGION>`, and scan fallback. Production direct `noodles`
+imports remain limited to the documented CRAM compatibility path.
+
+`scanner_microbench --bamana-bin` emits smoke timing rows for
+`check_map_region_scan_fallback`, `summary_region_scan_fallback`,
+`check_map_region_indexed`, and `summary_region_indexed`. The scan-fallback
+rows run before a generated BAI sidecar exists; the indexed rows run after
+`index_bam` creates that sidecar and therefore exercise index lookup, BAI chunk
+planning, random-access traversal, region filtering, command startup, and JSON
+emission. These timings do not claim broad comparator parity, native CRAM
+indexed queries, biological interpretation, or selected-record output.
 
 ## Acceptance Criteria
 

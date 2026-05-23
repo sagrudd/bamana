@@ -4887,7 +4887,7 @@ Completion evidence:
 
 ### M10.9 Strengthen M10 Dependency Boundaries And Benchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4913,7 +4913,21 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* extended dependency-boundary tests to name the M10 indexed-region parser,
+  BAI chunk planner, random-access traversal, `check_map --region <REGION>`,
+  `summary --region <REGION>`, and scan fallback substrate set;
+* kept production direct `noodles` imports limited to the documented CRAM
+  compatibility path;
+* added `scanner_microbench --bamana-bin` timing rows for
+  `check_map_region_scan_fallback`, `summary_region_scan_fallback`,
+  `check_map_region_indexed`, and `summary_region_indexed`;
+* updated the scanner microbenchmark result schema and benchmark result docs
+  for those M10 timing rows;
+* documented interpretation notes that distinguish index lookup, BAI chunk
+  planning, random-access traversal, region filtering, scan fallback, command
+  startup, and JSON emission without claiming broad comparator parity, native
+  CRAM indexed queries, biological interpretation, or selected-record output;
+* added contract coverage for the M10 dependency and benchmark guardrails.
 
 ### M10.10 Close Milestone 10
 

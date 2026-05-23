@@ -183,6 +183,15 @@ metadata totals.
 M10.7 wires the same traversal into `summary --region <REGION>` and keeps
 region-scoped operational counts, observed fractions, MAPQ, flag categories,
 and mapping status separate from whole-file totals.
+M10.9 strengthens the dependency and benchmark guardrails for indexed-region
+workflows: production direct `noodles` imports remain limited to documented
+CRAM compatibility paths, and `scanner_microbench --bamana-bin` now emits
+`check_map_region_scan_fallback`, `summary_region_scan_fallback`,
+`check_map_region_indexed`, and `summary_region_indexed` smoke timings. Those
+rows distinguish index lookup, BAI chunk planning, random-access traversal,
+region filtering, scan fallback, command startup, and JSON emission without
+claiming comparator parity, native CRAM indexed queries, biological
+interpretation, or selected-record output.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
