@@ -1280,11 +1280,17 @@ fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
         assert!(
             text.contains("Milestone 8 is now the active")
                 || text.contains("Milestone 8 is active")
+                || text.contains("Milestone 8 is complete")
                 || text.contains(
                     "Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands\n\n* status: active",
                 )
+                || text.contains(
+                    "Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands\n\n* status: complete",
+                )
                 || text.contains("Commands** is active as of 2026-05-22")
+                || text.contains("Commands** is complete as of 2026-05-23")
                 || text.contains("Status: active as of 2026-05-22")
+                || text.contains("Status: complete as of 2026-05-23")
                 || text.contains("Milestone 8 became active"),
             "{name} does not record Milestone 8 activation"
         );
@@ -1302,6 +1308,65 @@ fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
         sphinx_index.contains("native_transform_ingest"),
         "Sphinx index does not include the M8 technical note"
     );
+}
+
+#[test]
+fn milestone_8_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m8 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+    let m8_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_transform_ingest.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M8 roadmap", &m8),
+        ("M8 Sphinx", &m8_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 8 is complete")
+                || text.contains(
+                    "Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands\n\n* status: complete",
+                )
+                || text.contains("Commands** is complete as of 2026-05-23")
+                || text.contains("Status: complete as of 2026-05-23"),
+            "{name} does not record Milestone 8 completion"
+        );
+    }
+
+    for required in [
+        "M8.10",
+        "scanner_microbench",
+        "all command timings reporting `1/1`",
+        "Milestone 9 remains planned",
+        "activation by M9.1",
+    ] {
+        assert!(
+            current.contains(required) || m8.contains(required) || taskmap.contains(required),
+            "M8 closeout evidence is missing: {required}"
+        );
+    }
+
+    for command in ["sort", "merge", "explode", "checksum", "consume"] {
+        assert!(
+            current.contains(&format!("`{command}`"))
+                && m8.contains(&format!("`{command}`"))
+                && m8_sphinx.contains(&format!("``{command}``")),
+            "M8 closeout docs do not name command: {command}"
+        );
+    }
 }
 
 #[test]

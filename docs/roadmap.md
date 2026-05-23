@@ -98,7 +98,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
 * goal: harden large native transform, checksum, sharding, and ingest command
   paths

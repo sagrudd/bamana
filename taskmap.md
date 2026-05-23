@@ -3471,10 +3471,10 @@ domains, or normalize heterogeneous inputs into BAM outputs.
 
 ## Milestone 8 Planned State
 
-Status: active as of 2026-05-22. Milestone 8 became active only after
-Milestone 7 closed on 2026-05-22, so the earlier command waves established
-stable native reader, writer, checksum, dependency-boundary, and benchmark
-conventions.
+Status: complete as of 2026-05-23. Milestone 8 became active only after
+Milestone 7 closed on 2026-05-22, and closed after M8.1 through M8.10
+completed. The earlier command waves established stable native reader, writer,
+checksum, dependency-boundary, and benchmark conventions.
 
 Known present pieces:
 
@@ -3936,7 +3936,7 @@ Completion evidence:
 
 ### M8.10 Close Milestone 8
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -3962,7 +3962,17 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* ran `cargo test`;
+* ran `cargo test --test contract`;
+* ran `target/debug/scanner_microbench --profile small --iterations 1
+  --bamana-bin target/debug/bamana --out /tmp/bamana-scanner-m8-10.json`,
+  with all command timings reporting `1/1`;
+* ran `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`;
+* updated `docs/roadmap/milestone-08-transform-ingest.md`,
+  `docs/roadmap/current_milestone.md`, README status text, Sphinx technical
+  notes, and this task map with final Milestone 8 completion evidence;
+* recorded Milestone 8 complete while leaving Milestone 9 planned for explicit
+  activation by M9.1.
 
 ## Milestone 9 Definition
 
@@ -3975,10 +3985,10 @@ as `check_map` and `summary`.
 
 ## Milestone 9 Planned State
 
-Status: planned. Milestone 9 should not become active until Milestone 8 has
-closed, because transform and ingest commands must first settle output safety,
-sorting semantics, and checksum evidence before generated BAM indices can be
-treated as a dependable contract.
+Status: planned. Milestone 9 should become active through M9.1 now that
+Milestone 8 has closed, because transform and ingest commands have settled
+output safety, sorting semantics, and checksum evidence enough for generated
+BAM indices to become the next dependable contract.
 
 Known present pieces:
 

@@ -1,6 +1,8 @@
 # Milestone 8: Native Transform, Checksum, Explode, And Ingest Commands
 
-Status: active as of 2026-05-22, after Milestone 7 closed on 2026-05-22.
+Status: complete as of 2026-05-23. Milestone 8 became active on 2026-05-22
+after Milestone 7 closed on 2026-05-22, and closed after M8.1 through M8.10
+completed.
 
 ## Technical Goal
 
@@ -200,6 +202,13 @@ cost, merge compatibility and merge-ordering cost, native BGZF compression,
 checksum-domain traversal, shard planning, ingest normalization, and CRAM
 compatibility behavior without implying comparator parity.
 
+M8.10 closed Milestone 8. The closeout reran full tests, contract tests,
+Sphinx documentation, and the scanner microbenchmark command smoke profile.
+The benchmark smoke run reported successful command timings for `sort`,
+`merge`, `explode`, `checksum`, and `consume`, and the repository records M8 as
+complete while leaving Milestone 9 planned for explicit activation by M9.1.
+Milestone 9 remains planned until that activation task runs.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and
@@ -242,3 +251,18 @@ Disallowed:
 * checksum domains must remain explicit and deterministic
 * `consume` must keep CRAM compatibility clearly isolated from native BAM and
   FASTQ hot paths
+
+## Closeout Evidence
+
+Milestone 8 is complete as of 2026-05-23.
+
+Verification recorded during closeout:
+
+* `cargo test`
+* `cargo test --test contract`
+* `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana`
+* `python -m sphinx -b html docs/sphinx docs/sphinx/_build/html`
+
+The closeout evidence is intentionally limited to the M8 command set and does
+not activate Milestone 9, native CRAM ownership, BAM index writing, or broad
+random-access workflows.

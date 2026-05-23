@@ -1,8 +1,9 @@
 Native Transform, Checksum, Explode, And Ingest
 ===============================================
 
-Milestone 8 is active as of 2026-05-22, after Milestone 7 closed on
-2026-05-22. It hardens Bamana's largest transform and ingest command wave:
+Milestone 8 is complete as of 2026-05-23. It became active on 2026-05-22,
+after Milestone 7 closed on 2026-05-22, and closed after M8.1 through M8.10
+completed. It hardens Bamana's largest transform and ingest command wave:
 
 * ``sort``
 * ``merge``
@@ -194,6 +195,32 @@ finalization failure where a non-file output target remains intact and the
 temporary candidate is removed. Dry-run behavior remains side-effect bounded,
 and checksum or index payload fields continue to report only work that was
 actually performed.
+
+Dependency And Benchmark Guardrails
+-----------------------------------
+
+M8.9 strengthens the dependency-boundary and benchmark guardrails for
+``sort``, ``merge``, ``explode``, ``checksum``, and ``consume``. Contract tests
+explicitly name those command hot paths and keep them free of direct production
+``noodles`` imports outside documented CRAM compatibility. The testing-oracle
+policy records the same command set and keeps malformed transform and ingest
+expectations owned by native tests.
+
+The scanner microbenchmark command hooks are runnable for every M8 command and
+are documented as smoke timings, not comparator-parity claims. The benchmark
+notes distinguish process startup, JSON emission, full-record materialization,
+in-memory sorting, merge compatibility and merge-ordering cost, native BGZF
+compression, checksum-domain traversal, shard planning, ingest normalization,
+and CRAM compatibility behavior.
+
+Closeout
+--------
+
+M8.10 closes Milestone 8. Closeout verification reran ``cargo test``, ``cargo
+test --test contract``, the scanner microbenchmark small smoke profile with
+``--bamana-bin``, and the Sphinx HTML build. The scanner smoke profile reported
+successful command timings for every M8 command. Milestone 9 remains planned
+for explicit activation by M9.1.
 
 Activation Boundary
 -------------------

@@ -5,18 +5,21 @@
 **Milestone 6: Native Inspection And Validation Commands** is complete as of
 2026-05-21. **Milestone 7: Native Mutation, Remediation, And Forensics
 Commands** is complete as of 2026-05-22. **Milestone 8: Native Transform,
-Checksum, Explode, And Ingest Commands** is active as of 2026-05-22.
+Checksum, Explode, And Ingest Commands** is complete as of 2026-05-23.
+**Milestone 9: Native BAM Index And Random Access** remains planned and should
+be activated by M9.1 only after the M8 closeout commit is in place.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6
 closeout was recorded, and closed after M7.1 through M7.10 completed on
 2026-05-22. Milestone 8 became active only after that M7 closeout was
-recorded.
+recorded, and closed after M8.1 through M8.10 completed on 2026-05-23.
 
 See:
 
 * [milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
+* [milestone-09-bam-index-random-access.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-09-bam-index-random-access.md)
 * [milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * [milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
@@ -34,11 +37,13 @@ native inspection and validation hardening wave for `check_eof`, `check_sort`,
 `check_map`, `summary`, `check_tag`, and `validate`. Milestone 7 completed
 native mutation, conservative remediation, and provenance inspection for
 `reheader`, `annotate_rg`, `inspect_duplication`, `deduplicate`, and
-`forensic_inspect`.
+`forensic_inspect`. Milestone 8 completed the native transform, checksum,
+sharding, and ingest hardening wave for `sort`, `merge`, `explode`,
+`checksum`, and `consume`.
 
-## Milestone 8 Scope
+## Milestone 8 Closeout
 
-Milestone 8 hardens Bamana's largest transform, checksum, explode, and ingest
+Milestone 8 hardened Bamana's largest transform, checksum, explode, and ingest
 command paths:
 
 * `sort`
@@ -47,10 +52,23 @@ command paths:
 * `checksum`
 * `consume`
 
-The milestone is about explicit operational behavior, native-hot-path
-ownership, command contracts, benchmark smoke coverage, and dependency-boundary
-protection for transform and ingest paths. It does not imply full external-tool
-parity or native CRAM ownership.
+Closeout evidence:
+
+* `sort`, `merge`, `explode`, `checksum`, and `consume` have governed CLI,
+  JSON-output, Sphinx, README, schema, example, fixture, and task-map coverage;
+* BAM-side `sort`, `merge`, `explode`, `checksum`, and `consume` use
+  scanner-backed native record loading and native writer/checksum bridges
+  where applicable;
+* SAM, FASTQ, and FASTQ.GZ transform/ingest behavior remains native, while
+  CRAM remains a documented compatibility boundary under explicit reference
+  policy;
+* output-safety rules publish completed temporary outputs through final rename
+  steps and keep dry-run paths side-effect bounded;
+* `scanner_microbench --bamana-bin` emits command smoke timings for every M8
+  command without claiming external comparator parity;
+* dependency-boundary tests name the five M8 command paths and keep them free
+  of direct production `noodles` imports outside documented CRAM
+  compatibility.
 
 ## Milestone 6 Closeout
 
@@ -122,4 +140,10 @@ Milestone 8 evidence is limited to `sort`, `merge`, `explode`, `checksum`, and
 
 Native CRAM, BAM index writing, and random-access work remain later milestones
 unless an explicit M8 task includes them. The public contract commands
-`benchmark`, `fastq`, and `unmap` remain protected while M8 work proceeds.
+`benchmark`, `fastq`, and `unmap` remain protected after M8 closeout.
+
+## Next Planned Milestone
+
+Milestone 9 is planned for native BAM index writing, deeper index validation,
+and virtual-offset-backed random-access groundwork. M9 should become active
+only through M9.1 after this M8 closeout is recorded.

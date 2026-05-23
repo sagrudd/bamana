@@ -431,8 +431,8 @@ and provenance-inspection command wave is now hardened for `reheader`,
 with governed contracts, smoke benchmark evidence, output-safety guarantees,
 and dependency-boundary protection.
 
-Milestone 8 is now the active native-core milestone. It focuses on the large
-transform, checksum, explode, and ingest command wave: `sort`, `merge`,
+Milestone 8 is complete. It hardened the large transform, checksum, explode,
+and ingest command wave: `sort`, `merge`,
 `explode`, `checksum`, and `consume`. BAM alignment consume uses
 scanner-backed record loading through the native BGZF writer; SAM, FASTQ,
 FASTQ.GZ, and CRAM retain separate native or explicitly documented
@@ -442,6 +442,8 @@ keep checksum/index payloads limited to work actually performed. Dependency
 guardrails explicitly protect the M8 command set from direct production
 `noodles` imports outside CRAM compatibility, and scanner microbenchmark smoke
 timings cover each M8 command without claiming external comparator parity.
+Milestone 9 remains planned for native BAM index and random-access work and
+should be activated explicitly by M9.1.
 
 ## Specification Layer
 
