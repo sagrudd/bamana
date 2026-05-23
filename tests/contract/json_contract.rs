@@ -2026,6 +2026,88 @@ fn milestone_10_closeout_docs_are_consistent() {
 }
 
 #[test]
+fn post_milestone_10_roadmap_records_m11_through_m15() {
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let milestone_specs = [
+        (
+            "Milestone 10: Native Indexed Region Workflows",
+            "status: complete",
+            "roadmap/milestone-10-indexed-region-workflows.md",
+        ),
+        (
+            "Milestone 11: Public Indexed Region Selection And Region Files",
+            "status: planned",
+            "roadmap/milestone-11-indexed-region-selection.md",
+        ),
+        (
+            "Milestone 12: Extended Index Compatibility",
+            "status: planned",
+            "roadmap/milestone-12-extended-index-compatibility.md",
+        ),
+        (
+            "Milestone 13: Native CRAM Strategy And Compatibility Boundary",
+            "status: planned",
+            "roadmap/milestone-13-native-cram-strategy.md",
+        ),
+        (
+            "Milestone 14: Interoperability And Benchmark Evidence",
+            "status: planned",
+            "roadmap/milestone-14-interop-benchmark-evidence.md",
+        ),
+        (
+            "Milestone 15: Release Hardening And Public Contract Freeze",
+            "status: planned",
+            "roadmap/milestone-15-release-hardening.md",
+        ),
+    ];
+
+    for (title, status, detail) in milestone_specs {
+        assert!(roadmap.contains(title), "roadmap is missing {title}");
+        assert!(
+            roadmap.contains(status),
+            "roadmap is missing {status} for {title}"
+        );
+        assert!(
+            roadmap.contains(detail),
+            "roadmap is missing detail link {detail}"
+        );
+
+        let detail_text = read_utf8(&docs_dir().join(detail));
+        assert!(
+            detail_text.contains(title),
+            "detail page does not contain title {title}"
+        );
+        assert!(
+            detail_text.contains("Ten-Task Outline") || title.contains("Milestone 10"),
+            "planned detail page for {title} does not include a ten-task outline"
+        );
+    }
+
+    for required in [
+        "M11 is",
+        "planned, not active",
+        "should not reopen Milestone 10",
+        "selected-record region output",
+        "region-file input",
+        "header preservation",
+        "write-safety",
+    ] {
+        assert!(
+            current.contains(required)
+                || roadmap.contains(required)
+                || read_utf8(
+                    &docs_dir()
+                        .join("roadmap")
+                        .join("milestone-11-indexed-region-selection.md")
+                )
+                .contains(required),
+            "post-M10 roadmap is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

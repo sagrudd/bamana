@@ -122,6 +122,52 @@ This order is retained because it matches the dependency chain of the runtime:
 * commands enabled first: region-aware `check_map`, region-aware `summary`,
   future indexed region selection command explicitly deferred
 
+### Milestone 11: Public Indexed Region Selection And Region Files
+
+* status: planned
+* detail: [roadmap/milestone-11-indexed-region-selection.md](roadmap/milestone-11-indexed-region-selection.md)
+* goal: promote selected-record region output and region-file input only after
+  output semantics, header preservation, duplicate handling, index invalidation,
+  and write-safety are specified
+* commands enabled first: a public indexed region selection surface, if the
+  M11 contract freezes one
+
+### Milestone 12: Extended Index Compatibility
+
+* status: planned
+* detail: [roadmap/milestone-12-extended-index-compatibility.md](roadmap/milestone-12-extended-index-compatibility.md)
+* goal: harden CSI, large-reference, stale-index, and cross-index compatibility
+  behavior without weakening native BAM ownership
+* commands enabled first: index-aware `check_index`, `check_map`, `summary`,
+  and any M11 selection surface
+
+### Milestone 13: Native CRAM Strategy And Compatibility Boundary
+
+* status: planned
+* detail: [roadmap/milestone-13-native-cram-strategy.md](roadmap/milestone-13-native-cram-strategy.md)
+* goal: decide and document the next CRAM compatibility boundary, including
+  whether any native CRAM substrate is promoted or explicitly deferred
+* commands enabled first: `consume` and CRAM-facing inspection paths only if
+  the native/reference-policy contract is frozen
+
+### Milestone 14: Interoperability And Benchmark Evidence
+
+* status: planned
+* detail: [roadmap/milestone-14-interop-benchmark-evidence.md](roadmap/milestone-14-interop-benchmark-evidence.md)
+* goal: turn comparator, benchmark, fixture, and reproducibility evidence into
+  governed claims without implying broad parity where it has not been measured
+* commands enabled first: `benchmark` profiles and command-level smoke evidence
+  for governed public surfaces
+
+### Milestone 15: Release Hardening And Public Contract Freeze
+
+* status: planned
+* detail: [roadmap/milestone-15-release-hardening.md](roadmap/milestone-15-release-hardening.md)
+* goal: prepare a coherent release boundary with contract stability,
+  documentation completeness, packaging, CI, and operational support evidence
+* commands enabled first: all public contract commands accepted into the
+  release boundary
+
 CRAM remains explicitly staged later and must not derail the BAM/FASTQ native
 core sequence.
 

@@ -31,10 +31,23 @@ See:
 * [milestone-08-transform-ingest.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-08-transform-ingest.md)
 * [milestone-09-bam-index-random-access.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-09-bam-index-random-access.md)
 * [milestone-10-indexed-region-workflows.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-10-indexed-region-workflows.md)
+* [milestone-11-indexed-region-selection.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-11-indexed-region-selection.md)
+* [milestone-12-extended-index-compatibility.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-12-extended-index-compatibility.md)
+* [milestone-13-native-cram-strategy.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-13-native-cram-strategy.md)
+* [milestone-14-interop-benchmark-evidence.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-14-interop-benchmark-evidence.md)
+* [milestone-15-release-hardening.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-15-release-hardening.md)
 * [milestone-07-mutation-forensics.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-07-mutation-forensics.md)
 * [milestone-06-inspection-validation.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-06-inspection-validation.md)
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
+
+Next planned milestone:
+
+* **Milestone 11: Public Indexed Region Selection And Region Files**. M11 is
+  planned, not active, and should not reopen Milestone 10. Its purpose is to
+  decide and implement selected-record region output and region-file input only
+  after output semantics, header preservation, duplicate handling, index
+  invalidation, and write-safety are specified.
 
 ## Completed Backbone
 
