@@ -61,11 +61,11 @@ Present implementation pieces:
 
 * `src/bam/index.rs` detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent `.bam.bai`, `.bai`, `.bam.csi`, and `.csi` candidates
-  with CSI preference support, parses shallow BAI reference-count and
-  pseudo-bin metadata summaries, parses CSI headers enough to report
-  detected-but-not-supported status, and can build native in-memory BAI data
-  structures from scanner-owned record traversal and serialize native BAI
-  sidecars.
+  with CSI preference support, validates BAI reference counts, bin/chunk
+  shape, linear-index ordering, metadata pseudo-bin summaries, parses CSI
+  headers enough to report detected-but-not-supported status, and can build
+  native in-memory BAI data structures from scanner-owned record traversal and
+  serialize native BAI sidecars.
 * `src/bgzf/virtual_offset.rs` owns a `VirtualOffset` type with packed
   construction, bounds checks, ordering, and tests.
 * `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
@@ -79,8 +79,8 @@ Present implementation pieces:
   FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports CSI writing as
   unimplemented rather than pretending an index was created.
 * `src/commands/check_index.rs` reports adjacent index discovery, selected
-  index kind, shallow BAI/CSI syntax status, timestamp-based staleness, and
-  compatibility.
+  index kind, BAI structural validity, CSI header status, timestamp-based
+  staleness, compatibility, and apparent usability.
 * `check_map` and `summary` already distinguish BAI metadata-derived evidence
   from scan-derived evidence and fall back to scanning when index metadata is
   absent or insufficient.
@@ -88,9 +88,8 @@ Present implementation pieces:
 Outstanding M9 gaps:
 
 * BAM `index` cannot yet write real CSI output.
-* `check_index` does not yet validate BAI chunks, virtual-offset ordering,
-  linear-index monotonicity, reference span plausibility, or random-access
-  usability.
+* `check_index` does not yet exercise random-access reads from validated chunks
+  or prove reference span plausibility against fetched records.
 * CSI support remains header-only detection until M9 either implements a scoped
   parser/writer contract or records precise deferral.
 * `check_map` and `summary` do not yet use validated chunks for indexed

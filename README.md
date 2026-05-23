@@ -75,7 +75,7 @@ The current semantics are intentionally narrow:
 * `header` parses the BAM header only through Bamana's native BGZF and BAM header codec, including the binary reference dictionary and textual SAM-style header records
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
-* `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
+* `check_index` inspects adjacent BAM indices for presence, type, BAI structural validity, CSI header status, timestamp-based staleness, and apparent usability
 * `index` creates native BAI sidecars for coordinate-sorted BAM inputs, still defers CSI writing, and creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
 * `explode` splits one `BAM`, `SAM`, or `FASTQ.GZ` input into contiguous shards while preserving the original encounter order of reads or alignments within each shard; BAM shards preserve the parsed header and use scanner-backed records through the native BGZF writer, while the `FASTQ.GZ` path auto-creates or reuses adjacent `FASTQ.GZI` metadata, aligns shard boundaries to available index cutpoints, and allows shard sizes to vary so every sequence lands in exactly one shard without extra reordering work
 * `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
@@ -105,7 +105,7 @@ limited to the canonical BGZF EOF marker.
 `header` does not imply that alignment records are readable, that EOF is present, or that the full BAM body is valid.
 `check_map` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
-`check_index` does not imply that every random-access offset is correct or that the BAM and index are semantically matched beyond shallow inspection.
+`check_index` does not imply that every random-access offset is correct or that the BAM and index are semantically matched beyond implemented structural checks.
 `index` does not imply that CSI writing, indexed random access, or deeper index validation has completed unless the response explicitly reports those behaviors.
 `summary` does not imply full BAM validity, valid EOF state, or validation of every optional field, tag, or record invariant.
 `check_tag` does not imply full BAM validity, valid EOF state, or semantic correctness of tag values beyond the auxiliary-field traversal actually performed.
@@ -443,12 +443,13 @@ guardrails explicitly protect the M8 command set from direct production
 `noodles` imports outside CRAM compatibility, and scanner microbenchmark smoke
 timings cover each M8 command without claiming external comparator parity.
 Milestone 9 is active for native BAM index and random-access work. M9.1 records
-the baseline: Bamana can detect and shallowly inspect BAI/CSI sidecars, create
-FASTQ.GZI sidecars, and distinguish index-derived evidence from scan-derived
-evidence. M9.3 adds scanner-exposed virtual offsets, M9.4 adds native
-in-memory BAI bin/chunk/linear-index construction, and M9.5 writes native BAI
-sidecars for coordinate-sorted BAM input. CSI writing, deeper BAI validation,
-and indexed random-access acceleration remain outstanding M9 work.
+the baseline: Bamana can detect and inspect BAI/CSI sidecars, create FASTQ.GZI
+sidecars, and distinguish index-derived evidence from scan-derived evidence.
+M9.3 adds scanner-exposed virtual offsets, M9.4 adds native in-memory BAI
+bin/chunk/linear-index construction, M9.5 writes native BAI sidecars for
+coordinate-sorted BAM input, and M9.6 hardens BAI structural validation in
+`check_index`. CSI writing and indexed random-access acceleration remain
+outstanding M9 work.
 
 ## Specification Layer
 

@@ -162,7 +162,7 @@ pub fn run(request: CheckIndexRequest) -> CommandResponse<CheckIndexPayload> {
         notes.push(note);
     }
     if syntactically_valid == Some(true) && usable {
-        notes.push("Index presence and shallow structure checks passed.".to_string());
+        notes.push("Index presence and BAI structural validation checks passed.".to_string());
     }
 
     let stale = bam_newer_than_index;
@@ -228,15 +228,26 @@ fn inspect_selected_index(
             ),
         },
         IndexKind::Csi => match parse_csi_header(&selected.path) {
-            Ok(summary) => (
-                Some(true),
-                false,
-                IndexCompatibility::DetectedButNotSupported,
-                Some(format!(
-                    "CSI index detected (min_shift={}, depth={}, references={}), but full CSI support is not implemented in this slice.",
-                    summary.min_shift, summary.depth, summary.reference_count
-                )),
-            ),
+            Ok(summary) => match usize::try_from(summary.reference_count) {
+                Ok(reference_count) if reference_count == bam_references => (
+                    Some(true),
+                    false,
+                    IndexCompatibility::DetectedButNotSupported,
+                    Some(format!(
+                        "CSI index detected (min_shift={}, depth={}, references={}), but full CSI support is not implemented in this slice.",
+                        summary.min_shift, summary.depth, summary.reference_count
+                    )),
+                ),
+                _ => (
+                    Some(false),
+                    false,
+                    IndexCompatibility::MismatchedOrInvalid,
+                    Some(format!(
+                        "Selected CSI reference count {} does not match BAM header reference count {bam_references}.",
+                        summary.reference_count
+                    )),
+                ),
+            },
             Err(AppError::InvalidIndex { detail, .. }) => (
                 Some(false),
                 false,
@@ -290,5 +301,167 @@ fn compare_modification_times(
             None,
             Some("Modification times were unavailable or inconclusive, so stale-index assessment could not be proven from file metadata.".to_string()),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::PathBuf, thread, time::Duration};
+
+    use crate::{
+        bam::index::test_support::{build_bai_file, build_csi_header},
+        bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+    };
+
+    use super::{CheckIndexRequest, IndexCompatibility, run};
+
+    #[test]
+    fn reports_supported_bai_as_structurally_valid_and_usable() {
+        let bam = write_coordinate_bam("check-index-valid-bai");
+        let bai = PathBuf::from(format!("{}.bai", bam.to_string_lossy()));
+        fs::write(&bai, build_bai_file(&[Some((1, 0))], Some(0))).expect("bai should write");
+
+        let response = run(CheckIndexRequest {
+            bam: bam.clone(),
+            require: false,
+            prefer_csi: false,
+        });
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert!(payload.index.syntactically_valid.unwrap());
+        assert!(payload.index.usable);
+        assert_eq!(payload.index.compatibility, IndexCompatibility::Plausible);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("BAI structural validation"))
+        );
+    }
+
+    #[test]
+    fn reports_stale_bai_as_not_usable() {
+        let bam = write_coordinate_bam("check-index-stale-bai");
+        let bai = PathBuf::from(format!("{}.bai", bam.to_string_lossy()));
+        fs::write(&bai, build_bai_file(&[Some((1, 0))], Some(0))).expect("bai should write");
+
+        thread::sleep(Duration::from_millis(1100));
+        fs::OpenOptions::new()
+            .append(true)
+            .open(&bam)
+            .expect("bam should open")
+            .set_len(fs::metadata(&bam).expect("metadata").len() + 1)
+            .expect("bam mtime should update");
+
+        let response = run(CheckIndexRequest {
+            bam: bam.clone(),
+            require: false,
+            prefer_csi: false,
+        });
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert_eq!(payload.index.stale, Some(true));
+        assert!(!payload.index.usable);
+        assert_eq!(payload.index.compatibility, IndexCompatibility::Stale);
+    }
+
+    #[test]
+    fn reports_supported_csi_as_detected_but_not_supported() {
+        let bam = write_coordinate_bam("check-index-csi");
+        let csi = PathBuf::from(format!("{}.csi", bam.to_string_lossy()));
+        fs::write(&csi, build_csi_header(1)).expect("csi should write");
+
+        let response = run(CheckIndexRequest {
+            bam: bam.clone(),
+            require: false,
+            prefer_csi: true,
+        });
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(csi).expect("csi should remove");
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert_eq!(
+            payload.index.compatibility,
+            IndexCompatibility::DetectedButNotSupported
+        );
+        assert_eq!(payload.index.syntactically_valid, Some(true));
+        assert!(!payload.index.usable);
+    }
+
+    #[test]
+    fn reports_csi_reference_mismatch_as_invalid() {
+        let bam = write_coordinate_bam("check-index-csi-mismatch");
+        let csi = PathBuf::from(format!("{}.csi", bam.to_string_lossy()));
+        fs::write(&csi, build_csi_header(2)).expect("csi should write");
+
+        let response = run(CheckIndexRequest {
+            bam: bam.clone(),
+            require: false,
+            prefer_csi: true,
+        });
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(csi).expect("csi should remove");
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert_eq!(
+            payload.index.compatibility,
+            IndexCompatibility::MismatchedOrInvalid
+        );
+        assert_eq!(payload.index.syntactically_valid, Some(false));
+        assert!(!payload.index.usable);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("does not match BAM header reference count"))
+        );
+    }
+
+    #[test]
+    fn reports_unknown_adjacent_index_kind_as_invalid() {
+        let bam = write_coordinate_bam("check-index-unknown");
+        let bai = PathBuf::from(format!("{}.bai", bam.to_string_lossy()));
+        fs::write(&bai, b"NOPE").expect("unknown index should write");
+
+        let response = run(CheckIndexRequest {
+            bam: bam.clone(),
+            require: false,
+            prefer_csi: false,
+        });
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("unknown index should remove");
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert_eq!(
+            payload.index.compatibility,
+            IndexCompatibility::MismatchedOrInvalid
+        );
+        assert_eq!(payload.index.syntactically_valid, Some(false));
+        assert!(!payload.index.usable);
+    }
+
+    fn write_coordinate_bam(prefix: &str) -> PathBuf {
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[build_light_record(0, 5, "read1", 0)],
+        );
+        write_temp_file(prefix, "bam", &bytes)
     }
 }

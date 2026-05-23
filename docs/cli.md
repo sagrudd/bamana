@@ -126,10 +126,10 @@ rather than early write intent.
 Milestone 9 is active for native BAM index and random-access work. Current
 `index` and `check_index` behavior remains intentionally conservative:
 FASTQ.GZ indexing creates FASTQ.GZI sidecars, BAM index creation writes native
-BAI sidecars for coordinate-sorted BAM inputs, and BAM index inspection is
-limited to adjacent sidecar discovery, shallow BAI metadata, CSI header
-detection, and timestamp-based staleness. `index` refuses to overwrite existing
-sidecars unless `--force` is supplied, and BAM BAI responses report
+BAI sidecars for coordinate-sorted BAM inputs, and BAM index inspection covers
+adjacent sidecar discovery, BAI structural checks, CSI header detection, and
+timestamp-based staleness. `index` refuses to overwrite existing sidecars
+unless `--force` is supplied, and BAM BAI responses report
 `output_index.created: true` only after the sidecar is finalized.
 CSI writing remains deferred for BAM inputs and still returns `unimplemented`.
 `check_map` and `summary` may use parsed BAI metadata as index-derived

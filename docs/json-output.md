@@ -129,13 +129,17 @@ Key concepts:
 
 * `index.present` and `candidates` describe adjacent sidecar discovery
 * `index.kind` distinguishes BAI, CSI, GZI, unknown, or absent sidecars
-* `syntactically_valid` is shallow: BAI magic, reference-count agreement,
-  top-level parseability, and metadata summaries where available; CSI is header
-  detection only until scoped support lands
+* `syntactically_valid` reflects BAI structural checks: magic,
+  reference-count agreement, bin uniqueness/range, chunk virtual-offset order,
+  linear-index ordering, metadata pseudo-bin shape, and parseability; CSI is
+  header detection plus reference-count agreement only until scoped support
+  lands
 * `stale` and `bam_newer_than_index` are timestamp heuristics, not semantic
   proof that offsets match the BAM
-* `usable` is false for stale, malformed, unsupported, absent, GZI, or unknown
-  sidecars
+* `usable` is false for stale, malformed, unsupported, absent, GZI, unknown, or
+  detected-but-not-supported CSI sidecars
+* `usable: true` means the selected BAI passed implemented structural checks;
+  it is not proof that every indexed random-access fetch has been exercised
 
 ## `index`
 

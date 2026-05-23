@@ -16,6 +16,7 @@ use crate::{
 const BAI_MAGIC: &[u8; 4] = b"BAI\x01";
 const CSI_MAGIC: &[u8; 4] = b"CSI\x01";
 const BAI_METADATA_BIN: u32 = 37_450;
+const BAI_MAX_REGULAR_BIN: u32 = BAI_METADATA_BIN - 1;
 const BAI_LINEAR_WINDOW_SHIFT: u32 = 14;
 const BAI_MAX_POSITION: u32 = 1 << 29;
 
@@ -199,6 +200,7 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
         }
 
         let mut summary = None;
+        let mut seen_bins = HashSet::new();
         for _ in 0..(n_bin as usize) {
             let bin = read_u32(&mut reader, path)?;
             let n_chunk = read_i32(&mut reader, path)?;
@@ -206,6 +208,12 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
                 return Err(AppError::InvalidIndex {
                     path: path.to_path_buf(),
                     detail: "BAI chunk count was negative.".to_string(),
+                });
+            }
+            if !seen_bins.insert(bin) {
+                return Err(AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: format!("BAI reference contained duplicate bin {bin}."),
                 });
             }
 
@@ -228,7 +236,7 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
                     unmapped_reads,
                 });
             } else {
-                skip_bytes(&mut reader, path, (n_chunk as usize) * 16)?;
+                validate_regular_bai_bin(&mut reader, path, bin, n_chunk as usize)?;
             }
         }
 
@@ -239,11 +247,12 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
                 detail: "BAI interval count was negative.".to_string(),
             });
         }
-        skip_bytes(&mut reader, path, (n_intv as usize) * 8)?;
+        validate_bai_linear_index(&mut reader, path, n_intv as usize)?;
         reference_summaries.push(summary);
     }
 
     let unplaced_unmapped_reads = read_optional_u64(&mut reader, path)?;
+    ensure_no_trailing_bytes(&mut reader, path)?;
 
     Ok(BaiIndexSummary {
         reference_summaries,
@@ -714,6 +723,89 @@ fn skip_bytes(reader: &mut impl Read, path: &Path, mut len: usize) -> Result<(),
     Ok(())
 }
 
+fn validate_regular_bai_bin(
+    reader: &mut impl Read,
+    path: &Path,
+    bin: u32,
+    chunk_count: usize,
+) -> Result<(), AppError> {
+    if bin > BAI_MAX_REGULAR_BIN {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: format!("BAI regular bin {bin} exceeds maximum bin {BAI_MAX_REGULAR_BIN}."),
+        });
+    }
+    if chunk_count == 0 {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: format!("BAI regular bin {bin} reported zero chunks."),
+        });
+    }
+
+    let mut previous_end = None;
+    for chunk_index in 0..chunk_count {
+        let start = read_u64(reader, path)?;
+        let end = read_u64(reader, path)?;
+        if start >= end {
+            return Err(AppError::InvalidIndex {
+                path: path.to_path_buf(),
+                detail: format!(
+                    "BAI chunk {chunk_index} in bin {bin} had start virtual offset {start} that was not before end offset {end}."
+                ),
+            });
+        }
+        if let Some(previous_end) = previous_end {
+            if start < previous_end {
+                return Err(AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: format!("BAI chunks in bin {bin} were not ordered by virtual offset."),
+                });
+            }
+        }
+        previous_end = Some(end);
+    }
+
+    Ok(())
+}
+
+fn validate_bai_linear_index(
+    reader: &mut impl Read,
+    path: &Path,
+    interval_count: usize,
+) -> Result<(), AppError> {
+    let mut previous_nonzero = 0_u64;
+    for interval_index in 0..interval_count {
+        let offset = read_u64(reader, path)?;
+        if offset == 0 {
+            continue;
+        }
+        if previous_nonzero != 0 && offset < previous_nonzero {
+            return Err(AppError::InvalidIndex {
+                path: path.to_path_buf(),
+                detail: format!(
+                    "BAI linear-index interval {interval_index} moved backward in virtual-offset order."
+                ),
+            });
+        }
+        previous_nonzero = offset;
+    }
+
+    Ok(())
+}
+
+fn ensure_no_trailing_bytes(reader: &mut impl Read, path: &Path) -> Result<(), AppError> {
+    let mut byte = [0_u8; 1];
+    match reader.read(&mut byte) {
+        Ok(0) => Ok(()),
+        Ok(_) => Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: "BAI contained trailing bytes after the optional unplaced-unmapped count."
+                .to_string(),
+        }),
+        Err(error) => Err(AppError::from_io(path, error)),
+    }
+}
+
 #[cfg(test)]
 pub mod test_support {
     use super::BAI_METADATA_BIN;
@@ -919,6 +1011,54 @@ mod tests {
     }
 
     #[test]
+    fn rejects_bai_chunk_with_backward_virtual_offsets() {
+        let bai = build_bai_with_regular_bin(4_681, &[(20, 10)], &[], Some(0));
+        let path = write_temp_file("bai-bad-chunk-order", "bai", &bai);
+
+        let error = parse_bai(&path, 1).expect_err("bad chunk should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(
+            error
+                .to_json_error()
+                .detail
+                .is_some_and(|detail| detail.contains("start virtual offset"))
+        );
+    }
+
+    #[test]
+    fn rejects_bai_chunks_not_sorted_within_bin() {
+        let bai = build_bai_with_regular_bin(4_681, &[(10, 30), (20, 40)], &[], Some(0));
+        let path = write_temp_file("bai-overlap-chunks", "bai", &bai);
+
+        let error = parse_bai(&path, 1).expect_err("overlapping chunk order should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(
+            error
+                .to_json_error()
+                .detail
+                .is_some_and(|detail| detail.contains("not ordered"))
+        );
+    }
+
+    #[test]
+    fn rejects_bai_linear_index_that_moves_backward() {
+        let bai = build_bai_with_regular_bin(4_681, &[(10, 30)], &[50, 40], Some(0));
+        let path = write_temp_file("bai-bad-linear", "bai", &bai);
+
+        let error = parse_bai(&path, 1).expect_err("linear index should fail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert!(
+            error
+                .to_json_error()
+                .detail
+                .is_some_and(|detail| detail.contains("linear-index"))
+        );
+    }
+
+    #[test]
     fn rejects_unsorted_mapped_records() {
         let first = build_light_record(0, 20, "read1", 0);
         let second = build_light_record(0, 10, "read2", 0);
@@ -1005,5 +1145,31 @@ mod tests {
             preferred.first().map(|entry| entry.kind),
             Some(IndexKind::Csi)
         ));
+    }
+
+    fn build_bai_with_regular_bin(
+        bin: u32,
+        chunks: &[(u64, u64)],
+        linear_index: &[u64],
+        unplaced_unmapped_reads: Option<u64>,
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"BAI\x01");
+        bytes.extend_from_slice(&1_i32.to_le_bytes());
+        bytes.extend_from_slice(&1_i32.to_le_bytes());
+        bytes.extend_from_slice(&bin.to_le_bytes());
+        bytes.extend_from_slice(&(chunks.len() as i32).to_le_bytes());
+        for (start, end) in chunks {
+            bytes.extend_from_slice(&start.to_le_bytes());
+            bytes.extend_from_slice(&end.to_le_bytes());
+        }
+        bytes.extend_from_slice(&(linear_index.len() as i32).to_le_bytes());
+        for offset in linear_index {
+            bytes.extend_from_slice(&offset.to_le_bytes());
+        }
+        if let Some(value) = unplaced_unmapped_reads {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        bytes
     }
 }

@@ -577,16 +577,18 @@ Synopsis:
 `bamana check_index --bam <bamfile> [--require] [--prefer-csi]`
 
 Semantics:
-Inspects adjacent BAM index files for presence, type, shallow validity, and
-plausible usability. BAI inspection currently validates magic, reference-count
-agreement, shallow top-level structure, and metadata summaries where present.
-CSI inspection currently detects and parses the header enough to report
-detected-but-not-supported behavior. Stale-index detection is timestamp based:
-if the BAM modification time is newer than the selected sidecar, the selected
-index is reported as stale and not usable.
+Inspects adjacent BAM index files for presence, type, implemented structural
+validity, and plausible usability. BAI inspection validates magic,
+reference-count agreement, bin uniqueness and range, regular chunk
+virtual-offset order, linear-index ordering, metadata pseudo-bin shape, and
+parseability. CSI inspection parses and checks header reference counts enough
+to report detected-but-not-supported behavior or a deterministic mismatch.
+Stale-index detection is timestamp based: if the BAM modification time is newer
+than the selected sidecar, the selected index is reported as stale and not
+usable.
 
 Does prove:
-Index discovery and shallow structure checks only.
+Index discovery and implemented BAI/CSI structural checks only.
 
 Does not prove:
 That every index offset is correct or that random-access semantics are fully

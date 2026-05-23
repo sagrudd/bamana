@@ -22,7 +22,7 @@
       }
     ],
     "notes": [
-      "Index presence and shallow structure checks passed."
+      "Index presence and BAI structural validation checks passed."
     ]
   },
   "error": null

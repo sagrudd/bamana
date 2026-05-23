@@ -26,14 +26,15 @@ The repository already has the following native index groundwork:
   metadata pseudo-bin counts, linear-index windows, and trailing unplaced
   unmapped counts.
 * ``src/bam/index.rs`` detects BAI, CSI, GZI, and unknown sidecar magic,
-  discovers adjacent index candidates, parses shallow BAI reference-count and
-  pseudo-bin metadata summaries, and parses CSI headers enough to report
-  detected-but-not-supported status.
+  discovers adjacent index candidates, validates BAI reference counts, bin
+  shape, chunk virtual-offset ordering, linear-index ordering, metadata
+  pseudo-bin shape, and parses CSI headers enough to report
+  detected-but-not-supported or reference-mismatch status.
 * ``check_index`` reports adjacent index presence, selected path, kind,
-  shallow syntactic validity, timestamp-based staleness, and compatibility.
-  BAI inspection is currently limited to magic, reference-count agreement,
-  top-level parseability, and metadata summaries where present. CSI inspection
-  is header-only detection until scoped support lands.
+  syntactic validity, timestamp-based staleness, compatibility, and apparent
+  usability. BAI inspection validates implemented structural invariants without
+  claiming every random-access offset has been exercised. CSI inspection is
+  header-only detection until scoped support lands.
 * ``index`` creates native BAI sidecars for coordinate-sorted BAM inputs and
   real FASTQ.GZI sidecars for FASTQ.GZ inputs. Existing sidecars are not
   overwritten unless ``--force`` is supplied, and CSI writing still returns an
@@ -48,9 +49,8 @@ Outstanding M9 Work
 The current M9 gaps are intentional and must remain visible until implemented:
 
 * BAM ``index`` cannot yet write CSI sidecars.
-* ``check_index`` does not yet validate chunks, virtual-offset ordering,
-  linear-index monotonicity, reference span plausibility, or random-access
-  usability.
+* ``check_index`` does not yet exercise random-access reads from validated
+  chunks or prove reference span plausibility against fetched records.
 * CSI remains header-only detection until M9 implements a scoped contract or
   records a precise deferral.
 * ``check_map`` and ``summary`` do not yet use validated chunks for indexed

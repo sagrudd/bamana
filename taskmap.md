@@ -3997,13 +3997,14 @@ Known present pieces:
 * `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic;
 * `src/bam/index.rs` already discovers adjacent `.bam.bai`, `.bai`,
   `.bam.csi`, and `.csi` candidates with CSI preference support;
-* `parse_bai` already performs shallow BAI parsing, reference-count
-  reconciliation, metadata pseudo-bin summary extraction, and optional
-  unplaced-unmapped count parsing;
+* `parse_bai` already performs BAI structural validation, reference-count
+  reconciliation, bin/chunk/linear-index checks, metadata pseudo-bin summary
+  extraction, and optional unplaced-unmapped count parsing;
 * `parse_csi_header` already parses CSI header metadata enough to report
   detected-but-not-supported status;
 * `check_index` already reports adjacent index presence, selected path, kind,
-  shallow syntactic validity, staleness, and compatibility status;
+  BAI structural validity, CSI header status, staleness, compatibility, and
+  apparent usability;
 * `index` already creates native BAI sidecars for coordinate-sorted BAM inputs
   and `FASTQ.GZI` sidecars for FASTQ.GZ inputs;
 * BAM `index` explicitly reports CSI writing as unimplemented.
@@ -4011,8 +4012,8 @@ Known present pieces:
 Known gaps:
 
 * BAM `index` cannot yet write real CSI output;
-* `check_index` does not yet validate chunks, virtual-offset ordering, linear
-  index monotonicity, reference span plausibility, or random-access usability;
+* `check_index` does not yet exercise random-access reads from validated chunks
+  or prove reference span plausibility against fetched records;
 * CSI support remains header-only detection rather than scoped parsing/writing
   or an explicit long-term deferral;
 * index-aware `check_map` and `summary` evidence remains limited to currently
@@ -4255,7 +4256,7 @@ Completion evidence:
 
 ### M9.6 Harden `check_index` BAI And CSI Validation
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4276,7 +4277,20 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* hardened `parse_bai` to reject duplicate bins, impossible regular bin ids,
+  zero regular chunks, backward chunk virtual offsets, unsorted chunks within a
+  bin, backward non-zero linear-index offsets, malformed metadata pseudo-bins,
+  mismatched reference counts, and trailing bytes;
+* kept CSI in detected-but-not-supported mode while validating CSI header
+  structure and reference-count agreement before reporting that status;
+* updated `check_index` notes so BAI success reports implemented structural
+  validation rather than shallow parsing;
+* added regression tests for corrupt BAI chunks, impossible virtual-offset
+  ordering, linear-index ordering, stale BAI usability, unsupported CSI,
+  CSI reference mismatches, and unknown adjacent sidecars;
+* updated CLI contracts, JSON examples, roadmap notes, and Sphinx
+  documentation to distinguish syntactic validity, staleness, compatibility,
+  and random-access usability without overclaiming random-access proof.
 
 ### M9.7 Add Random-Access Reader Groundwork
 

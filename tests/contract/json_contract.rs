@@ -1509,7 +1509,7 @@ fn milestone_9_index_contracts_and_fixtures_are_frozen() {
         "overwrite",
         "--force",
         "timestamp based",
-        "shallow",
+        "BAI structural",
         "CSI",
         "detected-but-not-supported",
         "output_index.created",

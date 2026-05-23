@@ -160,10 +160,12 @@ Present baseline:
   windows, and mapped/unmapped counts from scanner-owned record traversal, and
   serialize native BAI sidecars;
 * `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic,
-  discovers adjacent index candidates, parses shallow BAI metadata summaries,
-  and parses CSI headers enough to report detected-but-not-supported status;
+  discovers adjacent index candidates, validates BAI metadata, bin/chunk, and
+  linear-index structure, and parses CSI headers enough to report
+  detected-but-not-supported status;
 * `check_index` already reports adjacent index presence, selected path, kind,
-  shallow syntactic validity, staleness, and compatibility status;
+  BAI structural validity, CSI header status, staleness, compatibility, and
+  apparent usability;
 * `index` already creates native BAI sidecars for coordinate-sorted BAM inputs,
   creates FASTQ.GZI sidecars for FASTQ.GZ inputs, and honestly reports CSI
   writing as unimplemented;
@@ -173,8 +175,8 @@ Present baseline:
 Known M9 gaps:
 
 * BAM `index` cannot yet write real CSI sidecars;
-* `check_index` does not yet validate chunks, virtual-offset ordering, linear
-  index monotonicity, reference span plausibility, or random-access usability;
+* `check_index` does not yet exercise random-access reads from validated chunks
+  or prove reference span plausibility against fetched records;
 * CSI support remains header-only detection until a scoped M9 decision;
 * benchmark and dependency-boundary evidence for the M9 index/random-access set
   is not yet recorded.
