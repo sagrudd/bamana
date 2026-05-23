@@ -133,9 +133,15 @@ unless `--force` is supplied, and BAM BAI responses report
 `output_index.created: true` only after the sidecar is finalized.
 CSI writing remains deferred for BAM inputs and still returns `unimplemented`.
 `check_map` and `summary` may use parsed BAI metadata as index-derived
-evidence, but public indexed random-access acceleration is not claimed until a
-later task promotes the M9.7 internal virtual-offset seek and chunk traversal
-helpers into command behavior.
+evidence only when the selected sidecar is not timestamp-stale, passes the
+implemented BAI structural checks, and supplies complete mapped/unmapped
+metadata for the needed references. Generated BAI sidecars and discovered BAI
+sidecars follow the same validation path because BAI carries no provenance
+marker. When the sidecar is absent, stale, unsupported, malformed, or
+incomplete, both commands fall back to native scanner evidence and explain that
+fallback in the payload note. Public indexed random-access acceleration is not
+claimed until a later task promotes the M9.7 internal virtual-offset seek and
+chunk traversal helpers into command behavior.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

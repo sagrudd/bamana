@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use crate::{
     bam::{
         header::HeaderPayload,
-        index::{BaiIndexSummary, IndexKind, IndexResolution, parse_bai, resolve_index_for_bam},
+        index::{
+            BaiIndexSummary, IndexKind, IndexResolution, bam_newer_than_index, parse_bai,
+            resolve_index_for_bam,
+        },
         record::BamRecordView,
         scan::BamScanner,
     },
@@ -182,57 +185,77 @@ fn attempt_index_summary(
     references_defined: usize,
 ) -> Result<(IndexInfo, Option<String>, Option<BaiIndexSummary>), AppError> {
     match resolve_index_for_bam(bam_path) {
-        IndexResolution::Present(resolved) => match parse_bai(&resolved.path, references_defined) {
-            Ok(summary) if summary.reference_summaries.iter().all(Option::is_some) => Ok((
-                IndexInfo {
-                    present: true,
-                    kind: Some(resolved.kind),
-                    used: true,
-                },
-                None,
-                Some(summary),
-            )),
-            Ok(_) => Ok((
-                IndexInfo {
-                    present: true,
-                    kind: Some(resolved.kind),
-                    used: false,
-                },
-                Some(
-                    "BAI index was present, but per-reference mapped/unmapped metadata was incomplete; falling back to alignment scan."
-                        .to_string(),
-                ),
-                None,
-            )),
-            Err(AppError::UnsupportedIndex { detail, .. }) => Ok((
-                IndexInfo {
-                    present: true,
-                    kind: Some(resolved.kind),
-                    used: false,
-                },
-                Some(format!("{detail} Falling back to alignment scan.")),
-                None,
-            )),
-            Err(AppError::InvalidIndex { detail, .. }) => Ok((
-                IndexInfo {
-                    present: true,
-                    kind: Some(resolved.kind),
-                    used: false,
-                },
-                Some(format!(
-                    "BAI index was present but unusable: {detail} Falling back to alignment scan."
+        IndexResolution::Present(resolved) => {
+            if bam_newer_than_index(bam_path, &resolved.path) == Some(true) {
+                return Ok((
+                    IndexInfo {
+                        present: true,
+                        kind: Some(resolved.kind),
+                        used: false,
+                    },
+                    Some(
+                        "BAI index was present but timestamp-stale; falling back to alignment scan."
+                            .to_string(),
+                    ),
+                    None,
+                ));
+            }
+
+            match parse_bai(&resolved.path, references_defined) {
+                Ok(summary) if summary.reference_summaries.iter().all(Option::is_some) => Ok((
+                    IndexInfo {
+                        present: true,
+                        kind: Some(resolved.kind),
+                        used: true,
+                    },
+                    Some("Discovered BAI sidecar passed structural validation and supplied complete per-reference mapped/unmapped metadata.".to_string()),
+                    Some(summary),
                 )),
-                None,
-            )),
-            Err(error) => Err(error),
-        },
+                Ok(_) => Ok((
+                    IndexInfo {
+                        present: true,
+                        kind: Some(resolved.kind),
+                        used: false,
+                    },
+                    Some(
+                        "BAI index was present, but per-reference mapped/unmapped metadata was incomplete; falling back to alignment scan."
+                            .to_string(),
+                    ),
+                    None,
+                )),
+                Err(AppError::UnsupportedIndex { detail, .. }) => Ok((
+                    IndexInfo {
+                        present: true,
+                        kind: Some(resolved.kind),
+                        used: false,
+                    },
+                    Some(format!("{detail} Falling back to alignment scan.")),
+                    None,
+                )),
+                Err(AppError::InvalidIndex { detail, .. }) => Ok((
+                    IndexInfo {
+                        present: true,
+                        kind: Some(resolved.kind),
+                        used: false,
+                    },
+                    Some(format!(
+                        "BAI index was present but unusable: {detail} Falling back to alignment scan."
+                    )),
+                    None,
+                )),
+                Err(error) => Err(error),
+            }
+        }
         IndexResolution::Unsupported(resolved) => Ok((
             IndexInfo {
                 present: true,
                 kind: Some(resolved.kind),
                 used: false,
             },
-            Some("CSI index detected, but CSI parsing is not implemented in this slice; falling back to alignment scan.".to_string()),
+            Some(format!(
+                "{} index detected, but it is not usable for check_map index-derived evidence in this slice; falling back to alignment scan.",
+                index_kind_label(resolved.kind)
+            )),
             None,
         )),
         IndexResolution::NotFound => Ok((
@@ -244,6 +267,15 @@ fn attempt_index_summary(
             None,
             None,
         )),
+    }
+}
+
+fn index_kind_label(kind: IndexKind) -> &'static str {
+    match kind {
+        IndexKind::Bai => "BAI",
+        IndexKind::Csi => "CSI",
+        IndexKind::Gzi => "GZI",
+        IndexKind::Unknown => "UNKNOWN",
     }
 }
 
@@ -490,10 +522,10 @@ fn build_scan_payload(
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io::Write, thread, time::Duration};
 
     use crate::{
-        bam::index::test_support::build_bai_file,
+        bam::index::{build_bai_index_from_bam, test_support::build_bai_file, write_bai_index},
         formats::bgzf::test_support::{
             build_bam_file_with_header, build_bam_file_with_header_and_records, build_light_record,
             write_temp_file,
@@ -538,6 +570,87 @@ mod tests {
                 .semantic_note
                 .contains("derived from the BAM index and header")
         );
+    }
+
+    #[test]
+    fn uses_generated_bai_sidecar_as_index_evidence() {
+        let bam_path = write_temp_file(
+            "check-map-generated-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 10, "read1", 0),
+                    build_light_record(-1, -1, "read2", 4),
+                ],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: false,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Index));
+        assert!(payload.index.used);
+        assert_eq!(payload.summary.records_examined, None);
+        assert_eq!(payload.summary.total_mapped_reads, Some(1));
+        assert_eq!(payload.summary.total_unmapped_reads, Some(1));
+        assert!(
+            payload
+                .semantic_note
+                .contains("passed structural validation")
+        );
+    }
+
+    #[test]
+    fn stale_bai_falls_back_to_scan() {
+        let bam_path = write_temp_file(
+            "check-map-stale-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 10, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+        thread::sleep(Duration::from_millis(1100));
+        fs::OpenOptions::new()
+            .append(true)
+            .open(&bam_path)
+            .expect("bam should open")
+            .write_all(b"x")
+            .expect("bam mtime should update");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+        })
+        .expect("check_map should succeed");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(payload.index.present);
+        assert!(!payload.index.used);
+        assert_eq!(payload.summary.records_examined, Some(1));
+        assert!(payload.semantic_note.contains("timestamp-stale"));
     }
 
     #[test]

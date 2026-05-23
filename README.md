@@ -73,7 +73,7 @@ The current semantics are intentionally narrow:
 * `verify` performs header-level BAM verification by confirming a BGZF container, BAM magic, and native BAM header parse without scanning alignment records or checking EOF
 * `check_eof` checks only for the canonical 28-byte BGZF EOF marker
 * `header` parses the BAM header only through Bamana's native BGZF and BAM header codec, including the binary reference dictionary and textual SAM-style header records
-* `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
+* `check_map` prefers index-derived mapping summaries when a usable, non-stale, structurally valid BAI with complete mapped/unmapped metadata is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, BAI structural validity, CSI header status, timestamp-based staleness, and apparent usability
 * `index` creates native BAI sidecars for coordinate-sorted BAM inputs, still defers CSI writing, and creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
@@ -280,9 +280,13 @@ alignment-record layout bytes directly instead of performing semantic
 record-level mutation, but it is not a true in-place patch. `reheader` does not
 add, remove, or rewrite per-record `RG:Z` tags.
 
-`check_map` prefers index-derived mapping summaries when a usable BAI is present.
-Without a usable index it falls back to scan-based evidence. Bounded scan mode is
-a fast assessment, not an exhaustive proof unless full-scan mode is used.
+`check_map` prefers index-derived mapping summaries when a usable BAI is
+present. Usable means the selected sidecar is not timestamp-stale, passes the
+implemented BAI structural checks, and supplies complete mapped/unmapped
+metadata. Generated BAI sidecars and discovered BAI sidecars use the same
+validation path. Without a usable index it falls back to native scan-based
+evidence. Bounded scan mode is a fast assessment, not an exhaustive proof
+unless full-scan mode is used.
 
 `check_sort` preserves declared sort metadata from the BAM header and compares it
 with observed ordering in a bounded record scan. Coordinate and queryname sorts
@@ -312,7 +316,9 @@ worker batches from the same sidecar.
 switches to full-file totals only when EOF is actually reached or `--full-scan`
 is used. When a usable BAI is available and `--prefer-index` is enabled,
 index-derived mapped/unmapped totals are reported separately from scan-derived
-record-category counts so the evidence source stays explicit.
+record-category counts so the evidence source stays explicit. Stale,
+unsupported, malformed, or incomplete BAI sidecars fall back to native scanner
+evidence and are explained in the semantic note.
 
 `check_tag` traverses BAM auxiliary fields just deeply enough to establish tag
 presence, optional type-constrained presence, or full-scan absence. In bounded
@@ -449,9 +455,11 @@ M9.3 adds scanner-exposed virtual offsets, M9.4 adds native in-memory BAI
 bin/chunk/linear-index construction, M9.5 writes native BAI sidecars for
 coordinate-sorted BAM input, and M9.6 hardens BAI structural validation in
 `check_index`. M9.7 adds typed BGZF virtual-offset seeking and scanner helpers
-that can read records from validated chunk ranges for internal consumers. CSI
-writing and public indexed-region command acceleration remain outstanding M9
-work.
+that can read records from validated chunk ranges for internal consumers. M9.8
+routes first consumer evidence through the hardened index usability rules:
+`check_map` and `summary` use BAI metadata only when validation says it is
+usable, and otherwise document native scan fallback. CSI writing and public
+indexed-region command acceleration remain outstanding M9 work.
 
 ## Specification Layer
 

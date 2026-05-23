@@ -171,7 +171,9 @@ Present baseline:
   creates FASTQ.GZI sidecars for FASTQ.GZ inputs, and honestly reports CSI
   writing as unimplemented;
 * `check_map` and `summary` already keep index-derived evidence distinct from
-  scan-derived evidence when usable BAI metadata is present.
+  scan-derived evidence, use BAI metadata only when the selected sidecar is
+  non-stale, structurally valid, and complete for mapped/unmapped metadata, and
+  fall back to native scan evidence otherwise.
 
 Known M9 gaps:
 

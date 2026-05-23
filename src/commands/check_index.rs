@@ -1,11 +1,14 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use serde::Serialize;
 
 use crate::{
     bam::{
         header::parse_bam_header,
-        index::{IndexKind, ResolvedIndex, discover_index_candidates, parse_bai, parse_csi_header},
+        index::{
+            IndexKind, ResolvedIndex, bam_newer_than_index, discover_index_candidates, parse_bai,
+            parse_csi_header,
+        },
     },
     error::AppError,
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
@@ -280,16 +283,8 @@ fn compare_modification_times(
     bam_path: &std::path::Path,
     index_path: &std::path::Path,
 ) -> (Option<bool>, Option<String>) {
-    let bam_modified = fs::metadata(bam_path)
-        .ok()
-        .and_then(|metadata| metadata.modified().ok());
-    let index_modified = fs::metadata(index_path)
-        .ok()
-        .and_then(|metadata| metadata.modified().ok());
-
-    match (bam_modified, index_modified) {
-        (Some(bam), Some(index)) => {
-            let bam_newer = bam > index;
+    match bam_newer_than_index(bam_path, index_path) {
+        Some(bam_newer) => {
             let note = if bam_newer {
                 Some("BAM modification time is newer than the selected index; timestamp-based stale detection suggests the index may be outdated.".to_string())
             } else {
@@ -297,7 +292,7 @@ fn compare_modification_times(
             };
             (Some(bam_newer), note)
         }
-        _ => (
+        None => (
             None,
             Some("Modification times were unavailable or inconclusive, so stale-index assessment could not be proven from file metadata.".to_string()),
         ),

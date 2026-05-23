@@ -114,11 +114,17 @@ Key concepts:
 * `index.used` reports whether the adjacent index actually supplied the result
 * `summary.records_examined` is scan evidence and is absent from pure
   index-derived summaries
-* index-derived summaries report BAI mapped/unmapped metadata and do not imply
-  that alignment records were scanned
+* index-derived summaries report BAI mapped/unmapped metadata only after the
+  selected sidecar is not timestamp-stale, passes implemented structural
+  checks, and supplies complete per-reference mapped/unmapped metadata
+* generated BAI sidecars and discovered BAI sidecars are indistinguishable in
+  payloads after validation; both are reported as index-derived evidence when
+  used
 * scan-derived summaries report only the records examined by the bounded or
   full scan path
-* `semantic_note` describes the limits of the reported evidence source
+* stale, unsupported, malformed, or incomplete sidecars leave `index.used:
+  false`, switch `evidence_source` to `scan`, and describe the fallback in
+  `semantic_note`
 
 ## `check_index`
 
@@ -168,6 +174,11 @@ Key concepts:
 * `evidence.full_file_scanned` controls whether full-file claims are supported
 * `counts.records_total_known` is present only when the scan reaches EOF
 * `index_derived` keeps BAI-derived totals separate from scan-derived counts
+  and is present only when the selected BAI is not timestamp-stale, passes
+  implemented structural checks, and supplies complete mapped/unmapped metadata
+* stale, unsupported, malformed, or incomplete sidecars are explained in
+  `semantic_note`; the summary then uses native scan evidence without
+  `index_derived`
 * `fractions_observed` is scoped to examined records when the scan is bounded
 * malformed-record failures can return an `indeterminate` payload because no
   stable operational summary was completed

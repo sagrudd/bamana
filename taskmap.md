@@ -4332,7 +4332,7 @@ Completion evidence:
 
 ### M9.8 Integrate Index-Aware Evidence In First Consumers
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4354,7 +4354,24 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* centralized timestamp-based stale sidecar detection in `src/bam/index.rs`
+  and reused it from `check_index`, `check_map`, and `summary`;
+* `check_map` now uses BAI metadata only when the selected sidecar is not
+  timestamp-stale, parses through the hardened BAI structural checks, and
+  supplies complete per-reference mapped/unmapped metadata; otherwise it
+  reports a native scanner fallback note;
+* `summary` now applies the same usability gate before producing
+  `index_derived` totals and records stale, malformed, unsupported, or
+  incomplete sidecar fallback reasons in `semantic_note`;
+* added command tests for generated Bamana BAI sidecars and timestamp-stale BAI
+  fallback behavior in both `check_map` and `summary`;
+* updated README, CLI, JSON-output, Sphinx, roadmap, and CLI contract
+  documentation to distinguish generated/discovered BAI metadata evidence from
+  native scan evidence;
+* verification: `cargo test check_map`; `cargo test summary`;
+  `cargo test --test contract`; `cargo test`;
+  `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+  `git diff --check`.
 
 ### M9.9 Strengthen M9 Dependency Boundaries And Benchmarks
 

@@ -85,8 +85,10 @@ Present implementation pieces:
   index kind, BAI structural validity, CSI header status, timestamp-based
   staleness, compatibility, and apparent usability.
 * `check_map` and `summary` already distinguish BAI metadata-derived evidence
-  from scan-derived evidence and fall back to scanning when index metadata is
-  absent or insufficient.
+  from scan-derived evidence. They use BAI metadata only when the selected
+  sidecar is non-stale, structurally valid under the implemented checks, and
+  complete for mapped/unmapped reference metadata; absent, stale, unsupported,
+  malformed, or incomplete sidecars fall back to native scanning.
 
 Outstanding M9 gaps:
 
@@ -160,6 +162,12 @@ can read positioned raw BAM records from validated BAI chunk ranges.
 
 Tests prove valid virtual-offset seeks, invalid in-block offsets, manual
 virtual-offset range traversal, BAI chunk traversal, and empty-range rejection.
+
+M9.8 routes first consumer evidence through the hardened index usability rules.
+`check_map` and `summary` now test generated BAI sidecars produced by Bamana's
+writer, reject timestamp-stale sidecars for index evidence, and keep scan
+fallbacks native and explicit in payload notes. This remains metadata evidence,
+not random-access chunk acceleration.
 
 ## Benchmark Hooks
 

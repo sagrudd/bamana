@@ -42,8 +42,12 @@ The repository already has the following native index groundwork:
   overwritten unless ``--force`` is supplied, and CSI writing still returns an
   explicit ``unimplemented`` response.
 * ``check_map`` and ``summary`` distinguish index-derived BAI metadata evidence
-  from scan-derived evidence and fall back to scanner evidence when index
-  metadata is absent or insufficient.
+  from scan-derived evidence. They use BAI metadata only when the selected
+  sidecar is not timestamp-stale, passes the implemented structural checks, and
+  supplies complete mapped/unmapped reference metadata. Generated BAI sidecars
+  and discovered BAI sidecars use the same validation path because BAI has no
+  provenance marker. Absent, stale, unsupported, malformed, or incomplete
+  sidecars fall back to scanner evidence with a payload note.
 
 Outstanding M9 Work
 -------------------
@@ -135,6 +139,17 @@ accepts typed start/end virtual offsets, rejects empty or reversed ranges, and
 returns positioned raw BAM records that tests can parse back into
 ``BamRecordView`` values. M9.7 tests prove both a manually constructed
 virtual-offset range and a native BAI chunk can retrieve expected records.
+
+First Consumer Evidence
+-----------------------
+
+M9.8 integrates the hardened BAI usability rules into ``check_map`` and
+``summary`` without promoting indexed random-access acceleration. The commands
+may use complete BAI mapped/unmapped metadata as index-derived evidence after
+timestamp and structural checks succeed. They do not use stale sidecars,
+malformed BAI payloads, unsupported sidecar kinds, or BAI files missing complete
+metadata for the requested references. Those cases remain native scanner
+fallbacks and the JSON payload notes identify the fallback reason.
 
 Contract Boundary
 -----------------

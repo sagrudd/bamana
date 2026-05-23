@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashSet},
-    fs::File,
+    fs::{self, File},
     io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
@@ -148,6 +148,16 @@ pub fn detect_index_kind(path: &Path) -> Result<IndexKind, AppError> {
         CSI_MAGIC => IndexKind::Csi,
         _ => IndexKind::Unknown,
     })
+}
+
+pub fn bam_newer_than_index(bam_path: &Path, index_path: &Path) -> Option<bool> {
+    let bam_modified = fs::metadata(bam_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())?;
+    let index_modified = fs::metadata(index_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())?;
+    Some(bam_modified > index_modified)
 }
 
 pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSummary, AppError> {

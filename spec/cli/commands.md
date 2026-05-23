@@ -556,13 +556,15 @@ Synopsis:
 `bamana check_map --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index]`
 
 Semantics:
-Assesses mapping state using the header, an index if usable, and otherwise a
-bounded or full alignment scan.
+Assesses mapping state using the header, a selected BAI sidecar only when it is
+not timestamp-stale, structurally valid under Bamana's implemented BAI checks,
+and complete for mapped/unmapped reference metadata, and otherwise a bounded
+or full native alignment scan.
 
 Does prove:
 Mapping evidence from the sources explicitly reported. Index-derived results
-prove only usable index metadata was available; scan-derived results prove only
-what was observed in the examined alignment records.
+prove only a usable BAI metadata summary was available; scan-derived results
+prove only what was observed in the examined alignment records.
 
 Does not prove:
 Full BAM validity or complete mapping semantics beyond the examined data.
@@ -639,12 +641,16 @@ Synopsis:
 
 Semantics:
 Produces a fast operational BAM overview from header metadata, optional index
-signals, and bounded or full record scans.
+signals, and bounded or full record scans. Optional index-derived totals are
+used only from a selected BAI sidecar that is not timestamp-stale, passes the
+implemented structural checks, and contains complete mapped/unmapped metadata.
+Generated and discovered BAI sidecars follow the same validation path.
 
 Does prove:
 Only the metrics that correspond to the reported evidence mode. Bounded scan
 metrics describe examined records; index-derived totals remain separate from
-scan-derived counts.
+scan-derived counts. Stale, unsupported, malformed, or incomplete sidecars
+fall back to native scanner evidence.
 
 Does not prove:
 Full-file totals when the command explicitly reports bounded scan evidence, or

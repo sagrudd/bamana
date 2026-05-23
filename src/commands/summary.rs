@@ -5,7 +5,10 @@ use serde::Serialize;
 use crate::{
     bam::{
         header::HeaderPayload,
-        index::{BaiIndexSummary, IndexKind, IndexResolution, parse_bai, resolve_index_for_bam},
+        index::{
+            BaiIndexSummary, IndexKind, IndexResolution, bam_newer_than_index, parse_bai,
+            resolve_index_for_bam,
+        },
         scan::BamScanner,
         summary::{SummaryAccumulator, SummarySnapshot},
     },
@@ -190,6 +193,7 @@ pub enum ConfidenceLevel {
 struct IndexSummaryUse {
     kind: IndexKind,
     summary: BaiIndexSummary,
+    note: String,
 }
 
 pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
@@ -239,7 +243,7 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         }
     };
 
-    let index_summary = if request.prefer_index {
+    let (index_summary, index_note) = if request.prefer_index {
         match attempt_index_summary(&request.bam, scanner.header().header.references.len()) {
             Ok(summary) => summary,
             Err(error) => {
@@ -247,7 +251,13 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
             }
         }
     } else {
-        None
+        (
+            None,
+            Some(
+                "Index preference was disabled; summary evidence uses native scan mode."
+                    .to_string(),
+            ),
+        )
     };
 
     let scan_result = match scan_summary_records(&mut scanner, &request) {
@@ -282,27 +292,63 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
         }
     };
 
-    let payload = build_payload(scanner.header(), index_summary, scan_result, &request);
+    let payload = build_payload(
+        scanner.header(),
+        index_summary,
+        index_note,
+        scan_result,
+        &request,
+    );
     CommandResponse::success("summary", Some(request.bam.as_path()), payload)
 }
 
 fn attempt_index_summary(
     bam_path: &std::path::Path,
     references_defined: usize,
-) -> Result<Option<IndexSummaryUse>, AppError> {
+) -> Result<(Option<IndexSummaryUse>, Option<String>), AppError> {
     match resolve_index_for_bam(bam_path) {
-        IndexResolution::Present(resolved) => match parse_bai(&resolved.path, references_defined) {
-            Ok(summary) if summary.reference_summaries.iter().all(Option::is_some) => {
-                Ok(Some(IndexSummaryUse {
-                    kind: resolved.kind,
-                    summary,
-                }))
+        IndexResolution::Present(resolved) => {
+            if bam_newer_than_index(bam_path, &resolved.path) == Some(true) {
+                return Ok((
+                    None,
+                    Some("BAI index was present but timestamp-stale; summary fell back to native scan evidence.".to_string()),
+                ));
             }
-            Ok(_) => Ok(None),
-            Err(AppError::InvalidIndex { .. } | AppError::UnsupportedIndex { .. }) => Ok(None),
-            Err(error) => Err(error),
-        },
-        IndexResolution::Unsupported(_) | IndexResolution::NotFound => Ok(None),
+
+            match parse_bai(&resolved.path, references_defined) {
+                Ok(summary) if summary.reference_summaries.iter().all(Option::is_some) => Ok((
+                    Some(IndexSummaryUse {
+                        kind: resolved.kind,
+                        summary,
+                        note: "Discovered BAI sidecar passed structural validation and supplied complete per-reference mapped/unmapped metadata.".to_string(),
+                    }),
+                    None,
+                )),
+                Ok(_) => Ok((
+                    None,
+                    Some("BAI index was present, but per-reference mapped/unmapped metadata was incomplete; summary used native scan evidence.".to_string()),
+                )),
+                Err(AppError::InvalidIndex { detail, .. }) => Ok((
+                    None,
+                    Some(format!(
+                        "BAI index was present but unusable: {detail} Summary used native scan evidence."
+                    )),
+                )),
+                Err(AppError::UnsupportedIndex { detail, .. }) => Ok((
+                    None,
+                    Some(format!("{detail} Summary used native scan evidence.")),
+                )),
+                Err(error) => Err(error),
+            }
+        }
+        IndexResolution::Unsupported(resolved) => Ok((
+            None,
+            Some(format!(
+                "{} index detected, but it is not usable for summary index-derived evidence in this slice; summary used native scan evidence.",
+                index_kind_label(resolved.kind)
+            )),
+        )),
+        IndexResolution::NotFound => Ok((None, None)),
     }
 }
 
@@ -350,6 +396,7 @@ fn scan_summary_records(
 fn build_payload(
     header: &HeaderPayload,
     index_summary: Option<IndexSummaryUse>,
+    index_note: Option<String>,
     scan_result: ScanResult,
     request: &SummaryRequest,
 ) -> SummaryPayload {
@@ -432,7 +479,7 @@ fn build_payload(
         ConfidenceLevel::Medium
     };
 
-    let semantic_note = if full_file_scanned {
+    let base_semantic_note = if full_file_scanned {
         if index_summary.is_some() {
             "Summary metrics are derived from a full alignment-record scan plus available header/index metadata.".to_string()
         } else {
@@ -442,6 +489,10 @@ fn build_payload(
         "Summary metrics combine a bounded scan of alignment records with available header/index metadata. Scan-derived counts are observed rather than guaranteed full-file totals.".to_string()
     } else {
         "Summary metrics are derived from a bounded scan of alignment records and available header metadata; they may not represent full-file totals.".to_string()
+    };
+    let semantic_note = match index_note {
+        Some(note) => format!("{base_semantic_note} {note}"),
+        None => base_semantic_note,
     };
 
     SummaryPayload {
@@ -489,12 +540,21 @@ fn build_index_derived(index_summary: Option<&IndexSummaryUse>) -> Option<IndexD
             total_mapped_reads: Some(total_mapped_reads),
             total_unmapped_reads: Some(total_unmapped_reads),
             references_with_mapped_reads: Some(references_with_mapped_reads),
-            note: Some(
-                "Index-derived mapped/unmapped totals are reported separately and do not replace scan-derived flag-category counts."
-                    .to_string(),
-            ),
+            note: Some(format!(
+                "{} Index-derived mapped/unmapped totals are reported separately and do not replace scan-derived flag-category counts.",
+                index_summary.note
+            )),
         }
     })
+}
+
+fn index_kind_label(kind: IndexKind) -> &'static str {
+    match kind {
+        IndexKind::Bai => "BAI",
+        IndexKind::Csi => "CSI",
+        IndexKind::Gzi => "GZI",
+        IndexKind::Unknown => "UNKNOWN",
+    }
 }
 
 fn build_references(
@@ -582,10 +642,10 @@ fn fraction(value: u64, denominator: f64) -> Option<f64> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io::Write, thread, time::Duration};
 
     use crate::{
-        bam::index::test_support::build_bai_file,
+        bam::index::{build_bai_index_from_bam, test_support::build_bai_file, write_bai_index},
         bgzf::{
             BGZF_EOF_MARKER,
             test_support::{
@@ -782,6 +842,109 @@ mod tests {
                 .semantic_note
                 .expect("semantic note should be present")
                 .contains("header/index metadata")
+        );
+    }
+
+    #[test]
+    fn generated_bai_sidecar_supplies_index_derived_summary() {
+        let bam_path = write_temp_file(
+            "summary-generated-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 10, "read1", 0),
+                    build_light_record(-1, -1, "read2", 4),
+                ],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 1,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(evidence.index_used);
+        assert_eq!(evidence.records_scanned, 1);
+        let index_derived = payload
+            .index_derived
+            .expect("index-derived summary should be present");
+        assert!(index_derived.used);
+        assert_eq!(index_derived.total_mapped_reads, Some(1));
+        assert_eq!(index_derived.total_unmapped_reads, Some(1));
+        assert!(
+            index_derived
+                .note
+                .expect("index note should be present")
+                .contains("passed structural validation")
+        );
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("header/index metadata")
+        );
+    }
+
+    #[test]
+    fn stale_bai_sidecar_falls_back_to_scan_summary() {
+        let bam_path = write_temp_file(
+            "summary-stale-index",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 10, "read1", 0)],
+            ),
+        );
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&bam_path).expect("bai should build");
+        write_bai_index(&bai_path, &index).expect("bai should write");
+        thread::sleep(Duration::from_millis(1100));
+        fs::OpenOptions::new()
+            .append(true)
+            .open(&bam_path)
+            .expect("bam should open")
+            .write_all(b"x")
+            .expect("bam mtime should update");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&bai_path).expect("bai fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(!evidence.index_used);
+        assert_eq!(evidence.records_scanned, 1);
+        assert!(payload.index_derived.is_none());
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("timestamp-stale")
         );
     }
 
