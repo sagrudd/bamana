@@ -295,6 +295,19 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
             "src/bgzf/virtual_offset.rs",
         ],
     ),
+    (
+        "check_map_region",
+        &[
+            "src/commands/check_map.rs",
+            "src/bam/region.rs",
+            "src/bam/region_plan.rs",
+            "src/bam/region_traversal.rs",
+            "src/bam/index.rs",
+            "src/bam/scan.rs",
+            "src/bgzf/reader.rs",
+            "src/bgzf/virtual_offset.rs",
+        ],
+    ),
 ];
 
 #[test]
@@ -612,8 +625,12 @@ fn m10_indexed_region_hot_paths_do_not_import_noodles() {
         .collect();
     assert_eq!(
         indexed_region_paths,
-        ["indexed_region_chunk_planning", "indexed_region_traversal"],
-        "M10 dependency boundary must explicitly name indexed-region planning and traversal"
+        [
+            "indexed_region_chunk_planning",
+            "indexed_region_traversal",
+            "check_map_region"
+        ],
+        "M10 dependency boundary must explicitly name indexed-region planning, traversal, and check_map wiring"
     );
 
     let mut violations = Vec::new();

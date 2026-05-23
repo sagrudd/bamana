@@ -683,6 +683,9 @@ pub struct CheckMapArgs {
     /// Prefer index-derived mapping information when a usable index exists.
     #[arg(long = "prefer-index", default_value_t = true)]
     pub prefer_index: bool,
+    /// Restrict mapping assessment to one M10 region string. May be repeated.
+    #[arg(long = "region")]
+    pub regions: Vec<String>,
 }
 
 #[derive(Debug, Args)]

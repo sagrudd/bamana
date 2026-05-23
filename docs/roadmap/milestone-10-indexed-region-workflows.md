@@ -203,9 +203,31 @@ Traversal rules:
 * no usable index remains visible as an explicit scan fallback through
   `NativeScanRequired`.
 
-This is not public CLI behavior yet. The planned `check_map --region <REGION>`
-and `summary --region <REGION>` surfaces will consume this traversal layer only
-after their command payloads are wired and verified.
+## M10.6 Region-Aware `check_map`
+
+`check_map --region <REGION>` is public command behavior. Region requests are
+normalized through M10.2, planned through M10.4 when a usable BAI is present,
+and traversed through M10.5 by typed `VirtualOffset` ranges.
+
+Command behavior:
+
+* usable BAI sidecars produce `region_scope.execution: indexed`;
+* indexed payloads include `index_path`, `chunks_traversed`,
+  `raw_records_seen`, and `duplicate_records_suppressed`;
+* missing, stale, unsupported, or invalid index state produces
+  `region_scope.execution: scan_fallback`;
+* fallback payloads include `fallback_mode: native_scan_required` and
+  `scan_records_limit`;
+* region-scoped counters use `region_records_examined`,
+  `region_mapped_records_observed`, and
+  `region_unmapped_records_observed`.
+
+The region-scoped fields are deliberately distinct from whole-file
+`total_mapped_reads`, `total_unmapped_reads`, and scan `records_examined`
+fields. Unknown references, empty intervals, reversed intervals, and other
+unsupported region strings fail with precise `invalid_region` errors.
+`summary --region <REGION>`, region files, and standalone indexed region
+selection remain deferred.
 
 ## Acceptance Criteria
 

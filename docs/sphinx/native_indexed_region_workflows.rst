@@ -121,23 +121,36 @@ are merged onto the returned record.
 
 Fallback remains explicit. When no usable index exists, the internal payload
 records ``NativeScanRequired`` as the scan fallback instead of claiming indexed
-evidence. This remains internal; the binary still does not accept
-``check_map --region <REGION>`` or ``summary --region <REGION>`` until later
-M10 tasks wire those command payloads.
+evidence.
+
+M10.6 Region-Aware check_map
+----------------------------
+
+``check_map --region <REGION>`` is public command behavior. The command
+normalizes repeated region strings, uses validated BAI chunk planning and
+typed ``VirtualOffset`` traversal when possible, and falls back to native scan
+evidence when the index is missing, stale, unsupported, or invalid.
+
+Indexed payloads report ``region_scope.execution: indexed`` together with
+``index_path``, ``chunks_traversed``, ``raw_records_seen``, and
+``duplicate_records_suppressed``. Fallback payloads report
+``region_scope.execution: scan_fallback``, ``fallback_mode:
+native_scan_required``, and ``scan_records_limit``.
+
+Region-scoped counts use ``region_records_examined``,
+``region_mapped_records_observed``, and
+``region_unmapped_records_observed``. They are not whole-file totals.
+Unsupported region requests fail with precise ``invalid_region`` errors.
+``summary --region <REGION>``, region files, and standalone indexed region
+selection remain deferred.
 
 Known Gaps
 ----------
 
-The M10.3 command flags are frozen as a planned contract but are not accepted
-by the binary until later M10 implementation tasks wire them. Random-access
-chunk planning has not yet been promoted into public command behavior.
-Overlapping-region, duplicate-region, and multi-reference semantics remain
-limited to preserving request order in the normalized region set.
-
-Region-aware ``check_map`` and ``summary`` payloads do not yet distinguish
-requested-region evidence from whole-file evidence. Indexed-region benchmark
-rows do not yet compare random-access lookup behavior with scan fallback. CSI
-large-reference behavior remains unsupported until a later scoped decision.
+``summary --region <REGION>`` is still planned but not accepted by the binary.
+Indexed-region benchmark rows do not yet compare random-access lookup behavior
+with scan fallback. CSI large-reference behavior remains unsupported until a
+later scoped decision.
 
 Command Boundary
 ----------------

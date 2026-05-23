@@ -4764,7 +4764,7 @@ Completion evidence:
 
 ### M10.6 Add Region-Aware `check_map`
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4786,7 +4786,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added public `check_map --region <REGION>` CLI handling for repeated M10.2
+  region strings;
+* wired usable BAI sidecars through M10.4 chunk planning and M10.5
+  random-access traversal;
+* added native scan fallback for missing, stale, unsupported, or invalid index
+  state with `fallback_mode: native_scan_required` and `scan_records_limit`;
+* kept region-scoped counters separate as `region_records_examined`,
+  `region_mapped_records_observed`, and
+  `region_unmapped_records_observed`;
+* added tests for indexed success, scan fallback, unknown reference, empty
+  interval, overlapping intervals, and stale-index fallback;
+* updated the `check_map` JSON schema, region example, CLI contract, README,
+  CLI docs, JSON docs, roadmap docs, Sphinx notes, and this task map.
 
 ### M10.7 Add Region-Aware `summary`
 

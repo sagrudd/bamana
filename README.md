@@ -122,12 +122,14 @@ Milestone 10 is active for native indexed-region workflow development. M10.2
 defines the internal region grammar as `reference` and `reference:start-end`,
 where interval input is 1-based closed and normalized internally to 0-based
 half-open coordinates. M10.3 freezes the first region-aware workflow contracts
-for future `check_map --region <REGION>` and `summary --region <REGION>`
+for `check_map --region <REGION>` and future `summary --region <REGION>`
 support, including `region_scope` JSON payload examples and fixture plans.
-Those flags are not accepted by the binary until later M10 implementation
-tasks wire them. Region files and indexed region selection commands remain
-deferred. The public contract commands `benchmark`, `fastq`, and `unmap`
-remain protected while M10 work proceeds.
+M10.6 promotes `check_map --region <REGION>` to public command behavior:
+usable BAI sidecars drive indexed traversal, while missing, stale, unsupported,
+or invalid index state falls back to native scan evidence with explicit scan
+limits. `summary --region`, region files, and indexed region selection commands
+remain deferred. The public contract commands `benchmark`, `fastq`, and
+`unmap` remain protected while M10 work proceeds.
 M10.4 adds internal validated-BAI chunk planning for those future workflows:
 candidate bins are expanded, chunks are coalesced by typed virtual offsets, and
 unsupported, stale, incompatible, or impossible index inputs are rejected before
@@ -138,7 +140,9 @@ M10.5 adds internal region-bounded traversal in `src/bam/region_traversal.rs`.
 intervals by overlap, and deduplicate by virtual-offset range when broad BAI
 bins or overlapping region requests return the same record more than once. The
 fallback payload is explicit as `NativeScanRequired` when no usable index is
-available. This is still not public CLI behavior.
+available. M10.6 wires that traversal into `check_map --region <REGION>` and
+keeps region-scoped `region_records_examined` evidence separate from whole-file
+mapping totals.
 
 ## Benchmark Framework
 
@@ -184,6 +188,7 @@ cargo run -- check_eof --bam example.bam
 cargo run -- header --bam example.bam
 cargo run -- check_map --bam example.bam
 cargo run -- check_map --bam example.bam --sample-records 50000 --full-scan
+cargo run -- check_map --bam example.bam --region chr1:100-200
 cargo run -- check_sort --bam example.bam
 cargo run -- check_sort --bam example.bam --sample-records 50000 --strict
 cargo run -- check_index --bam example.bam

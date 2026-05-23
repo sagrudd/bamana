@@ -553,11 +553,7 @@ Key output concepts:
 ## `check_map`
 
 Current synopsis:
-`bamana check_map --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index]`
-
-M10 governed region synopsis, not accepted by the binary until the later
-region-aware implementation task:
-`bamana check_map --bam <bamfile> [--region <REGION> ...] [--prefer-index]`
+`bamana check_map --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--region <REGION> ...]`
 
 Semantics:
 Assesses mapping state using the header, a selected BAI sidecar only when it is
@@ -575,14 +571,18 @@ Full BAM validity or complete mapping semantics beyond the examined data.
 
 M10 region contract:
 
-* `--region` will use the M10.2 grammar: `reference` or
-  `reference:start-end`
+* `--region` uses the M10.2 grammar: `reference` or `reference:start-end`
 * interval input is 1-based closed and reported in normalized form as 0-based
   half-open coordinates
 * repeated `--region` values preserve request order and are not merged or
   deduplicated
-* region-aware output will add `region_scope` and must keep region-scoped
+* region-aware output adds `region_scope` and must keep region-scoped
   mapping evidence distinct from whole-file mapping evidence
+* usable BAI sidecars drive indexed traversal; missing, stale, unsupported, or
+  invalid index state falls back to native scan evidence with explicit scan
+  limits
+* region summaries use `region_records_examined` and
+  `region_mapped_records_observed` rather than whole-file totals
 * region files remain deferred and must fail precisely until a later task
   promotes them
 

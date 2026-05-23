@@ -340,6 +340,25 @@ Traversal behavior:
 * missing or unusable index state remains visible as the explicit scan fallback
   `NativeScanRequired`.
 
-This is still an internal baseline. `check_map --region <REGION>` and
-`summary --region <REGION>` are not accepted by the binary until later M10
-tasks wire traversal into those commands and their public payloads.
+## Milestone 10 Region-Aware Check Map
+
+M10.6 promotes `check_map --region <REGION>` to public command behavior. The
+command normalizes repeated region strings with the M10.2 parser, uses a
+validated BAI sidecar and M10.4/M10.5 traversal when possible, and falls back
+to native scan evidence when the index is missing, stale, unsupported, or
+invalid.
+
+Payload behavior:
+
+* `region_scope.execution` reports `indexed` or `scan_fallback`;
+* indexed execution reports `index_path`, `chunks_traversed`,
+  `raw_records_seen`, and `duplicate_records_suppressed`;
+* fallback execution reports `fallback_mode: native_scan_required` and
+  `scan_records_limit`;
+* region-scoped counts are reported as `region_records_examined`,
+  `region_mapped_records_observed`, and
+  `region_unmapped_records_observed`, not as whole-file totals.
+
+Unsupported region requests such as unknown references and empty intervals
+fail deterministically with `invalid_region`. `summary --region <REGION>`,
+region files, and standalone indexed region selection remain deferred.

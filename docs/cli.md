@@ -149,11 +149,13 @@ and `reference:start-end` for a 1-based closed interval normalized to 0-based
 half-open coordinates. Multiple regions preserve request order and are not
 merged or deduplicated yet. M10.3 freezes `check_map --region <REGION>` and
 `summary --region <REGION>` as the first planned region-aware command
-surfaces, with `region_scope` JSON schema and examples. Those flags are not
-accepted by the binary until later M10 implementation tasks wire them. Region
-files and indexed region selection commands remain explicitly deferred. The
-public contract commands `benchmark`, `fastq`, and `unmap` remain protected
-while this region surface is developed.
+surfaces, with `region_scope` JSON schema and examples. M10.6 promotes
+`check_map --region <REGION>` to public command behavior: usable BAI sidecars
+drive indexed traversal, while missing, stale, unsupported, or invalid index
+state falls back to native scan evidence with explicit scan limits. `summary
+--region`, region files, and indexed region selection commands remain
+explicitly deferred. The public contract commands `benchmark`, `fastq`, and
+`unmap` remain protected while this region surface is developed.
 
 M10.4 adds internal BAI chunk planning for those future region workflows. The
 planner expands normalized intervals to candidate BAI bins, collects chunks
@@ -167,8 +169,10 @@ M10.5 adds the internal traversal baseline in `src/bam/region_traversal.rs`.
 `raw_records_in_virtual_range`, filters records against normalized intervals by
 overlap, and deduplicate by virtual-offset range so broad bins and overlapping
 region requests do not double-count records. Missing or unusable index state is
-represented explicitly as the scan fallback `NativeScanRequired`. This is still
-not public CLI behavior.
+represented explicitly as the scan fallback `NativeScanRequired`. M10.6 wires
+that traversal into `check_map --region <REGION>` and keeps
+`region_records_examined` separate from whole-file scan counters and index
+metadata totals.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

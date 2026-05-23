@@ -2126,7 +2126,7 @@ fn milestone_10_region_traversal_contract_is_documented_and_native() {
         "matched region strings",
         "NativeScanRequired",
         "scan fallback",
-        "not public CLI behavior",
+        "internal traversal baseline",
     ] {
         assert!(
             readme.contains(required)
@@ -2158,6 +2158,95 @@ fn milestone_10_region_traversal_contract_is_documented_and_native() {
                 || traversal_source.contains(required)
                 || scan_source.contains(required),
             "M10.5 native traversal source is missing: {required}"
+        );
+    }
+}
+
+#[test]
+fn milestone_10_check_map_region_contract_is_documented_and_native() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let check_map_schema = read_utf8(&schema_path_for_command("check_map"));
+    let check_map_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("check_map.region.success.json"),
+    );
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+    let check_map_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("check_map.rs"),
+    );
+    let index_source = read_utf8(&super::repo_root().join("src").join("bam").join("index.rs"));
+
+    for required in [
+        "check_map --region <REGION>",
+        "region_scope.execution",
+        "indexed",
+        "scan_fallback",
+        "index_path",
+        "chunks_traversed",
+        "raw_records_seen",
+        "duplicate_records_suppressed",
+        "fallback_mode",
+        "native_scan_required",
+        "scan_records_limit",
+        "region_records_examined",
+        "region_mapped_records_observed",
+        "region_unmapped_records_observed",
+        "invalid_region",
+        "summary --region",
+        "region files",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_doc.contains(required)
+                || commands_doc.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required)
+                || check_map_schema.contains(required)
+                || check_map_region_example.contains(required),
+            "M10.6 check_map region documentation or schema is missing: {required}"
+        );
+    }
+
+    for required in [
+        "pub regions: Vec<String>",
+        "long = \"region\"",
+        "normalize_region_strings",
+        "plan_bai_region_chunks",
+        "traverse_planned_region_chunks",
+        "RegionScope",
+        "RegionExecution",
+        "parse_bai_index",
+        "scan_region_mapping_records",
+        "region_request_uses_indexed_traversal_when_bai_is_usable",
+        "region_request_stale_bai_falls_back_to_scan",
+    ] {
+        assert!(
+            cli_source.contains(required)
+                || check_map_source.contains(required)
+                || index_source.contains(required),
+            "M10.6 native check_map region source is missing: {required}"
         );
     }
 }

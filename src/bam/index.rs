@@ -246,7 +246,7 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
                     unmapped_reads,
                 });
             } else {
-                validate_regular_bai_bin(&mut reader, path, bin, n_chunk as usize)?;
+                read_regular_bai_bin(&mut reader, path, bin, n_chunk as usize)?;
             }
         }
 
@@ -257,7 +257,7 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
                 detail: "BAI interval count was negative.".to_string(),
             });
         }
-        validate_bai_linear_index(&mut reader, path, n_intv as usize)?;
+        read_bai_linear_index(&mut reader, path, n_intv as usize)?;
         reference_summaries.push(summary);
     }
 
@@ -266,6 +266,120 @@ pub fn parse_bai(path: &Path, expected_references: usize) -> Result<BaiIndexSumm
 
     Ok(BaiIndexSummary {
         reference_summaries,
+        unplaced_unmapped_reads,
+    })
+}
+
+pub fn parse_bai_index(path: &Path, expected_references: usize) -> Result<BaiIndex, AppError> {
+    let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+    let mut reader = BufReader::new(file);
+
+    let mut magic = [0_u8; 4];
+    reader
+        .read_exact(&mut magic)
+        .map_err(|error| AppError::from_io(path, error))?;
+
+    if &magic == CSI_MAGIC {
+        return Err(AppError::UnsupportedIndex {
+            path: path.to_path_buf(),
+            detail: "CSI indexes are detected but not implemented in this slice.".to_string(),
+        });
+    }
+    if &magic != BAI_MAGIC {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: "Index magic was not BAI\\1.".to_string(),
+        });
+    }
+
+    let n_ref = read_i32(&mut reader, path)?;
+    if n_ref < 0 {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: "BAI reference count was negative.".to_string(),
+        });
+    }
+    let n_ref = n_ref as usize;
+    if n_ref != expected_references {
+        return Err(AppError::InvalidIndex {
+            path: path.to_path_buf(),
+            detail: format!(
+                "BAI reference count {n_ref} does not match BAM header reference count {expected_references}."
+            ),
+        });
+    }
+
+    let mut references = Vec::with_capacity(n_ref);
+    for _ in 0..n_ref {
+        let n_bin = read_i32(&mut reader, path)?;
+        if n_bin < 0 {
+            return Err(AppError::InvalidIndex {
+                path: path.to_path_buf(),
+                detail: "BAI bin count was negative.".to_string(),
+            });
+        }
+
+        let mut bins = BTreeMap::new();
+        let mut mapped_reads = 0;
+        let mut unmapped_reads = 0;
+        let mut seen_bins = HashSet::new();
+        for _ in 0..(n_bin as usize) {
+            let bin = read_u32(&mut reader, path)?;
+            let n_chunk = read_i32(&mut reader, path)?;
+            if n_chunk < 0 {
+                return Err(AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: "BAI chunk count was negative.".to_string(),
+                });
+            }
+            if !seen_bins.insert(bin) {
+                return Err(AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: format!("BAI reference contained duplicate bin {bin}."),
+                });
+            }
+
+            if bin == BAI_METADATA_BIN {
+                if n_chunk != 2 {
+                    return Err(AppError::InvalidIndex {
+                        path: path.to_path_buf(),
+                        detail: format!(
+                            "BAI metadata pseudo-bin reported n_chunk={n_chunk}, expected 2."
+                        ),
+                    });
+                }
+
+                let _unmapped_beg = read_u64(&mut reader, path)?;
+                let _unmapped_end = read_u64(&mut reader, path)?;
+                mapped_reads = read_u64(&mut reader, path)?;
+                unmapped_reads = read_u64(&mut reader, path)?;
+            } else {
+                let chunks = read_regular_bai_bin(&mut reader, path, bin, n_chunk as usize)?;
+                bins.insert(bin, chunks);
+            }
+        }
+
+        let n_intv = read_i32(&mut reader, path)?;
+        if n_intv < 0 {
+            return Err(AppError::InvalidIndex {
+                path: path.to_path_buf(),
+                detail: "BAI interval count was negative.".to_string(),
+            });
+        }
+        let linear_index = read_bai_linear_index(&mut reader, path, n_intv as usize)?;
+        references.push(BaiReferenceIndex {
+            bins,
+            linear_index,
+            mapped_reads,
+            unmapped_reads,
+        });
+    }
+
+    let unplaced_unmapped_reads = read_optional_u64(&mut reader, path)?.unwrap_or(0);
+    ensure_no_trailing_bytes(&mut reader, path)?;
+
+    Ok(BaiIndex {
+        references,
         unplaced_unmapped_reads,
     })
 }
@@ -760,12 +874,12 @@ fn skip_bytes(reader: &mut impl Read, path: &Path, mut len: usize) -> Result<(),
     Ok(())
 }
 
-fn validate_regular_bai_bin(
+fn read_regular_bai_bin(
     reader: &mut impl Read,
     path: &Path,
     bin: u32,
     chunk_count: usize,
-) -> Result<(), AppError> {
+) -> Result<Vec<BaiChunk>, AppError> {
     if bin > BAI_MAX_REGULAR_BIN {
         return Err(AppError::InvalidIndex {
             path: path.to_path_buf(),
@@ -780,6 +894,7 @@ fn validate_regular_bai_bin(
     }
 
     let mut previous_end = None;
+    let mut chunks = Vec::with_capacity(chunk_count);
     for chunk_index in 0..chunk_count {
         let start = read_u64(reader, path)?;
         let end = read_u64(reader, path)?;
@@ -800,23 +915,25 @@ fn validate_regular_bai_bin(
             }
         }
         previous_end = Some(end);
+        chunks.push(BaiChunk {
+            start: VirtualOffset::from_packed(start),
+            end: VirtualOffset::from_packed(end),
+        });
     }
 
-    Ok(())
+    Ok(chunks)
 }
 
-fn validate_bai_linear_index(
+fn read_bai_linear_index(
     reader: &mut impl Read,
     path: &Path,
     interval_count: usize,
-) -> Result<(), AppError> {
+) -> Result<Vec<VirtualOffset>, AppError> {
     let mut previous_nonzero = 0_u64;
+    let mut linear_index = Vec::with_capacity(interval_count);
     for interval_index in 0..interval_count {
         let offset = read_u64(reader, path)?;
-        if offset == 0 {
-            continue;
-        }
-        if previous_nonzero != 0 && offset < previous_nonzero {
+        if offset != 0 && previous_nonzero != 0 && offset < previous_nonzero {
             return Err(AppError::InvalidIndex {
                 path: path.to_path_buf(),
                 detail: format!(
@@ -824,10 +941,13 @@ fn validate_bai_linear_index(
                 ),
             });
         }
-        previous_nonzero = offset;
+        if offset != 0 {
+            previous_nonzero = offset;
+        }
+        linear_index.push(VirtualOffset::from_packed(offset));
     }
 
-    Ok(())
+    Ok(linear_index)
 }
 
 fn ensure_no_trailing_bytes(reader: &mut impl Read, path: &Path) -> Result<(), AppError> {

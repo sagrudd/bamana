@@ -125,11 +125,17 @@ Key concepts:
 * stale, unsupported, malformed, or incomplete sidecars leave `index.used:
   false`, switch `evidence_source` to `scan`, and describe the fallback in
   `semantic_note`
-* M10.3 freezes the region-aware output contract for future `check_map`
-  wiring: when region evidence is requested, `region_scope` records the
-  normalized M10.2 intervals, `input_1_based_closed_output_0_based_half_open`
-  coordinate model, request-order duplicate policy, and whether execution used
-  indexed traversal, scan fallback, or precise rejection
+* `check_map --region <REGION>` records `region_scope` with the normalized
+  M10.2 intervals, `input_1_based_closed_output_0_based_half_open` coordinate
+  model, request-order duplicate policy, and whether execution used indexed
+  traversal, scan fallback, or precise rejection
+* indexed region execution reports `index_path`, `chunks_traversed`,
+  `raw_records_seen`, and `duplicate_records_suppressed`
+* scan fallback reports `fallback_mode: native_scan_required` and
+  `scan_records_limit`
+* region summaries use `region_records_examined`,
+  `region_mapped_records_observed`, and `region_unmapped_records_observed`
+  rather than whole-file totals
 * region-scoped mapping evidence must not be interpreted as whole-file mapping
   evidence
 

@@ -280,6 +280,7 @@ fn main() -> ExitCode {
                 sample_records: args.sample_records,
                 full_scan: args.full_scan,
                 prefer_index: args.prefer_index,
+                regions: args.regions,
             });
             CommandResponse::from_result("check_map", Some(bam.as_path()), result)
         }),
