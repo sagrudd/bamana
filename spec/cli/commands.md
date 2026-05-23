@@ -678,14 +678,20 @@ Synopsis:
 
 Semantics:
 Computes explicit checksum domains over deterministic BAM header and record
-serializations.
+serializations. `raw-record-order` is encounter-order sensitive,
+`canonical-record-order` is order-insensitive but duplicate-multiplicity aware,
+`header` covers deterministic header text plus binary reference dictionary
+serialization, and `payload` covers the encounter-order record payload stream
+with optional header inclusion.
 
 Does prove:
 Only the meaning of the reported checksum mode, algorithm, filters, and tag
 exclusion set.
 
 Does not prove:
-Full BAM validity or equivalence under any other comparison mode.
+Full BAM validity, biological equivalence, whole-file semantic equivalence, or
+equivalence under filters, excluded tags, header inclusion, or comparison modes
+other than those explicitly reported.
 
 Key output concepts:
 `algorithm`, `results[].mode`, `digest`, `order_sensitive`, `filters`,

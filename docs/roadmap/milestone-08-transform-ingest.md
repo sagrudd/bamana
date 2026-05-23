@@ -135,6 +135,22 @@ optional checksum verification. `scanner_microbench --bamana-bin` now includes
 a `merge` command smoke timing for coordinate merge with canonical checksum
 verification.
 
+M8.5 hardened `checksum` at the native checksum-domain boundary. The BAM
+loading side now uses `BamScanner` plus `BamRecordView::to_record_layout`
+before the existing native checksum serialization path, while header-only mode
+continues to use Bamana's deterministic header serialization domain without
+scanning alignment records. Tests now cover raw encounter-order sensitivity,
+canonical order-insensitive hashing, header-only hashing, payload hashing with
+and without header inclusion, all-domain reporting, primary-only and
+mapped-only filters, excluded-tag reporting, duplicate multiplicity, and
+malformed auxiliary payload uncertainty. The documented checksum modes remain
+domain-specific: canonical mode compares selected record content independent of
+record order while preserving multiplicity, but it does not claim whole-file
+semantic equivalence outside the reported filters, excluded tags, header
+inclusion, and checksum domain. `scanner_microbench --bamana-bin` now includes
+a `checksum` command smoke timing for all-domain hashing with header inclusion,
+`NM` exclusion, and mapped-only filtering.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

@@ -331,7 +331,9 @@ serialization in encounter order, so it is suitable for order-sensitive stream
 preservation checks. `canonical-record-order` hashes per-record canonical
 serializations, sorts the per-record digests, and hashes the sorted digest list,
 so it is intended for comparing BAM content across reordering operations such as
-sorting. `header` hashes raw header text plus the binary reference dictionary in
+sorting while preserving duplicate multiplicity. It does not prove whole-file
+semantic equivalence outside the reported filters, excluded tags, and checksum
+domain. `header` hashes raw header text plus the binary reference dictionary in
 order. `payload` hashes the deterministic record payload stream and can prefix
 the header serialization when `--include-header` is requested.
 

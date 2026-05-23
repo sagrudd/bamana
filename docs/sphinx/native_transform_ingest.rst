@@ -112,6 +112,29 @@ actually performed. The current implementation remains an in-memory first
 slice. ``scanner_microbench --bamana-bin`` now includes a ``merge`` command
 smoke timing for coordinate merge with canonical checksum verification.
 
+Checksum Hardening
+------------------
+
+M8.5 hardens ``checksum`` at the native checksum-domain boundary. BAM input
+loading now uses ``BamScanner`` and bridges each ``BamRecordView`` into the
+native checksum serialization path before raw encounter-order, canonical
+order-insensitive, payload, or all-domain hashing. The header domain continues
+to use Bamana's deterministic header checksum serializer and does not scan
+alignment records when ``--mode header`` is requested.
+
+The checksum modes have intentionally narrow meanings. ``raw-record-order``
+hashes Bamana's stable per-record serialization in encounter order and is
+order-sensitive. ``canonical-record-order`` hashes the same per-record
+serialization, sorts per-record digests, and preserves duplicate multiplicity;
+it is suitable for selected content comparisons where record order may differ,
+but it does not prove whole-file equivalence. ``header`` covers deterministic
+header text and binary reference dictionary serialization. ``payload`` covers
+the encounter-order record stream and optionally prefixes the deterministic
+header serialization when ``--include-header`` is set. Filters and excluded
+tags are part of the reported checksum definition. ``scanner_microbench
+--bamana-bin`` now includes a ``checksum`` command smoke timing for all-domain
+hashing with header inclusion, ``NM`` exclusion, and mapped-only filtering.
+
 Activation Boundary
 -------------------
 

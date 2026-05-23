@@ -5,9 +5,7 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{parse_bam_header_from_reader, serialize_bam_header_checksum_domain},
-        reader::BamReader,
-        records::{RecordLayout, read_next_record_layout},
+        header::serialize_bam_header_checksum_domain, records::RecordLayout, scan::BamScanner,
         tags::serialize_filtered_aux,
     },
     error::AppError,
@@ -72,8 +70,8 @@ pub fn compute_checksums(
     path: &std::path::Path,
     options: &ChecksumOptions,
 ) -> Result<ChecksumPayload, AppError> {
-    let mut reader = BamReader::open(path)?;
-    let header = parse_bam_header_from_reader(&mut reader)?;
+    let mut scanner = BamScanner::open(path)?;
+    let header = scanner.header();
     let header_bytes = serialize_bam_header_checksum_domain(&header);
 
     let requested_modes = requested_modes(options.mode);
@@ -87,7 +85,12 @@ pub fn compute_checksums(
         .then(|| checksum_result_for_header(&header_bytes, options));
 
     let record_results = if needs_record_scan {
-        Some(scan_record_checksums(&mut reader, &header_bytes, options)?)
+        Some(scan_record_checksums(
+            &mut scanner,
+            path,
+            &header_bytes,
+            options,
+        )?)
     } else {
         None
     };
@@ -141,7 +144,8 @@ pub(crate) fn extract_digest(payload: ChecksumPayload, mode: ChecksumMode) -> Op
 }
 
 fn scan_record_checksums(
-    reader: &mut BamReader,
+    scanner: &mut BamScanner,
+    path: &std::path::Path,
     header_bytes: &[u8],
     options: &ChecksumOptions,
 ) -> Result<Vec<ChecksumResult>, AppError> {
@@ -166,10 +170,10 @@ fn scan_record_checksums(
     let mut records_hashed_payload = 0_u64;
     let mut records_hashed_canonical = 0_u64;
 
-    loop {
-        let Some(record) = read_next_record_layout(reader)? else {
-            break;
-        };
+    let mut records_materialized = 0_u64;
+    while let Some(record) = scanner.next_record()? {
+        let record = record.to_record_layout();
+        records_materialized += 1;
 
         if !record_included(&record, options.filters) {
             continue;
@@ -177,7 +181,7 @@ fn scan_record_checksums(
 
         let serialized = serialize_record(&record, &options.excluded_tags).map_err(|detail| {
             AppError::ChecksumUncertainty {
-                path: reader.path().to_path_buf(),
+                path: path.to_path_buf(),
                 detail,
             }
         })?;
@@ -195,6 +199,14 @@ fn scan_record_checksums(
             digests.push(digest.to_vec());
             records_hashed_canonical += 1;
         }
+    }
+
+    if records_materialized != scanner.records_read() {
+        return Err(AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: "Checksum scanner record count diverged from records materialized for hashing."
+                .to_string(),
+        });
     }
 
     let mut results = Vec::new();
@@ -514,7 +526,7 @@ mod tests {
 
     use super::{
         ChecksumAlgorithm, ChecksumFilters, ChecksumMode, ChecksumOptions, Sha256Hasher,
-        compute_checksums, hex_digest,
+        compute_checksums, extract_digest, hex_digest,
     };
 
     fn build_record(ref_id: i32, pos: i32, flags: u16, read_name: &str, aux: &[u8]) -> Vec<u8> {
@@ -655,6 +667,179 @@ mod tests {
             result_a.results.as_ref().unwrap()[0].digest,
             result_b.results.as_ref().unwrap()[0].digest
         );
+    }
+
+    #[test]
+    fn all_modes_report_expected_domains_filters_and_header_flag() {
+        let record_a = build_record(0, 1, 0, "read1", b"NMi\x01\0\0\0RGZrg0\0");
+        let record_b = build_record(-1, -1, 0x4, "read2", b"NMi\x02\0\0\0RGZrg0\0");
+        let bam = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[record_a, record_b],
+        );
+        let path = write_temp_file("checksum-all-domains", "bam", &bam);
+        let mut options = default_options(ChecksumMode::All);
+        options.include_header = true;
+        options.filters.mapped_only = true;
+        options.excluded_tags.insert(*b"NM");
+        options.excluded_tag_strings.push("NM".to_string());
+
+        let payload = compute_checksums(&path, &options).expect("checksum should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let results = payload.results.expect("results should be present");
+        assert_eq!(results.len(), 4);
+        assert_eq!(results[0].mode, ChecksumMode::Header);
+        assert!(results[0].header_included);
+        assert_eq!(results[1].mode, ChecksumMode::RawRecordOrder);
+        assert_eq!(results[1].records_hashed, 1);
+        assert!(results[1].order_sensitive);
+        assert_eq!(results[1].excluded_tags, vec!["NM"]);
+        assert!(results[1].filters.mapped_only);
+        assert_eq!(results[2].mode, ChecksumMode::CanonicalRecordOrder);
+        assert_eq!(results[2].records_hashed, 1);
+        assert!(!results[2].order_sensitive);
+        assert_eq!(results[3].mode, ChecksumMode::Payload);
+        assert_eq!(results[3].records_hashed, 1);
+        assert!(results[3].header_included);
+    }
+
+    #[test]
+    fn header_checksum_avoids_record_scan() {
+        let mut bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[build_record(0, 1, 0, "read1", b"")],
+        );
+        bytes.extend_from_slice(&1_i32.to_le_bytes());
+        let path = write_temp_file("checksum-header-only", "bam", &bytes);
+
+        let payload = compute_checksums(&path, &default_options(ChecksumMode::Header))
+            .expect("header checksum should not scan malformed record tail");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let results = payload.results.expect("results should be present");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].mode, ChecksumMode::Header);
+        assert_eq!(results[0].records_hashed, 0);
+    }
+
+    #[test]
+    fn payload_checksum_changes_when_header_is_included() {
+        let path = write_temp_file(
+            "checksum-payload-header",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_record(0, 1, 0, "read1", b"")],
+            ),
+        );
+        let without_header = compute_checksums(&path, &default_options(ChecksumMode::Payload))
+            .expect("payload checksum should succeed");
+        let mut options = default_options(ChecksumMode::Payload);
+        options.include_header = true;
+        let with_header = compute_checksums(&path, &options).expect("payload checksum should work");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_ne!(
+            extract_digest(without_header, ChecksumMode::Payload),
+            extract_digest(with_header, ChecksumMode::Payload)
+        );
+    }
+
+    #[test]
+    fn primary_and_mapped_filters_are_applied_to_records_hashed() {
+        let primary_mapped = build_record(0, 1, 0, "primary", b"");
+        let secondary_mapped = build_record(0, 2, 0x100, "secondary", b"");
+        let supplementary_mapped = build_record(0, 3, 0x800, "supplementary", b"");
+        let primary_unmapped = build_record(-1, -1, 0x4, "unmapped", b"");
+        let path = write_temp_file(
+            "checksum-filters",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    primary_mapped,
+                    secondary_mapped,
+                    supplementary_mapped,
+                    primary_unmapped,
+                ],
+            ),
+        );
+        let mut options = default_options(ChecksumMode::RawRecordOrder);
+        options.filters.only_primary = true;
+        options.filters.mapped_only = true;
+
+        let payload = compute_checksums(&path, &options).expect("checksum should succeed");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        let result = &payload.results.as_ref().unwrap()[0];
+        assert_eq!(result.records_hashed, 1);
+        assert!(result.filters.only_primary);
+        assert!(result.filters.mapped_only);
+    }
+
+    #[test]
+    fn canonical_checksum_preserves_duplicate_multiplicity() {
+        let record = build_record(0, 1, 0, "read1", b"");
+        let single_path = write_temp_file(
+            "checksum-duplicate-single",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                std::slice::from_ref(&record),
+            ),
+        );
+        let duplicate_path = write_temp_file(
+            "checksum-duplicate-double",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[record.clone(), record],
+            ),
+        );
+
+        let single = compute_checksums(
+            &single_path,
+            &default_options(ChecksumMode::CanonicalRecordOrder),
+        )
+        .expect("checksum should succeed");
+        let duplicate = compute_checksums(
+            &duplicate_path,
+            &default_options(ChecksumMode::CanonicalRecordOrder),
+        )
+        .expect("checksum should succeed");
+        fs::remove_file(single_path).expect("fixture should be removable");
+        fs::remove_file(duplicate_path).expect("fixture should be removable");
+
+        assert_ne!(
+            extract_digest(single, ChecksumMode::CanonicalRecordOrder),
+            extract_digest(duplicate, ChecksumMode::CanonicalRecordOrder)
+        );
+    }
+
+    #[test]
+    fn malformed_aux_returns_parse_uncertainty_from_scanner() {
+        let path = write_temp_file(
+            "checksum-malformed-aux",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_record(0, 1, 0, "read1", b"NM")],
+            ),
+        );
+
+        let error = compute_checksums(&path, &default_options(ChecksumMode::CanonicalRecordOrder))
+            .expect_err("malformed aux should fail scanner-backed checksum traversal");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(error.to_json_error().code, "parse_uncertainty");
     }
 
     #[test]

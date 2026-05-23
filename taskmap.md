@@ -3725,7 +3725,7 @@ Completion evidence:
 
 ### M8.5 Harden `checksum` Native Domain Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3749,7 +3749,25 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited checksum modes, algorithm reporting, header serialization domain,
+  record serialization domain, canonical order-insensitive behavior, filters,
+  tag exclusions, and malformed auxiliary payload handling;
+* migrated checksum record scanning from the older BAM reader/layout path to
+  `BamScanner` plus `BamRecordView::to_record_layout`, while preserving the
+  existing native checksum serialization domain;
+* strengthened checksum engine and command tests for raw record order,
+  canonical record order, header-only, payload, all modes, mapped-only,
+  primary-only, tag exclusion, duplicate multiplicity, and malformed inputs;
+* documented the exact semantic boundary for each checksum mode, including
+  that canonical mode compares selected record content independent of record
+  order while preserving multiplicity, and does not prove whole-file semantic
+  equivalence outside the reported checksum definition;
+* extended `scanner_microbench --bamana-bin` with a `checksum` command smoke
+  timing for all-domain hashing with header inclusion, `NM` exclusion, and
+  mapped-only filtering, and updated the benchmark result schema and Sphinx
+  benchmark notes;
+* updated M8 roadmap, Sphinx transform/ingest notes, and this task map with
+  the scanner-backed checksum boundary and domain limitations.
 
 ### M8.6 Harden `explode` Native Sharding Boundary
 

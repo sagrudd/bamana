@@ -189,6 +189,12 @@ duplicate canonical records contribute duplicate per-record digests. It is not
 a full BAM-validity proof, a biological equivalence proof, or a guarantee for
 any checksum mode other than the one explicitly reported.
 
+Raw record-order mode is an encounter-order stream domain. Header mode uses the
+deterministic header text and binary reference dictionary serialization and does
+not require an alignment-record scan. Payload mode uses the encounter-order
+record payload stream and only includes the deterministic header serialization
+when `header_included` is true.
+
 ## `sort`
 
 The `sort` payload records a transformational BAM rewrite.
