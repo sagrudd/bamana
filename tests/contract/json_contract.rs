@@ -1420,7 +1420,7 @@ fn milestone_9_activation_baseline_records_index_random_access_scope() {
         "BAI",
         "CSI",
         "FASTQ.GZI",
-        "BAM `index` cannot yet write real BAI or CSI",
+        "BAM `index` cannot yet write real CSI",
         "next_record_with_virtual_offsets",
         "build_bai_index_from_bam",
         "typed start/end offsets",
@@ -1504,7 +1504,7 @@ fn milestone_9_index_contracts_and_fixtures_are_frozen() {
     }
 
     for required in [
-        "BAI/CSI writing remains deferred",
+        "CSI writing remains deferred",
         "FASTQ.GZI",
         "overwrite",
         "--force",
@@ -1514,7 +1514,7 @@ fn milestone_9_index_contracts_and_fixtures_are_frozen() {
         "detected-but-not-supported",
         "output_index.created",
         "created = false",
-        "BAM index creation still reports BAI/CSI writing as unimplemented",
+        "coordinate-sorted BAM inputs",
     ] {
         assert!(
             commands_doc.contains(required)

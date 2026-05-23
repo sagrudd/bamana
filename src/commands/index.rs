@@ -1,17 +1,21 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde::Serialize;
 
 use crate::{
     bam::{
         header::parse_bam_header,
-        index::{IndexKind, default_index_output_path},
+        index::{IndexKind, build_bai_index_from_bam, default_index_output_path, write_bai_index},
     },
     cli::IndexFormatArg,
     error::AppError,
     fastq::gzi::{DEFAULT_INTERVAL_PERCENT, build_fastq_gzi},
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
     json::CommandResponse,
+    output_safety::{finalize_completed_output, remove_stale_temp},
 };
 
 #[derive(Debug)]
@@ -92,7 +96,7 @@ pub fn run(request: IndexRequest) -> CommandResponse<IndexCommandPayload> {
     }
 
     match probe.detected_format {
-        DetectedFormat::Bam => handle_bam_index(request, probe.container, payload),
+        DetectedFormat::Bam => handle_bam_index(request, probe.container, payload, &output_path),
         DetectedFormat::FastqGz => handle_fastq_gzi_index(request, payload, &output_path),
         other => CommandResponse::failure_with_data(
             "index",
@@ -111,7 +115,8 @@ pub fn run(request: IndexRequest) -> CommandResponse<IndexCommandPayload> {
 fn handle_bam_index(
     request: IndexRequest,
     container: ContainerKind,
-    payload: IndexCommandPayload,
+    mut payload: IndexCommandPayload,
+    output_path: &Path,
 ) -> CommandResponse<IndexCommandPayload> {
     if payload.requested_index_kind == IndexKind::Gzi {
         return CommandResponse::failure_with_data(
@@ -137,41 +142,96 @@ fn handle_bam_index(
         );
     }
 
-    if let Err(error) = parse_bam_header(&request.input) {
+    let header = match parse_bam_header(&request.input) {
+        Ok(header) => header,
+        Err(error) => {
+            return CommandResponse::failure_with_data(
+                "index",
+                Some(request.input.as_path()),
+                Some(payload),
+                error,
+            );
+        }
+    };
+
+    payload
+        .notes
+        .push("Index command validated the BAM header and resolved the output path.".to_string());
+
+    if payload.requested_index_kind == IndexKind::Csi {
         return CommandResponse::failure_with_data(
             "index",
             Some(request.input.as_path()),
             Some(payload),
-            error,
+            AppError::Unimplemented {
+                path: request.input.clone(),
+                detail: "CSI index creation is not implemented in this slice.".to_string(),
+            },
         );
     }
 
-    let mut payload = payload;
-    payload
-        .notes
-        .push("Index command validated the BAM header and resolved the output path.".to_string());
-    payload.notes.push(
-        "Actual BAM index writing is not implemented in this slice; this command currently establishes the index-creation contract and output selection path.".to_string(),
-    );
+    if payload.requested_index_kind != IndexKind::Bai {
+        let requested_kind = payload.requested_index_kind_label().to_string();
+        return CommandResponse::failure_with_data(
+            "index",
+            Some(request.input.as_path()),
+            Some(payload),
+            AppError::UnsupportedIndex {
+                path: request.input.clone(),
+                detail: format!("{requested_kind} is not valid for BAM input; use BAI."),
+            },
+        );
+    }
 
-    let detail = match payload.requested_index_kind {
-        IndexKind::Bai => "BAI index creation is not implemented in this slice.".to_string(),
-        IndexKind::Csi => "CSI index creation is not implemented in this slice.".to_string(),
-        IndexKind::Gzi => "FASTQ.GZI is not valid for BAM input.".to_string(),
-        IndexKind::Unknown => {
-            "Unknown index creation is not implemented in this slice.".to_string()
+    if let Some(sort_order) = header.header.hd.sort_order.as_deref() {
+        if sort_order != "coordinate" {
+            return CommandResponse::failure_with_data(
+                "index",
+                Some(request.input.as_path()),
+                Some(payload),
+                AppError::InvalidIndex {
+                    path: request.input.clone(),
+                    detail: format!(
+                        "BAM header declares SO:{sort_order}; BAI creation requires coordinate-sorted BAM input."
+                    ),
+                },
+            );
         }
-    };
+    }
 
-    CommandResponse::failure_with_data(
-        "index",
-        Some(request.input.as_path()),
-        Some(payload),
-        AppError::Unimplemented {
-            path: request.input.clone(),
-            detail,
-        },
-    )
+    let temp_path = temporary_output_path(output_path);
+    remove_stale_temp(&temp_path);
+
+    match build_bai_index_from_bam(&request.input).and_then(|index| {
+        write_bai_index(&temp_path, &index)?;
+        finalize_completed_output(&temp_path, output_path, request.force)
+    }) {
+        Ok(()) => {
+            payload.output_index.created = true;
+            payload.notes.push(
+                "BAI index created successfully from native BAM virtual offsets.".to_string(),
+            );
+            CommandResponse::success("index", Some(request.input.as_path()), payload)
+        }
+        Err(error) => {
+            let _ = fs::remove_file(&temp_path);
+            CommandResponse::failure_with_data(
+                "index",
+                Some(request.input.as_path()),
+                Some(payload),
+                error,
+            )
+        }
+    }
+}
+
+fn temporary_output_path(output_path: &Path) -> PathBuf {
+    let mut file_name = output_path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "index".to_string());
+    file_name.push_str(&format!(".bamana-index-{}.tmp", std::process::id()));
+    output_path.with_file_name(file_name)
 }
 
 fn handle_fastq_gzi_index(
@@ -270,9 +330,18 @@ mod tests {
     use std::{
         fs,
         io::{Read, Write},
+        path::PathBuf,
     };
 
     use flate2::{Compression, write::GzEncoder};
+
+    use crate::{
+        bam::index::parse_bai,
+        bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+        cli::IndexFormatArg,
+    };
 
     use super::{IndexRequest, run};
 
@@ -316,15 +385,82 @@ mod tests {
     }
 
     #[test]
+    fn indexes_coordinate_bam_to_bai_path() {
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[
+                build_light_record(0, 5, "read1", 0),
+                build_light_record(0, 20_000, "read2", 0),
+            ],
+        );
+        let input = write_temp_file("index-bam-coordinate", "bam", &bytes);
+        let output = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+
+        let response = run(IndexRequest {
+            input: input.clone(),
+            out: None,
+            force: false,
+            format: None,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should exist");
+        assert_eq!(payload.format, "BAM");
+        assert_eq!(payload.output_index.path, output.to_string_lossy());
+        assert!(payload.output_index.created);
+        assert!(!payload.output_index.overwritten);
+
+        let summary = parse_bai(&output, 1).expect("written bai should parse");
+        assert_eq!(
+            summary.reference_summaries[0]
+                .as_ref()
+                .map(|summary| summary.mapped_reads),
+            Some(2)
+        );
+
+        fs::remove_file(input).expect("fixture should remove");
+        fs::remove_file(output).expect("index should remove");
+    }
+
+    #[test]
+    fn rejects_bai_creation_for_queryname_header() {
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:queryname\n@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[build_light_record(0, 5, "read1", 0)],
+        );
+        let input = write_temp_file("index-bam-queryname", "bam", &bytes);
+        let output = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+
+        let response = run(IndexRequest {
+            input: input.clone(),
+            out: None,
+            force: false,
+            format: Some(IndexFormatArg::Bai),
+        });
+
+        fs::remove_file(input).expect("fixture should remove");
+
+        assert!(!response.ok);
+        assert!(!output.exists());
+        let error = response.error.expect("error should exist");
+        assert_eq!(error.code, "invalid_index");
+        assert!(
+            error
+                .detail
+                .is_some_and(|detail| detail.contains("SO:queryname"))
+        );
+    }
+
+    #[test]
     fn rejects_bam_with_gzi_request() {
-        let bytes = crate::bgzf::test_support::build_bam_file_with_header_and_records(
+        let bytes = build_bam_file_with_header_and_records(
             "@SQ\tSN:chr1\tLN:10\n",
             &[("chr1", 10)],
-            &[crate::bgzf::test_support::build_light_record(
-                0, 0, "read1", 0,
-            )],
+            &[build_light_record(0, 0, "read1", 0)],
         );
-        let input = crate::bgzf::test_support::write_temp_file("index-bam", "bam", &bytes);
+        let input = write_temp_file("index-bam", "bam", &bytes);
 
         let response = run(IndexRequest {
             input: input.clone(),

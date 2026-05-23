@@ -157,22 +157,22 @@ Present baseline:
 * BGZF reader and BAM scanner paths expose typed record start/end virtual
   offsets for future BAI chunk and linear-index construction;
 * `src/bam/index.rs` can build native in-memory BAI bins, chunks, linear-index
-  windows, and mapped/unmapped counts from scanner-owned record traversal;
+  windows, and mapped/unmapped counts from scanner-owned record traversal, and
+  serialize native BAI sidecars;
 * `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent index candidates, parses shallow BAI metadata summaries,
   and parses CSI headers enough to report detected-but-not-supported status;
 * `check_index` already reports adjacent index presence, selected path, kind,
   shallow syntactic validity, staleness, and compatibility status;
-* `index` already creates FASTQ.GZI sidecars for FASTQ.GZ inputs and validates
-  BAM plausibility plus output-path behavior before honestly reporting BAI/CSI
+* `index` already creates native BAI sidecars for coordinate-sorted BAM inputs,
+  creates FASTQ.GZI sidecars for FASTQ.GZ inputs, and honestly reports CSI
   writing as unimplemented;
 * `check_map` and `summary` already keep index-derived evidence distinct from
   scan-derived evidence when usable BAI metadata is present.
 
 Known M9 gaps:
 
-* BAM `index` cannot yet write real BAI or CSI sidecars;
-* BAI serialization and metadata pseudo-bin emission remain to be implemented;
+* BAM `index` cannot yet write real CSI sidecars;
 * `check_index` does not yet validate chunks, virtual-offset ordering, linear
   index monotonicity, reference span plausibility, or random-access usability;
 * CSI support remains header-only detection until a scoped M9 decision;

@@ -1,20 +1,19 @@
 {
   "ok": true,
   "command": "index",
-  "path": "reads.fastq.gz",
+  "path": "sample.bam",
   "data": {
-    "format": "FASTQ.GZ",
-    "requested_index_kind": "GZI",
+    "format": "BAM",
+    "requested_index_kind": "BAI",
     "output_index": {
-      "path": "reads.fastq.gzi",
-      "kind": "GZI",
+      "path": "sample.bam.bai",
+      "kind": "BAI",
       "created": true,
       "overwritten": false
     },
     "notes": [
-      "FASTQ.GZI index created successfully.",
-      "Checkpoint boundaries were sampled at approximately 0.10% compressed-offset intervals and pinned to completed FASTQ records.",
-      "The FASTQ.GZI sidecar stores 101 checkpoints including start and end anchors."
+      "Index command validated the BAM header and resolved the output path.",
+      "BAI index created successfully from native BAM virtual offsets."
     ]
   },
   "error": null

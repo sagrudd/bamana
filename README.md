@@ -76,7 +76,7 @@ The current semantics are intentionally narrow:
 * `check_map` prefers index-derived mapping summaries when a usable BAI is present and otherwise falls back to scan-based evidence
 * `check_sort` combines BAM header declarations with a bounded scan of alignment records to assess coordinate or queryname ordering
 * `check_index` inspects adjacent BAM indices for presence, type, shallow syntactic validity, timestamp-based staleness, and apparent usability
-* `index` validates BAM inputs honestly, still defers BAI/CSI writing, and now creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
+* `index` creates native BAI sidecars for coordinate-sorted BAM inputs, still defers CSI writing, and creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
 * `explode` splits one `BAM`, `SAM`, or `FASTQ.GZ` input into contiguous shards while preserving the original encounter order of reads or alignments within each shard; BAM shards preserve the parsed header and use scanner-backed records through the native BGZF writer, while the `FASTQ.GZ` path auto-creates or reuses adjacent `FASTQ.GZI` metadata, aligns shard boundaries to available index cutpoints, and allows shard sizes to vary so every sequence lands in exactly one shard without extra reordering work
 * `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
@@ -106,7 +106,7 @@ limited to the canonical BGZF EOF marker.
 `check_map` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_sort` does not imply full BAM validity, EOF completeness, or validation of every alignment record.
 `check_index` does not imply that every random-access offset is correct or that the BAM and index are semantically matched beyond shallow inspection.
-`index` does not imply that BAM index writing has completed unless the response explicitly reports a created output.
+`index` does not imply that CSI writing, indexed random access, or deeper index validation has completed unless the response explicitly reports those behaviors.
 `summary` does not imply full BAM validity, valid EOF state, or validation of every optional field, tag, or record invariant.
 `check_tag` does not imply full BAM validity, valid EOF state, or semantic correctness of tag values beyond the auxiliary-field traversal actually performed.
 `validate` does not imply biological correctness, external reference concordance, or correctness of every optional-field semantic beyond the checks actually implemented.
@@ -295,15 +295,15 @@ priority order and reports whether a selected index is BAI, CSI, or unknown.
 Stale-index detection is heuristic and based on file modification times rather
 than proof that every indexed offset still matches the BAM.
 
-`index` now handles two distinct paths. For BAM it still validates the input,
-selects a default output path (`<bam>.bai` or `<bam>.csi`), and enforces
-overwrite rules, but actual BAI/CSI writing is still deferred and the JSON
-error response makes that limitation explicit instead of pretending an index
-was built. For `FASTQ.GZ` it writes a binary `FASTQ.GZI` sidecar, defaulting to
-`<input>.gzi`, with checkpoints sampled at approximately 0.1% compressed-offset
-intervals and pinned to completed FASTQ record boundaries rather than every
-read. The `FASTQ.GZI` sidecar now stores header metadata, planner flags, and
-sampled `(compressed_offset, uncompressed_offset, cumulative_records)`
+`index` now handles two distinct paths. For BAM it validates the input, creates
+native BAI sidecars for coordinate-sorted BAM files, selects the default
+`<bam>.bai` output path, writes through a temporary file, and enforces
+overwrite rules. CSI creation is still explicitly unimplemented. For
+`FASTQ.GZ` it writes a binary `FASTQ.GZI` sidecar, defaulting to `<input>.gzi`,
+with checkpoints sampled at approximately 0.1% compressed-offset intervals and
+pinned to completed FASTQ record boundaries rather than every read. The
+`FASTQ.GZI` sidecar now stores header metadata, planner flags, and sampled
+`(compressed_offset, uncompressed_offset, cumulative_records)`
 checkpoint pairs, so enumerate can reuse an exact indexed record total,
 explode can derive dense contiguous shard plans, and consume can size parallel
 worker batches from the same sidecar.
@@ -445,10 +445,10 @@ timings cover each M8 command without claiming external comparator parity.
 Milestone 9 is active for native BAM index and random-access work. M9.1 records
 the baseline: Bamana can detect and shallowly inspect BAI/CSI sidecars, create
 FASTQ.GZI sidecars, and distinguish index-derived evidence from scan-derived
-evidence. M9.3 adds scanner-exposed virtual offsets for future BAI/CSI work,
-and M9.4 adds native in-memory BAI bin/chunk/linear-index construction. BAM
-BAI/CSI writing, deeper BAI validation, and indexed random-access acceleration
-remain outstanding M9 work.
+evidence. M9.3 adds scanner-exposed virtual offsets, M9.4 adds native
+in-memory BAI bin/chunk/linear-index construction, and M9.5 writes native BAI
+sidecars for coordinate-sorted BAM input. CSI writing, deeper BAI validation,
+and indexed random-access acceleration remain outstanding M9 work.
 
 ## Specification Layer
 

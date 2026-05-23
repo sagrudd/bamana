@@ -29,7 +29,7 @@
         "expected/summary/tiny.valid.coordinate.success.json",
         "expected/validate/tiny.valid.coordinate.success.json",
         "expected/checksum/tiny.valid.coordinate.success.json",
-        "expected/index/tiny.valid.coordinate.failure.json"
+        "expected/index/tiny.valid.coordinate.success.json"
       ],
       "has_index": true,
       "sort_order": "coordinate",

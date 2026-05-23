@@ -22,6 +22,9 @@ The repository already has the following native index groundwork:
 * ``src/bam/index.rs`` exposes ``build_bai_index_from_bam`` for native
   in-memory BAI bin, chunk, linear-index, and unmapped-count construction from
   scanner-owned record traversal.
+* ``src/bam/index.rs`` serializes native BAI sidecars, including regular bins,
+  metadata pseudo-bin counts, linear-index windows, and trailing unplaced
+  unmapped counts.
 * ``src/bam/index.rs`` detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent index candidates, parses shallow BAI reference-count and
   pseudo-bin metadata summaries, and parses CSI headers enough to report
@@ -31,11 +34,10 @@ The repository already has the following native index groundwork:
   BAI inspection is currently limited to magic, reference-count agreement,
   top-level parseability, and metadata summaries where present. CSI inspection
   is header-only detection until scoped support lands.
-* ``index`` creates real FASTQ.GZI sidecars for FASTQ.GZ inputs and reports
-  BAM BAI/CSI writing as unimplemented instead of claiming sidecar creation.
-  Existing sidecars are not overwritten unless ``--force`` is supplied, and
-  BAM responses keep ``output_index.created`` false until a real BAI/CSI
-  sidecar is written.
+* ``index`` creates native BAI sidecars for coordinate-sorted BAM inputs and
+  real FASTQ.GZI sidecars for FASTQ.GZ inputs. Existing sidecars are not
+  overwritten unless ``--force`` is supplied, and CSI writing still returns an
+  explicit ``unimplemented`` response.
 * ``check_map`` and ``summary`` distinguish index-derived BAI metadata evidence
   from scan-derived evidence and fall back to scanner evidence when index
   metadata is absent or insufficient.
@@ -45,8 +47,7 @@ Outstanding M9 Work
 
 The current M9 gaps are intentional and must remain visible until implemented:
 
-* BAM ``index`` cannot yet write real BAI or CSI sidecars.
-* BAI serialization and metadata pseudo-bin emission remain to be implemented.
+* BAM ``index`` cannot yet write CSI sidecars.
 * ``check_index`` does not yet validate chunks, virtual-offset ordering,
   linear-index monotonicity, reference span plausibility, or random-access
   usability.
@@ -92,11 +93,12 @@ The offsets feed index construction as follows:
   compressed member start with in-block offset zero, matching BGZF
   virtual-offset semantics.
 
-Native BAI Builder
-------------------
+Native BAI Builder And Writer
+-----------------------------
 
-M9.4 adds native BAI data construction but does not yet change public command
-behavior. ``build_bai_index_from_bam`` traverses BAM records through
+M9.4 adds native BAI data construction and M9.5 routes BAM BAI creation through
+that builder and a native serializer. ``build_bai_index_from_bam`` traverses
+BAM records through
 ``BamScanner::next_record_with_virtual_offsets`` and produces in-memory
 reference indexes with:
 
@@ -109,9 +111,11 @@ reference indexes with:
 
 The builder rejects mapped records outside the header reference dictionary,
 negative mapped coordinates, coordinates outside the BAI addressable range, and
-mapped records that violate coordinate order. M9.5 remains responsible for BAI
-serialization, metadata pseudo-bin emission, atomic sidecar writing, and
-``bamana index`` payload changes.
+mapped records that violate coordinate order. ``write_bai_index`` serializes
+regular bins, the metadata pseudo-bin with mapped/unmapped counts, the linear
+index, and trailing unplaced unmapped counts. ``bamana index`` writes BAI
+through a temporary file and final rename, rejects existing outputs unless
+``--force`` is supplied, and rejects header-declared non-coordinate BAM order.
 
 Contract Boundary
 -----------------

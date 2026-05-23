@@ -64,7 +64,8 @@ Present implementation pieces:
   with CSI preference support, parses shallow BAI reference-count and
   pseudo-bin metadata summaries, parses CSI headers enough to report
   detected-but-not-supported status, and can build native in-memory BAI data
-  structures from scanner-owned record traversal.
+  structures from scanner-owned record traversal and serialize native BAI
+  sidecars.
 * `src/bgzf/virtual_offset.rs` owns a `VirtualOffset` type with packed
   construction, bounds checks, ordering, and tests.
 * `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
@@ -74,8 +75,9 @@ Present implementation pieces:
   header parsing, while reporting records read and positioned record start/end
   virtual offsets for native scans.
 * `src/commands/index.rs` validates BAM plausibility and output path behavior,
-  creates real FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports BAM BAI/CSI
-  writing as unimplemented rather than pretending an index was created.
+  creates native BAI sidecars for coordinate-sorted BAM inputs, creates real
+  FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports CSI writing as
+  unimplemented rather than pretending an index was created.
 * `src/commands/check_index.rs` reports adjacent index discovery, selected
   index kind, shallow BAI/CSI syntax status, timestamp-based staleness, and
   compatibility.
@@ -85,8 +87,7 @@ Present implementation pieces:
 
 Outstanding M9 gaps:
 
-* BAM `index` cannot yet write real BAI or CSI output.
-* BAI serialization and metadata pseudo-bin emission remain unimplemented.
+* BAM `index` cannot yet write real CSI output.
 * `check_index` does not yet validate BAI chunks, virtual-offset ordering,
   linear-index monotonicity, reference span plausibility, or random-access
   usability.
@@ -142,9 +143,9 @@ adjacent or overlapping chunks per reference/bin, populates 16kb linear-index
 windows, and accounts for mapped, reference-associated unmapped, and unplaced
 unmapped reads.
 
-This builder is the input for M9.5 BAI writing. It does not yet serialize BAI
-bytes, emit metadata pseudo-bins, or make `bamana index` report BAM sidecar
-creation.
+M9.5 now serializes this builder output into BAI bytes, emits metadata
+pseudo-bins, and makes `bamana index` report BAM sidecar creation only after
+the final output path is published.
 
 ## Benchmark Hooks
 

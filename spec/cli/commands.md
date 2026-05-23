@@ -602,10 +602,12 @@ Synopsis:
 `bamana index --input <file> [--out <path>] [--force] [--format <bai|csi|gzi>]`
 
 Semantics:
-Creates a format-appropriate sidecar index for supported inputs. BAM input still
-validates plausibility and resolves output rules honestly, including refusing to
-overwrite an existing output path unless `--force` is supplied, but BAI/CSI
-writing remains deferred in the current slice. `FASTQ.GZ` input writes a binary
+Creates a format-appropriate sidecar index for supported inputs. BAM BAI input
+validates plausibility, rejects header-declared unsupported sort orders, builds
+native BAI bins/chunks/linear windows from scanner virtual offsets, and
+publishes the sidecar through a temporary path and final rename. Existing output
+paths are refused unless `--force` is supplied. BAM CSI writing remains
+explicitly unimplemented in the current slice. `FASTQ.GZ` input writes a binary
 `FASTQ.GZI` sidecar by scanning the gzip stream once and sampling checkpoint
 boundaries at approximately 0.1% compressed-offset intervals by default, pinned
 to completed FASTQ record boundaries rather than arbitrary byte positions. The
@@ -614,14 +616,14 @@ binary `FASTQ.GZI` payload stores header metadata, planner flags, and sampled
 for indexed enumeration, explode planning, and consume planning.
 
 Does prove:
-For BAM: command input validation and output-path resolution.
+For BAM BAI: command input validation, native BAI sidecar creation, and
+completion of the requested output path.
 For FASTQ.GZ: that a `FASTQ.GZI` sidecar was written and that its checkpoints
 track approximate compressed-stream progress at record-safe boundaries.
 
 Does not prove:
-That BAM index creation occurred unless `created: true` is returned.
-For BAM failure responses, `output_index.created` remains `false`; a BAM
-sidecar must not be claimed until native BAI/CSI writing actually creates it.
+That CSI creation or indexed random-access acceleration occurred.
+For BAM CSI and BAM failure responses, `output_index.created` remains `false`.
 That a `FASTQ.GZI` checkpoint exists for every read or every gzip member
 boundary; the sidecar is intentionally sampled rather than exhaustive.
 

@@ -147,8 +147,8 @@ Key concepts:
 * `format` distinguishes BAM from FASTQ.GZ input behavior
 * `requested_index_kind` records BAI, CSI, or GZI intent
 * `output_index.created` is true only when a sidecar was actually written
-* BAM BAI/CSI writing is still unimplemented, so BAM failure responses must not
-  claim sidecar creation and keep `created = false`
+* BAM BAI writing creates native BAI sidecars for coordinate-sorted BAM input;
+  CSI writing is still unimplemented and keeps `created = false`
 * FASTQ.GZ indexing writes FASTQ.GZI sidecars with sampled, record-boundary
   checkpoint metadata for enumeration, explode planning, and consume planning
 * `output_index.overwritten` reports whether `--force` replaced an existing

@@ -20,7 +20,7 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.invalid.mismatched_reference_count.bai` | BAI reference-count mismatch | Scan fallback after unusable index | `check_index`, `check_map`, `summary` | failure + fallback |
 | `tiny.valid.coordinate.csi_header` | CSI header detection | Unsupported-index fallback | `check_index`, `check_map`, `summary` | unsupported + fallback |
 | `tiny.invalid.bad_csi` | Malformed CSI failure | Unsupported-index failure fallback | `check_index`, `check_map` | failure |
-| `tiny.invalid.unsorted_coordinate` | Coordinate-sort violation | BAM index rejection before BAI writing | `check_sort`, `index` | failure |
+| `tiny.invalid.unsorted_coordinate` | Coordinate-sort violation | BAM index rejection during BAI writing | `check_sort`, `index` | failure |
 | `tiny.transforms.source` | Transform source BAM | Checksum baseline | `sort`, `explode`, `checksum` | success |
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |
 | `tiny.transforms.merged` | Merge result | Multiset preservation verification | `merge`, `checksum` | success |

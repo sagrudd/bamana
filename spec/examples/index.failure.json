@@ -12,8 +12,7 @@
       "overwritten": false
     },
     "notes": [
-      "Index command validated the BAM header and resolved the output path.",
-      "Actual BAM index writing is not implemented in this slice; this command currently establishes the index-creation contract and output selection path."
+      "Index command validated the BAM header and resolved the output path."
     ]
   },
   "error": {

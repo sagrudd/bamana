@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, HashSet},
     fs::File,
-    io::{BufReader, Read},
+    io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -329,6 +329,114 @@ pub fn build_bai_index_from_bam(path: &Path) -> Result<BaiIndex, AppError> {
     }
 
     Ok(builder.finish())
+}
+
+pub fn write_bai_index(path: &Path, index: &BaiIndex) -> Result<(), AppError> {
+    let file = File::create(path).map_err(|error| AppError::WriteError {
+        path: path.to_path_buf(),
+        message: error.to_string(),
+    })?;
+    let mut writer = BufWriter::new(file);
+    write_bai_index_to_writer(path, index, &mut writer)?;
+    writer.flush().map_err(|error| AppError::WriteError {
+        path: path.to_path_buf(),
+        message: error.to_string(),
+    })
+}
+
+fn write_bai_index_to_writer(
+    path: &Path,
+    index: &BaiIndex,
+    writer: &mut impl Write,
+) -> Result<(), AppError> {
+    write_all(path, writer, BAI_MAGIC)?;
+    write_i32_count(path, writer, index.references.len(), "BAI reference count")?;
+
+    for reference in &index.references {
+        let bin_count =
+            reference
+                .bins
+                .len()
+                .checked_add(1)
+                .ok_or_else(|| AppError::InvalidIndex {
+                    path: path.to_path_buf(),
+                    detail: "BAI bin count overflowed while adding metadata pseudo-bin."
+                        .to_string(),
+                })?;
+        write_i32_count(path, writer, bin_count, "BAI bin count")?;
+
+        for (bin, chunks) in &reference.bins {
+            write_all(path, writer, &bin.to_le_bytes())?;
+            write_i32_count(path, writer, chunks.len(), "BAI chunk count")?;
+            for chunk in chunks {
+                write_all(path, writer, &chunk.start.packed().to_le_bytes())?;
+                write_all(path, writer, &chunk.end.packed().to_le_bytes())?;
+            }
+        }
+
+        let (reference_start, reference_end) = reference_virtual_span(reference);
+        write_all(path, writer, &BAI_METADATA_BIN.to_le_bytes())?;
+        write_all(path, writer, &2_i32.to_le_bytes())?;
+        write_all(path, writer, &reference_start.to_le_bytes())?;
+        write_all(path, writer, &reference_end.to_le_bytes())?;
+        write_all(path, writer, &reference.mapped_reads.to_le_bytes())?;
+        write_all(path, writer, &reference.unmapped_reads.to_le_bytes())?;
+
+        write_i32_count(
+            path,
+            writer,
+            reference.linear_index.len(),
+            "BAI linear interval count",
+        )?;
+        for offset in &reference.linear_index {
+            write_all(path, writer, &offset.packed().to_le_bytes())?;
+        }
+    }
+
+    write_all(path, writer, &index.unplaced_unmapped_reads.to_le_bytes())
+}
+
+fn reference_virtual_span(reference: &BaiReferenceIndex) -> (u64, u64) {
+    let mut start = None;
+    let mut end = VirtualOffset::ZERO;
+
+    for chunks in reference.bins.values() {
+        for chunk in chunks {
+            if match start {
+                Some(current) => chunk.start < current,
+                None => true,
+            } {
+                start = Some(chunk.start);
+            }
+            if chunk.end > end {
+                end = chunk.end;
+            }
+        }
+    }
+
+    (start.unwrap_or(VirtualOffset::ZERO).packed(), end.packed())
+}
+
+fn write_i32_count(
+    path: &Path,
+    writer: &mut impl Write,
+    count: usize,
+    label: &str,
+) -> Result<(), AppError> {
+    let count = i32::try_from(count).map_err(|_| AppError::InvalidIndex {
+        path: path.to_path_buf(),
+        detail: format!("{label} exceeded the BAI i32 limit."),
+    })?;
+    write_all(path, writer, &count.to_le_bytes())
+}
+
+fn write_all(path: &Path, writer: &mut impl Write, bytes: &[u8]) -> Result<(), AppError> {
+    writer
+        .write_all(bytes)
+        .map_err(|error| AppError::WriteError {
+            path: path.to_path_buf(),
+            message: error.to_string(),
+        })
 }
 
 pub fn bai_bin_for_region(start: u32, end: u32) -> Result<u32, AppError> {
@@ -668,7 +776,7 @@ mod tests {
     use super::{
         IndexKind, IndexResolution, bai_bin_for_region, build_bai_index_from_bam,
         detect_index_kind, discover_index_candidates, parse_bai, parse_csi_header,
-        resolve_index_for_bam, test_support,
+        resolve_index_for_bam, test_support, write_bai_index,
     };
 
     #[test]
@@ -779,6 +887,35 @@ mod tests {
         assert_eq!(index.references[0].mapped_reads, 1);
         assert_eq!(index.references[0].unmapped_reads, 1);
         assert_eq!(index.unplaced_unmapped_reads, 1);
+    }
+
+    #[test]
+    fn writes_bai_with_metadata_counts_and_trailing_unplaced_count() {
+        let mapped = build_light_record(0, 5, "mapped", 0);
+        let reference_unmapped = build_light_record(0, 0, "ref_unmapped", 0x4);
+        let unplaced = build_light_record(-1, -1, "unplaced", 0x4);
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100000\n",
+            &[("chr1", 100000)],
+            &[mapped, reference_unmapped, unplaced],
+        );
+        let bam_path = write_temp_file("bai-write-source", "bam", &bytes);
+        let bai_path = PathBuf::from(format!("{}.bai", bam_path.to_string_lossy()));
+
+        let index = build_bai_index_from_bam(&bam_path).expect("index should build");
+        write_bai_index(&bai_path, &index).expect("index should write");
+        let summary = parse_bai(&bai_path, 1).expect("written index should parse");
+
+        fs::remove_file(bam_path).expect("fixture should be removable");
+        fs::remove_file(bai_path).expect("written index should be removable");
+
+        assert_eq!(
+            summary.reference_summaries[0]
+                .as_ref()
+                .map(|entry| (entry.mapped_reads, entry.unmapped_reads)),
+            Some((1, 1))
+        );
+        assert_eq!(summary.unplaced_unmapped_reads, Some(1));
     }
 
     #[test]

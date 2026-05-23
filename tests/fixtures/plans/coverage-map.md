@@ -57,7 +57,8 @@ These commands depend on the BAI fixtures:
 * index-aware `summary`
 * `index` once writer support is present
 
-M9.2 freezes the planned index fixture taxonomy before BAM index writing lands:
+M9.2 freezes the planned index fixture taxonomy and M9.5 promotes BAM BAI
+writing for the coordinate-sorted BAM source:
 
 * valid BAI: `tiny.valid.coordinate.bai`
 * malformed BAI: `tiny.invalid.bad_bai`
@@ -72,10 +73,10 @@ M9.2 freezes the planned index fixture taxonomy before BAM index writing lands:
 * FASTQ.GZ source and FASTQ.GZI sidecar:
   `tiny.valid.fastq_gz`, `tiny.valid.fastq_gz.gzi`
 
-Until M9 implements native BAM BAI writing, BAM `index` fixture expectations
-must assert `output_index.created = false` on BAM failure paths. FASTQ.GZI
-success fixtures may assert `output_index.created = true` because that sidecar
-is implemented.
+M9.5 native BAM BAI writing means the coordinate-sorted BAM `index` fixture may
+assert `output_index.created = true` for BAI output. BAM CSI and unsupported
+failure fixtures must still assert `output_index.created = false`. FASTQ.GZI
+success fixtures may also assert `output_index.created = true`.
 
 ### Transform coverage
 

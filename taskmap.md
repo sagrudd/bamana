@@ -4004,17 +4004,13 @@ Known present pieces:
   detected-but-not-supported status;
 * `check_index` already reports adjacent index presence, selected path, kind,
   shallow syntactic validity, staleness, and compatibility status;
-* `index` already creates `FASTQ.GZI` sidecars for FASTQ.GZ inputs;
-* BAM `index` already validates BAM plausibility and output path resolution but
-  explicitly reports BAI/CSI writing as unimplemented.
+* `index` already creates native BAI sidecars for coordinate-sorted BAM inputs
+  and `FASTQ.GZI` sidecars for FASTQ.GZ inputs;
+* BAM `index` explicitly reports CSI writing as unimplemented.
 
 Known gaps:
 
-* BAM `index` cannot yet write real BAI or CSI output;
-* native BGZF scanning does not yet expose enough virtual-offset accounting for
-  BAI chunk and linear-index construction;
-* BAI binning, chunk merging, metadata pseudo-bin emission, linear-index
-  construction, and unplaced-unmapped accounting remain to be implemented;
+* BAM `index` cannot yet write real CSI output;
 * `check_index` does not yet validate chunks, virtual-offset ordering, linear
   index monotonicity, reference span plausibility, or random-access usability;
 * CSI support remains header-only detection rather than scoped parsing/writing
@@ -4093,9 +4089,11 @@ Completion evidence:
 * recorded present M9 evidence: virtual-offset type groundwork, index sidecar
   detection, BAI shallow metadata parsing, CSI header detection, check_index
   shallow validation/staleness reporting, FASTQ.GZI sidecar creation, BAM
-  index honest deferral, and index-versus-scan evidence distinctions;
-* recorded M9 gaps: BAM BAI/CSI writing, scanner-exposed record virtual
-  offsets before M9.3, BAI bin/chunk/linear-index construction, deeper
+  index honest deferral before M9.5, and index-versus-scan evidence
+  distinctions;
+* recorded M9 gaps at activation time: BAM BAI/CSI writing,
+  scanner-exposed record virtual offsets before M9.3,
+  BAI bin/chunk/linear-index construction, deeper
   `check_index` validation, scoped CSI decision, indexed `check_map`/`summary`
   acceleration, and M9 dependency/benchmark evidence;
 * made no command behavior changes and left the public contract commands
@@ -4131,9 +4129,9 @@ Completion evidence:
   `spec/examples/index.success.json`, `spec/examples/index.failure.json`,
   `spec/examples/check_index.success.json`, and
   `spec/examples/check_index.failure.json`;
-* confirmed governed docs describe BAM BAI/CSI deferral, FASTQ.GZI creation,
-  overwrite behavior, timestamp-based stale-index heuristics, and current
-  shallow validation depth;
+* confirmed governed docs described BAM BAI/CSI deferral before M9.5,
+  FASTQ.GZI creation, overwrite behavior, timestamp-based stale-index
+  heuristics, and current shallow validation depth;
 * froze planned index fixtures for valid BAI, malformed BAI, mismatched BAI
   reference counts, stale BAI, CSI header detection, malformed CSI,
   coordinate-sorted BAM, unsorted BAM index rejection, FASTQ.GZ source, and
@@ -4141,8 +4139,8 @@ Completion evidence:
 * added contract coverage requiring the `index` and `check_index` docs,
   schemas, examples, and M9.2 fixture taxonomy to stay present;
 * recorded no intentional command behavior changes before index implementation
-  work; BAM index creation still cannot claim a created sidecar until native
-  BAI/CSI writing lands.
+  work; BAM index creation could not claim a created sidecar until native
+  writing landed in later M9 tasks.
 
 ### M9.3 Expose BGZF Virtual Offsets During Native Scans
 
@@ -4214,13 +4212,13 @@ Completion evidence:
 * added tests for representative bins, merged chunks, linear windows,
   reference-associated unmapped reads, unplaced unmapped reads, unsorted mapped
   records, and out-of-dictionary reference ids;
-* documented that M9.4 builds data structures only; M9.5 remains responsible
-  for BAI serialization, metadata pseudo-bin emission, atomic sidecar writing,
-  and `bamana index` payload changes.
+* documented that M9.4 built data structures only before M9.5 added BAI
+  serialization, metadata pseudo-bin emission, atomic sidecar writing, and
+  `bamana index` payload changes.
 
 ### M9.5 Implement BAM `index` BAI Writing
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4242,7 +4240,18 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* implemented native BAI serialization in `src/bam/index.rs`, including
+  regular bin chunks, metadata pseudo-bin mapped/unmapped counts, linear-index
+  windows, and trailing unplaced-unmapped counts;
+* routed BAM `index` default and `--format bai` output through native BAI
+  building, temporary sidecar writing, and final rename semantics;
+* preserved FASTQ.GZI command behavior and kept CSI output explicitly
+  unimplemented;
+* added regression coverage for generated BAI parsing, command success,
+  header-declared unsupported sort order rejection, and existing BAM/GZI
+  rejection;
+* updated CLI contracts, JSON examples, roadmap notes, fixture planning, and
+  Sphinx documentation for M9.5 behavior.
 
 ### M9.6 Harden `check_index` BAI And CSI Validation
 
