@@ -914,6 +914,53 @@ fn sort_benchmark_hook_is_documented_and_schema_governed() {
 }
 
 #[test]
+fn merge_benchmark_hook_is_documented_and_schema_governed() {
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let roadmap = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+
+    assert!(
+        scanner_schema.contains("\"merge\""),
+        "scanner_microbench schema does not include M8 merge command timing row"
+    );
+    assert!(
+        scanner_doc.contains("``merge``"),
+        "scanner_microbench docs do not describe M8 merge command timing row"
+    );
+    assert!(
+        roadmap.contains("`merge` command smoke timing"),
+        "M8 roadmap does not record merge benchmark hook evidence"
+    );
+
+    for required in [
+        "coordinate merge",
+        "canonical checksum verification",
+        "in-memory",
+        "BGZF write",
+        "smoke timing",
+        "comparator parity",
+    ] {
+        assert!(
+            scanner_doc.contains(required) || roadmap.contains(required),
+            "M8 merge benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

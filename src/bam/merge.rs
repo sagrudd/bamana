@@ -8,12 +8,9 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{
-            ReferenceRecord, parse_bam_header_from_reader, rewrite_header_for_sort,
-            serialize_bam_header_payload,
-        },
-        reader::BamReader,
-        records::{RecordLayout, read_next_record_layout},
+        header::{ReferenceRecord, rewrite_header_for_sort, serialize_bam_header_payload},
+        records::RecordLayout,
+        scan::BamScanner,
         sort::{
             QuerynameSubOrder, compare_coordinate_layouts, compare_queryname_layouts,
             queryname_suborder_name,
@@ -91,9 +88,9 @@ pub fn merge_bams(options: &MergeExecutionOptions) -> Result<MergeExecution, App
     let mut per_input_records_read = Vec::with_capacity(options.input_paths.len());
     let mut global_ordinal = 0_u64;
 
-    for (input_index, input_path) in options.input_paths.iter().enumerate() {
-        let mut reader = BamReader::open(input_path)?;
-        let header = parse_bam_header_from_reader(&mut reader)?;
+    for input_path in &options.input_paths {
+        let mut scanner = BamScanner::open(input_path)?;
+        let header = scanner.header();
 
         if let Some(expected) = base_references.as_ref() {
             ensure_compatible_reference_dictionary(
@@ -107,19 +104,23 @@ pub fn merge_bams(options: &MergeExecutionOptions) -> Result<MergeExecution, App
         }
 
         let mut input_records = 0_u64;
-        loop {
-            let Some(layout) = read_next_record_layout(&mut reader)? else {
-                break;
-            };
+        while let Some(record) = scanner.next_record()? {
             merged_records.push(MergeableRecord {
-                layout,
+                layout: record.to_record_layout(),
                 ordinal: global_ordinal,
             });
             global_ordinal += 1;
             input_records += 1;
         }
 
-        let _ = input_index;
+        if input_records != scanner.records_read() {
+            return Err(AppError::InvalidRecord {
+                path: input_path.clone(),
+                detail:
+                    "Merge scanner record count diverged from records materialized for merging."
+                        .to_string(),
+            });
+        }
         per_input_records_read.push(input_records);
     }
 
@@ -347,6 +348,9 @@ mod tests {
         bam::{
             checksum::{ChecksumFilters, compute_canonical_digest_for_records},
             merge::{MergeExecutionOptions, MergeMode, merge_bams},
+            records::RecordLayout,
+            scan::BamScanner,
+            sort::QuerynameSubOrder,
         },
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
@@ -388,6 +392,7 @@ mod tests {
 
         assert_eq!(result.per_input_records_read, vec![1, 1]);
         assert_eq!(result.records_written, 2);
+        assert_eq!(read_output_names(&output), vec!["a", "b"]);
 
         fs::remove_file(input_a).expect("fixture should be removable");
         fs::remove_file(input_b).expect("fixture should be removable");
@@ -425,6 +430,134 @@ mod tests {
 
         fs::remove_file(input_a).expect("fixture should be removable");
         fs::remove_file(input_b).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn coordinate_merge_orders_records_and_preserves_counts() {
+        let input_a = write_temp_file(
+            "merge-coordinate-a",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 8, "late", 0)],
+            ),
+        );
+        let input_b = write_temp_file(
+            "merge-coordinate-b",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "early", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-merge-coordinate-output-{}.bam",
+            std::process::id()
+        ));
+
+        let result = merge_bams(&MergeExecutionOptions {
+            input_paths: vec![input_a.clone(), input_b.clone()],
+            output_path: output.clone(),
+            force: true,
+            mode: MergeMode::Coordinate,
+            queryname_suborder: None,
+            threads: 1,
+        })
+        .expect("merge should succeed");
+
+        assert_eq!(result.per_input_records_read, vec![1, 1]);
+        assert_eq!(result.records_written, 2);
+        assert_eq!(read_output_positions(&output), vec![1, 8]);
+        assert_eq!(read_output_names(&output), vec!["early", "late"]);
+
+        fs::remove_file(input_a).expect("fixture should be removable");
+        fs::remove_file(input_b).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn queryname_merge_orders_records_lexicographically() {
+        let input_a = write_temp_file(
+            "merge-queryname-a",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read-b", 0)],
+            ),
+        );
+        let input_b = write_temp_file(
+            "merge-queryname-b",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 2, "read-a", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-merge-queryname-output-{}.bam",
+            std::process::id()
+        ));
+
+        let result = merge_bams(&MergeExecutionOptions {
+            input_paths: vec![input_a.clone(), input_b.clone()],
+            output_path: output.clone(),
+            force: true,
+            mode: MergeMode::Queryname,
+            queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
+            threads: 1,
+        })
+        .expect("merge should succeed");
+
+        assert_eq!(
+            result.produced_sub_order,
+            Some(QuerynameSubOrder::Lexicographical)
+        );
+        assert_eq!(read_output_names(&output), vec!["read-a", "read-b"]);
+
+        fs::remove_file(input_a).expect("fixture should be removable");
+        fs::remove_file(input_b).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn existing_output_requires_force_and_preserves_sentinel() {
+        let input = write_temp_file(
+            "merge-force-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "a", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-merge-force-output-{}.bam",
+            std::process::id()
+        ));
+        fs::write(&output, b"sentinel").expect("sentinel should be writable");
+
+        let error = merge_bams(&MergeExecutionOptions {
+            input_paths: vec![input.clone()],
+            output_path: output.clone(),
+            force: false,
+            mode: MergeMode::Input,
+            queryname_suborder: None,
+            threads: 1,
+        })
+        .expect_err("merge should fail without force");
+
+        assert_eq!(error.to_json_error().code, "output_exists");
+        assert_eq!(
+            fs::read(&output).expect("sentinel should remain readable"),
+            b"sentinel"
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
     }
 
     #[test]
@@ -478,5 +611,31 @@ mod tests {
         fs::remove_file(input_a).expect("fixture should be removable");
         fs::remove_file(input_b).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    fn read_output_names(path: &std::path::Path) -> Vec<String> {
+        read_output_records(path)
+            .into_iter()
+            .map(|record| record.read_name)
+            .collect()
+    }
+
+    fn read_output_positions(path: &std::path::Path) -> Vec<i32> {
+        read_output_records(path)
+            .into_iter()
+            .map(|record| record.pos)
+            .collect()
+    }
+
+    fn read_output_records(path: &std::path::Path) -> Vec<RecordLayout> {
+        let mut scanner = BamScanner::open(path).expect("merged output should scan");
+        let mut records = Vec::new();
+        while let Some(record) = scanner
+            .next_record()
+            .expect("merged output record should parse")
+        {
+            records.push(record.to_record_layout());
+        }
+        records
     }
 }

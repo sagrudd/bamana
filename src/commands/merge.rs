@@ -75,7 +75,7 @@ pub struct MergeResultInfo {
     pub header_compatibility: HeaderCompatibility,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum HeaderCompatibility {
     Compatible,
@@ -393,5 +393,153 @@ fn map_transform_error(error: AppError, input: Option<&PathBuf>) -> AppError {
             detail,
         },
         other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::{HeaderCompatibility, MergeRequest, run};
+    use crate::{
+        bam::{index::IndexKind, merge::MergeMode, sort::QuerynameSubOrder},
+        formats::bgzf::test_support::{
+            build_bam_file_with_header_and_records, build_light_record, write_temp_file,
+        },
+    };
+
+    #[test]
+    fn merge_reports_checksum_verification_and_index_deferral() {
+        let input_a = write_temp_file(
+            "merge-command-a",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 3, "read2", 0)],
+            ),
+        );
+        let input_b = write_temp_file(
+            "merge-command-b",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-merge-command-output-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(MergeRequest {
+            bam: vec![input_a.clone(), input_b.clone()],
+            out: output.clone(),
+            sort: false,
+            order: Some(MergeMode::Coordinate),
+            queryname_suborder: None,
+            create_index: true,
+            verify_checksum: true,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("success payload should exist");
+        assert!(payload.output.expect("output should be reported").written);
+        let merge = payload.merge.expect("merge result should be reported");
+        assert_eq!(merge.produced_mode, Some(MergeMode::Coordinate));
+        assert_eq!(merge.header_compatibility, HeaderCompatibility::Compatible);
+        let records = payload.records.expect("record counts should be reported");
+        assert_eq!(records.records_read, 2);
+        assert_eq!(records.records_written, 2);
+        let index = payload.index.expect("index payload should be present");
+        assert!(index.requested);
+        assert!(!index.created);
+        assert_eq!(index.kind, Some(IndexKind::Bai));
+        let checksum = payload
+            .checksum_verification
+            .expect("checksum verification should be reported");
+        assert!(checksum.requested);
+        assert!(checksum.performed);
+        assert_eq!(checksum.r#match, Some(true));
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("BAI writing is not implemented"))
+        );
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("Canonical multiset checksum verification"))
+        );
+
+        fs::remove_file(input_a).expect("fixture should be removable");
+        fs::remove_file(input_b).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn queryname_merge_reports_coordinate_index_unsuitable() {
+        let input_a = write_temp_file(
+            "merge-command-queryname-a",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 2, "b", 0)],
+            ),
+        );
+        let input_b = write_temp_file(
+            "merge-command-queryname-b",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "a", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-merge-command-queryname-output-{}.bam",
+            std::process::id()
+        ));
+
+        let response = run(MergeRequest {
+            bam: vec![input_a.clone(), input_b.clone()],
+            out: output.clone(),
+            sort: false,
+            order: Some(MergeMode::Queryname),
+            queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
+            create_index: true,
+            verify_checksum: false,
+            threads: 1,
+            force: true,
+        });
+
+        assert!(response.ok);
+        let payload = response.data.expect("success payload should exist");
+        let merge = payload.merge.expect("merge result should be reported");
+        assert_eq!(merge.produced_mode, Some(MergeMode::Queryname));
+        assert_eq!(
+            merge.produced_sub_order,
+            Some(QuerynameSubOrder::Lexicographical)
+        );
+        let index = payload.index.expect("index payload should be present");
+        assert!(index.requested);
+        assert!(!index.created);
+        assert!(index.kind.is_none());
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("not suitable for standard coordinate BAM indexing"))
+        );
+
+        fs::remove_file(input_a).expect("fixture should be removable");
+        fs::remove_file(input_b).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
     }
 }

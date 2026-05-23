@@ -120,6 +120,21 @@ checksum verification reporting, and index deferral. `scanner_microbench
 --bamana-bin` now includes a `sort` command smoke timing for coordinate rewrite
 with canonical checksum verification.
 
+M8.4 hardened `merge` at the native compatibility and ordering boundary. The
+BAM loading side now uses `BamScanner` plus `BamRecordView::to_record_layout`
+before the existing native record-layout writer bridge, preserving native
+header parsing, binary reference dictionary compatibility checks, input-order,
+coordinate, and lexicographical queryname ordering, BGZF output writing, and
+canonical multiset checksum verification. Tests now cover compatible headers,
+incompatible headers, input-order merge, coordinate merge, queryname merge,
+record counts, force/overwrite safety, checksum verification reporting, and
+index deferral. Merge validity is limited to inputs that Bamana parsed and
+checked through those phases; it does not claim whole-file validity beyond the
+parsed header, materialized records, compatibility checks, output write, and
+optional checksum verification. `scanner_microbench --bamana-bin` now includes
+a `merge` command smoke timing for coordinate merge with canonical checksum
+verification.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

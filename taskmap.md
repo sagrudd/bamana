@@ -3682,7 +3682,7 @@ Completion evidence:
 
 ### M8.4 Harden `merge` Native Compatibility And Ordering Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3705,7 +3705,23 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited `merge` record loading, header compatibility, ordering,
+  serialization, BGZF writing, and checksum verification boundaries;
+* migrated `merge` input loading from the older BAM reader/layout path to
+  `BamScanner` plus `BamRecordView::to_record_layout`, while preserving the
+  native record-layout writer bridge;
+* strengthened merge engine and command tests for compatible headers,
+  incompatible headers, input-order merge, coordinate merge, queryname merge,
+  record counts, checksum verification, force/overwrite safety, and index
+  deferral;
+* documented that merge validity is limited to parsed headers, materialized
+  records, compatibility checks, requested ordering, write completion, and
+  optional checksum verification that actually ran;
+* extended `scanner_microbench --bamana-bin` with a `merge` command smoke
+  timing for coordinate merge with canonical checksum verification, and
+  updated the benchmark result schema and Sphinx benchmark notes;
+* updated M8 roadmap, Sphinx transform/ingest notes, and this task map with
+  the scanner-backed merge boundary and first-slice limitations.
 
 ### M8.5 Harden `checksum` Native Domain Boundary
 

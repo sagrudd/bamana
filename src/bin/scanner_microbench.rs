@@ -167,6 +167,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Some(bamana_bin) => {
             let subsample_output = workdir.join("scanner-microbench-subsample-out.bam");
             let sort_output = workdir.join("scanner-microbench-sort-out.bam");
+            let merge_output = workdir.join("scanner-microbench-merge-out.bam");
             let deduplicate_output = workdir.join("scanner-microbench-deduplicate-out.bam");
             vec![
                 measure_command(
@@ -244,6 +245,23 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     args.iterations,
                 )?,
                 measure_command(
+                    "merge",
+                    bamana_bin,
+                    &[
+                        "merge",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        fixture_arg(&fixture),
+                        "--out",
+                        fixture_arg(&merge_output),
+                        "--order",
+                        "coordinate",
+                        "--verify-checksum",
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
                     "inspect_duplication",
                     bamana_bin,
                     &[
@@ -308,11 +326,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses the in-memory coordinate rewrite path with canonical checksum verification, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans without adjacent index sidecars, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses the in-memory coordinate rewrite path with canonical checksum verification, merge uses the in-memory coordinate merge path with canonical checksum verification, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
             .to_string(),
     ];
     if args.bamana_bin.is_none() {
