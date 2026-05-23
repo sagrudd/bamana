@@ -1009,6 +1009,54 @@ fn checksum_benchmark_hook_is_documented_and_schema_governed() {
 }
 
 #[test]
+fn explode_benchmark_hook_is_documented_and_schema_governed() {
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let roadmap = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+
+    assert!(
+        scanner_schema.contains("\"explode\""),
+        "scanner_microbench schema does not include M8 explode command timing row"
+    );
+    assert!(
+        scanner_doc.contains("``explode``"),
+        "scanner_microbench docs do not describe M8 explode command timing row"
+    );
+    assert!(
+        roadmap.contains("`explode` command smoke timing"),
+        "M8 roadmap does not record explode benchmark hook evidence"
+    );
+
+    for required in [
+        "scanner-backed BAM",
+        "native BGZF",
+        "contiguous shard",
+        "encounter order",
+        "FASTQ.GZI",
+        "uniform shard sizes",
+        "random-access parallel gzip inflate",
+    ] {
+        assert!(
+            scanner_doc.contains(required) || roadmap.contains(required),
+            "M8 explode benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

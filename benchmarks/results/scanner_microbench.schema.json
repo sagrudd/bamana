@@ -103,7 +103,7 @@
         "exit_codes"
       ],
       "properties": {
-        "command": { "enum": ["summary", "check_sort", "check_map", "validate", "check_tag", "subsample_bam", "sort", "merge", "checksum", "inspect_duplication", "deduplicate", "forensic_inspect"] },
+        "command": { "enum": ["summary", "check_sort", "check_map", "validate", "check_tag", "subsample_bam", "sort", "merge", "checksum", "explode", "inspect_duplication", "deduplicate", "forensic_inspect"] },
         "iterations": { "type": "integer", "minimum": 1 },
         "ok_count": { "type": "integer", "minimum": 0 },
         "total_seconds": { "type": "number", "minimum": 0 },

@@ -135,6 +135,28 @@ tags are part of the reported checksum definition. ``scanner_microbench
 --bamana-bin`` now includes a ``checksum`` command smoke timing for all-domain
 hashing with header inclusion, ``NM`` exclusion, and mapped-only filtering.
 
+Explode Hardening
+-----------------
+
+M8.6 hardens ``explode`` at the native sharding boundary. BAM shard counting
+and writing now use ``BamScanner`` and bridge scanner-owned records into
+Bamana's native BGZF writer while preserving the parsed BAM header in every
+shard. SAM sharding preserves leading header lines and writes contiguous
+alignment-line ranges. FASTQ.GZ sharding continues to create or reuse adjacent
+``FASTQ.GZI`` metadata, derive checkpoint-aware record ranges, and write
+concatenated gzip-member shard streams.
+
+The hardened test surface covers BAM shard contents and encounter-order
+preservation, SAM shard headers, FASTQ.GZ shard writing, uneven FASTQ.GZ ranges,
+``FASTQ.GZI`` planning evidence, empty BAM rejection, too-many-shards
+rejection, and output collision behavior. The command guarantees that every
+supported record lands in exactly one reported shard range and that encounter
+order is preserved within each shard. It does not claim reconstruction
+equivalence beyond the emitted range metadata, uniform shard sizes, or generic
+random-access parallel gzip inflate. ``scanner_microbench --bamana-bin`` now
+includes an ``explode`` command smoke timing for scanner-backed BAM contiguous
+shard writing.
+
 Activation Boundary
 -------------------
 

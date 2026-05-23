@@ -3771,7 +3771,7 @@ Completion evidence:
 
 ### M8.6 Harden `explode` Native Sharding Boundary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -3794,7 +3794,26 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* audited BAM, SAM, and FASTQ.GZ `explode` paths, including header handling,
+  record counting, shard planning, FASTQ.GZ `FASTQ.GZI` reuse/creation,
+  compression, output naming, checksum metadata, and force behavior;
+* migrated BAM explode counting and shard writing from the older BAM
+  reader/layout path to `BamScanner` plus scanner-owned records bridged into
+  Bamana's native BGZF writer;
+* strengthened tests for BAM shards, SAM shards, FASTQ.GZ shards, empty BAM
+  inputs, uneven FASTQ.GZ shard sizes, too many BAM shards, `FASTQ.GZI`
+  planning evidence, output collision behavior, and encounter-order
+  preservation;
+* documented shard boundary guarantees and limitations: every supported record
+  lands in exactly one reported range and encounter order is preserved within
+  each shard, but reconstruction equivalence, uniform shard sizes, and generic
+  random-access parallel gzip inflate are not implied;
+* extended `scanner_microbench --bamana-bin` with an `explode` command smoke
+  timing for scanner-backed BAM contiguous shard writing, and updated the
+  benchmark result schema and Sphinx benchmark notes;
+* updated README, JSON-output docs, CLI spec, M8 roadmap, Sphinx
+  transform/ingest notes, and this task map with the scanner-backed explode
+  boundary and shard limitations.
 
 ### M8.7 Harden `consume` Native Ingest And Policy Boundary
 

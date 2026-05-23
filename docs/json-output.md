@@ -244,7 +244,7 @@ The `explode` payload records contiguous sharding of one input.
 Key concepts:
 
 * `input` records the detected input format and source path
-* `explode.requested_shards` and range fields describe the requested shard
+* `explode.requested_parts` and range fields describe the requested shard
   count and emitted shard boundaries
 * `outputs` records every shard path and the record range assigned to it
 * `index` reports shard-planning metadata, including `FASTQ.GZI` use for
@@ -253,9 +253,10 @@ Key concepts:
 * `notes` carry shard-size and planning caveats
 
 The payload proves only the emitted contiguous shard plan and output list. It
-does not claim global reconstruction equivalence beyond the reported ranges,
-generic random-access parallel inflate for gzip, or uniform shard sizes when
-`FASTQ.GZI` checkpoint-aligned boundaries are uneven.
+does prove encounter-order preservation within each shard for BAM, SAM, and
+FASTQ.GZ outputs. It does not claim global reconstruction equivalence beyond
+the reported ranges, generic random-access parallel inflate for gzip, or
+uniform shard sizes when `FASTQ.GZI` checkpoint-aligned boundaries are uneven.
 
 ## `consume`
 

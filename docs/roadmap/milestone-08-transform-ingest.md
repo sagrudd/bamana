@@ -151,6 +151,20 @@ inclusion, and checksum domain. `scanner_microbench --bamana-bin` now includes
 a `checksum` command smoke timing for all-domain hashing with header inclusion,
 `NM` exclusion, and mapped-only filtering.
 
+M8.6 hardened `explode` at the native sharding boundary. The BAM path now uses
+`BamScanner` for counting and shard writing, bridging scanner-owned records
+into the native BGZF writer while preserving the parsed header in every shard.
+Tests now cover BAM shard contents and encounter-order preservation, SAM shard
+headers and ranges, FASTQ.GZ shard writing, uneven FASTQ.GZ ranges, automatic
+`FASTQ.GZI` planning evidence, empty BAM rejection, too-many-shards rejection,
+and output collision behavior. The documented shard guarantees remain precise:
+supported formats preserve encounter order within each shard and place each
+record in exactly one reported range, but they do not prove reconstruction
+equivalence beyond the emitted range metadata, uniform shard sizes, or generic
+random-access parallel gzip inflate. `scanner_microbench --bamana-bin` now
+includes an `explode` command smoke timing for scanner-backed BAM contiguous
+shard writing.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

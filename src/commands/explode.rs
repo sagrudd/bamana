@@ -12,10 +12,9 @@ use serde::Serialize;
 
 use crate::{
     bam::{
-        header::{parse_bam_header_from_reader, serialize_bam_header_payload},
+        header::serialize_bam_header_payload,
         index::IndexKind,
-        reader::BamReader,
-        records::read_next_record_layout,
+        scan::BamScanner,
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
@@ -465,9 +464,9 @@ fn explode_fastq_gz(request: &ExplodeRequest) -> Result<ExplodeExecution, AppErr
 }
 
 fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppError> {
-    let mut count_reader = BamReader::open(&request.input)?;
-    let header = parse_bam_header_from_reader(&mut count_reader)?;
-    let total_records = count_bam_records(&mut count_reader)?;
+    let mut count_scanner = BamScanner::open(&request.input)?;
+    let header = count_scanner.header().clone();
+    let total_records = count_bam_records(&mut count_scanner, &request.input)?;
     validate_explode_parts(&request.input, total_records, request.explode)?;
     let planned_ranges = plan_serial_ranges(total_records, request.explode);
     let output_paths =
@@ -484,14 +483,14 @@ fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
         &header.header.references,
     )?;
     let write_result = (|| -> Result<Vec<u64>, AppError> {
-        let mut reader = BamReader::open(&request.input)?;
-        let _ = parse_bam_header_from_reader(&mut reader)?;
+        let mut scanner = BamScanner::open(&request.input)?;
         let mut writers = create_bam_writers(&temp_paths, &header_payload)?;
         let mut written_records = vec![0_u64; request.explode];
         let mut current_shard = 0_usize;
         let mut global_record_index = 0_u64;
 
-        while let Some(record) = read_next_record_layout(&mut reader)? {
+        while let Some(record) = scanner.next_record()? {
+            let record = record.to_record_layout();
             writers[current_shard].write_all(&serialize_record_layout(&record))?;
             written_records[current_shard] += 1;
             global_record_index += 1;
@@ -500,6 +499,15 @@ fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
             {
                 current_shard += 1;
             }
+        }
+
+        if global_record_index != scanner.records_read() {
+            return Err(AppError::InvalidRecord {
+                path: request.input.clone(),
+                detail:
+                    "Explode scanner record count diverged from records materialized for sharding."
+                        .to_string(),
+            });
         }
 
         for writer in writers {
@@ -534,6 +542,8 @@ fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
             .collect(),
         notes: vec![
             "BAM explode preserved the original BAM header in every shard and split records by contiguous encounter-order ranges."
+                .to_string(),
+            "BAM shard writing uses BamScanner-owned records bridged into Bamana's native BGZF writer path."
                 .to_string(),
         ],
         total_records,
@@ -658,10 +668,16 @@ fn create_bam_writers(
     Ok(writers)
 }
 
-fn count_bam_records(reader: &mut BamReader) -> Result<u64, AppError> {
+fn count_bam_records(scanner: &mut BamScanner, path: &Path) -> Result<u64, AppError> {
     let mut records = 0_u64;
-    while let Some(_record) = read_next_record_layout(reader)? {
+    while scanner.next_record()?.is_some() {
         records += 1;
+    }
+    if records != scanner.records_read() {
+        return Err(AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: "Explode scanner record count diverged while counting BAM records.".to_string(),
+        });
     }
     Ok(records)
 }
@@ -928,7 +944,7 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
 
     use crate::{
-        bam::{header::parse_bam_header, index::IndexKind},
+        bam::{header::parse_bam_header, index::IndexKind, scan::BamScanner},
         commands::explode::{ExplodeRequest, run_impl},
         fastq::{count_fastq_records, open_fastq_reader, read_next_fastq_record},
         formats::bgzf::test_support::{
@@ -1029,11 +1045,136 @@ mod tests {
         let reparsed = parse_bam_header(Path::new(&payload.outputs[0].path))
             .expect("first shard should parse");
         assert_eq!(reparsed.header.references.len(), 1);
+        assert_eq!(
+            read_bam_names(&payload.outputs[0].path),
+            vec!["read1", "read2"]
+        );
+        assert_eq!(
+            read_bam_names(&payload.outputs[1].path),
+            vec!["read3", "read4"]
+        );
+        assert_eq!(payload.outputs[0].record_start, 0);
+        assert_eq!(payload.outputs[0].record_end, 2);
+        assert_eq!(payload.outputs[1].record_start, 2);
+        assert_eq!(payload.outputs[1].record_end, 4);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("BamScanner-owned records"))
+        );
 
         fs::remove_file(&input).expect("fixture should remove");
         for output in &payload.outputs {
             fs::remove_file(&output.path).expect("shard should remove");
         }
+        fs::remove_dir(&out_dir).expect("directory should remove");
+    }
+
+    #[test]
+    fn rejects_empty_bam_before_writing_shards() {
+        let input = write_temp_file(
+            "explode-empty-bam",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[],
+            ),
+        );
+        let out_dir = std::env::temp_dir().join(format!(
+            "bamana-explode-empty-bam-out-{}",
+            std::process::id()
+        ));
+
+        let error = run_impl(&ExplodeRequest {
+            input: input.clone(),
+            out_dir: out_dir.clone(),
+            explode: 2,
+            threads: 0,
+            force: true,
+        })
+        .expect_err("empty BAM should not explode");
+
+        assert_eq!(error.to_json_error().code, "invalid_target_records");
+        assert!(!out_dir.exists());
+
+        fs::remove_file(&input).expect("fixture should remove");
+    }
+
+    #[test]
+    fn rejects_more_bam_shards_than_records() {
+        let input = write_temp_file(
+            "explode-too-many-bam",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let out_dir = std::env::temp_dir().join(format!(
+            "bamana-explode-too-many-bam-out-{}",
+            std::process::id()
+        ));
+
+        let error = run_impl(&ExplodeRequest {
+            input: input.clone(),
+            out_dir: out_dir.clone(),
+            explode: 2,
+            threads: 0,
+            force: true,
+        })
+        .expect_err("too many shards should fail");
+
+        assert_eq!(error.to_json_error().code, "invalid_target_records");
+        assert!(!out_dir.exists());
+
+        fs::remove_file(&input).expect("fixture should remove");
+    }
+
+    #[test]
+    fn output_collision_requires_force() {
+        let input = write_temp_file(
+            "explode-collision-bam",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 1, "read1", 0),
+                    build_light_record(0, 2, "read2", 0),
+                ],
+            ),
+        );
+        let out_dir = std::env::temp_dir().join(format!(
+            "bamana-explode-collision-bam-out-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&out_dir).expect("output dir should create");
+        let collision = out_dir.join(format!(
+            "{}.part0001.bam",
+            input.file_stem().unwrap().to_string_lossy()
+        ));
+        fs::write(&collision, b"sentinel").expect("sentinel should write");
+
+        let error = run_impl(&ExplodeRequest {
+            input: input.clone(),
+            out_dir: out_dir.clone(),
+            explode: 2,
+            threads: 0,
+            force: false,
+        })
+        .expect_err("collision should fail without force");
+
+        assert_eq!(error.to_json_error().code, "output_exists");
+        assert_eq!(
+            fs::read(&collision).expect("sentinel should remain"),
+            b"sentinel"
+        );
+
+        fs::remove_file(&input).expect("fixture should remove");
+        fs::remove_file(&collision).expect("sentinel should remove");
         fs::remove_dir(&out_dir).expect("directory should remove");
     }
 
@@ -1069,5 +1210,66 @@ mod tests {
             fs::remove_file(&output.path).expect("shard should remove");
         }
         fs::remove_dir(&out_dir).expect("directory should remove");
+    }
+
+    #[test]
+    fn fastq_gz_explode_reports_gzi_planning_and_uneven_ranges() {
+        let input = std::env::temp_dir().join(format!(
+            "bamana-explode-fastq-gz-uneven-{}.fastq.gz",
+            std::process::id()
+        ));
+        let out_dir = std::env::temp_dir().join(format!(
+            "bamana-explode-fastq-gz-uneven-out-{}",
+            std::process::id()
+        ));
+        let file = File::create(&input).expect("fixture should create");
+        let mut encoder = GzEncoder::new(file, Compression::default());
+        for index in 0..5 {
+            writeln!(encoder, "@read{index}").expect("header should write");
+            writeln!(encoder, "ACGT").expect("sequence should write");
+            writeln!(encoder, "+").expect("plus should write");
+            writeln!(encoder, "!!!!").expect("quality should write");
+        }
+        encoder.finish().expect("gzip should finish");
+
+        let payload = run_impl(&ExplodeRequest {
+            input: input.clone(),
+            out_dir: out_dir.clone(),
+            explode: 2,
+            threads: 2,
+            force: true,
+        })
+        .expect("explode should succeed");
+
+        assert_eq!(payload.format, "FASTQ.GZ");
+        assert_eq!(payload.outputs.len(), 2);
+        assert_eq!(payload.explode.total_records, Some(5));
+        assert!(payload.explode.checkpoints_available.unwrap_or_default() > 0);
+        let written = payload
+            .outputs
+            .iter()
+            .map(|output| output.records_written)
+            .collect::<Vec<_>>();
+        assert_eq!(written.iter().sum::<u64>(), 5);
+        assert_ne!(written[0], written[1]);
+        assert!(payload.notes.iter().any(|note| note.contains("FASTQ.GZI")));
+
+        fs::remove_file(&input).expect("fixture should remove");
+        for output in &payload.outputs {
+            fs::remove_file(&output.path).expect("shard should remove");
+        }
+        fs::remove_file(crate::fastq::gzi::fastq_gzi_output_path(&input))
+            .expect("index should remove");
+        fs::remove_dir(&out_dir).expect("directory should remove");
+    }
+
+    fn read_bam_names(path: &str) -> Vec<String> {
+        let mut scanner =
+            BamScanner::open(Path::new(path)).expect("BAM shard should open through scanner");
+        let mut names = Vec::new();
+        while let Some(record) = scanner.next_record().expect("record should parse") {
+            names.push(record.read_name().to_string());
+        }
+        names
     }
 }

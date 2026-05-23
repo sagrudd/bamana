@@ -741,7 +741,10 @@ Synopsis:
 
 Semantics:
 Splits one `BAM`, `SAM`, or `FASTQ.GZ` input into `N` contiguous shards using
-encounter-order record ranges.
+encounter-order record ranges. BAM shards preserve the parsed BAM header and
+write scanner-backed records through Bamana's native BGZF writer. SAM shards
+preserve leading header lines. FASTQ.GZ shards use adjacent `FASTQ.GZI`
+planning metadata and write concatenated gzip-member streams.
 
 Does prove:
 Each shard preserves the original order of reads or alignments within that
@@ -750,7 +753,9 @@ boundaries are reported explicitly.
 
 Does not prove:
 Global equivalence reconstruction beyond the recorded shard ranges, or true
-random-access parallel inflate for generic single-member gzip streams.
+random-access parallel inflate for generic single-member gzip streams. Shard
+sizes may be uneven, especially when FASTQ.GZ ranges follow available
+`FASTQ.GZI` cutpoints.
 
 Key output concepts:
 `input`, `explode`, `outputs`, `index`, `checksum_verification`, `notes`.
