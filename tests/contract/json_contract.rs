@@ -2015,6 +2015,82 @@ fn milestone_10_region_workflow_contracts_and_fixture_plans_are_frozen() {
 }
 
 #[test]
+fn milestone_10_chunk_planning_contract_is_documented_and_native() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let bam_mod = read_utf8(&super::repo_root().join("src").join("bam").join("mod.rs"));
+    let index_source = read_utf8(&super::repo_root().join("src").join("bam").join("index.rs"));
+    let planner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bam")
+            .join("region_plan.rs"),
+    );
+
+    for required in [
+        "src/bam/region_plan.rs",
+        "bai_bins_for_region",
+        "validated `BaiIndex`",
+        "candidate BAI bins",
+        "candidate chunks",
+        "coalesced chunks",
+        "index path",
+        "index kind",
+        "reference name",
+        "reference index",
+        "requested region strings",
+        "unsupported index kinds",
+        "stale BAI",
+        "reference-count incompatibility",
+        "impossible virtual-offset chunks",
+        "No-hit intervals",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M10.4 chunk planning documentation is missing: {required}"
+        );
+    }
+
+    for required in [
+        "pub mod region_plan",
+        "pub fn bai_bins_for_region",
+        "pub struct RegionChunkPlan",
+        "pub struct ReferenceChunkPlan",
+        "pub fn plan_bai_region_chunks",
+        "candidate_bins",
+        "candidate_chunks",
+        "coalesced_chunks",
+        "UnsupportedIndex",
+        "MissingIndex",
+        "InvalidIndex",
+    ] {
+        assert!(
+            bam_mod.contains(required)
+                || index_source.contains(required)
+                || planner_source.contains(required),
+            "M10.4 native chunk-planning source is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_8_activation_baseline_records_command_evidence_and_gaps() {
     let m8 = read_utf8(
         &docs_dir()

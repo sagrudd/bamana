@@ -4684,7 +4684,7 @@ Completion evidence:
 
 ### M10.4 Implement Indexed Chunk Planning
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4706,7 +4706,22 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added `src/bam/region_plan.rs` as the internal indexed-region chunk planner;
+* added `bai_bins_for_region` to expand normalized intervals across all BAI
+  hierarchy levels;
+* planned chunks from validated `BaiIndex` data rather than shallow sidecar
+  discovery;
+* preserved provenance for index path, index kind, reference names, reference
+  indexes, requested regions, candidate bins, candidate chunks, and coalesced
+  chunks;
+* coalesced overlapping or adjacent virtual-offset chunks deterministically;
+* rejected unsupported index kinds, stale BAI sidecars, reference-index
+  incompatibility, empty region sets, and impossible virtual-offset chunks with
+  structured errors;
+* added unit tests for BAI bin lookup, chunk coalescing, multi-reference
+  planning, no-hit intervals, and structured planning failures;
+* documented M10.4 in README, CLI docs, roadmap docs, Sphinx notes, and this
+  task map.
 
 ### M10.5 Implement Region-Bounded Random-Access Traversal
 

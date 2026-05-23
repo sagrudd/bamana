@@ -86,6 +86,25 @@ mapping evidence. Region-scoped ``summary`` metrics must not be interpreted as
 full-file totals. Region files remain deferred until a later M10 task promotes
 a file syntax.
 
+M10.4 Chunk Planning
+--------------------
+
+``src/bam/region_plan.rs`` implements the internal indexed-region chunk
+planner. It consumes M10.2 normalized regions and validated M9 ``BaiIndex``
+structures; it does not rely on shallow sidecar detection.
+
+Each interval expands to all candidate BAI bins across the hierarchy. Candidate
+chunks are collected from the validated BAI reference bins, sorted by typed
+virtual-offset range, and coalesced when they overlap or touch. No-hit
+intervals produce deterministic empty chunk plans.
+
+Plans retain provenance for the index path, index kind, reference name,
+reference index, requested region strings, candidate bins, candidate chunks,
+and coalesced chunks. Unsupported index kinds, stale BAI sidecars,
+reference-count incompatibility, empty region sets, and impossible
+virtual-offset chunks are rejected before any command may claim indexed-region
+evidence.
+
 Known Gaps
 ----------
 

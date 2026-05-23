@@ -155,6 +155,13 @@ files and indexed region selection commands remain explicitly deferred. The
 public contract commands `benchmark`, `fastq`, and `unmap` remain protected
 while this region surface is developed.
 
+M10.4 adds internal BAI chunk planning for those future region workflows. The
+planner expands normalized intervals to candidate BAI bins, collects chunks
+from validated `BaiIndex` structures, coalesces overlapping virtual-offset
+ranges, preserves provenance, and rejects unsupported, stale, incompatible, or
+impossible index inputs before indexed evidence may be reported. This is still
+not a public CLI behavior change.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

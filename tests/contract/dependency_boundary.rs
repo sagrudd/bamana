@@ -274,6 +274,16 @@ const M9_INDEX_RANDOM_ACCESS_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[(
+    "indexed_region_chunk_planning",
+    &[
+        "src/bam/region.rs",
+        "src/bam/region_plan.rs",
+        "src/bam/index.rs",
+        "src/bgzf/virtual_offset.rs",
+    ],
+)];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -577,6 +587,43 @@ fn m9_index_random_access_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M9 BAM index, indexed-consumer, and random-access substrate paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m10_indexed_region_hot_paths_do_not_import_noodles() {
+    let indexed_region_paths: Vec<_> = M10_INDEXED_REGION_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        indexed_region_paths,
+        ["indexed_region_chunk_planning"],
+        "M10 dependency boundary must explicitly name indexed-region chunk planning"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M10_INDEXED_REGION_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M10 indexed-region chunk planning paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }

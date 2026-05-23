@@ -463,6 +463,11 @@ pub fn bai_bin_for_region(start: u32, end: u32) -> Result<u32, AppError> {
     Ok(bai_bin_for_normalized_region(start, end))
 }
 
+pub fn bai_bins_for_region(start: u32, end: u32) -> Result<Vec<u32>, AppError> {
+    let end = normalize_region_end(start, end, Path::new("<region>"))?;
+    Ok(bai_bins_for_normalized_region(start, end))
+}
+
 #[derive(Debug)]
 struct BaiIndexBuilder {
     path: PathBuf,
@@ -634,6 +639,28 @@ fn bai_bin_for_normalized_region(start: u32, end: u32) -> u32 {
         return 1 + (start >> 26);
     }
     0
+}
+
+fn bai_bins_for_normalized_region(start: u32, end: u32) -> Vec<u32> {
+    let end = end - 1;
+    let mut bins = Vec::new();
+    bins.push(0);
+    for bin in (1 + (start >> 26))..=(1 + (end >> 26)) {
+        bins.push(bin);
+    }
+    for bin in (9 + (start >> 23))..=(9 + (end >> 23)) {
+        bins.push(bin);
+    }
+    for bin in (73 + (start >> 20))..=(73 + (end >> 20)) {
+        bins.push(bin);
+    }
+    for bin in (585 + (start >> 17))..=(585 + (end >> 17)) {
+        bins.push(bin);
+    }
+    for bin in (4_681 + (start >> 14))..=(4_681 + (end >> 14)) {
+        bins.push(bin);
+    }
+    bins
 }
 
 fn push_chunk(bins: &mut BTreeMap<u32, Vec<BaiChunk>>, bin: u32, chunk: BaiChunk) {

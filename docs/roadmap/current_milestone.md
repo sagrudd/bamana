@@ -297,3 +297,26 @@ M10.3 freezes the first region-aware workflow contract before command wiring:
 * region-aware `summary` metrics must not be confused with full-file totals;
 * region files, a standalone indexed selection command, and CLI flag
   acceptance remain deferred until later M10 tasks wire and verify behavior.
+
+## Milestone 10 Chunk Planning Baseline
+
+M10.4 added `src/bam/region_plan.rs` as the internal indexed-region chunk
+planner. It consumes M10.2 normalized regions and validated M9 `BaiIndex`
+structures; it does not rely on shallow sidecar detection.
+
+Planning behavior:
+
+* each normalized interval expands to all candidate BAI bins across the
+  hierarchy, not only the smallest alignment bin;
+* candidate chunks are collected from the validated BAI reference bins and
+  sorted deterministically by virtual-offset range;
+* overlapping or adjacent candidate chunks are coalesced before later
+  random-access traversal;
+* plans retain provenance for index path, index kind, reference name,
+  reference index, requested region strings, candidate bins, candidate chunks,
+  and coalesced chunks.
+
+The planner rejects unsupported index kinds such as CSI, stale BAI sidecars,
+reference-count incompatibility, empty region sets, and impossible virtual
+offset chunks before any later command may claim indexed-region evidence.
+No-hit intervals are represented as empty chunk plans rather than parse errors.

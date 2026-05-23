@@ -157,6 +157,32 @@ multi-region indexed success, overlapping-region request-order behavior,
 unknown-reference rejection, empty-region rejection, stale-index scan fallback,
 missing-index scan fallback, and unsupported-index scan fallback.
 
+## M10.4 Indexed Chunk Planning
+
+`src/bam/region_plan.rs` implements the internal chunk-planning layer above the
+M10.2 region parser and M9 BAI substrate.
+
+Planning rules:
+
+* normalized intervals are expanded into all candidate BAI bins across the BAI
+  hierarchy;
+* chunk collection consumes validated `BaiIndex` structures and not shallow
+  sidecar detection;
+* candidate chunks are sorted by typed virtual offsets and coalesced when they
+  overlap or touch;
+* no-hit intervals produce deterministic empty chunk plans;
+* plan provenance records index path, index kind, reference name, reference
+  index, requested region strings, candidate bins, candidate chunks, and
+  coalesced chunks.
+
+Structured rejection happens before indexed evidence can be claimed:
+
+* unsupported index kinds, including CSI until scoped support is implemented;
+* stale BAI sidecars;
+* normalized regions whose reference index is incompatible with the BAI;
+* empty region sets;
+* impossible virtual-offset chunks where the start is not before the end.
+
 ## Acceptance Criteria
 
 * region strings and optional region files are parsed into a documented

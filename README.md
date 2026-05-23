@@ -128,6 +128,10 @@ Those flags are not accepted by the binary until later M10 implementation
 tasks wire them. Region files and indexed region selection commands remain
 deferred. The public contract commands `benchmark`, `fastq`, and `unmap`
 remain protected while M10 work proceeds.
+M10.4 adds internal validated-BAI chunk planning for those future workflows:
+candidate bins are expanded, chunks are coalesced by typed virtual offsets, and
+unsupported, stale, incompatible, or impossible index inputs are rejected before
+indexed evidence can be claimed. This is not yet public CLI behavior.
 
 ## Benchmark Framework
 
