@@ -251,6 +251,20 @@ Unknown references, empty intervals, reversed intervals, and other unsupported
 region strings fail with precise `invalid_region` errors. Region files and
 standalone indexed region selection remain deferred.
 
+## M10.8 Indexed Selection Decision
+
+M10.8 deliberately defers a public indexed region selection command. The
+implemented M10 surface is read-only evidence from `check_map --region <REGION>`
+and `summary --region <REGION>`; no command claims to select, copy, or write
+BAM records by region. No public synopsis exists for selected-record output.
+
+The deferral is based on the missing public contract for output semantics,
+header preservation, record ordering, duplicate-region behavior, index
+invalidation or regeneration notes, and output write-safety behavior. Future
+selection work can build on the completed M10 substrate: the M10.2 region
+parser, M10.4 BAI chunk planner, M10.5 region traversal, M10.6
+`check_map --region <REGION>`, and M10.7 `summary --region <REGION>`.
+
 ## Acceptance Criteria
 
 * region strings and optional region files are parsed into a documented

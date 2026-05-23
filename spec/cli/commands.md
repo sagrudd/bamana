@@ -590,6 +590,18 @@ Key output concepts:
 `mapping_status`, `evidence_source`, `index`, `references`, `region_scope`,
 `summary`, `confidence`.
 
+M10.8 indexed selection decision:
+
+No public indexed region selection command is promoted in M10.8. There is no
+public synopsis for selecting, copying, or writing BAM records by region.
+`check_map --region <REGION>` and `summary --region <REGION>` are read-only
+evidence surfaces only. Future selection work must define output semantics,
+header preservation, record ordering, duplicate-region behavior, index
+invalidation or regeneration notes, and output write-safety behavior before any
+command may claim region selection support. The ready substrate is the M10.2
+region parser, M10.4 BAI chunk planner, M10.5 region traversal, M10.6
+`check_map --region <REGION>`, and M10.7 `summary --region <REGION>`.
+
 ## `check_index`
 
 Synopsis:
@@ -696,6 +708,16 @@ M10 region contract:
 Key output concepts:
 `mode`, `evidence`, `counts`, `fractions`, `mapq`, `mapping`, `region_scope`,
 `anomalies`, `confidence`.
+
+M10.8 indexed selection decision:
+
+No public indexed region selection command is promoted in M10.8. There is no
+public synopsis for selecting, copying, or writing BAM records by region.
+`check_map --region <REGION>` and `summary --region <REGION>` are read-only
+evidence surfaces only. Future selection work must define output semantics,
+header preservation, record ordering, duplicate-region behavior, index
+invalidation or regeneration notes, and output write-safety behavior before any
+command may claim region selection support.
 
 ## `check_tag`
 

@@ -365,3 +365,20 @@ whole-file BAI totals and reports requested-interval `counts`,
 `fractions_observed`, `mapq`, `mapping`, `anomalies`, and optional
 `flag_categories` only. Region files and standalone indexed region selection
 remain deferred.
+
+## Milestone 10 Indexed Selection Decision
+
+M10.8 deliberately defers a public indexed region selection command. The
+implemented M10 surface is read-only evidence from `check_map --region <REGION>`
+and `summary --region <REGION>`; no command claims to select, copy, or write
+BAM records by region. The deferral is intentional because selected-record
+output needs a separate public contract for output semantics, header
+preservation, record ordering, duplicate-region behavior, index invalidation or
+regeneration notes, and output write-safety behavior.
+
+The substrate for future selection work is ready enough to specify against:
+M10.2 supplies normalized region parsing, M10.4 supplies validated BAI chunk
+planning, M10.5 supplies region-bounded traversal, M10.6 supplies
+`check_map --region <REGION>` evidence, and M10.7 supplies
+`summary --region <REGION>` evidence. Region files remain deferred with the
+same contract boundary.

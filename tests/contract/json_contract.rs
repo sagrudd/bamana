@@ -2014,6 +2014,74 @@ fn milestone_10_region_workflow_contracts_and_fixture_plans_are_frozen() {
 }
 
 #[test]
+fn milestone_10_indexed_selection_surface_is_explicitly_deferred() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let commands_doc = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m10 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-10-indexed-region-workflows.md"),
+    );
+    let m10_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_workflows.rst"),
+    );
+    let fixture_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let coverage_map = read_utf8(&fixtures_dir().join("plans").join("coverage-map.md"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for required in [
+        "M10.8",
+        "public indexed region selection command",
+        "defer",
+        "read-only evidence",
+        "no command claims",
+        "No public synopsis",
+        "output semantics",
+        "header preservation",
+        "record ordering",
+        "duplicate-region behavior",
+        "index invalidation",
+        "write-safety",
+        "check_map --region <REGION>",
+        "summary --region <REGION>",
+        "Region files",
+        "future selection work",
+        "M10.2",
+        "M10.4",
+        "M10.5",
+        "M10.6",
+        "M10.7",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_doc.contains(required)
+                || commands_doc.contains(required)
+                || current.contains(required)
+                || m10.contains(required)
+                || m10_sphinx.contains(required)
+                || fixture_doc.contains(required)
+                || coverage_map.contains(required)
+                || taskmap.contains(required),
+            "M10.8 indexed selection decision is missing: {required}"
+        );
+    }
+
+    assert!(cli_source.contains("CheckMap"));
+    assert!(cli_source.contains("Summary"));
+    assert!(
+        !cli_source.contains("SelectRegion") && !cli_source.contains("RegionSelect"),
+        "M10.8 must not add a selected-record output command before the public contract exists"
+    );
+}
+
+#[test]
 fn milestone_10_chunk_planning_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

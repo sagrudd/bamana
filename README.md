@@ -128,7 +128,13 @@ promotes `check_map --region <REGION>` to public command behavior, and M10.7
 promotes `summary --region <REGION>` to public command behavior: usable BAI
 sidecars drive indexed traversal, while missing, stale, unsupported, or
 invalid index state falls back to native scan evidence with explicit scan
-limits. Region files and indexed region selection commands remain deferred.
+limits. M10.8 deliberately defers a public indexed region selection command:
+`check_map --region <REGION>` and `summary --region <REGION>` are read-only
+evidence surfaces, and no command currently promises to select, copy, or write
+records for a region. Future selection work must first define output
+semantics, header preservation, record ordering, duplicate-region behavior,
+index invalidation or regeneration rules, and output write-safety behavior.
+Region files also remain deferred.
 The public contract commands `benchmark`, `fastq`, and `unmap` remain protected
 while M10 work proceeds.
 M10.4 adds internal validated-BAI chunk planning for those future workflows:

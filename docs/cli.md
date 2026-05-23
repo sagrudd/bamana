@@ -154,7 +154,13 @@ surfaces, with `region_scope` JSON schema and examples. M10.6 promotes
 `summary --region <REGION>` to public command behavior: usable BAI sidecars
 drive indexed traversal, while missing, stale, unsupported, or invalid index
 state falls back to native scan evidence with explicit scan limits. Region
-files and indexed region selection commands remain explicitly deferred. The
+files remain explicitly deferred. M10.8 also deliberately defers a public
+indexed region selection command: `check_map --region <REGION>` and
+`summary --region <REGION>` are read-only evidence surfaces, and no synopsis is
+public for selecting, copying, or writing records by region. Future selection
+work must first define output semantics, header preservation, record ordering,
+duplicate-region behavior, index invalidation or regeneration rules, and
+output write-safety behavior. The
 public contract commands `benchmark`, `fastq`, and `unmap` remain protected
 while this region surface is developed.
 

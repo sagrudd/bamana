@@ -209,6 +209,11 @@ Key concepts:
 * whole-file BAI totals are intentionally omitted from region-scoped
   `index_derived`; the index is used only to find records
 * region-scoped operational metrics must not be interpreted as full-file totals
+* M10.8 keeps indexed region selection deferred: region-aware JSON from
+  `check_map --region <REGION>` and `summary --region <REGION>` is read-only
+  evidence and does not claim output semantics, header preservation, record
+  ordering, duplicate-region behavior, index invalidation, or write-safety for
+  selecting or writing records
 
 ## `check_tag`
 

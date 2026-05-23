@@ -143,6 +143,12 @@ and validation command wave:
   rejection, stale-index scan fallback, missing-index scan fallback, and
   unsupported-index scan fallback without adding a standalone region-selection
   command;
+* M10.8 fixture planning deliberately does not add indexed region selection
+  fixtures because no public indexed region selection command exists yet;
+  future selection fixtures must cover output semantics, header preservation,
+  record ordering, duplicate-region behavior, index invalidation or
+  regeneration notes, and output write-safety behavior before such a command is
+  claimed;
 * `tiny.invalid.mismatched_reference_count.bai` covers BAI reference-count
   mismatch reporting;
 * `tiny.valid.coordinate.csi_header` covers detected-but-not-supported CSI

@@ -103,6 +103,13 @@ Region-aware payload fixtures must include `region_scope` and distinguish
 `check_map` evidence must not claim whole-file mapping state, and
 region-scoped `summary` metrics must not claim full-file totals.
 
+M10.8 deliberately does not promote a public indexed region selection command.
+No region fixture should claim selected-record output until a later task
+defines output semantics, header preservation, record ordering,
+duplicate-region behavior, index invalidation or regeneration rules, and
+output write-safety behavior. The current fixture plan covers read-only
+evidence from `check_map --region` and `summary --region` only.
+
 ### Transform coverage
 
 These commands depend on the transform fixture family:

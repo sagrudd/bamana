@@ -4844,7 +4844,7 @@ Completion evidence:
 
 ### M10.8 Decide And Implement First Indexed Selection Surface
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4869,7 +4869,21 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* deliberately deferred a public indexed region selection command for M10.8;
+* documented that `check_map --region <REGION>` and
+  `summary --region <REGION>` are read-only evidence surfaces and no command
+  claims selected-record output;
+* documented the required future contract for output semantics, header
+  preservation, record ordering, duplicate-region behavior, index invalidation
+  or regeneration notes, and output write-safety behavior;
+* documented the ready substrate for future selection work: M10.2 region
+  parsing, M10.4 BAI chunk planning, M10.5 region traversal, M10.6
+  `check_map --region <REGION>`, and M10.7
+  `summary --region <REGION>`;
+* updated README, CLI docs, JSON docs, CLI contract, fixture planning, roadmap
+  docs, Sphinx docs, and this task map;
+* added a contract test that prevents selected-record output from being implied
+  before a public command contract exists.
 
 ### M10.9 Strengthen M10 Dependency Boundaries And Benchmarks
 
