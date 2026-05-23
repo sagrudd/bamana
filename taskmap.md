@@ -3897,7 +3897,7 @@ Completion evidence:
 
 ### M8.9 Strengthen M8 Dependency Boundaries And Benchmarks
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -3920,7 +3920,19 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added an M8 dependency-boundary contract test that explicitly names `sort`,
+  `merge`, `explode`, `checksum`, and `consume` and protects their production
+  hot paths from direct `noodles` imports outside documented CRAM
+  compatibility;
+* updated the testing-oracle policy with an M8 transform and ingest boundary
+  for native tests, permitted oracle roles, and the CRAM exception;
+* formalized scanner microbenchmark interpretation notes for every M8 command
+  hook, including startup, JSON emission, full-record materialization,
+  in-memory sorting, merge compatibility, native BGZF compression, checksum
+  domains, shard planning, ingest normalization, and CRAM compatibility
+  behavior;
+* added contract coverage requiring the M8 dependency and benchmark guardrails
+  to stay documented.
 
 ### M8.10 Close Milestone 8
 

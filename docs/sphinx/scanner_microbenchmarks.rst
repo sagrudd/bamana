@@ -68,6 +68,11 @@ deterministic BAM fixture, and ``deduplicate`` runs a full dry-run
 ``forensic_inspect`` runs explicit full-scan header, read-group, program-chain,
 read-name, tag, and duplication-hallmark scopes. These timings do not exercise
 malformed-input paths and do not imply comparator parity with external tools.
+For the Milestone 8 command set, these notes intentionally distinguish process
+startup and JSON emission from full-record materialization, in-memory sorting
+cost, merge compatibility and merge-ordering cost, native BGZF compression
+cost, checksum-domain traversal, shard planning, ingest normalization, and CRAM
+compatibility behavior.
 
 ``subsample_bam`` is a command-level dry-run timing over the generated BAM
 fixture. It proves the BAM ``subsample`` CLI path is runnable through the
@@ -78,14 +83,19 @@ than output-write throughput.
 proves the current scanner-backed load, in-memory coordinate ordering, native
 BGZF write, and canonical checksum verification path is runnable through the
 benchmark hook, but it should be interpreted as command smoke timing rather
-than external-memory sort throughput or comparator parity.
+than external-memory sort throughput or comparator parity. The timing includes
+full-record materialization, in-memory sorting cost, native BGZF compression,
+output finalization, process startup, and JSON emission.
 
 ``merge`` is a command-level merge timing over two copies of the generated BAM
 fixture. It proves the current scanner-backed input loading, reference
 dictionary compatibility check, in-memory coordinate merge, native BGZF write,
 and canonical checksum verification path is runnable through the benchmark
 hook, but it should be interpreted as command smoke timing rather than
-external-memory merge throughput or comparator parity.
+external-memory merge throughput or comparator parity. The timing includes two
+full-record materialization passes over the same fixture, reference dictionary
+compatibility checks, in-memory merge ordering, native BGZF compression, output
+finalization, process startup, and JSON emission.
 
 ``checksum`` is a command-level checksum timing over the generated BAM fixture.
 It proves the current scanner-backed record traversal, header serialization
@@ -94,6 +104,8 @@ domain, payload domain, tag exclusion reporting, and mapped-only filtering are
 runnable through the benchmark hook. It should be
 interpreted as command smoke timing rather than cryptographic throughput or
 semantic equivalence beyond the selected checksum domains.
+The timing includes checksum-domain traversal and digest construction for the
+selected domains, not external-tool parity or whole-file semantic validation.
 
 ``explode`` is a command-level BAM sharding timing over the generated BAM
 fixture. It proves scanner-backed BAM record traversal, original-header
@@ -101,6 +113,9 @@ preservation, native BGZF shard writing, contiguous shard ranges, and encounter
 order preservation within each shard are runnable through the benchmark hook.
 It should be interpreted as command smoke timing rather than FASTQ.GZI planning
 throughput, reconstruction proof, or random-access parallel inflate evidence.
+The BAM hook includes contiguous shard planning, original-header preservation,
+native BGZF shard compression, multi-output finalization, process startup, and
+JSON emission.
 
 ``consume`` is a command-level alignment ingest timing over the generated BAM
 fixture. It proves scanner-backed BAM alignment loading, explicit mode and
@@ -108,7 +123,11 @@ mixed-format policy reporting, native BGZF output writing, and deferred
 checksum/index reporting are runnable through the benchmark hook. It should be
 interpreted as command smoke timing rather than broad mixed-format ingest
 coverage, CRAM reference-policy coverage, or post-ingest checksum verification
-evidence.
+evidence. The timing includes BAM alignment ingest normalization, native BGZF
+output compression, output finalization, process startup, and JSON emission.
+CRAM compatibility behavior is deliberately not exercised by this synthetic BAM
+smoke hook and remains covered by explicit reference-policy tests and
+documentation.
 
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path

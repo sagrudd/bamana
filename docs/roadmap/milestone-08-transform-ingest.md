@@ -187,6 +187,19 @@ Dry-run paths remain side-effect bounded, checksum/index payloads continue to
 report only work actually performed, and deferred checksum/index work remains
 explicit rather than implied by output paths.
 
+M8.9 strengthened the dependency-boundary and benchmark guardrails for the M8
+command set. Contract tests now explicitly name `sort`, `merge`, `explode`,
+`checksum`, and `consume` as the protected transform, checksum, sharding, and
+ingest hot paths that must remain free of direct `noodles` imports outside the
+documented CRAM compatibility boundary. The testing-oracle policy now records
+the same M8 command set and keeps malformed transform and ingest expectations
+owned by native tests. The scanner microbenchmark hook continues to provide
+runnable command smoke timings for every M8 command and now distinguishes
+process startup, JSON emission, full-record materialization, in-memory sorting
+cost, merge compatibility and merge-ordering cost, native BGZF compression,
+checksum-domain traversal, shard planning, ingest normalization, and CRAM
+compatibility behavior without implying comparator parity.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

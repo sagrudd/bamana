@@ -108,3 +108,30 @@ Malformed mutation and forensics failure expectations must stay in native
 tests. Any future differential test for these commands must be clearly labelled
 as an oracle or compatibility comparison and must not define the production
 execution engine, mutation safety model, or remediation policy.
+
+## Milestone 8 Transform And Ingest Oracle Boundary
+
+The Milestone 8 transform and ingest command set is `sort`, `merge`,
+`explode`, `checksum`, and `consume`. The production transform, checksum,
+sharding, and ingest paths for these commands must remain Bamana-native and
+free of direct `noodles` imports, except for the documented CRAM compatibility
+boundary in `src/ingest/cram.rs`.
+
+Test-only oracle usage remains limited to explicit oracle or compatibility
+surfaces:
+
+* `sort`, `merge`, `explode`, and `checksum` expectations are owned by native
+  scanner, header, record-layout, checksum-domain, and BGZF writer tests;
+* BAM-side `consume` expectations are owned by `BamScanner`, native
+  record-layout, and native BGZF writer tests;
+* SAM, FASTQ, and FASTQ.GZ `consume` expectations are owned by native SAM and
+  FASTQ readers, writers, and `FASTQ.GZI` planning tests;
+* CRAM `consume` remains a compatibility exception governed by explicit
+  reference policy and must not expand into BAM, BGZF, FASTQ, or transform hot
+  paths.
+
+Malformed transform and ingest failure expectations must stay in native tests.
+Any future differential test for these commands must be clearly labelled as an
+oracle or compatibility comparison and must not define the production execution
+engine, checksum semantics, sharding policy, output-safety model, or ingest
+normalization policy.

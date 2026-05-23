@@ -438,7 +438,10 @@ scanner-backed record loading through the native BGZF writer; SAM, FASTQ,
 FASTQ.GZ, and CRAM retain separate native or explicitly documented
 compatibility paths. The M8 writer commands publish completed temporary outputs
 through final rename steps, reject collisions unless `--force` is supplied, and
-keep checksum/index payloads limited to work actually performed.
+keep checksum/index payloads limited to work actually performed. Dependency
+guardrails explicitly protect the M8 command set from direct production
+`noodles` imports outside CRAM compatibility, and scanner microbenchmark smoke
+timings cover each M8 command without claiming external comparator parity.
 
 ## Specification Layer
 

@@ -1158,6 +1158,72 @@ fn milestone_8_output_safety_contract_is_documented() {
 }
 
 #[test]
+fn milestone_8_dependency_and_benchmark_guardrails_are_documented() {
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+
+    for command in ["sort", "merge", "explode", "checksum", "consume"] {
+        assert!(
+            dependency_tests.contains(&format!("\"{command}\""))
+                && oracle_policy.contains(&format!("`{command}`"))
+                && scanner_source.contains(&format!("\"{command}\""))
+                && scanner_doc.contains(&format!("``{command}``"))
+                && scanner_schema.contains(&format!("\"{command}\"")),
+            "M8 dependency and benchmark guardrails do not explicitly name command: {command}"
+        );
+    }
+
+    for required in [
+        "full-record materialization",
+        "in-memory sorting cost",
+        "merge compatibility",
+        "native BGZF compression",
+        "checksum-domain",
+        "shard planning",
+        "ingest normalization",
+        "CRAM compatibility behavior",
+        "process startup",
+        "JSON emission",
+        "not comparator parity",
+    ] {
+        assert!(
+            scanner_source.contains(required)
+                || scanner_doc.contains(required)
+                || benchmark_results.contains(required),
+            "M8 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

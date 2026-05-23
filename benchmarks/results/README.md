@@ -63,6 +63,11 @@ Benchmark interpretation notes:
   not exercise malformed-input paths
 * scanner command smoke timings do not imply comparator parity with external
   tools
+* M8 scanner command smoke timings distinguish process startup and JSON
+  emission from full-record materialization, in-memory sorting cost, merge
+  compatibility and merge-ordering cost, native BGZF compression cost,
+  checksum-domain traversal, shard planning, ingest normalization, and CRAM
+  compatibility behavior
 
 First analysis slice:
 

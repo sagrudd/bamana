@@ -159,6 +159,71 @@ const M7_MUTATION_FORENSICS_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M8_TRANSFORM_INGEST_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "sort",
+        &[
+            "src/commands/sort.rs",
+            "src/bam/sort.rs",
+            "src/bam/scan.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+        ],
+    ),
+    (
+        "merge",
+        &[
+            "src/commands/merge.rs",
+            "src/bam/merge.rs",
+            "src/bam/scan.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+        ],
+    ),
+    (
+        "explode",
+        &[
+            "src/commands/explode.rs",
+            "src/bam/scan.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+            "src/fastq/gzi.rs",
+            "src/fastq/reader.rs",
+            "src/fastq/writer.rs",
+            "src/ingest/sam.rs",
+        ],
+    ),
+    (
+        "checksum",
+        &[
+            "src/commands/checksum.rs",
+            "src/bam/checksum.rs",
+            "src/bam/header.rs",
+            "src/bam/scan.rs",
+            "src/bam/tags.rs",
+        ],
+    ),
+    (
+        "consume",
+        &[
+            "src/commands/consume.rs",
+            "src/ingest/consume.rs",
+            "src/ingest/discovery.rs",
+            "src/ingest/sam.rs",
+            "src/bam/scan.rs",
+            "src/bam/records.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+            "src/fastq/gzi.rs",
+            "src/fastq/reader.rs",
+            "src/fastq/writer.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -382,6 +447,43 @@ fn m7_mutation_forensics_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M7 mutation, remediation, and forensics hot paths must stay noodles-free:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m8_transform_ingest_hot_paths_do_not_import_noodles() {
+    let transform_ingest_commands: Vec<_> = M8_TRANSFORM_INGEST_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        transform_ingest_commands,
+        ["sort", "merge", "explode", "checksum", "consume"],
+        "M8 dependency boundary must explicitly name the five transform, checksum, explode, and ingest commands"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M8_TRANSFORM_INGEST_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M8 transform, checksum, explode, and ingest hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }
