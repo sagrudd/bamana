@@ -6,6 +6,7 @@ use crate::{
         reader::BamReader,
         record::BamRecordView,
     },
+    bgzf::virtual_offset::VirtualOffset,
     error::AppError,
 };
 
@@ -17,6 +18,18 @@ pub struct BamScanner {
     header: HeaderPayload,
     raw_record: Vec<u8>,
     records_read: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BamRecordVirtualOffsets {
+    pub start: VirtualOffset,
+    pub end: VirtualOffset,
+}
+
+#[derive(Debug, Clone)]
+pub struct PositionedBamRecord<'a> {
+    pub record: BamRecordView<'a>,
+    pub virtual_offsets: BamRecordVirtualOffsets,
 }
 
 impl BamScanner {
@@ -46,8 +59,17 @@ impl BamScanner {
     }
 
     pub fn next_record(&mut self) -> Result<Option<BamRecordView<'_>>, AppError> {
+        Ok(self
+            .next_record_with_virtual_offsets()?
+            .map(|positioned| positioned.record))
+    }
+
+    pub fn next_record_with_virtual_offsets(
+        &mut self,
+    ) -> Result<Option<PositionedBamRecord<'_>>, AppError> {
         self.raw_record.clear();
 
+        let record_start = self.current_virtual_offset()?;
         let Some(block_size) = self.reader.read_optional_i32_le()? else {
             return Ok(None);
         };
@@ -74,6 +96,7 @@ impl BamScanner {
             "BAM stream ended while reading an alignment record payload.",
         )?;
         self.raw_record.extend_from_slice(&payload);
+        let record_end = self.current_virtual_offset()?;
 
         let view =
             BamRecordView::parse(&self.raw_record).map_err(|error| AppError::InvalidRecord {
@@ -81,7 +104,23 @@ impl BamScanner {
                 detail: error.detail().to_string(),
             })?;
         self.records_read += 1;
-        Ok(Some(view))
+        Ok(Some(PositionedBamRecord {
+            record: view,
+            virtual_offsets: BamRecordVirtualOffsets {
+                start: record_start,
+                end: record_end,
+            },
+        }))
+    }
+
+    fn current_virtual_offset(&self) -> Result<VirtualOffset, AppError> {
+        self.reader
+            .virtual_offset()?
+            .ok_or_else(|| AppError::InvalidBam {
+                path: self.path.clone(),
+                detail: "Native BAM scanner backend did not expose BGZF virtual offsets."
+                    .to_string(),
+            })
     }
 }
 
@@ -89,6 +128,7 @@ impl BamScanner {
 mod tests {
     use crate::{
         bam::scan::BamScanner,
+        bgzf::BGZF_EOF_MARKER,
         bgzf::test_support::{
             build_bam_file_with_header_and_records, build_bgzf_member, build_light_record,
             write_temp_file,
@@ -186,6 +226,184 @@ mod tests {
                 .is_none()
         );
         assert_eq!(scanner.records_read(), 2);
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn reports_single_block_record_virtual_offsets() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 8, "read2", 0);
+        let header_text = "@SQ\tSN:chr1\tLN:10\n";
+        let payload = build_bam_payload(
+            header_text,
+            &[("chr1", 10)],
+            &[first.clone(), second.clone()],
+        );
+        let first_member = build_bgzf_member(&payload);
+        let mut bytes = first_member.clone();
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("scanner-offsets-single-block", "bam", &bytes);
+
+        let expected_first_start = payload.len() - first.len() - second.len();
+        let expected_second_start = expected_first_start + first.len();
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+
+        let positioned_first = scanner
+            .next_record_with_virtual_offsets()
+            .expect("scan should succeed")
+            .expect("first record should exist");
+        assert_eq!(positioned_first.record.read_name(), "read1");
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .start
+                .compressed_block_offset(),
+            0
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .start
+                .uncompressed_block_offset(),
+            expected_first_start as u16
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .end
+                .compressed_block_offset(),
+            0
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .end
+                .uncompressed_block_offset(),
+            (expected_first_start + first.len()) as u16
+        );
+
+        let positioned_second = scanner
+            .next_record_with_virtual_offsets()
+            .expect("scan should succeed")
+            .expect("second record should exist");
+        assert_eq!(positioned_second.record.read_name(), "read2");
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .start
+                .compressed_block_offset(),
+            0
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .start
+                .uncompressed_block_offset(),
+            expected_second_start as u16
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .end
+                .compressed_block_offset(),
+            first_member.len() as u64
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .end
+                .uncompressed_block_offset(),
+            0
+        );
+
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn reports_record_virtual_offsets_across_bgzf_members() {
+        let first = build_light_record(0, 5, "read1", 0);
+        let second = build_light_record(0, 8, "read2", 0);
+        let header_payload = build_bam_payload("@SQ\tSN:chr1\tLN:10\n", &[("chr1", 10)], &[]);
+        let mut record_payload = Vec::new();
+        record_payload.extend_from_slice(&first);
+        record_payload.extend_from_slice(&second);
+        let first_member = build_bgzf_member(&header_payload);
+        let second_member = build_bgzf_member(&record_payload);
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&first_member);
+        bytes.extend_from_slice(&second_member);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("scanner-offsets-multi-block", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let positioned_first = scanner
+            .next_record_with_virtual_offsets()
+            .expect("scan should succeed")
+            .expect("first record should exist");
+        assert_eq!(positioned_first.record.read_name(), "read1");
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .start
+                .compressed_block_offset(),
+            first_member.len() as u64
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .start
+                .uncompressed_block_offset(),
+            0
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .end
+                .compressed_block_offset(),
+            first_member.len() as u64
+        );
+        assert_eq!(
+            positioned_first
+                .virtual_offsets
+                .end
+                .uncompressed_block_offset(),
+            first.len() as u16
+        );
+
+        let positioned_second = scanner
+            .next_record_with_virtual_offsets()
+            .expect("scan should succeed")
+            .expect("second record should exist");
+        assert_eq!(positioned_second.record.read_name(), "read2");
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .start
+                .compressed_block_offset(),
+            first_member.len() as u64
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .start
+                .uncompressed_block_offset(),
+            first.len() as u16
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .end
+                .compressed_block_offset(),
+            first_member.len() as u64 + second_member.len() as u64
+        );
+        assert_eq!(
+            positioned_second
+                .virtual_offsets
+                .end
+                .uncompressed_block_offset(),
+            0
+        );
+
         std::fs::remove_file(path).expect("fixture should be removable");
     }
 
@@ -396,6 +614,32 @@ mod tests {
         payload.extend_from_slice(&(-1_i32).to_le_bytes());
         payload.extend_from_slice(&0_i32.to_le_bytes());
         payload.extend_from_slice(variable);
+        payload
+    }
+
+    fn build_bam_payload(
+        header_text: &str,
+        references: &[(&str, u32)],
+        records: &[Vec<u8>],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(b"BAM\x01");
+        payload.extend_from_slice(&(header_text.len() as i32).to_le_bytes());
+        payload.extend_from_slice(header_text.as_bytes());
+        payload.extend_from_slice(&(references.len() as i32).to_le_bytes());
+
+        for (name, length) in references {
+            let mut nul_terminated_name = name.as_bytes().to_vec();
+            nul_terminated_name.push(0);
+            payload.extend_from_slice(&(nul_terminated_name.len() as i32).to_le_bytes());
+            payload.extend_from_slice(&nul_terminated_name);
+            payload.extend_from_slice(&(*length as i32).to_le_bytes());
+        }
+
+        for record in records {
+            payload.extend_from_slice(record);
+        }
+
         payload
     }
 

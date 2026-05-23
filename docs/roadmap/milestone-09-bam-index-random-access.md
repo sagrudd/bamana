@@ -67,10 +67,11 @@ Present implementation pieces:
 * `src/bgzf/virtual_offset.rs` owns a `VirtualOffset` type with packed
   construction, bounds checks, ordering, and tests.
 * `src/bgzf/reader.rs` owns sequential native BGZF member inflation, EOF-marker
-  checks, and BAM-magic probing, but currently keeps compressed block positions
-  internal.
+  checks, BAM-magic probing, and virtual-offset reporting based on compressed
+  member starts plus uncompressed in-block offsets.
 * `src/bam/scan.rs` owns sequential scanner traversal over native BGZF and BAM
-  header parsing, while reporting records read.
+  header parsing, while reporting records read and positioned record start/end
+  virtual offsets for native scans.
 * `src/commands/index.rs` validates BAM plausibility and output path behavior,
   creates real FASTQ.GZI sidecars for FASTQ.GZ inputs, and reports BAM BAI/CSI
   writing as unimplemented rather than pretending an index was created.
@@ -84,8 +85,6 @@ Present implementation pieces:
 Outstanding M9 gaps:
 
 * BAM `index` cannot yet write real BAI or CSI output.
-* Native BGZF and BAM scanner paths do not yet expose stable virtual offsets
-  for each alignment record.
 * BAI binning, chunk coalescing, metadata pseudo-bin emission, linear-index
   construction, and unplaced-unmapped accounting remain unimplemented.
 * `check_index` does not yet validate BAI chunks, virtual-offset ordering,
@@ -111,6 +110,27 @@ Outstanding M9 gaps:
 * CSI support is either implemented to a scoped contract or explicitly remains
   detected-but-not-supported with precise reasons
 * command JSON contracts remain stable or are deliberately versioned
+
+## M9.3 Virtual-Offset Plumbing
+
+M9.3 exposes virtual offsets without changing command JSON behavior. The native
+BGZF reader now tracks each compressed member's file start and end offsets and
+combines them with the current uncompressed in-block cursor through the
+`VirtualOffset` type. The native BAM scanner exposes
+`next_record_with_virtual_offsets`, returning each parsed alignment record with
+start and end virtual offsets.
+
+These offsets are the substrate for later BAI/CSI work:
+
+* BAI chunks will use record start/end virtual offsets to describe candidate
+  compressed spans for mapped records;
+* BAI linear-index windows will use record start virtual offsets for the
+  earliest record overlapping each window;
+* CSI support, if promoted, will consume the same typed offsets rather than raw
+  integers;
+* offsets at the end of a BGZF member are normalized to the next compressed
+  block start with in-block offset zero, preserving BGZF virtual-offset
+  packing semantics.
 
 ## Benchmark Hooks
 

@@ -154,6 +154,8 @@ Present baseline:
 
 * `VirtualOffset` already models packed BGZF virtual offsets with bounds and
   ordering checks;
+* BGZF reader and BAM scanner paths expose typed record start/end virtual
+  offsets for future BAI chunk and linear-index construction;
 * `src/bam/index.rs` already detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent index candidates, parses shallow BAI metadata summaries,
   and parses CSI headers enough to report detected-but-not-supported status;
@@ -168,8 +170,6 @@ Present baseline:
 Known M9 gaps:
 
 * BAM `index` cannot yet write real BAI or CSI sidecars;
-* BGZF reader and BAM scanner paths do not yet expose record virtual offsets
-  for BAI chunk and linear-index construction;
 * BAI binning, chunk merging, metadata pseudo-bin emission, linear-index
   construction, and unplaced-unmapped accounting remain to be implemented;
 * `check_index` does not yet validate chunks, virtual-offset ordering, linear

@@ -445,9 +445,9 @@ timings cover each M8 command without claiming external comparator parity.
 Milestone 9 is active for native BAM index and random-access work. M9.1 records
 the baseline: Bamana can detect and shallowly inspect BAI/CSI sidecars, create
 FASTQ.GZI sidecars, and distinguish index-derived evidence from scan-derived
-evidence, but BAM BAI/CSI writing, deeper BAI validation, scanner-exposed
-virtual offsets, and indexed random-access acceleration remain outstanding M9
-work.
+evidence. M9.3 adds scanner-exposed virtual offsets for future BAI/CSI work,
+but BAM BAI/CSI writing, deeper BAI validation, and indexed random-access
+acceleration remain outstanding M9 work.
 
 ## Specification Layer
 

@@ -6,7 +6,10 @@ use std::{
 
 use flate2::read::MultiGzDecoder;
 
-use crate::{bgzf::reader::NativeBgzfReader, error::AppError};
+use crate::{
+    bgzf::{reader::NativeBgzfReader, virtual_offset::VirtualOffset},
+    error::AppError,
+};
 
 pub struct BamReader {
     path: PathBuf,
@@ -44,6 +47,13 @@ impl BamReader {
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn virtual_offset(&self) -> Result<Option<VirtualOffset>, AppError> {
+        match &self.backend {
+            BamReaderBackend::Gzip(_) => Ok(None),
+            BamReaderBackend::NativeBgzf(reader) => reader.virtual_offset().map(Some),
+        }
     }
 
     pub fn read_magic(&mut self) -> Result<[u8; 4], AppError> {

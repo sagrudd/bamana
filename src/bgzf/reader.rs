@@ -8,6 +8,7 @@ use flate2::read::GzDecoder;
 
 use crate::{
     bgzf::block::{BGZF_EOF_MARKER, bgzf_block_size},
+    bgzf::virtual_offset::{VirtualOffset, VirtualOffsetError},
     error::AppError,
 };
 
@@ -17,6 +18,9 @@ pub struct NativeBgzfReader {
     payload: Vec<u8>,
     offset: usize,
     eof: bool,
+    current_block_start: u64,
+    current_block_end: u64,
+    has_current_block: bool,
 }
 
 impl NativeBgzfReader {
@@ -29,6 +33,9 @@ impl NativeBgzfReader {
             payload: Vec::new(),
             offset: 0,
             eof: false,
+            current_block_start: 0,
+            current_block_end: 0,
+            has_current_block: false,
         })
     }
 
@@ -51,23 +58,42 @@ impl NativeBgzfReader {
         Ok(count)
     }
 
+    pub fn virtual_offset(&self) -> Result<VirtualOffset, AppError> {
+        if !self.has_current_block {
+            return Ok(VirtualOffset::ZERO);
+        }
+
+        if self.offset >= self.payload.len() {
+            return VirtualOffset::new(self.current_block_end, 0)
+                .map_err(|error| virtual_offset_error(&self.path, error));
+        }
+
+        VirtualOffset::new(self.current_block_start, self.offset as u32)
+            .map_err(|error| virtual_offset_error(&self.path, error))
+    }
+
     fn load_next_payload(&mut self) -> Result<(), AppError> {
         loop {
             let Some(member) = read_bgzf_member(&mut self.file, &self.path)? else {
                 self.eof = true;
                 self.payload.clear();
                 self.offset = 0;
+                self.has_current_block = false;
                 return Ok(());
             };
 
-            if member == BGZF_EOF_MARKER {
+            if member.bytes == BGZF_EOF_MARKER {
                 self.eof = true;
                 self.payload.clear();
                 self.offset = 0;
+                self.has_current_block = false;
                 return Ok(());
             }
 
-            self.payload = decompress_member(&member, &self.path)?;
+            self.current_block_start = member.compressed_offset;
+            self.current_block_end = member.compressed_offset + member.bytes.len() as u64;
+            self.has_current_block = true;
+            self.payload = decompress_member(&member.bytes, &self.path)?;
             self.offset = 0;
 
             if !self.payload.is_empty() {
@@ -111,13 +137,20 @@ pub fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
     let mut payloads = Vec::new();
 
     while let Some(member) = read_bgzf_member(&mut file, path)? {
-        if member == BGZF_EOF_MARKER {
+        if member.bytes == BGZF_EOF_MARKER {
             break;
         }
-        payloads.push(decompress_member(&member, path)?);
+        payloads.push(decompress_member(&member.bytes, path)?);
     }
 
     Ok(payloads)
+}
+
+fn virtual_offset_error(path: &Path, error: VirtualOffsetError) -> AppError {
+    AppError::InvalidBam {
+        path: path.to_path_buf(),
+        detail: format!("BGZF virtual offset could not be represented: {error}"),
+    }
 }
 
 fn read_first_bgzf_payload(path: &Path) -> Result<Vec<u8>, AppError> {
@@ -139,10 +172,18 @@ fn read_first_bgzf_member_payload(path: &Path) -> Result<Vec<u8>, AppError> {
         path: path.to_path_buf(),
         detail: "File did not contain a readable BGZF member.".to_string(),
     })?;
-    decompress_member(&member, path)
+    decompress_member(&member.bytes, path)
 }
 
-fn read_bgzf_member(file: &mut File, path: &Path) -> Result<Option<Vec<u8>>, AppError> {
+struct BgzfMember {
+    compressed_offset: u64,
+    bytes: Vec<u8>,
+}
+
+fn read_bgzf_member(file: &mut File, path: &Path) -> Result<Option<BgzfMember>, AppError> {
+    let compressed_offset = file
+        .stream_position()
+        .map_err(|error| AppError::from_io(path, error))?;
     let mut fixed_header = [0_u8; 12];
     match file.read(&mut fixed_header[..1]) {
         Ok(0) => return Ok(None),
@@ -204,7 +245,10 @@ fn read_bgzf_member(file: &mut File, path: &Path) -> Result<Option<Vec<u8>>, App
             }
         })?;
 
-    Ok(Some(member))
+    Ok(Some(BgzfMember {
+        compressed_offset,
+        bytes: member,
+    }))
 }
 
 fn decompress_member(member: &[u8], path: &Path) -> Result<Vec<u8>, AppError> {
@@ -229,8 +273,8 @@ mod tests {
     use crate::{bgzf::block::build_bgzf_member, error::AppError};
 
     use super::{
-        BGZF_EOF_MARKER, decompress_member, first_member_starts_with_bam_magic, has_bgzf_eof,
-        read_bgzf_member, read_bgzf_payloads, read_first_bgzf_member_payload,
+        BGZF_EOF_MARKER, NativeBgzfReader, decompress_member, first_member_starts_with_bam_magic,
+        has_bgzf_eof, read_bgzf_member, read_bgzf_payloads, read_first_bgzf_member_payload,
         read_first_bgzf_payload,
     };
 
@@ -297,13 +341,75 @@ mod tests {
             .expect("second member should exist");
 
         let first_payload =
-            decompress_member(&first_member, &path).expect("first member should inflate");
+            decompress_member(&first_member.bytes, &path).expect("first member should inflate");
         let second_payload =
-            decompress_member(&second_member, &path).expect("second member should inflate");
+            decompress_member(&second_member.bytes, &path).expect("second member should inflate");
 
         fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(first_member.compressed_offset, 0);
+        assert_eq!(second_member.compressed_offset, first.len() as u64);
         assert_eq!(first_payload, b"first member");
         assert_eq!(second_payload, b"second member");
+    }
+
+    #[test]
+    fn native_reader_reports_virtual_offsets_across_members() {
+        let first = member(b"abcdefghij");
+        let second = member(b"klmnopqrst");
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&first);
+        bytes.extend_from_slice(&second);
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("virtual-offsets", &bytes);
+
+        let mut reader = NativeBgzfReader::open(&path).expect("reader should open");
+        assert_eq!(
+            reader
+                .virtual_offset()
+                .expect("virtual offset should be available")
+                .packed(),
+            0
+        );
+
+        let mut buffer = [0_u8; 4];
+        assert_eq!(reader.read(&mut buffer).expect("first read should work"), 4);
+        assert_eq!(&buffer, b"abcd");
+        let after_first_read = reader
+            .virtual_offset()
+            .expect("virtual offset should be available");
+        assert_eq!(after_first_read.compressed_block_offset(), 0);
+        assert_eq!(after_first_read.uncompressed_block_offset(), 4);
+
+        let mut rest_of_first = [0_u8; 6];
+        assert_eq!(
+            reader
+                .read(&mut rest_of_first)
+                .expect("second read should work"),
+            6
+        );
+        assert_eq!(&rest_of_first, b"efghij");
+        let at_block_boundary = reader
+            .virtual_offset()
+            .expect("virtual offset should be available");
+        assert_eq!(
+            at_block_boundary.compressed_block_offset(),
+            first.len() as u64
+        );
+        assert_eq!(at_block_boundary.uncompressed_block_offset(), 0);
+
+        let mut next = [0_u8; 2];
+        assert_eq!(reader.read(&mut next).expect("third read should work"), 2);
+        assert_eq!(&next, b"kl");
+        let in_second_block = reader
+            .virtual_offset()
+            .expect("virtual offset should be available");
+        assert_eq!(
+            in_second_block.compressed_block_offset(),
+            first.len() as u64
+        );
+        assert_eq!(in_second_block.uncompressed_block_offset(), 2);
+
+        fs::remove_file(path).expect("fixture should be removed");
     }
 
     #[test]

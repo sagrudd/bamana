@@ -4095,9 +4095,9 @@ Completion evidence:
   shallow validation/staleness reporting, FASTQ.GZI sidecar creation, BAM
   index honest deferral, and index-versus-scan evidence distinctions;
 * recorded M9 gaps: BAM BAI/CSI writing, scanner-exposed record virtual
-  offsets, BAI bin/chunk/linear-index construction, deeper `check_index`
-  validation, scoped CSI decision, indexed `check_map`/`summary` acceleration,
-  and M9 dependency/benchmark evidence;
+  offsets before M9.3, BAI bin/chunk/linear-index construction, deeper
+  `check_index` validation, scoped CSI decision, indexed `check_map`/`summary`
+  acceleration, and M9 dependency/benchmark evidence;
 * made no command behavior changes and left the public contract commands
   `benchmark`, `fastq`, and `unmap` protected.
 
@@ -4146,7 +4146,7 @@ Completion evidence:
 
 ### M9.3 Expose BGZF Virtual Offsets During Native Scans
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -4166,7 +4166,18 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* `NativeBgzfReader` now tracks compressed BGZF member starts and ends and
+  reports the current cursor as a typed `VirtualOffset`;
+* `BamReader` exposes virtual offsets for the native BGZF backend without
+  assigning ambiguous raw integers to new scan/index code;
+* `BamScanner` now exposes `next_record_with_virtual_offsets`, returning parsed
+  records with typed start and end offsets while preserving existing
+  `next_record` behavior for current command consumers;
+* tests cover reader offsets across members, scanner offsets for multiple
+  records inside one BGZF member, and scanner offsets when records begin in a
+  later BGZF member and end at a member boundary;
+* Sphinx and roadmap docs describe how the offsets feed future BAI/CSI chunk
+  and linear-index construction.
 
 ### M9.4 Implement Native BAI Binning And Linear Index Construction
 

@@ -13,6 +13,12 @@ The repository already has the following native index groundwork:
 
 * ``src/bgzf/virtual_offset.rs`` owns packed BGZF virtual offsets with bounds
   checks and ordering.
+* ``src/bgzf/reader.rs`` exposes typed virtual offsets for the current native
+  BGZF read cursor by combining compressed member starts with uncompressed
+  in-block offsets.
+* ``src/bam/scan.rs`` exposes ``next_record_with_virtual_offsets`` so scanner
+  and future index code can obtain typed start/end offsets for each alignment
+  record.
 * ``src/bam/index.rs`` detects BAI, CSI, GZI, and unknown sidecar magic,
   discovers adjacent index candidates, parses shallow BAI reference-count and
   pseudo-bin metadata summaries, and parses CSI headers enough to report
@@ -37,8 +43,6 @@ Outstanding M9 Work
 The current M9 gaps are intentional and must remain visible until implemented:
 
 * BAM ``index`` cannot yet write real BAI or CSI sidecars.
-* Native BGZF reading and BAM scanning do not yet expose per-record virtual
-  offsets for BAI chunk and linear-index construction.
 * BAI binning, chunk coalescing, metadata pseudo-bin emission, linear-index
   construction, and unplaced-unmapped accounting remain to be implemented.
 * ``check_index`` does not yet validate chunks, virtual-offset ordering,
@@ -66,6 +70,25 @@ M9.2 freezes the planned index fixture taxonomy before implementation work:
 * unsorted BAM index rejection: ``tiny.invalid.unsorted_coordinate``
 * FASTQ.GZ source and FASTQ.GZI sidecar:
   ``tiny.valid.fastq_gz`` and ``tiny.valid.fastq_gz.gzi``
+
+Virtual-Offset Plumbing
+-----------------------
+
+M9.3 adds the native offset substrate used by later BAI/CSI implementation.
+The BGZF reader tracks each member's compressed file offset and reports a
+``VirtualOffset`` for the current uncompressed cursor. The BAM scanner reports
+record start and end offsets through ``next_record_with_virtual_offsets``.
+
+The offsets feed index construction as follows:
+
+* BAI chunks use the virtual offset at the first and last record boundary in a
+  candidate span.
+* BAI linear-index windows use the earliest start virtual offset observed for a
+  genomic window.
+* CSI support, if promoted, will reuse the same typed offsets.
+* A record ending exactly at a BGZF member boundary is represented as the next
+  compressed member start with in-block offset zero, matching BGZF
+  virtual-offset semantics.
 
 Contract Boundary
 -----------------
