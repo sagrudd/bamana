@@ -178,6 +178,23 @@ force/overwrite safety, and checksum deferral. ``scanner_microbench
 --bamana-bin`` now includes a ``consume`` command smoke timing for
 scanner-backed BAM alignment ingest with explicit policy reporting.
 
+Output Safety
+-------------
+
+M8.8 strengthens the shared output-safety contract for ``sort``, ``merge``,
+``explode``, and ``consume``. These commands write completed payloads to
+operation-scoped temporary files and only publish them through a final rename
+after the write loop has succeeded. Existing outputs are rejected unless
+``--force`` is supplied, and the force path no longer deletes the existing
+output before the completed temporary candidate is ready to publish.
+
+The regression surface covers no-force collision cleanup, forced replacement,
+multi-output preflight behavior for shard publishing, and command-level
+finalization failure where a non-file output target remains intact and the
+temporary candidate is removed. Dry-run behavior remains side-effect bounded,
+and checksum or index payload fields continue to report only work that was
+actually performed.
+
 Activation Boundary
 -------------------
 

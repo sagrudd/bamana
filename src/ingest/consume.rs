@@ -30,6 +30,7 @@ use crate::{
         discovery::DiscoveredFile,
         sam::read_sam_file_with_label,
     },
+    output_safety::{finalize_completed_output, remove_stale_temp},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]
@@ -617,12 +618,9 @@ fn write_output_bam(
     references: &[ReferenceRecord],
     records: &[RecordLayout],
 ) -> Result<u64, AppError> {
-    let preexisting_output = output_path.exists();
     let header_payload = serialize_bam_header_payload(output_path, header_text, references)?;
     let temp_path = temporary_output_path(output_path);
-    if temp_path.exists() {
-        let _ = fs::remove_file(&temp_path);
-    }
+    remove_stale_temp(&temp_path);
 
     let write_result = (|| -> Result<u64, AppError> {
         let mut writer = BgzfWriter::create(&temp_path)?;
@@ -644,16 +642,7 @@ fn write_output_bam(
         }
     };
 
-    if preexisting_output && force {
-        fs::remove_file(output_path).map_err(|error| AppError::WriteError {
-            path: output_path.to_path_buf(),
-            message: error.to_string(),
-        })?;
-    }
-    fs::rename(&temp_path, output_path).map_err(|error| AppError::WriteError {
-        path: output_path.to_path_buf(),
-        message: error.to_string(),
-    })?;
+    finalize_completed_output(&temp_path, output_path, force)?;
 
     Ok(records_written)
 }

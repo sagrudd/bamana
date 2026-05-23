@@ -214,6 +214,8 @@ Key concepts:
 The payload does not imply full BAM validity, external comparator parity,
 content preservation without a matching checksum verification result, or index
 correctness when index writing is reported as deferred.
+The written output path is published from a completed temporary file, and
+existing targets require `--force`.
 
 ## `merge`
 
@@ -236,6 +238,8 @@ Key concepts:
 The payload does not imply that every input was fully valid beyond what was
 parsed, that input-order output is suitable for coordinate indexing, or that
 content was preserved unless checksum verification completed and matched.
+The merged BAM path is published from a completed temporary file, and existing
+targets require `--force`.
 
 ## `explode`
 
@@ -257,6 +261,8 @@ does prove encounter-order preservation within each shard for BAM, SAM, and
 FASTQ.GZ outputs. It does not claim global reconstruction equivalence beyond
 the reported ranges, generic random-access parallel inflate for gzip, or
 uniform shard sizes when `FASTQ.GZI` checkpoint-aligned boundaries are uneven.
+Shard paths are finalized from completed temporary files after preflight; a
+failure before finalization must not be treated as a partial success payload.
 
 ## `consume`
 
@@ -280,6 +286,8 @@ BAM alignment consume uses scanner-backed record loading, SAM/FASTQ/FASTQ.GZ
 use their native ingest paths, and CRAM remains a reference-policy-governed
 compatibility path. Checksum verification and post-ingest index creation remain
 reported intent rather than performed work in this slice.
+Non-dry-run consume output is published from a completed temporary BAM and
+final rename. Dry-run mode is side-effect bounded and writes no BAM output.
 
 ## `annotate_rg`
 

@@ -15,6 +15,7 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
+    output_safety::{finalize_completed_output, remove_stale_temp},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]
@@ -123,9 +124,7 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
     sort_records(&mut records, options.order, queryname_suborder);
 
     let temp_path = temporary_output_path(&options.output_path);
-    if temp_path.exists() {
-        let _ = fs::remove_file(&temp_path);
-    }
+    remove_stale_temp(&temp_path);
 
     let write_result = (|| -> Result<u64, AppError> {
         let mut writer = BgzfWriter::create(&temp_path)?;
@@ -147,16 +146,7 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         }
     };
 
-    if preexisting_output && options.force {
-        fs::remove_file(&options.output_path).map_err(|error| AppError::WriteError {
-            path: options.output_path.clone(),
-            message: error.to_string(),
-        })?;
-    }
-    fs::rename(&temp_path, &options.output_path).map_err(|error| AppError::WriteError {
-        path: options.output_path.clone(),
-        message: error.to_string(),
-    })?;
+    finalize_completed_output(&temp_path, &options.output_path, options.force)?;
 
     let mut notes = vec!["Initial implementation uses an in-memory sort strategy.".to_string()];
     if options.threads > 1 {
@@ -468,6 +458,41 @@ mod tests {
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn finalize_failure_preserves_non_file_output_and_cleans_temp() {
+        let input = write_temp_file(
+            "sort-output-dir-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:unsorted\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output =
+            std::env::temp_dir().join(format!("bamana-sort-output-dir-{}.bam", std::process::id()));
+        fs::create_dir_all(&output).expect("directory collision should create");
+        let temp = super::temporary_output_path(&output);
+
+        let error = sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: true,
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 1,
+            memory_limit: None,
+        })
+        .expect_err("directory output should fail at finalization");
+
+        assert_eq!(error.to_json_error().code, "write_error");
+        assert!(output.is_dir());
+        assert!(!temp.exists());
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_dir(output).expect("directory collision should be removable");
     }
 
     #[test]

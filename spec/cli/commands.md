@@ -173,6 +173,11 @@ Key output concepts:
 `mode`, `inputs`, `discovery`, `reference`, `output`, `header`, `index`,
 `checksum_verification`, `notes`.
 
+Output safety:
+Dry-run writes no BAM output. Non-dry-run execution publishes a completed
+temporary BAM through a final rename; `output.written` is true only after the
+write and requested reporting stages complete.
+
 ## `subsample`
 
 Synopsis:
@@ -722,6 +727,10 @@ Content preservation unless checksum verification was performed and matched.
 Key output concepts:
 `output`, `sort`, `records`, `index`, `checksum_verification`, `notes`.
 
+Output safety:
+The sorted BAM is written to a temporary file and published through a final
+rename. Existing targets are rejected unless `--force` is supplied.
+
 ## `merge`
 
 Synopsis:
@@ -740,6 +749,10 @@ Content preservation unless checksum verification was performed and matched.
 Key output concepts:
 `inputs`, `output`, `merge`, `records`, `index`, `checksum_verification`,
 `notes`.
+
+Output safety:
+The merged BAM is written to a temporary file and published through a final
+rename. Existing targets are rejected unless `--force` is supplied.
 
 ## `explode`
 
@@ -766,6 +779,10 @@ sizes may be uneven, especially when FASTQ.GZ ranges follow available
 
 Key output concepts:
 `input`, `explode`, `outputs`, `index`, `checksum_verification`, `notes`.
+
+Output safety:
+Shard outputs are written to temporary files and preflighted before final
+publication. Existing shard targets are rejected unless `--force` is supplied.
 
 Operational notes:
 For `FASTQ.GZ`, `explode` auto-creates or reuses an adjacent `FASTQ.GZI`

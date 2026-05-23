@@ -25,6 +25,7 @@ use crate::{
     formats::probe::{ContainerKind, DetectedFormat, probe_path},
     ingest::sam::count_sam_records,
     json::CommandResponse,
+    output_safety::{cleanup_temp_outputs, finalize_completed_outputs},
 };
 
 use crate::fastq::gzi::{
@@ -418,7 +419,7 @@ fn explode_fastq_gz(request: &ExplodeRequest) -> Result<ExplodeExecution, AppErr
         })?;
     }
 
-    finalize_output_targets(&temp_paths, &output_paths, request.force)?;
+    finalize_completed_outputs(&temp_paths, &output_paths, request.force)?;
 
     let outputs = planned_ranges
         .iter()
@@ -525,7 +526,7 @@ fn explode_bam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
         }
     };
 
-    finalize_output_targets(&temp_paths, &output_paths, request.force)?;
+    finalize_completed_outputs(&temp_paths, &output_paths, request.force)?;
 
     Ok(SerialExplodeExecution {
         outputs: planned_ranges
@@ -631,7 +632,7 @@ fn explode_sam(request: &ExplodeRequest) -> Result<SerialExplodeExecution, AppEr
         }
     };
 
-    finalize_output_targets(&temp_paths, &output_paths, request.force)?;
+    finalize_completed_outputs(&temp_paths, &output_paths, request.force)?;
 
     Ok(SerialExplodeExecution {
         outputs: planned_ranges
@@ -754,32 +755,6 @@ fn prepare_output_targets(
     }
 
     Ok(())
-}
-
-fn finalize_output_targets(
-    temp_paths: &[PathBuf],
-    output_paths: &[PathBuf],
-    force: bool,
-) -> Result<(), AppError> {
-    for (temp_path, output_path) in temp_paths.iter().zip(output_paths.iter()) {
-        if output_path.exists() && force {
-            fs::remove_file(output_path).map_err(|error| AppError::WriteError {
-                path: output_path.clone(),
-                message: error.to_string(),
-            })?;
-        }
-        fs::rename(temp_path, output_path).map_err(|error| AppError::WriteError {
-            path: output_path.clone(),
-            message: error.to_string(),
-        })?;
-    }
-    Ok(())
-}
-
-fn cleanup_temp_outputs(temp_paths: &[PathBuf]) {
-    for path in temp_paths {
-        let _ = fs::remove_file(path);
-    }
 }
 
 fn plan_serial_ranges(total_records: u64, parts: usize) -> Vec<FastqGziPlannedRange> {

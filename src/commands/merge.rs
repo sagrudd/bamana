@@ -207,8 +207,8 @@ pub fn run(request: MergeRequest) -> CommandResponse<MergePayload> {
     }
     payload.output = Some(MergeOutputInfo {
         path: request.out.to_string_lossy().into_owned(),
-        written: true,
-        overwritten: Some(merge_result.overwritten),
+        written: false,
+        overwritten: None,
     });
     if let Some(merge) = payload.merge.as_mut() {
         merge.produced_mode = Some(merge_result.produced_mode);
@@ -261,6 +261,10 @@ pub fn run(request: MergeRequest) -> CommandResponse<MergePayload> {
         }
     }
 
+    if let Some(output) = payload.output.as_mut() {
+        output.written = true;
+        output.overwritten = Some(merge_result.overwritten);
+    }
     CommandResponse::success("merge", None, payload)
 }
 

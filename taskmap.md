@@ -3863,7 +3863,7 @@ Completion evidence:
 
 ### M8.8 Strengthen M8 Cross-Command Output Safety
 
-Status: pending.
+Status: complete as of 2026-05-23.
 
 Tasks:
 
@@ -3885,7 +3885,15 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* added a shared output finalization helper so `sort`, `merge`, `explode`, and
+  `consume` publish completed temp files through a final rename step instead
+  of deleting an existing output before finalization;
+* kept existing collision checks and added helper coverage for no-force
+  collision cleanup, force replacement, and multi-output preflight behavior;
+* added a command-level `sort` finalization-failure regression proving a
+  non-file output target remains untouched and the temp file is removed;
+* documented the cross-command output-safety contract in README, CLI/spec,
+  JSON-output docs, Sphinx notes, and the M8 roadmap.
 
 ### M8.9 Strengthen M8 Dependency Boundaries And Benchmarks
 

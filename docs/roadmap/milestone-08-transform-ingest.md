@@ -176,6 +176,17 @@ BAM/SAM alignment mode, CRAM reference policy, force/overwrite safety, and
 checksum deferral. `scanner_microbench --bamana-bin` now includes a `consume` command smoke timing
 for scanner-backed BAM alignment ingest with explicit policy reporting.
 
+M8.8 strengthened cross-command output safety for the M8 writer commands.
+`sort`, `merge`, `explode`, and `consume` now share completed-temp-output
+finalization helpers so an existing output is not deleted before the replacement
+payload has been written and finalization is attempted. The helper coverage
+proves no-force collision cleanup, force replacement, and multi-output
+preflight behavior; command-level coverage proves a finalization failure keeps
+the existing non-file output target intact and removes the temporary candidate.
+Dry-run paths remain side-effect bounded, checksum/index payloads continue to
+report only work actually performed, and deferred checksum/index work remains
+explicit rather than implied by output paths.
+
 ## Acceptance Criteria
 
 * `sort` uses native BAM parsing, ordering, header rewriting, writing, and

@@ -1104,6 +1104,60 @@ fn consume_benchmark_hook_is_documented_and_schema_governed() {
 }
 
 #[test]
+fn milestone_8_output_safety_contract_is_documented() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-08-transform-ingest.md"),
+    );
+    let sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_transform_ingest.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for command in ["sort", "merge", "explode", "consume"] {
+        assert!(
+            sphinx.contains(&format!("``{command}``"))
+                && roadmap.contains(&format!("`{command}`"))
+                && taskmap.contains(&format!("`{command}`")),
+            "M8 output-safety docs do not name writer command: {command}"
+        );
+    }
+
+    for required in [
+        "completed temporary",
+        "final rename",
+        "reject collisions unless",
+        "multi-output preflight",
+        "side-effect bounded",
+        "checksum/index payloads",
+        "work actually performed",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_doc.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || sphinx.contains(required)
+                || taskmap.contains(required),
+            "M8 output-safety contract is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

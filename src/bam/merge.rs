@@ -18,6 +18,7 @@ use crate::{
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
+    output_safety::{finalize_completed_output, remove_stale_temp},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]
@@ -161,9 +162,7 @@ pub fn merge_bams(options: &MergeExecutionOptions) -> Result<MergeExecution, App
     )?;
 
     let temp_path = temporary_output_path(&options.output_path, "merge");
-    if temp_path.exists() {
-        let _ = fs::remove_file(&temp_path);
-    }
+    remove_stale_temp(&temp_path);
 
     let write_result = (|| -> Result<u64, AppError> {
         let mut writer = BgzfWriter::create(&temp_path)?;
@@ -185,16 +184,7 @@ pub fn merge_bams(options: &MergeExecutionOptions) -> Result<MergeExecution, App
         }
     };
 
-    if preexisting_output && options.force {
-        fs::remove_file(&options.output_path).map_err(|error| AppError::WriteError {
-            path: options.output_path.clone(),
-            message: error.to_string(),
-        })?;
-    }
-    fs::rename(&temp_path, &options.output_path).map_err(|error| AppError::WriteError {
-        path: options.output_path.clone(),
-        message: error.to_string(),
-    })?;
+    finalize_completed_output(&temp_path, &options.output_path, options.force)?;
 
     let mut notes = vec![
         "Initial implementation uses an in-memory merge strategy.".to_string(),

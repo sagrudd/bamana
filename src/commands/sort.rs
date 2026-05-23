@@ -149,8 +149,6 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         }
     };
 
-    payload.output.written = true;
-    payload.output.overwritten = Some(sort_result.overwritten);
     payload.sort.produced_order = Some(sort_result.produced_order);
     payload.sort.produced_sub_order = sort_result.produced_sub_order;
     payload.records.records_read = Some(sort_result.records_read);
@@ -201,6 +199,8 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         }
     }
 
+    payload.output.written = true;
+    payload.output.overwritten = Some(sort_result.overwritten);
     CommandResponse::success("sort", Some(request.bam.as_path()), payload)
 }
 

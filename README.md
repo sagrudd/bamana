@@ -436,7 +436,9 @@ transform, checksum, explode, and ingest command wave: `sort`, `merge`,
 `explode`, `checksum`, and `consume`. BAM alignment consume uses
 scanner-backed record loading through the native BGZF writer; SAM, FASTQ,
 FASTQ.GZ, and CRAM retain separate native or explicitly documented
-compatibility paths.
+compatibility paths. The M8 writer commands publish completed temporary outputs
+through final rename steps, reject collisions unless `--force` is supplied, and
+keep checksum/index payloads limited to work actually performed.
 
 ## Specification Layer
 

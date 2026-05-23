@@ -119,6 +119,9 @@ mixed-format policy decisions, CRAM reference policy, deferred checksum
 verification, and deferred post-ingest index behavior. BAM alignment consume
 uses scanner-backed record loading, while SAM, FASTQ, FASTQ.GZ, and CRAM keep
 separate native or documented compatibility paths.
+The M8 writer commands publish completed temporary files through final rename
+steps, so `written: true` should be interpreted as completed command reporting
+rather than early write intent.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
