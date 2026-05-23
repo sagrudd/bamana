@@ -180,6 +180,18 @@ Known M9 gaps:
 * BAM `index` cannot yet write real CSI sidecars;
 * public commands do not yet exercise random-access chunk traversal for
   acceleration or region filtering;
-* CSI support remains header-only detection until a scoped M9 decision;
-* benchmark and dependency-boundary evidence for the M9 index/random-access set
-  is not yet recorded.
+* CSI support remains header-only detection until a scoped M9 decision.
+
+M9.9 benchmark and dependency-boundary evidence now protects the active
+index/random-access set:
+
+* `tests/contract/dependency_boundary.rs` names `index`, `check_index`,
+  indexed `check_map`, indexed `summary`, and the random-access substrate as
+  Bamana-native hot paths;
+* `scanner_microbench --bamana-bin` emits `index_bam`, `check_index`,
+  `check_map_indexed`, and `summary_indexed` command smoke timings in addition
+  to existing scan-fallback `check_map` and `summary` timings;
+* benchmark notes distinguish BAI construction, BAI structural validation,
+  index metadata-backed consumer evidence, scan fallback timings,
+  random-access lookup deferral, process startup, JSON emission, and comparator
+  non-parity.

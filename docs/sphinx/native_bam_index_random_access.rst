@@ -151,6 +151,24 @@ malformed BAI payloads, unsupported sidecar kinds, or BAI files missing complete
 metadata for the requested references. Those cases remain native scanner
 fallbacks and the JSON payload notes identify the fallback reason.
 
+Dependency And Benchmark Guardrails
+-----------------------------------
+
+M9.9 protects the BAM index and random-access set in contract tests. The
+dependency-boundary tests explicitly name ``index``, ``check_index``, indexed
+``check_map``, indexed ``summary``, and the BGZF/BAM random-access substrate as
+Bamana-native hot paths that must stay free of direct ``noodles`` imports
+outside the documented CRAM compatibility boundary.
+
+``scanner_microbench --bamana-bin`` emits M9 command smoke timings for
+``index_bam``, ``check_index``, ``check_map_indexed``, and
+``summary_indexed``. The existing ``check_map`` and ``summary`` timings remain
+scan-fallback timings because they run before the synthetic BAI sidecar is
+created. The M9 timing notes distinguish BAM index construction, BAI structural
+validation, index metadata-backed consumer evidence, scan fallback timings,
+random-access lookup deferral, process startup, JSON emission, and comparator
+non-parity.
+
 Contract Boundary
 -----------------
 

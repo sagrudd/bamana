@@ -42,8 +42,9 @@ HTSlib-backed baseline for BAM manipulation. The framework also includes:
 The benchmark framework can now execute real Bamana subsampling on BAM, FASTQ,
 and FASTQ.GZ inputs. Remaining current gaps are:
 
-* Bamana executable BAM index creation is still incomplete for full
-  sort-plus-index parity
+* Bamana executable BAM index creation can write native BAI sidecars for
+  coordinate-sorted BAM inputs, while CSI writing and full indexed-region
+  parity remain incomplete
 * Bamana fastq-ingestion benchmarking still uses `consume`, while dedicated
   fastq subsample benchmark variants remain to be layered in
 * comparator semantics still need careful review where tools are only partial
@@ -171,9 +172,9 @@ like this:
   FASTQ.GZ path, with some ingest features still intentionally deferred
 * `sort`: implemented for the current in-memory first slice and suitable for
   small initial benchmark smoke tests
-* `index`: CLI contract exists, but BAM index writing remains deferred in the
-  current slice and wrappers must fail honestly if full index parity is
-  requested
+* `index`: implemented for native BAM BAI writing on coordinate-sorted BAM
+  input and sampled `FASTQ.GZI` writing for `FASTQ.GZ`; wrappers must still
+  fail honestly if CSI output or full indexed-region parity is requested
 
 Wrapper planning and benchmark interpretation must follow these facts rather
 than assuming full BAM toolkit parity.

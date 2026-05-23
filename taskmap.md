@@ -4375,7 +4375,7 @@ Completion evidence:
 
 ### M9.9 Strengthen M9 Dependency Boundaries And Benchmarks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -4399,7 +4399,30 @@ Acceptance criteria:
 
 Completion evidence:
 
-* pending.
+* extended `tests/contract/dependency_boundary.rs` so the M9 native hot-path
+  guard explicitly names `index`, `check_index`, indexed `check_map`, indexed
+  `summary`, and the random-access substrate;
+* added the Milestone 9 index/random-access oracle boundary to
+  `docs/testing-oracles.md`;
+* extended `scanner_microbench --bamana-bin` with `index_bam`, `check_index`,
+  `check_map_indexed`, and `summary_indexed` command smoke timings;
+* updated `scanner_microbench.schema.json`, benchmark result notes, Sphinx
+  benchmark docs, README, current milestone docs, M9 roadmap docs, and M9
+  Sphinx docs with interpretation notes distinguishing BAM index construction,
+  BAI structural validation, index metadata-backed consumer evidence, scan
+  fallback timings, random-access lookup deferral, process startup, JSON
+  emission, and comparator non-parity;
+* added contract coverage requiring the M9 dependency guardrails and benchmark
+  hooks to stay documented and schema-governed;
+* verification: `cargo test milestone_9 --test contract`;
+  `cargo test m9_index_random_access_hot_paths_do_not_import_noodles --test
+  contract`; `cargo build --bin bamana --bin scanner_microbench`;
+  `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana --out /tmp/bamana-m9-9-scanner.json`, which reported
+  `ok_count: 1` for `index_bam`, `check_index`, `check_map_indexed`, and
+  `summary_indexed`; `cargo test --test contract`; `cargo test`;
+  `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+  `git diff --check`.
 
 ### M9.10 Close Milestone 9
 

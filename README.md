@@ -458,8 +458,13 @@ coordinate-sorted BAM input, and M9.6 hardens BAI structural validation in
 that can read records from validated chunk ranges for internal consumers. M9.8
 routes first consumer evidence through the hardened index usability rules:
 `check_map` and `summary` use BAI metadata only when validation says it is
-usable, and otherwise document native scan fallback. CSI writing and public
-indexed-region command acceleration remain outstanding M9 work.
+usable, and otherwise document native scan fallback. M9.9 adds dependency
+guardrails and `scanner_microbench --bamana-bin` smoke timing rows for
+`index_bam`, `check_index`, `check_map_indexed`, and `summary_indexed`, with
+notes separating index construction, validation, metadata evidence, scan
+fallback, random-access deferral, startup, JSON emission, and comparator
+non-parity. CSI writing and public indexed-region command acceleration remain
+outstanding M9 work.
 
 ## Specification Layer
 

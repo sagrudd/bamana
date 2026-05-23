@@ -1225,6 +1225,96 @@ fn milestone_8_dependency_and_benchmark_guardrails_are_documented() {
 }
 
 #[test]
+fn milestone_9_dependency_and_benchmark_guardrails_are_documented() {
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m9 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-09-bam-index-random-access.md"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for command in [
+        "index",
+        "check_index",
+        "check_map_indexed",
+        "summary_indexed",
+        "random_access_substrate",
+    ] {
+        assert!(
+            dependency_tests.contains(&format!("\"{command}\""))
+                && oracle_policy.contains("Milestone 9 Index And Random-Access Oracle Boundary"),
+            "M9 dependency guardrails do not explicitly name command or substrate: {command}"
+        );
+    }
+
+    for command in [
+        "index_bam",
+        "check_index",
+        "check_map_indexed",
+        "summary_indexed",
+    ] {
+        assert!(
+            scanner_source.contains(&format!("\"{command}\""))
+                && scanner_doc.contains(&format!("``{command}``"))
+                && scanner_schema.contains(&format!("\"{command}\"")),
+            "M9 benchmark hooks do not explicitly name command timing row: {command}"
+        );
+    }
+
+    for required in [
+        "BAM index construction",
+        "BAI structural validation",
+        "index metadata-backed consumer evidence",
+        "scan fallback timings",
+        "random-access lookup deferral",
+        "process startup",
+        "JSON emission",
+        "not comparator parity",
+    ] {
+        assert!(
+            scanner_source.contains(required)
+                || scanner_doc.contains(required)
+                || benchmark_results.contains(required)
+                || current.contains(required)
+                || m9.contains(required)
+                || taskmap.contains(required),
+            "M9 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_7_closeout_and_m8_activation_docs_are_consistent() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let roadmap = read_utf8(&docs_dir().join("roadmap.md"));

@@ -99,9 +99,9 @@ Outstanding M9 gaps:
   parser/writer contract or records precise deferral.
 * `check_map` and `summary` do not yet use validated chunks for indexed
   acceleration; their index path is limited to parsed BAI metadata.
-* M9 dependency-boundary and benchmark evidence still need to name BAM index
-  writing, BAM index validation, virtual-offset random-access groundwork, and
-  first index-aware consumers as one protected set.
+* M9 dependency-boundary and benchmark evidence names BAM index writing, BAM
+  index validation, virtual-offset random-access groundwork, and first
+  index-aware consumers as one protected set.
 
 ## Acceptance Criteria
 
@@ -175,6 +175,15 @@ not random-access chunk acceleration.
 * command-level smoke timings for `check_index`
 * indexed versus scan fallback timings for `check_map`
 * indexed versus scan fallback timings for `summary`
+
+M9.9 formalizes these hooks in `scanner_microbench --bamana-bin` as
+`index_bam`, `check_index`, `check_map_indexed`, and `summary_indexed` timing
+rows. The existing `check_map` and `summary` rows remain scan-fallback
+timings because they run before the synthetic BAI sidecar is created. The M9
+interpretation notes distinguish BAM index construction, BAI structural
+validation, index metadata-backed consumer evidence, scan fallback timings,
+random-access lookup deferral, process startup, JSON emission, and comparator
+non-parity.
 
 ## Remaining `noodles` Surface
 

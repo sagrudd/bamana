@@ -224,6 +224,56 @@ const M8_TRANSFORM_INGEST_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M9_INDEX_RANDOM_ACCESS_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "index",
+        &[
+            "src/commands/index.rs",
+            "src/bam/index.rs",
+            "src/bam/scan.rs",
+            "src/bgzf/reader.rs",
+            "src/bgzf/virtual_offset.rs",
+            "src/output_safety.rs",
+        ],
+    ),
+    (
+        "check_index",
+        &[
+            "src/commands/check_index.rs",
+            "src/bam/index.rs",
+            "src/bam/header.rs",
+            "src/bgzf/reader.rs",
+        ],
+    ),
+    (
+        "check_map_indexed",
+        &[
+            "src/commands/check_map.rs",
+            "src/bam/index.rs",
+            "src/bam/scan.rs",
+            "src/bam/record.rs",
+        ],
+    ),
+    (
+        "summary_indexed",
+        &[
+            "src/commands/summary.rs",
+            "src/bam/index.rs",
+            "src/bam/scan.rs",
+            "src/bam/summary.rs",
+        ],
+    ),
+    (
+        "random_access_substrate",
+        &[
+            "src/bgzf/reader.rs",
+            "src/bgzf/virtual_offset.rs",
+            "src/bam/scan.rs",
+            "src/bam/index.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -484,6 +534,49 @@ fn m8_transform_ingest_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M8 transform, checksum, explode, and ingest hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m9_index_random_access_hot_paths_do_not_import_noodles() {
+    let index_random_access_paths: Vec<_> = M9_INDEX_RANDOM_ACCESS_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        index_random_access_paths,
+        [
+            "index",
+            "check_index",
+            "check_map_indexed",
+            "summary_indexed",
+            "random_access_substrate"
+        ],
+        "M9 dependency boundary must explicitly name index, check_index, indexed check_map, indexed summary, and the random-access substrate"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M9_INDEX_RANDOM_ACCESS_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M9 BAM index, indexed-consumer, and random-access substrate paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }

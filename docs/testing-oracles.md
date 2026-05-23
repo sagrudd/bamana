@@ -135,3 +135,29 @@ Any future differential test for these commands must be clearly labelled as an
 oracle or compatibility comparison and must not define the production execution
 engine, checksum semantics, sharding policy, output-safety model, or ingest
 normalization policy.
+
+## Milestone 9 Index And Random-Access Oracle Boundary
+
+The Milestone 9 BAM index and random-access set is `index`, `check_index`,
+indexed `check_map`, indexed `summary`, and the BGZF/BAM random-access
+substrate. The production BAM index writing, BAI validation, first indexed
+consumer evidence, BGZF virtual-offset seeking, and scanner range traversal
+paths must remain Bamana-native and free of direct `noodles` imports.
+
+Test-only oracle usage remains limited to explicit oracle or compatibility
+surfaces:
+
+* BAI construction, parsing, and writing expectations are owned by native
+  `src/bam/index.rs` tests and command tests;
+* indexed `check_map` and `summary` expectations are owned by native scanner,
+  BAI metadata, and payload-contract tests;
+* random-access substrate expectations are owned by `VirtualOffset`,
+  `NativeBgzfReader`, and `BamScanner` tests;
+* CSI support remains scoped to documented header-detection behavior until a
+  later task promotes deeper CSI ownership.
+
+Malformed index, stale sidecar, and random-access failure expectations must
+stay in native tests. Any future differential test for these paths must be
+clearly labelled as an oracle or compatibility comparison and must not define
+the production index writer, validation depth, random-access engine, or
+consumer evidence policy.

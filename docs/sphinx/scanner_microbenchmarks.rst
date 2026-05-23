@@ -42,8 +42,10 @@ The JSON result contains:
   presence
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
   ``check_tag``, ``subsample_bam``, ``sort``, ``merge``, ``checksum``,
-  ``explode``, ``consume``, ``inspect_duplication``, ``deduplicate``, and
-  ``forensic_inspect`` command timings when ``--bamana-bin`` is supplied
+  ``explode``, ``consume``, ``index_bam``, ``check_index``,
+  ``check_map_indexed``, ``summary_indexed``, ``inspect_duplication``,
+  ``deduplicate``, and ``forensic_inspect`` command timings when
+  ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
 timings measure the in-process substrate and selected field access. Command
@@ -128,6 +130,25 @@ output compression, output finalization, process startup, and JSON emission.
 CRAM compatibility behavior is deliberately not exercised by this synthetic BAM
 smoke hook and remains covered by explicit reference-policy tests and
 documentation.
+
+``index_bam`` is a command-level BAM index construction timing over the
+generated coordinate-sorted BAM fixture. It proves native BAI bin, chunk,
+linear-index, metadata-count, sidecar-write, and output-finalization paths are
+runnable through the benchmark hook. It should be interpreted as command smoke
+timing rather than comparator parity, CSI writing evidence, or indexed lookup
+throughput.
+
+``check_index`` is a command-level BAI inspection timing after ``index_bam`` has
+created a sidecar. It includes adjacent sidecar discovery, BAI structural
+validation, timestamp compatibility assessment, process startup, and JSON
+emission. It does not prove that every virtual offset in the index matches the
+BAM.
+
+``check_map_indexed`` and ``summary_indexed`` are command-level indexed
+consumer timings after the generated BAI sidecar exists. They prove that first
+consumers can use validated BAI mapped/unmapped metadata and keep that evidence
+separate from scanner evidence. They do not exercise random-access chunk
+traversal or region filtering; those remain later indexed-region work.
 
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path
