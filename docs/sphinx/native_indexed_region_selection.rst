@@ -248,6 +248,29 @@ M11.7 does not add public schemas, golden examples, or fixtures; M11.8 remains
 responsible for governing the final ``select_region`` JSON schema, examples,
 and fixture plan.
 
+Public Contract Artifacts
+-------------------------
+
+M11.8 adds governed public-contract artifacts for the implemented
+``select_region`` file-output surface:
+
+* ``spec/jsonschema/select_region.schema.json``;
+* ``spec/examples/select_region.success.json``;
+* ``spec/examples/select_region.failure.json``;
+* JSON-output documentation for ``output``, ``index_invalidation``,
+  ``region_scope``, ``execution``, and ``header``;
+* CLI contract text for supported options and current deferrals;
+* fixture-plan reservations for indexed success, scan fallback,
+  duplicate/overlap suppression, output-index sidecar collision, forced sidecar
+  removal, and same-path rejection.
+
+The schema governs file-output behavior only: ``--bam``, repeated CLI
+``--region``, ``--out <output.bam>``, ``--dry-run``, ``--force``, and
+``--prefer-index``. Binary stdout output via ``--out -``, public
+``--region-file``, report sidecar routing, replacement output index creation,
+and broad comparator parity remain outside the current schema until later tasks
+promote them.
+
 Inherited Substrate
 -------------------
 

@@ -75,6 +75,9 @@ Current milestone:
   collisions unless `--force` is supplied, forced applied runs remove those
   stale sidecars before writing selected BAM output, dry runs only report
   planned invalidation, and no replacement output index is created.
+  M11.8 adds the governed schema, canonical success/failure examples,
+  JSON-output documentation, CLI contract text, and fixture-plan reservations
+  for the implemented `select_region` file-output surface.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

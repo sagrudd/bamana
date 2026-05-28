@@ -110,6 +110,29 @@ duplicate-region behavior, index invalidation or regeneration rules, and
 output write-safety behavior. The current fixture plan covers read-only
 evidence from `check_map --region` and `summary --region` only.
 
+### M11 selected-region output coverage
+
+M11.8 reserves `select_region` fixture coverage for the implemented
+file-output surface:
+
+* indexed selected-output success: `tiny.valid.coordinate` with
+  `tiny.valid.coordinate.bai`, repeated `--region` values, and
+  `expected/select_region/tiny.valid.coordinate.indexed.success.json`;
+* scan fallback success: `tiny.valid.coordinate` without a usable adjacent BAI
+  or with `tiny.valid.coordinate.stale_bai`;
+* duplicate/overlap suppression: overlapping CLI `--region` values must still
+  emit each physical source record at most once in source virtual-offset order;
+* output-index sidecar collision: a pre-existing selected-output BAI/CSI
+  sidecar must fail with `output_exists` unless `--force` is supplied;
+* forced sidecar removal: a forced applied run removes stale adjacent output
+  BAI/CSI sidecars and reports `output.index_invalidation`;
+* same-path rejection: using the input BAM path as `--out` fails even with
+  `--force`.
+
+The current fixture plan does not claim binary stdout output, public
+`--region-file`, report sidecar routing, replacement output index creation, or
+broad external comparator parity for `select_region`.
+
 ### Transform coverage
 
 These commands depend on the transform fixture family:

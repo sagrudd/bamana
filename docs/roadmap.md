@@ -155,6 +155,9 @@ This order is retained because it matches the dependency chain of the runtime:
   collisions unless `--force` is supplied, forced applied runs remove stale
   adjacent output index sidecars, dry runs report planned invalidation without
   deleting files, and no replacement output index is created
+* M11.8 governed contract artifacts: `select_region` now has a JSON schema,
+  canonical success/failure examples, JSON-output documentation, CLI contract
+  text, and fixture-plan reservations for the implemented file-output surface
 
 ### Milestone 12: Extended Index Compatibility
 

@@ -76,3 +76,11 @@ are rejected, existing output BAM paths and adjacent output BAI/CSI sidecars
 are collisions unless ``--force`` is supplied, forced applied runs remove stale
 adjacent output index sidecars, and no replacement output index is created.
 Use ``bamana index --input <selected.bam>`` when an index is required.
+
+M11.8 adds governed schema and example artifacts for the current file-output
+surface: ``spec/jsonschema/select_region.schema.json``,
+``spec/examples/select_region.success.json``, and
+``spec/examples/select_region.failure.json``. Fixture plans reserve indexed
+success, scan fallback, duplicate/overlap suppression, output-index sidecar
+collision, forced sidecar removal, and same-path rejection coverage. Binary
+stdout output and public ``--region-file`` remain deferred.

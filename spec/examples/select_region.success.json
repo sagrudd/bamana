@@ -1,0 +1,89 @@
+{
+  "ok": true,
+  "command": "select_region",
+  "path": "example.bam",
+  "data": {
+    "format": "BAM",
+    "dry_run": false,
+    "input": "example.bam",
+    "output": {
+      "path": "example.selected.bam",
+      "output_format": "bam",
+      "compression": "bgzf",
+      "output_created": true,
+      "records_written": 2,
+      "duplicate_emission_policy": "emit_once_per_source_record",
+      "output_ordering_policy": "source_virtual_offset_order",
+      "index_invalidation": {
+        "adjacent_index_paths": [
+          "example.selected.bam.bai",
+          "example.selected.bai",
+          "example.selected.bam.csi",
+          "example.selected.csi"
+        ],
+        "preexisting_index_paths": [],
+        "removed_index_paths": [],
+        "invalidation_action": "no_existing_index_sidecars",
+        "output_index_created": false,
+        "regeneration": "bamana index --input example.selected.bam"
+      }
+    },
+    "region_scope": {
+      "source": "cli_regions",
+      "requested_region_count": 2,
+      "normalized_region_count": 2,
+      "duplicate_region_request_count": 0,
+      "regions": [
+        {
+          "original": "chr1:6-9",
+          "reference_name": "chr1",
+          "reference_index": 0,
+          "reference_length": 100,
+          "start_0_based": 5,
+          "end_0_based_exclusive": 9,
+          "start_1_based_inclusive": 6,
+          "end_1_based_inclusive": 9,
+          "input_kind": "explicit_interval"
+        },
+        {
+          "original": "chr1:8-9",
+          "reference_name": "chr1",
+          "reference_index": 0,
+          "reference_length": 100,
+          "start_0_based": 7,
+          "end_0_based_exclusive": 9,
+          "start_1_based_inclusive": 8,
+          "end_1_based_inclusive": 9,
+          "input_kind": "explicit_interval"
+        }
+      ]
+    },
+    "execution": {
+      "mode": "indexed",
+      "index_path": "example.bam.bai",
+      "chunks_traversed": 1,
+      "raw_records_seen": 2,
+      "records_examined": 2,
+      "selected_unique_record_count": 2,
+      "duplicate_physical_records_suppressed": 0,
+      "fallback_reason": null
+    },
+    "header": {
+      "reference_dictionary_preserved": true,
+      "references_retained": 1,
+      "provenance_pg_appended": true,
+      "input_sort_order": "coordinate",
+      "input_sub_sort_order": "coordinate:minhash",
+      "output_sort_order": "unknown",
+      "output_sub_sort_order": null,
+      "sort_metadata_note": "Selected-region output downgrades sort metadata because source-order region selection is not guaranteed to preserve whole-file coordinate or queryname order."
+    },
+    "notes": [
+      "Selected BAM output preserves raw alignment record bytes for retained records.",
+      "Each physical source BAM record is emitted at most once in source virtual-offset order.",
+      "select_region does not create an output BAM index; run bamana index on the selected BAM when an index is required.",
+      "Adjacent output index sidecars are rejected unless --force is supplied; forced applied runs remove those sidecars before writing selected output."
+    ]
+  },
+  "error": null
+}

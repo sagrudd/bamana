@@ -169,6 +169,10 @@ fn contract_docs_exist() {
             .join("expected")
             .join("forensic_inspect")
             .join("README.md"),
+        fixtures_dir()
+            .join("expected")
+            .join("select_region")
+            .join("README.md"),
         fixtures_dir().join("plans").join("fixture-matrix.md"),
         fixtures_dir().join("plans").join("generation-strategy.md"),
         fixtures_dir().join("plans").join("coverage-map.md"),
@@ -2726,6 +2730,165 @@ fn milestone_11_write_safety_and_index_invalidation_are_implemented() {
         assert!(
             command_source.contains(token),
             "M11.7 select_region implementation is missing token: {token}"
+        );
+    }
+}
+
+#[test]
+fn milestone_11_selection_contract_artifacts_are_governed() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_doc = read_utf8(&docs_dir().join("json-output.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let public_commands = read_utf8(&docs_dir().join("sphinx").join("public_commands.rst"));
+    let fixtures_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let coverage_map = read_utf8(&fixtures_dir().join("plans").join("coverage-map.md"));
+    let expected_readme = read_utf8(
+        &fixtures_dir()
+            .join("expected")
+            .join("select_region")
+            .join("README.md"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    let schema_path = schema_path_for_command("select_region");
+    let success_example_path = spec_dir()
+        .join("examples")
+        .join("select_region.success.json");
+    let failure_example_path = spec_dir()
+        .join("examples")
+        .join("select_region.failure.json");
+
+    assert!(
+        schema_path.exists(),
+        "M11.8 must ship select_region.schema.json"
+    );
+    assert!(
+        success_example_path.exists(),
+        "M11.8 must ship select_region.success.json"
+    );
+    assert!(
+        failure_example_path.exists(),
+        "M11.8 must ship select_region.failure.json"
+    );
+
+    for required in [
+        "M11.8",
+        "select_region",
+        "select_region.schema.json",
+        "select_region.success.json",
+        "select_region.failure.json",
+        "output.index_invalidation",
+        "region_scope",
+        "execution",
+        "header",
+        "indexed",
+        "scan_fallback",
+        "emit_once_per_source_record",
+        "source_virtual_offset_order",
+        "--out -",
+        "--region-file",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_doc.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || public_commands.contains(required)
+                || fixtures_doc.contains(required)
+                || coverage_map.contains(required)
+                || expected_readme.contains(required)
+                || taskmap.contains(required),
+            "M11.8 select_region contract docs are missing: {required}"
+        );
+    }
+
+    let schema = read_utf8(&schema_path);
+    for token in [
+        "x-bamana-command",
+        "select_region",
+        "indexInvalidation",
+        "normalizedRegion",
+        "output_index_created",
+        "emit_once_per_source_record",
+        "source_virtual_offset_order",
+        "indexed",
+        "scan_fallback",
+    ] {
+        assert!(
+            schema.contains(token),
+            "M11.8 select_region schema is missing token: {token}"
+        );
+    }
+
+    for path in [&success_example_path, &failure_example_path] {
+        let example: Value = serde_json::from_str(&read_utf8(path))
+            .unwrap_or_else(|error| panic!("example {} did not parse: {error}", path.display()));
+        assert_eq!(
+            example.pointer("/command").and_then(Value::as_str),
+            Some("select_region"),
+            "example {} must be bound to select_region",
+            path.display()
+        );
+    }
+
+    let manifest = load_fixture_manifest();
+    let fixture = manifest
+        .fixtures
+        .iter()
+        .find(|fixture| fixture.id == "tiny.select_region.coordinate")
+        .unwrap_or_else(|| {
+            panic!("fixture manifest is missing planned M11.8 select_region fixture")
+        });
+
+    assert_eq!(fixture.format, "BAM");
+    assert!(
+        fixture
+            .primary_commands
+            .iter()
+            .any(|command| command == "select_region"),
+        "planned select_region fixture must list select_region as a primary command"
+    );
+    assert!(
+        fixture
+            .expected_artifacts
+            .iter()
+            .all(|artifact| artifact.starts_with("expected/select_region/")),
+        "planned select_region fixture expected artifacts must live under expected/select_region/"
+    );
+
+    for planned in [
+        "indexed selected-output success",
+        "scan fallback",
+        "duplicate/overlap suppression",
+        "output-index sidecar collision",
+        "forced sidecar removal",
+        "same-path rejection",
+    ] {
+        assert!(
+            coverage_map.contains(planned) || expected_readme.contains(planned),
+            "M11.8 select_region fixture plan is missing scenario: {planned}"
         );
     }
 }

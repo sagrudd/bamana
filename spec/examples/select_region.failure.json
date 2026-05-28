@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "select_region",
+  "path": "example.bam",
+  "data": null,
+  "error": {
+    "code": "output_exists",
+    "message": "Output path already exists and overwrite was not requested.",
+    "detail": null,
+    "hint": "Rerun with --force to overwrite the existing output path."
+  }
+}

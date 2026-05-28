@@ -215,6 +215,36 @@ Key concepts:
   ordering, duplicate-region behavior, index invalidation, or write-safety for
   selecting or writing records
 
+## `select_region`
+
+The `select_region` payload reports governed selected-record BAM file output
+for CLI `--region` requests.
+
+Key concepts:
+
+* `output.output_format` is `bam` and `output.compression` is `bgzf`
+* `output.records_written` counts selected records actually written in applied
+  runs; dry runs report zero written records and `output_created: false`
+* `output.duplicate_emission_policy` is `emit_once_per_source_record`
+* `output.output_ordering_policy` is `source_virtual_offset_order`
+* `output.index_invalidation` lists adjacent output index candidates,
+  pre-existing sidecars, removed sidecars, the invalidation action,
+  `output_index_created: false`, and the regeneration command
+* `region_scope` records CLI-region source, requested and normalized region
+  counts, duplicate request count, and normalized region objects using the M10
+  coordinate model
+* `execution.mode` distinguishes `indexed` from `scan_fallback`; indexed
+  execution reports `index_path` and chunk/record counts, while fallback
+  execution reports `fallback_reason`
+* `header` records reference dictionary preservation, retained reference count,
+  provenance `@PG` insertion, and conservative sort metadata downgrade
+* successful output preserves selected records' raw BAM record bytes and does
+  not imply biological interpretation or whole-file validation
+
+Binary stdout output via `--out -`, public `--region-file`, and replacement
+output index creation remain deferred outside the current governed
+`select_region` schema.
+
 ## `check_tag`
 
 The `check_tag` payload reports selected auxiliary-tag evidence.

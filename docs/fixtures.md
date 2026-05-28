@@ -149,6 +149,10 @@ and validation command wave:
   record ordering, duplicate-region behavior, index invalidation or
   regeneration notes, and output write-safety behavior before such a command is
   claimed;
+* M11.8 fixture planning reserves `select_region` scenarios over the coordinate
+  BAM/BAI family for indexed selected-output success, missing/stale index scan
+  fallback, duplicate/overlap suppression, output-index sidecar collision,
+  forced stale-sidecar removal, and same-path input/output rejection;
 * `tiny.invalid.mismatched_reference_count.bai` covers BAI reference-count
   mismatch reporting;
 * `tiny.valid.coordinate.csi_header` covers detected-but-not-supported CSI

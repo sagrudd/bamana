@@ -5312,13 +5312,42 @@ Completion evidence:
 
 ### M11.8 Update Public Contracts, Schemas, Examples, And Fixtures
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * add governed CLI contract, JSON schema, examples, and fixture plans for the
   selected M11 public surface;
 * update README, CLI docs, JSON docs, Sphinx docs, and roadmap docs.
+
+Acceptance criteria:
+
+* the implemented `select_region` file-output surface has a governed JSON
+  schema;
+* canonical success and failure examples exist and parse;
+* CLI, JSON-output, README, Sphinx, roadmap, and fixture-plan documentation
+  describe the supported surface and current deferrals;
+* fixture reservations cover indexed success, scan fallback,
+  duplicate/overlap suppression, output-index sidecar collision, forced sidecar
+  removal, and same-path rejection;
+* contract tests fail if the governed `select_region` schema, examples, docs,
+  or fixture reservations disappear.
+
+Completion evidence:
+
+* added `spec/jsonschema/select_region.schema.json` for the current
+  `select_region` JSON response, including output, index invalidation,
+  normalized regions, execution mode, header policy, and notes;
+* added canonical examples:
+  `spec/examples/select_region.success.json` and
+  `spec/examples/select_region.failure.json`;
+* added `select_region` CLI contract text and JSON-output documentation;
+* updated README, CLI docs, roadmap notes, Sphinx public command notes, and the
+  M11 technical note;
+* reserved fixture-plan coverage in `tests/fixtures/manifest.json`,
+  `tests/fixtures/plans/coverage-map.md`, `docs/fixtures.md`, and
+  `tests/fixtures/expected/select_region/README.md`;
+* added contract coverage for the M11.8 schema/example/docs/fixture baseline.
 
 ### M11.9 Add Dependency And Benchmark Guardrails
 

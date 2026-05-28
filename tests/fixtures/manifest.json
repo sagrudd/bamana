@@ -301,6 +301,32 @@
       "tag_inventory": []
     },
     {
+      "id": "tiny.select_region.coordinate",
+      "path": "bam/region_selection/tiny.select_region.coordinate.selected.bam",
+      "format": "BAM",
+      "category": "region_selection",
+      "validity": "valid",
+      "status": "planned",
+      "description": "Selected-output BAM planned from tiny.valid.coordinate using repeated overlapping CLI --region requests.",
+      "primary_commands": ["select_region"],
+      "secondary_commands": ["check_index", "index"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate", "tiny.valid.coordinate.bai"],
+      "regeneration_strategy": "run_bamana_select_region_with_repeated_overlapping_cli_regions",
+      "expected_artifacts": [
+        "expected/select_region/tiny.select_region.coordinate.indexed.success.json",
+        "expected/select_region/tiny.select_region.coordinate.scan_fallback.success.json",
+        "expected/select_region/tiny.select_region.coordinate.output_index_collision.failure.json",
+        "expected/select_region/tiny.select_region.coordinate.force_removes_index.success.json",
+        "expected/select_region/tiny.select_region.coordinate.same_path.failure.json"
+      ],
+      "has_index": false,
+      "sort_order": "unknown",
+      "mapped_state": "mapped_subset",
+      "size_class": "tiny",
+      "tag_inventory": ["NM", "RG"]
+    },
+    {
       "id": "tiny.valid.coordinate.stale_bai",
       "path": "bam/indexing/tiny.valid.coordinate.stale.bam.bai",
       "format": "BAI",

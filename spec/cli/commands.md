@@ -754,6 +754,63 @@ not remove sidecars; they report the sidecars that would be removed by an
 applied forced run. Public schemas, golden examples, and fixtures remain M11.8
 work.
 
+## `select_region`
+
+Synopsis:
+`bamana select_region --bam <input.bam> --region <REGION> [--region <REGION> ...] --out <output.bam> [--dry-run] [--force] [--prefer-index]`
+
+Semantics:
+
+`select_region` writes a BGZF-compressed BAM containing source records that
+overlap one or more CLI `--region` requests. Input must be BGZF-compressed BAM.
+The current public implementation supports file output only; `--out -` binary
+stdout output and public `--region-file` parsing remain deferred.
+
+Region syntax uses the M10 grammar: `reference` for a whole reference or
+`reference:start-end` for a 1-based closed interval. Normalized coordinates are
+reported as 0-based half-open intervals. Repeated CLI regions preserve request
+metadata, but selected BAM output emits each physical source record at most
+once in source virtual-offset order.
+
+Usable non-stale BAI sidecars drive native indexed traversal. Missing, stale,
+unsupported, malformed, or incomplete index state falls back to native scanner
+selection and reports the fallback reason. Selected records preserve their raw
+BAM record bytes; Bamana does not reserialize alignment fields or auxiliary
+tags.
+
+The output header preserves the full binary reference dictionary and retained
+textual header records, rewrites existing `@HD SO` to `unknown`, removes
+`@HD SS`, and appends collision-free `@PG` provenance for
+`bamana select_region`.
+
+Write-safety:
+
+* existing BAM output paths are refused unless `--force` is supplied;
+* same-path input/output rewrites are rejected even with `--force`;
+* adjacent output index sidecars (`<out>.bai`, `<out>.csi`, `.bai`, `.csi`)
+  are output collisions unless `--force` is supplied;
+* forced applied runs remove stale adjacent output BAI/CSI sidecars before
+  writing selected BAM output;
+* `select_region` does not create a replacement output index; use
+  `bamana index --input <output.bam>` when an index is required.
+
+Schema and examples:
+
+The governed JSON schema is
+`spec/jsonschema/select_region.schema.json`. Canonical examples are
+`spec/examples/select_region.success.json` and
+`spec/examples/select_region.failure.json`.
+
+Fixture plan:
+
+M11.8 reserves `select_region` fixture coverage over the existing tiny
+coordinate BAM/BAI family for indexed success, scan fallback, duplicate/overlap
+suppression, output index sidecar collision, forced stale-sidecar removal, and
+same-path rejection.
+
+Key output concepts:
+`output`, `index_invalidation`, `region_scope`, `execution`, `header`, `notes`.
+
 ## `check_index`
 
 Synopsis:

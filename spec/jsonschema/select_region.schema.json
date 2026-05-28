@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/select_region.schema.json",
+  "title": "Bamana Select Region Response",
+  "description": "Contract for bamana select_region JSON output.",
+  "x-bamana-command": "select_region",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "normalizedRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original",
+        "reference_name",
+        "reference_index",
+        "reference_length",
+        "start_0_based",
+        "end_0_based_exclusive",
+        "start_1_based_inclusive",
+        "end_1_based_inclusive",
+        "input_kind"
+      ],
+      "properties": {
+        "original": { "type": "string" },
+        "reference_name": { "type": "string" },
+        "reference_index": { "type": "integer", "minimum": 0 },
+        "reference_length": { "type": "integer", "minimum": 1 },
+        "start_0_based": { "type": "integer", "minimum": 0 },
+        "end_0_based_exclusive": { "type": "integer", "minimum": 1 },
+        "start_1_based_inclusive": { "type": "integer", "minimum": 1 },
+        "end_1_based_inclusive": { "type": "integer", "minimum": 1 },
+        "input_kind": {
+          "type": "string",
+          "enum": ["whole_reference", "explicit_interval"]
+        }
+      }
+    },
+    "indexInvalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adjacent_index_paths",
+        "preexisting_index_paths",
+        "removed_index_paths",
+        "invalidation_action",
+        "output_index_created",
+        "regeneration"
+      ],
+      "properties": {
+        "adjacent_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preexisting_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "removed_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "invalidation_action": {
+          "type": "string",
+          "enum": [
+            "no_existing_index_sidecars",
+            "removed_existing_index_sidecars",
+            "would_leave_no_output_index",
+            "would_remove_existing_index_sidecars_on_apply"
+          ]
+        },
+        "output_index_created": { "const": false },
+        "regeneration": { "type": "string" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "output_format",
+        "compression",
+        "output_created",
+        "records_written",
+        "duplicate_emission_policy",
+        "output_ordering_policy",
+        "index_invalidation"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "output_format": { "const": "bam" },
+        "compression": { "const": "bgzf" },
+        "output_created": { "type": "boolean" },
+        "records_written": { "type": "integer", "minimum": 0 },
+        "duplicate_emission_policy": { "const": "emit_once_per_source_record" },
+        "output_ordering_policy": { "const": "source_virtual_offset_order" },
+        "index_invalidation": { "$ref": "#/$defs/indexInvalidation" }
+      }
+    },
+    "regionScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "requested_region_count",
+        "normalized_region_count",
+        "duplicate_region_request_count",
+        "regions"
+      ],
+      "properties": {
+        "source": { "const": "cli_regions" },
+        "requested_region_count": { "type": "integer", "minimum": 1 },
+        "normalized_region_count": { "type": "integer", "minimum": 1 },
+        "duplicate_region_request_count": { "type": "integer", "minimum": 0 },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/normalizedRegion" }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "index_path",
+        "chunks_traversed",
+        "raw_records_seen",
+        "records_examined",
+        "selected_unique_record_count",
+        "duplicate_physical_records_suppressed",
+        "fallback_reason"
+      ],
+      "properties": {
+        "mode": { "type": "string", "enum": ["indexed", "scan_fallback"] },
+        "index_path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "chunks_traversed": { "type": "integer", "minimum": 0 },
+        "raw_records_seen": { "type": "integer", "minimum": 0 },
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "selected_unique_record_count": { "type": "integer", "minimum": 0 },
+        "duplicate_physical_records_suppressed": { "type": "integer", "minimum": 0 },
+        "fallback_reason": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_dictionary_preserved",
+        "references_retained",
+        "provenance_pg_appended",
+        "input_sort_order",
+        "input_sub_sort_order",
+        "output_sort_order",
+        "output_sub_sort_order",
+        "sort_metadata_note"
+      ],
+      "properties": {
+        "reference_dictionary_preserved": { "const": true },
+        "references_retained": { "type": "integer", "minimum": 0 },
+        "provenance_pg_appended": { "const": true },
+        "input_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "input_sub_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "output_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "output_sub_sort_order": { "$ref": "./common/defs.schema.json#/$defs/nullableString" },
+        "sort_metadata_note": { "type": "string" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "dry_run",
+        "input",
+        "output",
+        "region_scope",
+        "execution",
+        "header",
+        "notes"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "dry_run": { "type": "boolean" },
+        "input": { "type": "string" },
+        "output": { "$ref": "#/$defs/output" },
+        "region_scope": { "$ref": "#/$defs/regionScope" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "header": { "$ref": "#/$defs/header" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "select_region" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "select_region" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }] },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

@@ -252,6 +252,13 @@ selected BAM output, dry runs report planned index invalidation without
 removing files, and the response reports `output.index_invalidation` with
 `output_index_created: false` plus `bamana index --input <output.bam>`
 regeneration guidance.
+M11.8 adds governed public-contract artifacts for the implemented
+`select_region` file-output surface: `spec/jsonschema/select_region.schema.json`,
+canonical success and failure examples, JSON-output documentation, CLI contract
+coverage, and fixture-plan reservations for indexed success, scan fallback,
+duplicate/overlap suppression, output-index sidecar collisions, forced sidecar
+removal, and same-path rejection. Binary stdout output and public
+`--region-file` remain deferred.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
