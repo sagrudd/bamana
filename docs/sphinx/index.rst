@@ -43,3 +43,4 @@ Build the site locally with:
    native_transform_ingest
    native_bam_index_random_access
    native_indexed_region_workflows
+   native_indexed_region_selection

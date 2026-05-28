@@ -193,6 +193,14 @@ region filtering, scan fallback, command startup, and JSON emission without
 claiming comparator parity, native CRAM indexed queries, biological
 interpretation, or selected-record output.
 
+Milestone 11 is active for public indexed region selection and region files.
+M11.1 freezes the selection surface decision as a planned new `select_region`
+command, not an extension of `check_map`, `summary`, or `subsample`. No
+`select_region` CLI synopsis is public yet. Later M11 tasks must define output
+semantics, header preservation, record ordering, duplicate-region behavior,
+region-file syntax, index invalidation, and write-safety before any selected
+record output is implemented.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

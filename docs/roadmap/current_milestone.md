@@ -41,13 +41,17 @@ See:
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-Next planned milestone:
+Current milestone:
 
-* **Milestone 11: Public Indexed Region Selection And Region Files**. M11 is
-  planned, not active, and should not reopen Milestone 10. Its purpose is to
-  decide and implement selected-record region output and region-file input only
-  after output semantics, header preservation, duplicate handling, index
-  invalidation, and write-safety are specified.
+* **Milestone 11: Public Indexed Region Selection And Region Files** is active
+  as of 2026-05-28. M11 does not reopen Milestone 10. M11.1 freezes the
+  selection surface decision as a new planned public `select_region` command,
+  rather than extending `check_map`, `summary`, or `subsample`. M11 must specify
+  selected-record region output and region-file input before implementation:
+  output semantics, header preservation, duplicate handling, index
+  invalidation, and write-safety are mandatory contract work.
+
+Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 
 ## Completed Backbone
 

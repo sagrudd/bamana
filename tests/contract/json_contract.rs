@@ -2037,7 +2037,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 11: Public Indexed Region Selection And Region Files",
-            "status: planned",
+            "status: active",
             "roadmap/milestone-11-indexed-region-selection.md",
         ),
         (
@@ -2085,9 +2085,9 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
     }
 
     for required in [
-        "M11 is",
-        "planned, not active",
-        "should not reopen Milestone 10",
+        "Milestone 11",
+        "active",
+        "does not reopen Milestone 10",
         "selected-record region output",
         "region-file input",
         "header preservation",
@@ -2105,6 +2105,91 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
             "post-M10 roadmap is missing: {required}"
         );
     }
+}
+
+#[test]
+fn milestone_11_activation_baseline_records_selection_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M11 roadmap", &m11),
+        ("M11 Sphinx", &m11_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 11 is active")
+                || text.contains("status: active")
+                || text.contains("Status: active as of 2026-05-28"),
+            "{name} does not record Milestone 11 activation"
+        );
+    }
+
+    for required in [
+        "M11.1",
+        "select_region",
+        "new planned public command",
+        "must not overload",
+        "check_map",
+        "summary",
+        "subsample",
+        "No new CLI behavior",
+        "No public `select_region` CLI synopsis",
+        "output semantics",
+        "header preservation",
+        "record ordering",
+        "duplicate-region behavior",
+        "region-file syntax",
+        "index invalidation",
+        "write-safety",
+        "src/bam/region.rs",
+        "src/bam/region_plan.rs",
+        "src/bam/region_traversal.rs",
+        "src/bam/write.rs",
+        "src/output_safety.rs",
+        "native CRAM indexed queries",
+        "CSI large-reference support",
+        "broad external comparator parity",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11 activation baseline is missing: {required}"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_indexed_region_selection"),
+        "Sphinx index does not include the M11 technical note"
+    );
+    assert!(
+        !cli_source.contains("SelectRegion"),
+        "M11.1 must not implement the select_region CLI before its contract is frozen"
+    );
 }
 
 #[test]

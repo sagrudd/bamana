@@ -4978,3 +4978,172 @@ Completion evidence:
   `cargo build --bin bamana --bin scanner_microbench`, release
   `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
   output, Sphinx HTML build, `cargo fmt --check`, and `git diff --check`.
+
+## Milestone 11 Definition
+
+Milestone 11 is complete only when Bamana either promotes public indexed region
+selection and region-file input to governed behavior or explicitly defers one
+or both with precise rationale. The milestone starts from completed M10
+read-only region evidence and must not reopen M10.
+
+M11.1 activation decision:
+
+* Status: active as of 2026-05-28.
+* Selection surface: new planned public command `select_region`.
+* Boundary: do not overload `check_map`, `summary`, or `subsample` for
+  selected-record output.
+* No new CLI behavior is public at M11.1.
+* Required before implementation: output semantics, header preservation,
+  record ordering, duplicate-region behavior, region-file syntax, index
+  invalidation or regeneration notes, and write-safety.
+
+Inherited substrate:
+
+* `src/bam/region.rs` for region string parsing and normalization;
+* `src/bam/region_plan.rs` for validated BAI chunk planning;
+* `src/bam/region_traversal.rs` for random-access traversal, interval
+  filtering, and duplicate virtual-offset suppression;
+* `src/commands/check_map.rs` and `src/commands/summary.rs` for read-only
+  region evidence payloads;
+* `src/bam/write.rs` and `src/output_safety.rs` as later selected-record
+  output and collision-safety patterns.
+
+Out of scope unless later M11 tasks explicitly promote them:
+
+* native CRAM indexed queries;
+* CSI large-reference support;
+* biological interpretation;
+* pileup or genotyping semantics;
+* broad external comparator parity.
+
+## Milestone 11 Task List
+
+### M11.1 Activate M11 Scope And Freeze Selection Surface
+
+Status: complete.
+
+Tasks:
+
+* update roadmap and task-map status so M11 is active only after M10 closeout;
+* freeze whether selected-region output uses a new public command or extends an
+  existing command;
+* record the inherited M10 substrate and writer/output-safety patterns;
+* document that no selected-record CLI behavior is public until the M11
+  contract is specified;
+* preserve public contract command coverage for `benchmark`, `fastq`, and
+  `unmap`.
+
+Acceptance criteria:
+
+* M10 remains recorded as complete;
+* M11 is active and scoped to public indexed region selection and region files;
+* the selection surface decision is explicit;
+* no new CLI behavior is implemented by the activation task;
+* roadmap, README, CLI docs, Sphinx docs, and this task map reflect the M11.1
+  baseline.
+
+Completion evidence:
+
+* activated M11 after M10 closeout;
+* froze the selection surface as a planned new `select_region` command;
+* documented that `check_map`, `summary`, and `subsample` are not overloaded
+  for selected-record output;
+* documented that output semantics, header preservation, record ordering,
+  duplicate-region behavior, region-file syntax, index invalidation, and
+  write-safety must be specified before implementation;
+* recorded inherited M10 substrate and writer/output-safety patterns;
+* added contract coverage for the M11 activation baseline.
+
+### M11.2 Specify Region-File Syntax And Rejection Behavior
+
+Status: pending.
+
+Tasks:
+
+* define accepted region-file syntax, comments, blank lines, ordering, and
+  duplicate handling;
+* define rejection behavior for malformed lines, unknown references, empty
+  intervals, reversed intervals, and unsupported coordinate models;
+* update CLI docs, schemas, examples, fixtures, Sphinx docs, and task map.
+
+### M11.3 Specify Selected-Record Output Semantics
+
+Status: pending.
+
+Tasks:
+
+* define stdout, file output, dry-run, compression, and JSON report semantics;
+* define whether output is BAM-only or whether SAM/CRAM/FASTQ are rejected;
+* update contracts, schemas, examples, docs, and tests.
+
+### M11.4 Specify Header Preservation And Sort-Order Behavior
+
+Status: pending.
+
+Tasks:
+
+* define header preservation and reference dictionary behavior;
+* define `@HD SO` and `SS` handling after region selection;
+* update contracts, docs, examples, fixtures, and tests.
+
+### M11.5 Specify Duplicate And Overlapping Region Policy
+
+Status: pending.
+
+Tasks:
+
+* define record ordering across repeated and overlapping regions;
+* define duplicate suppression or duplication preservation behavior;
+* update contracts, docs, fixtures, and tests.
+
+### M11.6 Implement Native Selected-Record Writing
+
+Status: pending.
+
+Tasks:
+
+* implement selected-record BAM writing from native indexed traversal;
+* preserve raw record bytes where the contract requires it;
+* add unit and command tests.
+
+### M11.7 Add Write-Safety And Index Invalidation Semantics
+
+Status: pending.
+
+Tasks:
+
+* apply output-safety collision and finalization rules;
+* define index invalidation and optional regeneration notes;
+* update docs, schemas, examples, and tests.
+
+### M11.8 Update Public Contracts, Schemas, Examples, And Fixtures
+
+Status: pending.
+
+Tasks:
+
+* add governed CLI contract, JSON schema, examples, and fixture plans for the
+  selected M11 public surface;
+* update README, CLI docs, JSON docs, Sphinx docs, and roadmap docs.
+
+### M11.9 Add Dependency And Benchmark Guardrails
+
+Status: pending.
+
+Tasks:
+
+* protect selected-region output hot paths from direct production `noodles`
+  usage outside documented CRAM compatibility;
+* add command-level benchmark or smoke timing rows;
+* document benchmark interpretation limits.
+
+### M11.10 Close Milestone 11
+
+Status: pending.
+
+Tasks:
+
+* run full tests, contract tests, Sphinx, formatting, and benchmark smoke
+  evidence;
+* update roadmap, README, Sphinx, and this task map with M11 closeout evidence;
+* commit and push the closing milestone change.

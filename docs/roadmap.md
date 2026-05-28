@@ -124,13 +124,13 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 11: Public Indexed Region Selection And Region Files
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-11-indexed-region-selection.md](roadmap/milestone-11-indexed-region-selection.md)
 * goal: promote selected-record region output and region-file input only after
   output semantics, header preservation, duplicate handling, index invalidation,
   and write-safety are specified
-* commands enabled first: a public indexed region selection surface, if the
-  M11 contract freezes one
+* commands enabled first: planned `select_region`, after the M11 contract
+  freezes its semantics
 
 ### Milestone 12: Extended Index Compatibility
 

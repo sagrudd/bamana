@@ -526,6 +526,13 @@ timings for scan fallback and indexed-region paths. Region files, CSI
 large-reference behavior, CRAM indexed queries, public selected-record output,
 and broad comparator parity remain explicitly deferred.
 
+Milestone 11 is active for public indexed region selection and region files.
+M11.1 freezes the selection surface decision as a planned new `select_region`
+command, rather than overloading `check_map`, `summary`, or `subsample`. No
+new CLI behavior is public yet: output semantics, header preservation, record
+ordering, duplicate-region behavior, region-file syntax, index invalidation,
+and write-safety must be specified before implementation.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external
