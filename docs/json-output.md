@@ -148,6 +148,9 @@ Key concepts:
 
 * `index.present` and `candidates` describe adjacent sidecar discovery
 * `index.kind` distinguishes BAI, CSI, GZI, unknown, or absent sidecars
+* `support_level` freezes the current command contract: BAI is `read_write`,
+  CSI is `detect_only`, FASTQ.GZI is `planning_sidecar`, unknown sidecars are
+  `unsupported`, and absent sidecars are `absent`
 * `syntactically_valid` reflects BAI structural checks: magic,
   reference-count agreement, bin uniqueness/range, chunk virtual-offset order,
   linear-index ordering, metadata pseudo-bin shape, and parseability; CSI is

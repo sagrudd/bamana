@@ -43,6 +43,25 @@ thresholds, stale/mismatched/unsupported diagnostic hardening, fixtures,
 selected-region compatibility updates, schemas/examples/docs, benchmarks, and
 closeout evidence.
 
+## M12.2 CSI Support-Level Freeze
+
+M12.2 freezes CSI as **detect-only** for Milestone 12 until a later task
+explicitly promotes read compatibility. This is a contract decision, not an
+implementation accident:
+
+* `check_index` reports machine-readable `support_level` values. BAI is
+  `read_write`; CSI is `detect_only`; FASTQ.GZI is `planning_sidecar`;
+  unknown sidecars are `unsupported`; and absent sidecars are `absent`.
+* CSI detection remains limited to magic, min-shift, depth, auxiliary length
+  skipping, and reference-count agreement with the BAM header. Matching CSI
+  headers are syntactically valid but not usable for random-access traversal.
+* `index --format csi` remains an explicit `unimplemented` BAM path and must
+  not create placeholder CSI output.
+* `check_map`, `summary`, and `select_region` remain BAI-first. CSI sidecars
+  trigger native scan fallback rather than indexed traversal.
+* M12.2 does not add CSI bin parsing, CSI chunk planning, CSI random-access
+  fetch, CSI writing, or large-reference promotion.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

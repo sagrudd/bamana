@@ -290,6 +290,13 @@ remains header-only detected-but-not-supported for random-access use; `index
 unsupported, malformed, or incomplete index state; FASTQ.GZI remains a
 FASTQ.GZ planning sidecar and is not a BAM random-access index.
 
+M12.2 freezes CSI as detect-only. `check_index` reports `support_level` for
+the selected index and every discovered candidate: BAI is `read_write`, CSI is
+`detect_only`, FASTQ.GZI is `planning_sidecar`, unknown sidecars are
+`unsupported`, and no sidecar is `absent`. CSI remains scan fallback for
+`check_map`, `summary`, and `select_region`; `index --format csi` remains an
+explicit BAM `unimplemented` path.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

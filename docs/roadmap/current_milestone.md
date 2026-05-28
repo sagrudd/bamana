@@ -118,10 +118,16 @@ Current milestone:
   missing, stale, unsupported, malformed, or incomplete; `select_region`
   invalidates adjacent output BAI/CSI sidecars without creating a replacement
   output index; FASTQ.GZI remains a FASTQ.GZ enumeration, consume, and explode
-  planning sidecar rather than a BAM random-access index. Later M12 tasks must
-  freeze CSI support levels, large-reference thresholds, stale/mismatched and
-  unsupported-index diagnostics, fixtures, selected-region compatibility,
-  schemas/examples/docs, benchmark guardrails, and closeout evidence.
+  planning sidecar rather than a BAM random-access index. M12.2 freezes CSI as
+  `detect_only`: `check_index` reports `support_level` values for selected and
+  candidate sidecars, BAI is `read_write`, CSI is `detect_only`, FASTQ.GZI is
+  `planning_sidecar`, unknown sidecars are `unsupported`, and absent sidecars
+  are `absent`. `index --format csi` remains unimplemented, while
+  `check_map`, `summary`, and `select_region` continue to treat CSI as native
+  scan fallback rather than indexed traversal. Later M12 tasks must define
+  large-reference thresholds, stale/mismatched and unsupported-index
+  diagnostics, fixtures, selected-region compatibility, benchmark guardrails,
+  and closeout evidence.
 
 ## Completed Backbone
 

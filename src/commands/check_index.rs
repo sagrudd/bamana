@@ -35,6 +35,7 @@ pub struct IndexInspection {
     pub present: bool,
     pub selected_path: Option<String>,
     pub kind: Option<IndexKind>,
+    pub support_level: IndexSupportLevel,
     pub usable: bool,
     pub syntactically_valid: Option<bool>,
     pub stale: Option<bool>,
@@ -46,6 +47,7 @@ pub struct IndexInspection {
 pub struct IndexCandidate {
     pub path: String,
     pub kind: IndexKind,
+    pub support_level: IndexSupportLevel,
     pub exists: bool,
 }
 
@@ -57,6 +59,27 @@ pub enum IndexCompatibility {
     Stale,
     MismatchedOrInvalid,
     DetectedButNotSupported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IndexSupportLevel {
+    Absent,
+    ReadWrite,
+    DetectOnly,
+    PlanningSidecar,
+    Unsupported,
+}
+
+impl IndexSupportLevel {
+    fn for_kind(kind: IndexKind) -> Self {
+        match kind {
+            IndexKind::Bai => Self::ReadWrite,
+            IndexKind::Csi => Self::DetectOnly,
+            IndexKind::Gzi => Self::PlanningSidecar,
+            IndexKind::Unknown => Self::Unsupported,
+        }
+    }
 }
 
 pub fn run(request: CheckIndexRequest) -> CommandResponse<CheckIndexPayload> {
@@ -113,6 +136,7 @@ pub fn run(request: CheckIndexRequest) -> CommandResponse<CheckIndexPayload> {
         .map(|candidate| IndexCandidate {
             path: candidate.path.to_string_lossy().into_owned(),
             kind: candidate.kind,
+            support_level: IndexSupportLevel::for_kind(candidate.kind),
             exists: true,
         })
         .collect::<Vec<_>>();
@@ -127,6 +151,7 @@ pub fn run(request: CheckIndexRequest) -> CommandResponse<CheckIndexPayload> {
                 present: false,
                 selected_path: None,
                 kind: None,
+                support_level: IndexSupportLevel::Absent,
                 usable: false,
                 syntactically_valid: None,
                 stale: None,
@@ -181,6 +206,7 @@ pub fn run(request: CheckIndexRequest) -> CommandResponse<CheckIndexPayload> {
             present: true,
             selected_path: Some(selected.path.to_string_lossy().into_owned()),
             kind: Some(selected.kind),
+            support_level: IndexSupportLevel::for_kind(selected.kind),
             usable: usable && stale != Some(true),
             syntactically_valid,
             stale,
@@ -310,7 +336,7 @@ mod tests {
         },
     };
 
-    use super::{CheckIndexRequest, IndexCompatibility, run};
+    use super::{CheckIndexRequest, IndexCompatibility, IndexSupportLevel, run};
 
     #[test]
     fn reports_supported_bai_as_structurally_valid_and_usable() {
@@ -332,6 +358,7 @@ mod tests {
         assert!(payload.index.syntactically_valid.unwrap());
         assert!(payload.index.usable);
         assert_eq!(payload.index.compatibility, IndexCompatibility::Plausible);
+        assert_eq!(payload.index.support_level, IndexSupportLevel::ReadWrite);
         assert!(
             payload
                 .notes
@@ -391,6 +418,7 @@ mod tests {
             payload.index.compatibility,
             IndexCompatibility::DetectedButNotSupported
         );
+        assert_eq!(payload.index.support_level, IndexSupportLevel::DetectOnly);
         assert_eq!(payload.index.syntactically_valid, Some(true));
         assert!(!payload.index.usable);
     }
@@ -447,6 +475,7 @@ mod tests {
             payload.index.compatibility,
             IndexCompatibility::MismatchedOrInvalid
         );
+        assert_eq!(payload.index.support_level, IndexSupportLevel::Unsupported);
         assert_eq!(payload.index.syntactically_valid, Some(false));
         assert!(!payload.index.usable);
     }

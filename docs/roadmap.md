@@ -181,6 +181,11 @@ This order is retained because it matches the dependency chain of the runtime:
   remains detected-not-usable; `check_map`, `summary`, and `select_region`
   remain BAI-first with scan fallback; FASTQ.GZI remains a FASTQ.GZ planning
   sidecar rather than a BAM random-access index
+* M12.2 CSI support-level freeze: `check_index` now reports `support_level`
+  values, with BAI as `read_write`, CSI as `detect_only`, FASTQ.GZI as
+  `planning_sidecar`, unknown sidecars as `unsupported`, and absent sidecars as
+  `absent`; CSI is not promoted to read traversal or writing in this milestone
+  slice
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

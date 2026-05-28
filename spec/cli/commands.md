@@ -823,6 +823,10 @@ reference-count agreement, bin uniqueness and range, regular chunk
 virtual-offset order, linear-index ordering, metadata pseudo-bin shape, and
 parseability. CSI inspection parses and checks header reference counts enough
 to report detected-but-not-supported behavior or a deterministic mismatch.
+CSI is frozen as detect-only for this milestone slice. The response reports
+`support_level` for the selected index and each candidate: BAI is
+`read_write`, CSI is `detect_only`, FASTQ.GZI is `planning_sidecar`, unknown
+sidecars are `unsupported`, and absent sidecars are `absent`.
 Stale-index detection is timestamp based: if the BAM modification time is newer
 than the selected sidecar, the selected index is reported as stale and not
 usable.
@@ -835,8 +839,8 @@ That every index offset is correct or that random-access semantics are fully
 validated.
 
 Key output concepts:
-`index.present`, `selected_path`, `kind`, `usable`, `stale`, `compatibility`,
-`candidates`.
+`index.present`, `selected_path`, `kind`, `support_level`, `usable`, `stale`,
+`compatibility`, `candidates`.
 
 ## `index`
 

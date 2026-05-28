@@ -8,6 +8,7 @@
       "present": false,
       "selected_path": null,
       "kind": null,
+      "support_level": "absent",
       "usable": false,
       "syntactically_valid": null,
       "stale": null,

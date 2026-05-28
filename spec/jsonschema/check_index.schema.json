@@ -13,6 +13,7 @@
         "present",
         "selected_path",
         "kind",
+        "support_level",
         "usable",
         "syntactically_valid",
         "stale",
@@ -23,6 +24,7 @@
         "present": { "type": "boolean" },
         "selected_path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
         "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "support_level": { "$ref": "#/$defs/indexSupportLevel" },
         "usable": { "type": "boolean" },
         "syntactically_valid": { "type": ["boolean", "null"] },
         "stale": { "type": ["boolean", "null"] },
@@ -39,13 +41,24 @@
         }
       }
     },
+    "indexSupportLevel": {
+      "type": "string",
+      "enum": [
+        "absent",
+        "read_write",
+        "detect_only",
+        "planning_sidecar",
+        "unsupported"
+      ]
+    },
     "candidate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "kind", "exists"],
+      "required": ["path", "kind", "support_level", "exists"],
       "properties": {
         "path": { "type": "string" },
         "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "support_level": { "$ref": "#/$defs/indexSupportLevel" },
         "exists": { "type": "boolean" }
       }
     },

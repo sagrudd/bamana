@@ -2197,6 +2197,101 @@ fn milestone_12_activation_baseline_records_index_compatibility_scope() {
 }
 
 #[test]
+fn milestone_12_2_freezes_csi_support_levels() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_docs = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let check_index_schema = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("jsonschema")
+            .join("check_index.schema.json"),
+    );
+    let check_index_success = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("examples")
+            .join("check_index.success.json"),
+    );
+    let check_index_failure = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("examples")
+            .join("check_index.failure.json"),
+    );
+
+    for required in [
+        "M12.2",
+        "CSI Support-Level Freeze",
+        "detect-only",
+        "support_level",
+        "read_write",
+        "detect_only",
+        "planning_sidecar",
+        "unsupported",
+        "absent",
+        "index --format csi",
+        "unimplemented",
+        "check_map",
+        "summary",
+        "select_region",
+        "native scan fallback",
+        "CSI bin parsing",
+        "CSI writing",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_docs.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required)
+                || check_index_schema.contains(required)
+                || check_index_success.contains(required)
+                || check_index_failure.contains(required),
+            "M12.2 CSI support-level freeze is missing: {required}"
+        );
+    }
+
+    assert!(
+        check_index_schema.contains("\"support_level\"")
+            && check_index_schema.contains("\"read_write\"")
+            && check_index_schema.contains("\"detect_only\"")
+            && check_index_schema.contains("\"planning_sidecar\"")
+            && check_index_schema.contains("\"unsupported\"")
+            && check_index_schema.contains("\"absent\""),
+        "check_index schema does not govern support_level values"
+    );
+    assert!(
+        check_index_success.contains("\"support_level\": \"read_write\"")
+            && check_index_failure.contains("\"support_level\": \"absent\""),
+        "check_index examples do not include support_level"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

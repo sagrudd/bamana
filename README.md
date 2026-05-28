@@ -613,6 +613,13 @@ remains header-only detected-but-not-supported for random-access use; `index
 unsupported, malformed, or incomplete index state; FASTQ.GZI remains a
 FASTQ.GZ planning sidecar and is not a BAM random-access index.
 
+M12.2 freezes CSI as detect-only. `check_index` now reports a
+machine-readable `support_level` for the selected index and every candidate:
+BAI is `read_write`, CSI is `detect_only`, FASTQ.GZI is `planning_sidecar`,
+unknown sidecars are `unsupported`, and no sidecar is `absent`. CSI is still
+not used by `check_map`, `summary`, or `select_region`, and `index --format
+csi` still returns an explicit unimplemented response for BAM input.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

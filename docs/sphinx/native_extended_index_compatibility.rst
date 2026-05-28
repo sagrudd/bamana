@@ -33,13 +33,36 @@ behavior. The current baseline is:
   enumeration, consume planning, and explode planning. ``FASTQ.GZI`` is not a
   BAM random-access index and does not imply generic gzip random-access parity.
 
+CSI Support-Level Freeze
+------------------------
+
+M12.2 freezes CSI as detect-only. The public ``check_index`` JSON contract now
+reports ``support_level`` for the selected index and every discovered
+candidate:
+
+* ``read_write`` for BAI sidecars. Bamana can validate, read for current
+  indexed traversal, and write native BAI for coordinate-sorted BAM.
+* ``detect_only`` for CSI sidecars. Bamana can parse enough header metadata to
+  report min-shift, depth, auxiliary length handling, and reference-count
+  agreement, but CSI is not usable for traversal.
+* ``planning_sidecar`` for FASTQ.GZI sidecars. These support FASTQ.GZ
+  enumeration, consume planning, and explode planning, not BAM random access.
+* ``unsupported`` for unknown sidecars.
+* ``absent`` when no adjacent sidecar is selected.
+
+Command-specific behavior is fixed for this milestone slice: ``index --format
+csi`` remains an explicit BAM ``unimplemented`` path; ``check_map``,
+``summary``, and ``select_region`` keep BAI-first traversal and use native scan
+fallback when CSI is the selected adjacent sidecar. M12.2 does not implement
+CSI bin parsing, chunk planning, random-access fetch, CSI writing, or
+large-reference promotion.
+
 Remaining M12 Work
 ------------------
 
-Later M12 tasks must freeze CSI support levels, large-reference thresholds,
+Later M12 tasks must define large-reference thresholds,
 stale/mismatched/unsupported-index diagnostics, fixtures, selected-region
-compatibility behavior, schemas, examples, docs, benchmark guardrails, and
-closeout evidence.
+compatibility behavior, benchmark guardrails, and closeout evidence.
 
 Non-Goals
 ---------

@@ -5464,7 +5464,7 @@ Completion evidence:
 
 ### M12.2 Freeze CSI Support Levels
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -5472,6 +5472,25 @@ Tasks:
   subset, or gains write support;
 * document command-specific behavior for `check_index`, `index`, `check_map`,
   `summary`, and `select_region`.
+
+Acceptance criteria:
+
+* CSI support level is frozen as detect-only for the M12.2 slice;
+* `check_index` exposes machine-readable support levels for selected and
+  candidate sidecars;
+* BAI, CSI, FASTQ.GZI, unknown sidecars, and absent sidecars have distinct
+  support-level labels;
+* command docs state that `index --format csi` remains unimplemented and that
+  `check_map`, `summary`, and `select_region` keep CSI on native scan fallback.
+
+Completion evidence:
+
+* added `support_level` to the `check_index` JSON contract and examples;
+* defined support levels as `read_write`, `detect_only`,
+  `planning_sidecar`, `unsupported`, and `absent`;
+* updated README, CLI docs, Sphinx, JSON-output docs, CLI contract docs,
+  roadmap, current milestone notes, and M12 roadmap detail;
+* added contract coverage for the M12.2 support-level freeze.
 
 ### M12.3 Define Large-Reference Behavior
 

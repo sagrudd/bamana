@@ -8,6 +8,7 @@
       "present": true,
       "selected_path": "sample.bam.bai",
       "kind": "BAI",
+      "support_level": "read_write",
       "usable": true,
       "syntactically_valid": true,
       "stale": false,
@@ -18,6 +19,7 @@
       {
         "path": "sample.bam.bai",
         "kind": "BAI",
+        "support_level": "read_write",
         "exists": true
       }
     ],
