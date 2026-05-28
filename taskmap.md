@@ -5684,9 +5684,31 @@ Completion evidence:
 
 ### M12.10 Close Milestone 12
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * run full verification and record explicit residual risk;
 * commit and push the closing milestone change.
+
+Acceptance:
+
+* M12.1 through M12.10 are complete;
+* full verification passes;
+* roadmap, README, CLI docs, Sphinx, and taskmap record the closeout and
+  residual risk.
+
+Completion evidence:
+
+* recorded Milestone 12 as complete as of 2026-05-28;
+* closeout verification passed with `cargo test`, `cargo test --test
+  contract`, Sphinx HTML documentation, `cargo build --bin bamana --bin
+  scanner_microbench`, scanner smoke evidence, `cargo fmt --check`, and
+  `git diff --check`;
+* scanner smoke evidence confirmed `check_index_csi_detect_only`,
+  `check_map_region_csi_fallback`, `summary_region_csi_fallback`, and
+  `select_region_csi_fallback` as `1/1`;
+* residual risk remains explicit for CSI bin parsing, CSI chunk planning, CSI
+  random-access traversal, CSI writing, large-reference CSI support, native
+  CRAM indexed queries, replacement output-index creation, and broad comparator
+  parity.

@@ -170,7 +170,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 12: Extended Index Compatibility
 
-* status: active
+* status: complete as of 2026-05-28
 * detail: [roadmap/milestone-12-extended-index-compatibility.md](roadmap/milestone-12-extended-index-compatibility.md)
 * goal: harden CSI, large-reference, stale-index, and cross-index compatibility
   behavior without weakening native BAM ownership
@@ -211,6 +211,12 @@ This order is retained because it matches the dependency chain of the runtime:
   reporting, native scan fallback, and selected-region `input_index`
   compatibility, and dependency-boundary tests keep the promoted M12 index
   compatibility hot paths Bamana-native
+* M12.10 closeout: M12.1 through M12.10 completed on 2026-05-28 with full
+  tests, contract tests, Sphinx HTML, formatting, whitespace checks, binary
+  builds, and scanner smoke evidence passing; residual risk remains explicit
+  for CSI bin parsing, CSI chunk planning, CSI random-access traversal, CSI
+  writing, large-reference CSI support, native CRAM indexed queries, and broad
+  comparator parity
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

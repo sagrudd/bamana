@@ -15,8 +15,11 @@ evidence was recorded and closed after M10.1 through M10.10 completed on
 2026-05-23. **Milestone 11: Public Indexed Region Selection And Region Files**
 is complete as of 2026-05-28. It was activated by M11.1 only after the
 Milestone 10 closeout evidence was recorded and closed after M11.1 through
-M11.10 completed on 2026-05-28.
-Status: complete as of 2026-05-28 for Milestone 11.
+M11.10 completed on 2026-05-28. **Milestone 12: Extended Index
+Compatibility** is complete as of 2026-05-28. It was activated by M12.1 only
+after the Milestone 11 closeout evidence was recorded and closed after M12.1
+through M12.10 completed on 2026-05-28.
+Status: complete as of 2026-05-28 for Milestone 12.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -45,7 +48,7 @@ See:
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-Latest closed milestone:
+Previous closed milestone:
 
 * **Milestone 11: Public Indexed Region Selection And Region Files** is
   complete as of 2026-05-28. M11 does not reopen Milestone 10. M11.1 freezes the
@@ -101,10 +104,10 @@ Latest closed milestone:
   `--out -`, replacement output index creation, CSI large-reference behavior,
   native CRAM indexed queries, and broad comparator parity still deferred.
 
-Current milestone:
+Latest closed milestone:
 
-* **Milestone 12: Extended Index Compatibility** is active as of 2026-05-28.
-  Milestone 12 is active as of 2026-05-28.
+* **Milestone 12: Extended Index Compatibility** is complete as of 2026-05-28.
+  Milestone 12 is complete as of 2026-05-28.
   M12 follows the completed M11 selected-region file-output milestone and does
   not reopen Milestone 11 contracts. M12.1 activates the scope and records the
   current index baseline: BAI detection, parsing, structural validation,
@@ -148,8 +151,16 @@ Current milestone:
   `scanner_microbench --bamana-bin` emits CSI compatibility smoke timings for
   detect-only support-level reporting, native scan fallback, and
   selected-region `input_index` compatibility, and dependency-boundary tests
-  keep the promoted M12 index compatibility hot paths Bamana-native. Later M12
-  tasks must record closeout evidence.
+  keep the promoted M12 index compatibility hot paths Bamana-native. M12.10
+  closes the milestone after full tests, contract tests, Sphinx HTML
+  documentation, formatting, whitespace checks, binary builds, and
+  `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+  evidence passed. The closeout confirms `check_index_csi_detect_only`,
+  `check_map_region_csi_fallback`, `summary_region_csi_fallback`, and
+  `select_region_csi_fallback` as `1/1`, while CSI bin parsing, CSI chunk
+  planning, CSI random-access traversal, CSI writing, large-reference CSI
+  support, native CRAM indexed queries, replacement output-index creation, and
+  broad comparator parity remain explicitly deferred.
 
 ## Completed Backbone
 

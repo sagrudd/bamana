@@ -1,6 +1,6 @@
 # Milestone 12: Extended Index Compatibility
 
-Status: active as of 2026-05-28. Milestone 12 follows the completed M11
+Status: complete as of 2026-05-28. Milestone 12 follows the completed M11
 selected-region file-output milestone and does not reopen Milestone 11
 contracts.
 
@@ -165,6 +165,29 @@ extended index compatibility surface:
   `select_region` index compatibility hot paths Bamana-native outside the
   documented CRAM compatibility boundary.
 
+## M12.10 Closeout
+
+M12.10 closes Milestone 12 after M12.1 through M12.10 completed on
+2026-05-28. Closeout verification passed with:
+
+* `cargo test`;
+* `cargo test --test contract`;
+* `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+* `cargo build --bin bamana --bin scanner_microbench`;
+* `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin
+  target/debug/bamana --out /tmp/bamana-m12-10-scanner-small.json`;
+* `cargo fmt --check`;
+* `git diff --check`.
+
+The scanner smoke output confirmed the M12 CSI rows
+`check_index_csi_detect_only`, `check_map_region_csi_fallback`,
+`summary_region_csi_fallback`, and `select_region_csi_fallback` as `1/1`.
+
+Residual risk remains explicit and deferred: CSI bin parsing, CSI chunk
+planning, CSI random-access traversal, CSI writing, large-reference CSI
+support, native CRAM indexed queries, replacement output-index creation, and
+broad comparator parity are not complete in M12.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.
@@ -181,7 +204,7 @@ extended index compatibility surface:
 8. M12.8 update schemas, examples, CLI docs, README, roadmap, and Sphinx docs.
 9. M12.9 add index compatibility benchmark and dependency guardrails.
 10. M12.10 close the milestone with full verification and explicit residual
-    risk notes.
+    risk notes. Complete.
 
 ## Non-Goals
 

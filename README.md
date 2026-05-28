@@ -602,7 +602,7 @@ The milestone leaves `select_region` governed for BGZF BAM file output from CLI
 index creation, CSI large-reference behavior, native CRAM indexed queries, and
 broad comparator parity still deferred.
 
-Milestone 12 is active for extended index compatibility. M12.1 records the
+Milestone 12 is complete for extended index compatibility. M12.1 records the
 baseline without changing CLI behavior: BAI detection, parsing, structural
 validation, mapped/unmapped metadata extraction, timestamp-staleness checks,
 and native BAI writing are implemented for coordinate-sorted BAM inputs;
@@ -661,6 +661,15 @@ CSI-preserving native scan fallback, and `select_region` selected-output
 fallback with `input_index` compatibility. The guardrail explicitly does not
 claim CSI bin parsing, CSI chunk planning, CSI random-access traversal, CSI
 writing, or large-reference CSI support.
+
+M12.10 closes Milestone 12 after M12.1 through M12.10 completed on
+2026-05-28. Closeout verification passed with full tests, contract tests,
+Sphinx HTML documentation, binary builds, formatting, whitespace checks, and
+`scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+evidence. The closeout keeps CSI bin parsing, CSI chunk planning, CSI
+random-access traversal, CSI writing, large-reference CSI support, native CRAM
+indexed queries, replacement output-index creation, and broad comparator parity
+explicitly deferred.
 
 ## Specification Layer
 

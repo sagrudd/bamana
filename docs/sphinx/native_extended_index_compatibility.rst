@@ -1,7 +1,7 @@
 Native Extended Index Compatibility
 ===================================
 
-Milestone 12 is active as of 2026-05-28. It follows the completed Milestone 11
+Milestone 12 is complete as of 2026-05-28. It follows the completed Milestone 11
 selected-region file-output milestone and does not reopen Milestone 11
 contracts.
 
@@ -164,10 +164,26 @@ large-reference CSI support. Dependency-boundary tests keep ``check_index``,
 ``check_map``, ``summary``, and ``select_region`` index compatibility hot paths
 Bamana-native outside the documented CRAM compatibility boundary.
 
-Remaining M12 Work
-------------------
+Closeout
+--------
 
-Later M12 tasks must record closeout evidence.
+M12.10 closes Milestone 12 after M12.1 through M12.10 completed on
+2026-05-28. Closeout verification passed with ``cargo test``,
+``cargo test --test contract``, Sphinx HTML documentation,
+``cargo build --bin bamana --bin scanner_microbench``, scanner smoke evidence,
+``cargo fmt --check``, and ``git diff --check``.
+
+The scanner smoke run used ``target/debug/scanner_microbench --profile small
+--iterations 1 --bamana-bin target/debug/bamana --out
+/tmp/bamana-m12-10-scanner-small.json`` and confirmed
+``check_index_csi_detect_only``, ``check_map_region_csi_fallback``,
+``summary_region_csi_fallback``, and ``select_region_csi_fallback`` as
+``1/1``.
+
+Residual risk remains explicit and deferred: CSI bin parsing, CSI chunk
+planning, CSI random-access traversal, CSI writing, large-reference CSI
+support, native CRAM indexed queries, replacement output-index creation, and
+broad comparator parity are not complete in M12.
 
 Non-Goals
 ---------

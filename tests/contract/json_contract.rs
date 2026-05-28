@@ -2046,7 +2046,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 12: Extended Index Compatibility",
-            "status: active",
+            "status: complete",
             "roadmap/milestone-12-extended-index-compatibility.md",
         ),
         (
@@ -2141,8 +2141,11 @@ fn milestone_12_activation_baseline_records_index_compatibility_scope() {
     ] {
         assert!(
             text.contains("Milestone 12 is active")
+                || text.contains("Milestone 12 is complete")
                 || text.contains("status: active")
+                || text.contains("status: complete")
                 || text.contains("Status: active as of 2026-05-28")
+                || text.contains("Status: complete as of 2026-05-28")
                 || text.contains("Status: complete."),
             "{name} does not record Milestone 12 activation"
         );
@@ -2824,6 +2827,84 @@ fn milestone_12_9_adds_benchmark_and_dependency_guardrails() {
                 || dependency_tests.contains(required)
                 || taskmap.contains(required),
             "M12.9 benchmark and dependency guardrail evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
+fn milestone_12_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M12 roadmap", &m12),
+        ("M12 Sphinx", &m12_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 12 is complete")
+                || text.contains("status: complete")
+                || text.contains("Status: complete as of 2026-05-28")
+                || text.contains("Status: complete."),
+            "{name} does not record Milestone 12 completion"
+        );
+    }
+
+    for required in [
+        "M12.10",
+        "M12.1 through M12.10",
+        "2026-05-28",
+        "support_level",
+        "diagnostic_status",
+        "index_derived",
+        "input_index",
+        "check_index_csi_detect_only",
+        "check_map_region_csi_fallback",
+        "summary_region_csi_fallback",
+        "select_region_csi_fallback",
+        "1/1",
+        "cargo test",
+        "cargo test --test contract",
+        "sphinx-build -b html docs/sphinx docs/sphinx/_build/html",
+        "cargo build --bin bamana --bin scanner_microbench",
+        "scanner_microbench --profile small --iterations 1 --bamana-bin",
+        "cargo fmt --check",
+        "git diff --check",
+        "CSI bin parsing",
+        "CSI chunk planning",
+        "CSI random-access traversal",
+        "CSI writing",
+        "large-reference CSI support",
+        "native CRAM indexed queries",
+        "replacement output-index creation",
+        "broad comparator parity",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M12 closeout evidence is missing: {required}"
         );
     }
 }
