@@ -193,13 +193,13 @@ region filtering, scan fallback, command startup, and JSON emission without
 claiming comparator parity, native CRAM indexed queries, biological
 interpretation, or selected-record output.
 
-Milestone 11 is active for public indexed region selection and region files.
+Milestone 11 is complete for public indexed region selection and region files.
 M11.1 freezes the selection surface decision as a planned new `select_region`
-command, not an extension of `check_map`, `summary`, or `subsample`. No
-`select_region` CLI synopsis is public yet. Later M11 tasks must define output
-semantics, header preservation, record ordering, duplicate-region behavior,
-region-file syntax, index invalidation, and write-safety before any selected
-record output is implemented.
+command, not an extension of `check_map`, `summary`, or `subsample`. At M11.1
+activation, no `select_region` CLI synopsis was public yet. Later M11 tasks had
+to define output semantics, header preservation, record ordering,
+duplicate-region behavior, region-file syntax, index invalidation, and
+write-safety before any selected record output was implemented.
 M11.2 freezes the future region-file input contract without publishing a
 `select_region` synopsis. Future region files are UTF-8, one M10-style
 `reference` or `reference:start-end` region per non-comment line, with LF or
@@ -270,6 +270,14 @@ finalization, header provenance, index-invalidation reporting, command startup,
 and JSON emission without claiming stdout-output evidence, public region-file
 evidence, replacement output-index evidence, comparator-parity claims, native
 CRAM indexed-query support, or biological interpretation.
+M11.10 closes Milestone 11 after M11.1 through M11.10 completed on
+2026-05-28. Closeout verification covered full tests, contract tests, Sphinx
+HTML documentation, formatting, whitespace checks, binary builds, and the
+`scanner_microbench --profile small --iterations 1 --bamana-bin` smoke profile.
+The milestone leaves `select_region` governed for BGZF BAM file output from CLI
+`--region` requests, with public `--region-file`, `--out -`, replacement output
+index creation, CSI large-reference behavior, native CRAM indexed queries, and
+broad comparator parity still deferred.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

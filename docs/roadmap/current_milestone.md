@@ -12,7 +12,11 @@ place and closed after M9.1 through M9.10 completed on 2026-05-23.
 **Milestone 10: Native Indexed Region Workflows** is complete as of
 2026-05-23. It was activated by M10.1 only after the Milestone 9 closeout
 evidence was recorded and closed after M10.1 through M10.10 completed on
-2026-05-23.
+2026-05-23. **Milestone 11: Public Indexed Region Selection And Region Files**
+is complete as of 2026-05-28. It was activated by M11.1 only after the
+Milestone 10 closeout evidence was recorded and closed after M11.1 through
+M11.10 completed on 2026-05-28.
+Status: complete as of 2026-05-28 for Milestone 11.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -41,10 +45,10 @@ See:
 * [milestone-05-command-migration.md](/Users/stephen/Projects/bamana/docs/roadmap/milestone-05-command-migration.md)
 * [../../taskmap.md](/Users/stephen/Projects/bamana/taskmap.md)
 
-Current milestone:
+Latest closed milestone:
 
-* **Milestone 11: Public Indexed Region Selection And Region Files** is active
-  as of 2026-05-28. M11 does not reopen Milestone 10. M11.1 freezes the
+* **Milestone 11: Public Indexed Region Selection And Region Files** is
+  complete as of 2026-05-28. M11 does not reopen Milestone 10. M11.1 freezes the
   selection surface decision as a new planned public `select_region` command,
   rather than extending `check_map`, `summary`, or `subsample`. M11 must specify
   selected-record region output and region-file input before implementation:
@@ -89,8 +93,16 @@ Current milestone:
   stdout-output evidence, public region-file evidence, replacement
   output-index evidence, comparator-parity claims, native CRAM indexed-query
   support, or biological interpretation.
+  M11.10 closes the milestone after full tests, contract tests, Sphinx HTML
+  documentation, formatting, whitespace checks, binary builds, and
+  `scanner_microbench --profile small --iterations 1 --bamana-bin` smoke
+  evidence passed. The closeout leaves `select_region` governed for BGZF BAM
+  file output from CLI `--region` requests, with public `--region-file`,
+  `--out -`, replacement output index creation, CSI large-reference behavior,
+  native CRAM indexed queries, and broad comparator parity still deferred.
 
-Milestone 11 is active as the current milestone; Milestone 10 remains complete.
+Milestone 11 is closed; Milestone 12 remains planned until its activation task
+is started.
 
 ## Completed Backbone
 
@@ -107,6 +119,9 @@ native mutation, conservative remediation, and provenance inspection for
 `forensic_inspect`. Milestone 8 completed the native transform, checksum,
 sharding, and ingest hardening wave for `sort`, `merge`, `explode`,
 `checksum`, and `consume`.
+
+Milestone 11 completed public indexed region selection file-output governance
+for `select_region`.
 
 ## Milestone 8 Closeout
 

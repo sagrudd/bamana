@@ -5390,7 +5390,7 @@ Completion evidence:
 
 ### M11.10 Close Milestone 11
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -5398,3 +5398,30 @@ Tasks:
   evidence;
 * update roadmap, README, Sphinx, and this task map with M11 closeout evidence;
 * commit and push the closing milestone change.
+
+Acceptance criteria:
+
+* M11.1 through M11.10 are complete;
+* `select_region` is governed for BGZF BAM file output from CLI `--region`
+  requests;
+* full tests, contract tests, Sphinx, formatting, whitespace checks, binary
+  builds, and M11 scanner benchmark smoke evidence pass;
+* milestone documentation records explicit deferrals for public `--region-file`,
+  binary stdout output via `--out -`, report sidecar routing, replacement
+  output-index creation, CSI large-reference behavior, native CRAM indexed
+  queries, biological interpretation, and broad comparator parity.
+
+Completion evidence:
+
+* recorded Milestone 11 completion in README, CLI docs, roadmap summary,
+  current milestone notes, the M11 roadmap detail, Sphinx technical notes,
+  Sphinx public command notes, and this task map;
+* added contract coverage for M11 closeout evidence;
+* closeout verification passed:
+  `cargo test`, `cargo test --test contract`,
+  `cargo build --bin bamana --bin scanner_microbench`,
+  `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1110-scanner-small.json`,
+  `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+  `cargo fmt --check`, and `git diff --check`;
+* scanner smoke evidence reported `select_region_scan_fallback` and
+  `select_region_indexed_output` as `1/1` successful.

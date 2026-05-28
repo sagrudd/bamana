@@ -124,13 +124,13 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 11: Public Indexed Region Selection And Region Files
 
-* status: active
+* status: complete
 * detail: [roadmap/milestone-11-indexed-region-selection.md](roadmap/milestone-11-indexed-region-selection.md)
 * goal: promote selected-record region output and region-file input only after
   output semantics, header preservation, duplicate handling, index invalidation,
   and write-safety are specified
-* commands enabled first: planned `select_region`, after the M11 contract
-  freezes its semantics
+* commands enabled first: `select_region` for BGZF BAM file output from CLI
+  `--region` requests
 * M11.2 region-file contract: future inputs are UTF-8 line-oriented files using
   one M10-style region per non-comment line; blank lines and leading `#`
   comment lines are ignored; request order, duplicate lines, and overlapping
@@ -164,6 +164,9 @@ This order is retained because it matches the dependency chain of the runtime:
   `select_region_indexed_output` smoke timings with interpretation limits for
   stdout output, public region files, replacement output indexes, comparator
   parity, native CRAM indexed queries, and biological interpretation
+* M11.10 closeout: M11.1 through M11.10 completed on 2026-05-28 with full
+  tests, contract tests, Sphinx HTML documentation, formatting, whitespace
+  checks, binary builds, and scanner microbenchmark smoke evidence recorded
 
 ### Milestone 12: Extended Index Compatibility
 

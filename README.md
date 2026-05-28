@@ -526,12 +526,13 @@ timings for scan fallback and indexed-region paths. Region files, CSI
 large-reference behavior, CRAM indexed queries, public selected-record output,
 and broad comparator parity remain explicitly deferred.
 
-Milestone 11 is active for public indexed region selection and region files.
+Milestone 11 is complete for public indexed region selection and region files.
 M11.1 freezes the selection surface decision as a planned new `select_region`
-command, rather than overloading `check_map`, `summary`, or `subsample`. No
-new CLI behavior is public yet: output semantics, header preservation, record
-ordering, duplicate-region behavior, region-file syntax, index invalidation,
-and write-safety must be specified before implementation.
+command, rather than overloading `check_map`, `summary`, or `subsample`. At
+M11.1 activation, no new CLI behavior was public yet: output semantics, header
+preservation, record ordering, duplicate-region behavior, region-file syntax,
+index invalidation, and write-safety had to be specified before
+implementation.
 M11.2 freezes the future region-file syntax as UTF-8, one M10-style region per
 non-comment line, with blank lines and leading `#` comment lines ignored, LF or
 CRLF accepted, request order preserved, and duplicate or overlapping lines not
@@ -592,6 +593,14 @@ finalization, header provenance, index-invalidation reporting, command startup,
 and JSON emission without claiming stdout-output evidence, public region-file
 evidence, replacement output-index evidence, comparator-parity claims, native
 CRAM indexed-query support, or biological interpretation.
+M11.10 closes Milestone 11 after M11.1 through M11.10 completed on
+2026-05-28. Closeout verification covered full tests, contract tests, Sphinx
+HTML documentation, formatting, whitespace checks, binary builds, and the
+`scanner_microbench --profile small --iterations 1 --bamana-bin` smoke profile.
+The milestone leaves `select_region` governed for BGZF BAM file output from CLI
+`--region` requests, with public `--region-file`, `--out -`, replacement output
+index creation, CSI large-reference behavior, native CRAM indexed queries, and
+broad comparator parity still deferred.
 
 ## Specification Layer
 

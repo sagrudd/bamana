@@ -58,8 +58,8 @@ It is intentionally distinct from ``reheader``, which is header-only.
 select_region
 -------------
 
-``bamana select_region`` is being promoted through Milestone 11. The M11.6
-implementation supports BGZF BAM file output for CLI ``--region`` requests:
+``bamana select_region`` is governed for BGZF BAM file output from CLI
+``--region`` requests. The M11.6 implementation supports:
 
 .. code-block:: bash
 
@@ -84,3 +84,13 @@ surface: ``spec/jsonschema/select_region.schema.json``,
 success, scan fallback, duplicate/overlap suppression, output-index sidecar
 collision, forced sidecar removal, and same-path rejection coverage. Binary
 stdout output and public ``--region-file`` remain deferred.
+
+M11.10 closes Milestone 11. Milestone 11 is complete as of 2026-05-28 with
+full tests, contract tests, Sphinx HTML documentation, formatting, whitespace
+checks, binary builds, and
+``scanner_microbench --profile small --iterations 1 --bamana-bin`` smoke
+evidence. ``select_region_scan_fallback`` and
+``select_region_indexed_output`` both reported ``1/1`` successful in the
+closeout smoke profile. Public ``--region-file``, binary stdout output via
+``--out -``, replacement output-index creation, CSI large-reference behavior,
+native CRAM indexed queries, and broad comparator parity remain deferred.

@@ -2041,7 +2041,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 11: Public Indexed Region Selection And Region Files",
-            "status: active",
+            "status: complete",
             "roadmap/milestone-11-indexed-region-selection.md",
         ),
         (
@@ -2090,7 +2090,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
 
     for required in [
         "Milestone 11",
-        "active",
+        "complete",
         "does not reopen Milestone 10",
         "selected-record region output",
         "region-file input",
@@ -2142,7 +2142,10 @@ fn milestone_11_activation_baseline_records_selection_scope() {
         assert!(
             text.contains("Milestone 11 is active")
                 || text.contains("status: active")
-                || text.contains("Status: active as of 2026-05-28"),
+                || text.contains("Status: active as of 2026-05-28")
+                || text.contains("Milestone 11 is complete")
+                || text.contains("status: complete")
+                || text.contains("Status: complete as of 2026-05-28"),
             "{name} does not record Milestone 11 activation"
         );
     }
@@ -2995,6 +2998,91 @@ fn milestone_11_dependency_and_benchmark_guardrails_are_documented() {
                 || m11_sphinx.contains(required)
                 || taskmap.contains(required),
             "M11 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
+fn milestone_11_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let public_commands = read_utf8(&docs_dir().join("sphinx").join("public_commands.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M11 roadmap", &m11),
+        ("M11 Sphinx", &m11_sphinx),
+        ("public commands", &public_commands),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 11 is complete")
+                || text.contains(
+                    "Milestone 11: Public Indexed Region Selection And Region Files\n\n* status: complete",
+                )
+                || text.contains("Status: complete as of 2026-05-28")
+                || text.contains("Status: complete."),
+            "{name} does not record Milestone 11 completion"
+        );
+    }
+
+    for required in [
+        "M11.10",
+        "M11.1 through M11.10",
+        "select_region",
+        "BGZF BAM file output",
+        "CLI `--region`",
+        "native indexed traversal",
+        "native scan fallback",
+        "raw-record preservation",
+        "source virtual-offset",
+        "duplicate suppression",
+        "header provenance",
+        "index-invalidation",
+        "spec/jsonschema/select_region.schema.json",
+        "scanner_microbench --profile small --iterations 1 --bamana-bin",
+        "select_region_scan_fallback",
+        "select_region_indexed_output",
+        "1/1",
+        "cargo test",
+        "cargo test --test contract",
+        "cargo build --bin bamana --bin scanner_microbench",
+        "Sphinx HTML",
+        "cargo fmt --check",
+        "git diff --check",
+        "public `--region-file`",
+        "`--out -`",
+        "replacement output-index creation",
+        "CSI large-reference behavior",
+        "native CRAM indexed queries",
+        "broad comparator parity",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || public_commands.contains(required)
+                || taskmap.contains(required),
+            "M11 closeout evidence is missing: {required}"
         );
     }
 }

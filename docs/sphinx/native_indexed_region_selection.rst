@@ -1,8 +1,8 @@
 Native Indexed Region Selection
 ===============================
 
-Milestone 11 is active as of 2026-05-28. It follows the completed Milestone 10
-read-only indexed-region evidence surface.
+Milestone 11 is complete as of 2026-05-28. It follows the completed Milestone
+10 read-only indexed-region evidence surface.
 
 Scope
 -----
@@ -296,6 +296,26 @@ emission. They do not claim stdout-output evidence, public region-file
 evidence, replacement output-index evidence, comparator-parity claims, native
 CRAM indexed-query support, biological interpretation, or exhaustive
 index-offset validation.
+
+Closeout
+--------
+
+M11.10 closes Milestone 11 after M11.1 through M11.10 completed. Closeout
+verification passed ``cargo test``, ``cargo test --test contract``,
+``cargo build --bin bamana --bin scanner_microbench``, the
+``scanner_microbench --profile small --iterations 1 --bamana-bin`` smoke
+profile, the Sphinx HTML build, ``cargo fmt --check``, and
+``git diff --check``.
+
+The scanner smoke profile reported both M11 selected-output timing rows as
+``1/1`` successful: ``select_region_scan_fallback`` and
+``select_region_indexed_output``.
+
+Milestone 11 leaves ``select_region`` governed for BGZF BAM file output from
+CLI ``--region`` requests. Public ``--region-file``, binary stdout output via
+``--out -``, report sidecar routing, replacement output-index creation, CSI
+large-reference behavior, native CRAM indexed queries, biological
+interpretation, and broad external comparator parity remain deferred.
 
 Inherited Substrate
 -------------------
