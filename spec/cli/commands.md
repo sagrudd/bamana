@@ -733,6 +733,19 @@ native scanner selection with a fallback reason. Selected records preserve raw
 BAM record bytes, output ordering is `source_virtual_offset_order`, and
 duplicate emission is `emit_once_per_source_record`.
 
+M12.7 input-index compatibility:
+
+`select_region` reports `input_index` for the selected adjacent input sidecar.
+Usable non-stale BAI is `input_index.compatibility: used_bai` and may drive
+indexed traversal. CSI remains detect-only: when an adjacent CSI header sidecar
+is selected, the command reports `input_index.kind: CSI`,
+`input_index.compatibility: detect_only_csi`, and
+`execution.fallback_reason: detect_only_csi_index`, then uses native scanner
+selection. Unsupported, missing, stale, malformed, incomplete, and disabled
+input-index states are explicit compatibility values. Output BAI/CSI
+invalidation remains governed by `output.index_invalidation`, and
+`select_region` still does not create a replacement output index.
+
 The output header preserves the full binary reference dictionary and retained
 textual header records, rewrites existing `@HD SO` to `unknown`, removes
 `@HD SS`, and appends collision-free `@PG` provenance for
@@ -787,6 +800,12 @@ unsupported, malformed, or incomplete index state falls back to native scanner
 selection and reports the fallback reason. Selected records preserve their raw
 BAM record bytes; Bamana does not reserialize alignment fields or auxiliary
 tags.
+
+M12.7 adds `input_index` to the JSON contract. The object reports `present`,
+`path`, `kind`, `used`, `compatibility`, and `fallback_reason` for the selected
+adjacent input sidecar. CSI is reported as `detect_only_csi` and uses scan
+fallback rather than indexed traversal. Output BAI/CSI invalidation remains
+unchanged and no replacement output index is created.
 
 The output header preserves the full binary reference dictionary and retained
 textual header records, rewrites existing `@HD SO` to `unknown`, removes

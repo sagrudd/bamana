@@ -642,6 +642,12 @@ traversal path, use native scan fallback for adjacent CSI headers, and preserve
 CSI context in `index.kind`, `index.diagnostic_status`, `index_derived.kind`,
 and fallback notes.
 
+M12.7 applies the same compatibility contract to `select_region`: selected BAM
+output still uses only usable non-stale BAI for indexed traversal, adjacent CSI
+sidecars remain detect-only scan fallback, and the JSON payload reports
+`input_index.kind: CSI`, `input_index.compatibility: detect_only_csi`, and
+`execution.fallback_reason: detect_only_csi_index` when CSI is selected.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

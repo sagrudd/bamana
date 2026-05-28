@@ -40,11 +40,35 @@ pub struct SelectRegionPayload {
     pub format: &'static str,
     pub dry_run: bool,
     pub input: String,
+    pub input_index: SelectRegionInputIndex,
     pub output: SelectRegionOutput,
     pub region_scope: SelectRegionScope,
     pub execution: SelectRegionExecution,
     pub header: SelectRegionHeaderPolicy,
     pub notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SelectRegionInputIndex {
+    pub present: bool,
+    pub path: Option<String>,
+    pub kind: Option<IndexKind>,
+    pub used: bool,
+    pub compatibility: SelectRegionInputIndexCompatibility,
+    pub fallback_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SelectRegionInputIndexCompatibility {
+    UsedBai,
+    DetectOnlyCsi,
+    UnsupportedIndex,
+    MissingIndex,
+    StaleBai,
+    MalformedBai,
+    IncompleteBai,
+    Disabled,
 }
 
 #[derive(Debug, Serialize)]
@@ -169,8 +193,17 @@ pub fn run(request: SelectRegionRequest) -> Result<SelectRegionPayload, AppError
         "select_region does not create an output BAM index; run bamana index on the selected BAM when an index is required.".to_string(),
         "Adjacent output index sidecars are rejected unless --force is supplied; forced applied runs remove those sidecars before writing selected output.".to_string(),
     ];
-    if selection.mode == SelectRegionExecutionMode::ScanFallback {
-        notes.push("No usable BAI index was used; native scan fallback selected records in encounter order.".to_string());
+    match selection.input_index.compatibility {
+        SelectRegionInputIndexCompatibility::DetectOnlyCsi => notes.push(
+            "CSI input index detected but remains detect-only; native scan fallback selected records in encounter order.".to_string(),
+        ),
+        SelectRegionInputIndexCompatibility::Disabled => notes.push(
+            "Input index use was disabled; native scan fallback selected records in encounter order.".to_string(),
+        ),
+        _ if selection.mode == SelectRegionExecutionMode::ScanFallback => notes.push(
+            "No usable BAI index was used; native scan fallback selected records in encounter order.".to_string(),
+        ),
+        _ => {}
     }
     if request.dry_run {
         notes.push("Dry-run mode planned selection without writing BAM output.".to_string());
@@ -180,6 +213,7 @@ pub fn run(request: SelectRegionRequest) -> Result<SelectRegionPayload, AppError
         format: "BAM",
         dry_run: request.dry_run,
         input: request.bam.to_string_lossy().into_owned(),
+        input_index: selection.input_index,
         output: SelectRegionOutput {
             path: request.out.to_string_lossy().into_owned(),
             output_format: "bam",
@@ -224,6 +258,7 @@ struct SelectionResult {
     raw_records_seen: usize,
     duplicate_records_suppressed: usize,
     fallback_reason: Option<String>,
+    input_index: SelectRegionInputIndex,
 }
 
 fn collect_selected_records(
@@ -231,51 +266,113 @@ fn collect_selected_records(
     regions: &NormalizedRegionSet,
     references_defined: usize,
 ) -> Result<SelectionResult, AppError> {
-    if request.prefer_index {
-        if let Some(result) = try_indexed_selection(request, regions, references_defined)? {
-            return Ok(result);
-        }
+    if !request.prefer_index {
+        return scan_fallback_selection(request, regions, disabled_index_context());
     }
-    scan_fallback_selection(request, regions)
+
+    let attempt = try_indexed_selection(request, regions, references_defined)?;
+    if let Some(result) = attempt.indexed_selection {
+        return Ok(result);
+    }
+    scan_fallback_selection(request, regions, attempt.input_index)
+}
+
+struct IndexedSelectionAttempt {
+    indexed_selection: Option<SelectionResult>,
+    input_index: SelectRegionInputIndex,
 }
 
 fn try_indexed_selection(
     request: &SelectRegionRequest,
     regions: &NormalizedRegionSet,
     references_defined: usize,
-) -> Result<Option<SelectionResult>, AppError> {
+) -> Result<IndexedSelectionAttempt, AppError> {
     let resolved = match resolve_index_for_bam(&request.bam) {
         IndexResolution::Present(resolved) => resolved,
-        IndexResolution::Unsupported(_) | IndexResolution::NotFound => return Ok(None),
+        IndexResolution::Unsupported(resolved) => {
+            return Ok(IndexedSelectionAttempt {
+                indexed_selection: None,
+                input_index: unsupported_index_context(resolved),
+            });
+        }
+        IndexResolution::NotFound => {
+            return Ok(IndexedSelectionAttempt {
+                indexed_selection: None,
+                input_index: missing_index_context(),
+            });
+        }
     };
-    if resolved.kind != IndexKind::Bai
-        || bam_newer_than_index(&request.bam, &resolved.path).unwrap_or(true)
-    {
-        return Ok(None);
+    if resolved.kind != IndexKind::Bai {
+        return Ok(IndexedSelectionAttempt {
+            indexed_selection: None,
+            input_index: unsupported_index_context(resolved),
+        });
+    }
+    if bam_newer_than_index(&request.bam, &resolved.path).unwrap_or(true) {
+        return Ok(IndexedSelectionAttempt {
+            indexed_selection: None,
+            input_index: bai_index_context(
+                resolved,
+                false,
+                SelectRegionInputIndexCompatibility::StaleBai,
+                Some("stale_bai_index"),
+            ),
+        });
     }
     let index = match parse_bai_index(&resolved.path, references_defined) {
         Ok(index) => index,
-        Err(_) => return Ok(None),
+        Err(_) => {
+            return Ok(IndexedSelectionAttempt {
+                indexed_selection: None,
+                input_index: bai_index_context(
+                    resolved,
+                    false,
+                    SelectRegionInputIndexCompatibility::MalformedBai,
+                    Some("malformed_bai_index"),
+                ),
+            });
+        }
     };
     let plan = match plan_bai_region_chunks(regions, &index, &resolved.path, resolved.kind, false) {
         Ok(plan) => plan,
-        Err(_) => return Ok(None),
+        Err(_) => {
+            return Ok(IndexedSelectionAttempt {
+                indexed_selection: None,
+                input_index: bai_index_context(
+                    resolved,
+                    false,
+                    SelectRegionInputIndexCompatibility::IncompleteBai,
+                    Some("bai_region_plan_unavailable"),
+                ),
+            });
+        }
     };
     let traversal = traverse_planned_region_chunks(&request.bam, regions, &plan)?;
-    Ok(Some(SelectionResult {
-        records: traversal.records,
-        mode: SelectRegionExecutionMode::Indexed,
-        index_path: Some(resolved.path.to_string_lossy().into_owned()),
-        chunks_traversed: traversal.chunks_traversed,
-        raw_records_seen: traversal.raw_records_seen,
-        duplicate_records_suppressed: traversal.duplicate_records_suppressed,
-        fallback_reason: None,
-    }))
+    let index_path = resolved.path.to_string_lossy().into_owned();
+    Ok(IndexedSelectionAttempt {
+        indexed_selection: Some(SelectionResult {
+            records: traversal.records,
+            mode: SelectRegionExecutionMode::Indexed,
+            index_path: Some(index_path),
+            chunks_traversed: traversal.chunks_traversed,
+            raw_records_seen: traversal.raw_records_seen,
+            duplicate_records_suppressed: traversal.duplicate_records_suppressed,
+            fallback_reason: None,
+            input_index: bai_index_context(
+                resolved,
+                true,
+                SelectRegionInputIndexCompatibility::UsedBai,
+                None,
+            ),
+        }),
+        input_index: missing_index_context(),
+    })
 }
 
 fn scan_fallback_selection(
     request: &SelectRegionRequest,
     regions: &NormalizedRegionSet,
+    input_index: SelectRegionInputIndex,
 ) -> Result<SelectionResult, AppError> {
     let mut scanner = BamScanner::open(&request.bam)?;
     let grouped = group_regions_by_reference(regions);
@@ -331,8 +428,71 @@ fn scan_fallback_selection(
         chunks_traversed: 0,
         raw_records_seen,
         duplicate_records_suppressed,
-        fallback_reason: Some("no_usable_bai_index".to_string()),
+        fallback_reason: input_index
+            .fallback_reason
+            .clone()
+            .or_else(|| Some("no_usable_bai_index".to_string())),
+        input_index,
     })
+}
+
+fn disabled_index_context() -> SelectRegionInputIndex {
+    SelectRegionInputIndex {
+        present: false,
+        path: None,
+        kind: None,
+        used: false,
+        compatibility: SelectRegionInputIndexCompatibility::Disabled,
+        fallback_reason: Some("prefer_index_disabled".to_string()),
+    }
+}
+
+fn missing_index_context() -> SelectRegionInputIndex {
+    SelectRegionInputIndex {
+        present: false,
+        path: None,
+        kind: None,
+        used: false,
+        compatibility: SelectRegionInputIndexCompatibility::MissingIndex,
+        fallback_reason: Some("no_usable_bai_index".to_string()),
+    }
+}
+
+fn unsupported_index_context(resolved: crate::bam::index::ResolvedIndex) -> SelectRegionInputIndex {
+    let (compatibility, fallback_reason) = match resolved.kind {
+        IndexKind::Csi => (
+            SelectRegionInputIndexCompatibility::DetectOnlyCsi,
+            "detect_only_csi_index",
+        ),
+        _ => (
+            SelectRegionInputIndexCompatibility::UnsupportedIndex,
+            "unsupported_index_kind",
+        ),
+    };
+    SelectRegionInputIndex {
+        present: true,
+        path: Some(resolved.path.to_string_lossy().into_owned()),
+        kind: Some(resolved.kind),
+        used: false,
+        compatibility,
+        fallback_reason: Some(fallback_reason.to_string()),
+    }
+}
+
+fn bai_index_context(
+    resolved: crate::bam::index::ResolvedIndex,
+    used: bool,
+    compatibility: SelectRegionInputIndexCompatibility,
+    fallback_reason: Option<&str>,
+) -> SelectRegionInputIndex {
+    SelectRegionInputIndex {
+        present: true,
+        path: Some(resolved.path.to_string_lossy().into_owned()),
+        kind: Some(IndexKind::Bai),
+        used,
+        compatibility,
+        fallback_reason: fallback_reason.map(str::to_string),
+    }
 }
 
 fn write_selected_bam(
@@ -679,7 +839,10 @@ mod tests {
     use crate::{
         bam::{
             header::parse_bam_header,
-            index::{build_bai_index_from_bam, write_bai_index},
+            index::{
+                IndexKind, build_bai_index_from_bam, test_support::build_csi_header,
+                write_bai_index,
+            },
             scan::BamScanner,
         },
         commands::select_region::{SelectRegionExecutionMode, SelectRegionRequest, run},
@@ -769,10 +932,70 @@ mod tests {
         assert!(payload.dry_run);
         assert!(!payload.output.output_created);
         assert_eq!(payload.output.records_written, 0);
+        assert!(payload.input_index.used);
+        assert_eq!(payload.input_index.kind, Some(IndexKind::Bai));
+        assert_eq!(
+            payload.input_index.compatibility,
+            super::SelectRegionInputIndexCompatibility::UsedBai
+        );
         assert!(!out.exists());
 
         fs::remove_file(bam).expect("bam should remove");
         fs::remove_file(bai).expect("bai should remove");
+    }
+
+    #[test]
+    fn csi_input_index_is_detect_only_scan_fallback() {
+        let records = vec![
+            build_light_record(0, 5, "read1", 0),
+            build_light_record(0, 50, "read2", 0),
+        ];
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n",
+            &[("chr1", 100)],
+            &records,
+        );
+        let bam = write_temp_file("select-region-csi-fallback", "bam", &bytes);
+        let csi = PathBuf::from(format!("{}.csi", bam.to_string_lossy()));
+        fs::write(&csi, build_csi_header(1)).expect("csi should write");
+        let out = bam.with_extension("csi.selected.bam");
+
+        let payload = run(SelectRegionRequest {
+            bam: bam.clone(),
+            out: out.clone(),
+            regions: region_values(&["chr1:6-9"]),
+            dry_run: false,
+            force: false,
+            prefer_index: true,
+        })
+        .expect("CSI should scan fallback");
+
+        assert_eq!(
+            payload.execution.mode,
+            SelectRegionExecutionMode::ScanFallback
+        );
+        assert_eq!(
+            payload.execution.fallback_reason.as_deref(),
+            Some("detect_only_csi_index")
+        );
+        assert!(payload.input_index.present);
+        assert_eq!(payload.input_index.kind, Some(IndexKind::Csi));
+        assert!(!payload.input_index.used);
+        assert_eq!(
+            payload.input_index.compatibility,
+            super::SelectRegionInputIndexCompatibility::DetectOnlyCsi
+        );
+        assert_eq!(payload.output.records_written, 1);
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("CSI input index detected"))
+        );
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(csi).expect("csi should remove");
+        fs::remove_file(out).expect("out should remove");
     }
 
     #[test]

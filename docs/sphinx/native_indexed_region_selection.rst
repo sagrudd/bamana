@@ -212,7 +212,16 @@ program.
 Dry runs report planned selection without writing BAM output. Applied file
 outputs report the selected path, ``output_format: "bam"``, ``compression:
 "bgzf"``, selected unique record count, duplicate suppression, execution mode,
-index path when used, fallback reason when applicable, and header policy.
+index path when used, fallback reason when applicable, input-index
+compatibility, and header policy.
+
+M12.7 extends the governed payload with ``input_index`` for the selected
+adjacent input sidecar. Usable non-stale BAI reports
+``input_index.compatibility: used_bai`` and may drive indexed traversal. CSI
+reports ``input_index.kind: CSI`` and
+``input_index.compatibility: detect_only_csi``, then falls back to native
+scanner selection with ``execution.fallback_reason:
+detect_only_csi_index``. Output index invalidation is unchanged.
 
 M11.6 deliberately leaves ``--out -`` binary stdout routing rejected until
 response/report separation is implemented. ``--region-file`` remains

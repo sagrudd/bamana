@@ -252,6 +252,15 @@ Key concepts:
 * `region_scope` records CLI-region source, requested and normalized region
   counts, duplicate request count, and normalized region objects using the M10
   coordinate model
+* `input_index` records the selected adjacent input sidecar context:
+  `present`, `path`, `kind`, `used`, `compatibility`, and `fallback_reason`
+* `input_index.compatibility` distinguishes `used_bai`, `detect_only_csi`,
+  `unsupported_index`, `missing_index`, `stale_bai`, `malformed_bai`,
+  `incomplete_bai`, and `disabled`
+* adjacent CSI sidecars remain detect-only in M12.7: `select_region` preserves
+  `input_index.kind: CSI`, reports
+  `input_index.compatibility: detect_only_csi`, uses native scan fallback, and
+  keeps output index invalidation unchanged
 * `execution.mode` distinguishes `indexed` from `scan_fallback`; indexed
   execution reports `index_path` and chunk/record counts, while fallback
   execution reports `fallback_reason`

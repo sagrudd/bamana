@@ -110,6 +110,24 @@ preserve CSI context in the JSON payload:
 * ``summary --region`` reports ``index_derived.kind: CSI`` and names CSI
   unsupported fallback in ``semantic_note``.
 
+Selected-Region Compatibility
+-----------------------------
+
+M12.7 applies the M12 support decisions to ``select_region``. The selected BAM
+file-output command still uses only usable non-stale BAI for indexed traversal.
+It now reports the selected adjacent input sidecar in ``input_index``:
+
+* usable BAI reports ``input_index.compatibility: used_bai``;
+* CSI reports ``input_index.kind: CSI`` and
+  ``input_index.compatibility: detect_only_csi``, then uses native scan
+  fallback with ``execution.fallback_reason: detect_only_csi_index``;
+* unsupported, missing, stale, malformed, incomplete, and disabled input-index
+  states remain explicit fallback causes.
+
+Output BAI/CSI invalidation remains governed by
+``output.index_invalidation``. ``select_region`` still does not create a
+replacement output index.
+
 Remaining M12 Work
 ------------------
 

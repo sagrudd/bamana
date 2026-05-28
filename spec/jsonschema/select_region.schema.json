@@ -72,6 +72,43 @@
         "regeneration": { "type": "string" }
       }
     },
+    "inputIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "present",
+        "path",
+        "kind",
+        "used",
+        "compatibility",
+        "fallback_reason"
+      ],
+      "properties": {
+        "present": { "type": "boolean" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "kind": {
+          "oneOf": [
+            { "type": "string", "enum": ["BAI", "CSI", "GZI", "UNKNOWN"] },
+            { "type": "null" }
+          ]
+        },
+        "used": { "type": "boolean" },
+        "compatibility": {
+          "type": "string",
+          "enum": [
+            "used_bai",
+            "detect_only_csi",
+            "unsupported_index",
+            "missing_index",
+            "stale_bai",
+            "malformed_bai",
+            "incomplete_bai",
+            "disabled"
+          ]
+        },
+        "fallback_reason": { "$ref": "./common/defs.schema.json#/$defs/nullableString" }
+      }
+    },
     "output": {
       "type": "object",
       "additionalProperties": false,
@@ -173,6 +210,7 @@
         "format",
         "dry_run",
         "input",
+        "input_index",
         "output",
         "region_scope",
         "execution",
@@ -183,6 +221,7 @@
         "format": { "const": "BAM" },
         "dry_run": { "type": "boolean" },
         "input": { "type": "string" },
+        "input_index": { "$ref": "#/$defs/inputIndex" },
         "output": { "$ref": "#/$defs/output" },
         "region_scope": { "$ref": "#/$defs/regionScope" },
         "execution": { "$ref": "#/$defs/execution" },

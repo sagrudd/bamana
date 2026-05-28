@@ -111,6 +111,22 @@ is the available adjacent index:
   and names CSI unsupported fallback in `semantic_note`;
 * BAI remains the only index kind used for read-only region traversal.
 
+## M12.7 Selected-Region Compatibility
+
+M12.7 applies the same M12 support decisions to selected BAM file output.
+`select_region` now reports an `input_index` object for the selected adjacent
+input sidecar:
+
+* usable non-stale BAI reports `input_index.compatibility: used_bai` and may
+  drive indexed traversal;
+* adjacent CSI headers report `input_index.kind: CSI` and
+  `input_index.compatibility: detect_only_csi`, then use native scan fallback
+  with `execution.fallback_reason: detect_only_csi_index`;
+* unsupported, missing, stale, malformed, incomplete, and disabled input-index
+  states remain explicit fallback causes;
+* output BAI/CSI invalidation remains under `output.index_invalidation`, and
+  `select_region` still does not create replacement output indexes.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

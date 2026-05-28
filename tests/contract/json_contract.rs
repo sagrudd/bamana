@@ -2536,6 +2536,90 @@ fn milestone_12_6_wires_detect_only_csi_region_behavior() {
 }
 
 #[test]
+fn milestone_12_7_updates_select_region_index_compatibility() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let select_region_schema = read_utf8(&schema_path_for_command("select_region"));
+    let select_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("select_region.success.json"),
+    );
+    let select_region_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("select_region.rs"),
+    );
+
+    for required in [
+        "M12.7",
+        "Selected-Region Compatibility",
+        "select_region",
+        "input_index",
+        "input_index.kind: CSI",
+        "input_index.compatibility: detect_only_csi",
+        "execution.fallback_reason: detect_only_csi_index",
+        "used_bai",
+        "detect_only_csi",
+        "stale_bai",
+        "malformed_bai",
+        "incomplete_bai",
+        "output.index_invalidation",
+        "does not create a replacement output index",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required)
+                || select_region_schema.contains(required)
+                || select_region_example.contains(required)
+                || select_region_source.contains(required),
+            "M12.7 select_region compatibility evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        select_region_schema.contains("\"input_index\"")
+            && select_region_schema.contains("\"detect_only_csi\"")
+            && select_region_schema.contains("\"used_bai\""),
+        "select_region schema does not govern input index compatibility"
+    );
+    assert!(
+        select_region_example.contains("\"input_index\"")
+            && select_region_example.contains("\"compatibility\": \"used_bai\""),
+        "select_region success example does not include input index compatibility"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

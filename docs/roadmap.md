@@ -198,6 +198,10 @@ This order is retained because it matches the dependency chain of the runtime:
 * M12.6 read-only CSI region behavior: `check_map --region <REGION>` and
   `summary --region <REGION>` preserve CSI context in JSON while using native
   scan fallback; BAI remains the only index kind used for region traversal
+* M12.7 selected-region compatibility: `select_region` now reports
+  `input_index` compatibility for selected adjacent input sidecars, keeps CSI
+  as detect-only scan fallback, and leaves output BAI/CSI invalidation and
+  replacement-index deferrals unchanged
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

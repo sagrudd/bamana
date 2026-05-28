@@ -317,6 +317,13 @@ M12.6 applies detect-only CSI behavior to read-only region evidence.
 headers, preserve CSI context in JSON, and continue to reserve indexed region
 traversal for usable non-stale BAI sidecars only.
 
+M12.7 applies the M12 support decision to `select_region`. The command now
+reports `input_index` compatibility for the selected adjacent input sidecar:
+usable BAI may drive indexed traversal, CSI is `detect_only_csi` and falls back
+to native scanning, and unsupported, stale, malformed, incomplete, missing, or
+disabled index states remain explicit fallback causes. Output BAI/CSI sidecar
+invalidation remains unchanged, and no replacement output index is created.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

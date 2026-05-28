@@ -5599,13 +5599,31 @@ Completion evidence:
 
 ### M12.7 Update Selected-Region Compatibility
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * update `select_region` index compatibility behavior to match the M12 support
   decisions;
 * keep output index invalidation and replacement-index deferrals explicit.
+
+Acceptance:
+
+* `select_region` reports selected input sidecar compatibility in JSON;
+* usable non-stale BAI remains the only indexed traversal path;
+* adjacent CSI headers are preserved as `input_index.kind: CSI` with
+  `input_index.compatibility: detect_only_csi` and scan fallback;
+* output BAI/CSI invalidation remains unchanged and no replacement output
+  index is created.
+
+Completion evidence:
+
+* added `input_index` to the `select_region` payload, schema, and success
+  example;
+* added command regression coverage for CSI-backed selected-region scan
+  fallback;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, Sphinx,
+  and contract coverage for M12.7.
 
 ### M12.8 Update Public Contracts And Docs
 

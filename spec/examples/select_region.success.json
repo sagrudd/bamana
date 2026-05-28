@@ -6,6 +6,14 @@
     "format": "BAM",
     "dry_run": false,
     "input": "example.bam",
+    "input_index": {
+      "present": true,
+      "path": "example.bam.bai",
+      "kind": "BAI",
+      "used": true,
+      "compatibility": "used_bai",
+      "fallback_reason": null
+    },
     "output": {
       "path": "example.selected.bam",
       "output_format": "bam",
