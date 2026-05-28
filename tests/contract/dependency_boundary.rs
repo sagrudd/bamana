@@ -376,6 +376,47 @@ const M11_SELECTED_REGION_OUTPUT_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M12_INDEX_COMPATIBILITY_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "check_index_support_levels",
+        &[
+            "src/commands/check_index.rs",
+            "src/bam/index.rs",
+            "src/bam/header.rs",
+        ],
+    ),
+    (
+        "check_map_index_diagnostics",
+        &[
+            "src/commands/check_map.rs",
+            "src/bam/index.rs",
+            "src/bam/region.rs",
+            "src/bam/scan.rs",
+        ],
+    ),
+    (
+        "summary_index_derived_compatibility",
+        &[
+            "src/commands/summary.rs",
+            "src/bam/index.rs",
+            "src/bam/region.rs",
+            "src/bam/summary.rs",
+            "src/bam/scan.rs",
+        ],
+    ),
+    (
+        "select_region_input_index_compatibility",
+        &[
+            "src/commands/select_region.rs",
+            "src/bam/index.rs",
+            "src/bam/region.rs",
+            "src/bam/scan.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -764,6 +805,48 @@ fn m11_selected_region_output_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M11 selected-region output hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m12_index_compatibility_hot_paths_do_not_import_noodles() {
+    let index_compatibility_paths: Vec<_> = M12_INDEX_COMPATIBILITY_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        index_compatibility_paths,
+        [
+            "check_index_support_levels",
+            "check_map_index_diagnostics",
+            "summary_index_derived_compatibility",
+            "select_region_input_index_compatibility"
+        ],
+        "M12 dependency boundary must explicitly name support levels, diagnostics, summary index-derived evidence, and selected-region input-index compatibility"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M12_INDEX_COMPATIBILITY_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M12 index compatibility hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }

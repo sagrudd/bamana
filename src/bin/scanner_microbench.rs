@@ -174,9 +174,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 workdir.join("scanner-microbench-select-region-scan-out.bam");
             let select_region_indexed_output =
                 workdir.join("scanner-microbench-select-region-indexed-out.bam");
+            let select_region_csi_output =
+                workdir.join("scanner-microbench-select-region-csi-out.bam");
             let deduplicate_output = workdir.join("scanner-microbench-deduplicate-out.bam");
             let bam_index_output = PathBuf::from(format!("{}.bai", fixture.to_string_lossy()));
+            let csi_index_output = PathBuf::from(format!("{}.csi", fixture.to_string_lossy()));
             let _ = fs::remove_file(&bam_index_output);
+            let _ = fs::remove_file(&csi_index_output);
             vec![
                 measure_command(
                     "summary",
@@ -450,6 +454,64 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     ],
                     args.iterations,
                 )?,
+                {
+                    let _ = fs::remove_file(&bam_index_output);
+                    write_csi_header(&csi_index_output, fixture_model.references.len())?;
+                    measure_command(
+                        "check_index_csi_detect_only",
+                        bamana_bin,
+                        &[
+                            "check_index",
+                            "--bam",
+                            fixture_arg(&fixture),
+                            "--prefer-csi",
+                        ],
+                        args.iterations,
+                    )?
+                },
+                measure_command(
+                    "check_map_region_csi_fallback",
+                    bamana_bin,
+                    &[
+                        "check_map",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "summary_region_csi_fallback",
+                    bamana_bin,
+                    &[
+                        "summary",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--sample-records",
+                        "100000",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
+                    "select_region_csi_fallback",
+                    bamana_bin,
+                    &[
+                        "select_region",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--out",
+                        fixture_arg(&select_region_csi_output),
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
                 measure_command(
                     "inspect_duplication",
                     bamana_bin,
@@ -515,15 +577,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, region-aware check_map scan fallback, region-aware summary scan fallback, selected-region scan-fallback output, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, indexed-region check_map traversal, indexed-region summary traversal, indexed select_region output, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, region-aware check_map scan fallback, region-aware summary scan fallback, selected-region scan-fallback output, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, indexed-region check_map traversal, indexed-region summary traversal, indexed select_region output, CSI detect-only check_index, CSI region scan fallback for check_map, summary, and select_region, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, check_map_region_scan_fallback and summary_region_scan_fallback measure region parsing, region filtering, native scan fallback, process startup, and JSON emission before a sidecar exists, select_region_scan_fallback measures region parsing, native scan fallback, selected-record filtering, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, and JSON emission before a sidecar exists, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, check_map_region_indexed and summary_region_indexed measure region parsing, BAI chunk planning, random-access traversal, region filtering, process startup, and JSON emission after the sidecar exists, select_region_indexed_output measures region parsing, BAI chunk planning, random-access traversal, selected-record filtering, duplicate suppression, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, index-invalidation reporting, and JSON emission after the sidecar exists, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, check_map_region_scan_fallback and summary_region_scan_fallback measure region parsing, region filtering, native scan fallback, process startup, and JSON emission before a sidecar exists, select_region_scan_fallback measures region parsing, native scan fallback, selected-record filtering, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, and JSON emission before a sidecar exists, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, check_map_region_indexed and summary_region_indexed measure region parsing, BAI chunk planning, random-access traversal, region filtering, process startup, and JSON emission after the sidecar exists, select_region_indexed_output measures region parsing, BAI chunk planning, random-access traversal, selected-record filtering, duplicate suppression, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, index-invalidation reporting, and JSON emission after the sidecar exists, check_index_csi_detect_only measures CSI header detection and support-level reporting after the BAI sidecar is removed, check_map_region_csi_fallback and summary_region_csi_fallback measure M12 CSI detect-only scan fallback with CSI context preserved in JSON, select_region_csi_fallback measures M12 selected-output scan fallback with input_index compatibility reporting, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
             .to_string(),
         "Selected-region output smoke timings are regression guardrails for the current BGZF BAM file-output slice; they do not measure stdout output, public region-file input, replacement output-index creation, comparator parity, native CRAM indexed queries, or biological interpretation."
             .to_string(),
         "Indexed-region smoke timings distinguish index lookup, BAI chunk planning, random-access traversal, region filtering, scan fallback, command startup, and JSON emission, but they do not claim broad comparator parity, native CRAM indexed queries, biological interpretation, or selected-record output."
+            .to_string(),
+        "CSI compatibility smoke timings are M12 guardrails for detect-only support-level reporting and native scan fallback; they do not claim CSI bin parsing, CSI chunk planning, CSI random-access traversal, CSI writing, or large-reference CSI support."
             .to_string(),
         "The scanner_microbench consume timing does not exercise CRAM compatibility behavior; CRAM remains covered by explicit reference-policy tests and documentation rather than this synthetic BAM smoke hook."
             .to_string(),
@@ -561,6 +625,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if !args.keep_fixtures {
         let _ = fs::remove_file(&fixture);
         let _ = fs::remove_file(PathBuf::from(format!("{}.bai", fixture.to_string_lossy())));
+        let _ = fs::remove_file(PathBuf::from(format!("{}.csi", fixture.to_string_lossy())));
     }
 
     Ok(())
@@ -703,6 +768,18 @@ fn write_bgzf_payload(path: &Path, payload: &[u8]) -> Result<(), Box<dyn std::er
     writer.write_all(payload)?;
     writer.finish()?;
     Ok(())
+}
+
+fn write_csi_header(path: &Path, reference_count: usize) -> io::Result<()> {
+    let reference_count = i32::try_from(reference_count)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "too many references for CSI"))?;
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(b"CSI\x01");
+    bytes.extend_from_slice(&14_i32.to_le_bytes());
+    bytes.extend_from_slice(&5_i32.to_le_bytes());
+    bytes.extend_from_slice(&0_i32.to_le_bytes());
+    bytes.extend_from_slice(&reference_count.to_le_bytes());
+    fs::write(path, bytes)
 }
 
 fn measure_record_scan(

@@ -147,6 +147,24 @@ implemented in M12.1-M12.7. The refreshed governed surface is:
   large-reference BAI rejection, CSI reference-count mismatch, and malformed
   FASTQ.GZI planner-sidecar behavior.
 
+## M12.9 Benchmark And Dependency Guardrails
+
+M12.9 adds command smoke timing and dependency-boundary evidence for the
+extended index compatibility surface:
+
+* `scanner_microbench --bamana-bin` emits `check_index_csi_detect_only`,
+  `check_map_region_csi_fallback`, `summary_region_csi_fallback`, and
+  `select_region_csi_fallback`;
+* those timings cover CSI detect-only support-level reporting,
+  CSI-preserving native scan fallback, and selected-region `input_index`
+  compatibility;
+* benchmark notes state that the rows do not claim CSI bin parsing, CSI chunk
+  planning, CSI random-access traversal, CSI writing, or large-reference CSI
+  support;
+* dependency-boundary tests keep `check_index`, `check_map`, `summary`, and
+  `select_region` index compatibility hot paths Bamana-native outside the
+  documented CRAM compatibility boundary.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

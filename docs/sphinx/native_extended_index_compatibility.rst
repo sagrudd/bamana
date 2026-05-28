@@ -148,11 +148,26 @@ fixture documentation for the M12 support decisions:
   large-reference BAI rejection, CSI reference-count mismatch, and malformed
   FASTQ.GZI planner-sidecar behavior.
 
+Benchmark And Dependency Guardrails
+-----------------------------------
+
+M12.9 adds command smoke timing and dependency-boundary evidence for the
+extended index compatibility surface. ``scanner_microbench --bamana-bin`` emits
+``check_index_csi_detect_only``, ``check_map_region_csi_fallback``,
+``summary_region_csi_fallback``, and ``select_region_csi_fallback`` rows.
+Those rows cover CSI detect-only support-level reporting, CSI-preserving native
+scan fallback, and selected-region ``input_index`` compatibility.
+
+The benchmark notes are deliberately narrow: the M12 CSI rows do not claim CSI
+bin parsing, CSI chunk planning, CSI random-access traversal, CSI writing, or
+large-reference CSI support. Dependency-boundary tests keep ``check_index``,
+``check_map``, ``summary``, and ``select_region`` index compatibility hot paths
+Bamana-native outside the documented CRAM compatibility boundary.
+
 Remaining M12 Work
 ------------------
 
-Later M12 tasks must extend selected-region compatibility behavior, benchmark
-guardrails, and closeout evidence.
+Later M12 tasks must record closeout evidence.
 
 Non-Goals
 ---------

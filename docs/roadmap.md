@@ -206,6 +206,11 @@ This order is retained because it matches the dependency chain of the runtime:
   Sphinx, and fixture docs now align around `support_level`,
   `diagnostic_status`, `index_derived`, `input_index`, and the reserved M12
   fixture outputs
+* M12.9 benchmark and dependency guardrails: `scanner_microbench --bamana-bin`
+  emits CSI compatibility smoke timings for detect-only support-level
+  reporting, native scan fallback, and selected-region `input_index`
+  compatibility, and dependency-boundary tests keep the promoted M12 index
+  compatibility hot paths Bamana-native
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

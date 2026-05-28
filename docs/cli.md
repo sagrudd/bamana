@@ -330,6 +330,15 @@ examples carry `index_derived`, `select_region` examples carry `input_index`,
 and fixture documentation maps the reserved M12 large-reference BAI, CSI
 reference-count mismatch, and malformed FASTQ.GZI cases to governed outputs.
 
+M12.9 adds benchmark and dependency guardrails for the index compatibility
+slice. `scanner_microbench --bamana-bin` now includes
+`check_index_csi_detect_only`, `check_map_region_csi_fallback`,
+`summary_region_csi_fallback`, and `select_region_csi_fallback` smoke timings.
+These rows cover CSI detect-only support-level reporting, CSI-preserving native
+scan fallback, and selected-region `input_index` compatibility, but not CSI bin
+parsing, CSI chunk planning, CSI random-access traversal, CSI writing, or
+large-reference CSI support.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

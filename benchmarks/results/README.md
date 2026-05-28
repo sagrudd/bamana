@@ -29,7 +29,7 @@ Contracts:
 * [benchmark_row.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/benchmark_row.schema.json): flat tidy per-run row contract
 * [bgzf_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/bgzf_microbench.schema.json): native BGZF microbenchmark JSON contract, including optional `check_eof` command smoke timing
 * [header_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/header_microbench.schema.json): native BAM header microbenchmark JSON contract
-* [scanner_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/scanner_microbench.schema.json): native BAM scanner microbenchmark JSON contract, including optional `summary`, `check_sort`, `check_map`, `validate`, `check_tag`, `subsample_bam`, `sort`, `merge`, `checksum`, `explode`, `consume`, `check_map_region_scan_fallback`, `summary_region_scan_fallback`, `select_region_scan_fallback`, `index_bam`, `check_index`, `check_map_indexed`, `summary_indexed`, `check_map_region_indexed`, `summary_region_indexed`, `select_region_indexed_output`, `inspect_duplication`, `deduplicate`, and `forensic_inspect` command smoke timings
+* [scanner_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/scanner_microbench.schema.json): native BAM scanner microbenchmark JSON contract, including optional `summary`, `check_sort`, `check_map`, `validate`, `check_tag`, `subsample_bam`, `sort`, `merge`, `checksum`, `explode`, `consume`, `check_map_region_scan_fallback`, `summary_region_scan_fallback`, `select_region_scan_fallback`, `index_bam`, `check_index`, `check_map_indexed`, `summary_indexed`, `check_map_region_indexed`, `summary_region_indexed`, `select_region_indexed_output`, `check_index_csi_detect_only`, `check_map_region_csi_fallback`, `summary_region_csi_fallback`, `select_region_csi_fallback`, `inspect_duplication`, `deduplicate`, and `forensic_inspect` command smoke timings
 * [fastq_microbench.schema.json](/Users/stephen/Projects/bamana/benchmarks/results/fastq_microbench.schema.json): native FASTQ parser/writer microbenchmark JSON contract, including optional `subsample_fastq` and `subsample_fastq_gz` command smoke timings
 * [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
 * [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical `tool` and `workflow_variant` values
@@ -71,6 +71,10 @@ Benchmark interpretation notes:
 * M9 scanner command smoke timings distinguish BAM index construction, BAI
   structural validation, index metadata-backed consumer evidence, scan fallback
   timings, random-access lookup deferral, process startup, and JSON emission
+* M12 scanner command smoke timings distinguish CSI detect-only support-level
+  reporting, CSI-preserving native scan fallback, and selected-region
+  `input_index` compatibility from CSI bin parsing, CSI chunk planning, CSI
+  random-access traversal, CSI writing, or large-reference CSI support
 
 First analysis slice:
 

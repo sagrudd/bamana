@@ -5655,12 +5655,32 @@ Completion evidence:
 
 ### M12.9 Add Benchmark And Dependency Guardrails
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * add index compatibility benchmark or smoke timing evidence;
 * extend dependency-boundary tests where M12 promotes new hot paths.
+
+Acceptance:
+
+* `scanner_microbench --bamana-bin` emits governed CSI compatibility smoke
+  timing rows;
+* benchmark documentation distinguishes CSI detect-only support-level
+  reporting, native scan fallback, and selected-region `input_index`
+  compatibility from unimplemented CSI traversal and writing behavior;
+* dependency-boundary tests keep M12 index compatibility hot paths
+  Bamana-native.
+
+Completion evidence:
+
+* added `check_index_csi_detect_only`, `check_map_region_csi_fallback`,
+  `summary_region_csi_fallback`, and `select_region_csi_fallback` timing rows
+  to `scanner_microbench`;
+* updated the scanner microbenchmark schema, benchmark result documentation,
+  README, CLI docs, roadmap docs, Sphinx docs, and taskmap with M12.9 scope and
+  interpretation limits;
+* added contract coverage for the M12.9 benchmark and dependency guardrails.
 
 ### M12.10 Close Milestone 12
 

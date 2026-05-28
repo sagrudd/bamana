@@ -144,8 +144,12 @@ Current milestone:
   deferrals unchanged. M12.8 refreshes public contracts and docs so schemas,
   examples, CLI docs, README, roadmap, Sphinx, and fixture docs align around
   `support_level`, `diagnostic_status`, `index_derived`, `input_index`, and the
-  reserved M12 fixture outputs. Later M12 tasks must extend benchmark
-  guardrails and closeout evidence.
+  reserved M12 fixture outputs. M12.9 adds benchmark and dependency guardrails:
+  `scanner_microbench --bamana-bin` emits CSI compatibility smoke timings for
+  detect-only support-level reporting, native scan fallback, and
+  selected-region `input_index` compatibility, and dependency-boundary tests
+  keep the promoted M12 index compatibility hot paths Bamana-native. Later M12
+  tasks must record closeout evidence.
 
 ## Completed Backbone
 

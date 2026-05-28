@@ -654,6 +654,14 @@ examples include `index_derived`, `select_region` examples include
 `input_index`, and fixture docs map the reserved large-reference BAI, CSI
 reference-count mismatch, and malformed FASTQ.GZI cases to governed outputs.
 
+M12.9 adds benchmark and dependency guardrails for that compatibility surface.
+`scanner_microbench --bamana-bin` now emits CSI smoke timing rows for
+`check_index` detect-only support-level reporting, `check_map` and `summary`
+CSI-preserving native scan fallback, and `select_region` selected-output
+fallback with `input_index` compatibility. The guardrail explicitly does not
+claim CSI bin parsing, CSI chunk planning, CSI random-access traversal, CSI
+writing, or large-reference CSI support.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

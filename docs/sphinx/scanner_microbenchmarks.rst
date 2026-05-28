@@ -44,7 +44,9 @@ The JSON result contains:
   ``check_tag``, ``subsample_bam``, ``sort``, ``merge``, ``checksum``,
   ``explode``, ``consume``, ``index_bam``, ``check_index``,
   ``check_map_indexed``, ``summary_indexed``, ``select_region_scan_fallback``,
-  ``select_region_indexed_output``, ``inspect_duplication``, ``deduplicate``,
+  ``select_region_indexed_output``, ``check_index_csi_detect_only``,
+  ``check_map_region_csi_fallback``, ``summary_region_csi_fallback``,
+  ``select_region_csi_fallback``, ``inspect_duplication``, ``deduplicate``,
   and ``forensic_inspect`` command timings when
   ``--bamana-bin`` is supplied
 
@@ -181,6 +183,17 @@ and JSON emission. It does not claim binary stdout output, public
 ``--region-file`` behavior, replacement output-index creation, biological
 interpretation, broad comparator parity, native CRAM indexed queries, or
 exhaustive validation of every index offset.
+
+``check_index_csi_detect_only``, ``check_map_region_csi_fallback``,
+``summary_region_csi_fallback``, and ``select_region_csi_fallback`` are
+command-level M12 index compatibility smoke timings. The benchmark removes the
+generated BAI sidecar, writes a minimal CSI header sidecar, and exercises
+detect-only support-level reporting plus native scan fallback with CSI context
+preserved in JSON. ``select_region_csi_fallback`` additionally verifies
+selected-output fallback with ``input_index`` compatibility reporting. These
+rows are guardrails for detect-only support-level reporting and native scan
+fallback; they do not claim CSI bin parsing, CSI chunk planning, CSI
+random-access traversal, CSI writing, or large-reference CSI support.
 
 ``inspect_duplication`` is a command-level inspection timing over the generated
 BAM fixture. It proves the native scanner-backed duplication inspection CLI path

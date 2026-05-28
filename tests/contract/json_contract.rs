@@ -2720,6 +2720,115 @@ fn milestone_12_8_refreshes_public_contract_artifacts() {
 }
 
 #[test]
+fn milestone_12_9_adds_benchmark_and_dependency_guardrails() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for command in [
+        "check_index_csi_detect_only",
+        "check_map_region_csi_fallback",
+        "summary_region_csi_fallback",
+        "select_region_csi_fallback",
+    ] {
+        assert!(
+            scanner_source.contains(&format!("\"{command}\""))
+                && scanner_schema.contains(&format!("\"{command}\""))
+                && scanner_doc.contains(&format!("``{command}``"))
+                && benchmark_results.contains(&format!("`{command}`"))
+                && m12.contains(&format!("`{command}`"))
+                && taskmap.contains(&format!("`{command}`")),
+            "M12.9 benchmark guardrails do not explicitly govern command timing row: {command}"
+        );
+    }
+
+    for protected_path in [
+        "check_index_support_levels",
+        "check_map_index_diagnostics",
+        "summary_index_derived_compatibility",
+        "select_region_input_index_compatibility",
+    ] {
+        assert!(
+            dependency_tests.contains(protected_path),
+            "M12.9 dependency guardrail is missing protected hot path: {protected_path}"
+        );
+    }
+
+    for required in [
+        "M12.9",
+        "Benchmark And Dependency Guardrails",
+        "CSI compatibility smoke timings",
+        "detect-only support-level reporting",
+        "native scan fallback",
+        "CSI context preserved in JSON",
+        "input_index compatibility",
+        "CSI bin parsing",
+        "CSI chunk planning",
+        "CSI random-access traversal",
+        "CSI writing",
+        "large-reference CSI support",
+        "M12 index compatibility hot paths",
+        "Bamana-native",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || scanner_doc.contains(required)
+                || benchmark_results.contains(required)
+                || scanner_source.contains(required)
+                || dependency_tests.contains(required)
+                || taskmap.contains(required),
+            "M12.9 benchmark and dependency guardrail evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));
