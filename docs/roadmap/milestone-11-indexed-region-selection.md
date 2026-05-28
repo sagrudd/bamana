@@ -41,6 +41,51 @@ large-reference support, biological interpretation, pileup/genotyping behavior,
 and broad external comparator parity out of scope unless a later task promotes
 one of them.
 
+## M11.2 Region-File Syntax And Rejection Contract
+
+M11.2 specifies the region-file contract, but it does not implement public
+`select_region` CLI behavior. Until the command is implemented, any direct
+region-file request must fail as unimplemented with a deterministic message
+that region-file parsing is specified for M11.2 but is not yet public CLI
+behavior.
+
+Accepted future region files are UTF-8 text files with one region per
+non-comment line. LF and CRLF line endings are accepted. Each line is trimmed
+for surrounding ASCII whitespace before classification. Blank lines are
+ignored. A comment line is any line whose first non-whitespace character is
+`#`; inline comments are not recognized, so `#` after a region is part of the
+region token and must be rejected unless it is a literal reference-name match.
+
+Each non-comment line uses the same grammar as M10 CLI region strings:
+
+* `reference` for a whole-reference request;
+* `reference:start-end` for an explicit interval;
+* interval coordinates are 1-based closed in the file;
+* normalized output remains 0-based half-open.
+
+Region-file order is request order. Duplicate lines and overlapping intervals
+are preserved by parsing and normalization; later M11 duplicate-output policy
+work decides whether selected records are emitted once or repeated. Region-file
+parsing must not sort, merge, or deduplicate request lines.
+
+Rejection behavior is precise:
+
+* unreadable, missing, or non-UTF-8 files fail before any output is written;
+* malformed lines fail with the region file path and 1-based line number;
+* empty or comment-only files, including files with only blank lines, fail as
+  `invalid_region`;
+* unknown references, ambiguous references, zero-length whole-reference
+  requests, empty intervals, zero coordinates, reversed intervals, out-of-range
+  intervals, and non-numeric coordinates reuse the native `invalid_region`
+  taxonomy;
+* unsupported coordinate models are rejected, including BED-like
+  `chrom start end` rows, 0-based half-open interval files, comma-separated
+  ranges, open-ended ranges, strand/name columns, and other tabular metadata.
+
+No JSON schema or example output is introduced by M11.2 because there is still
+no public `select_region` command or report payload. M11.8 must add schemas,
+examples, and fixtures once the command contract is fully specified.
+
 ## Ten-Task Outline
 
 1. M11.1 activate scope and freeze the selection command decision.

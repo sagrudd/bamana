@@ -200,6 +200,15 @@ command, not an extension of `check_map`, `summary`, or `subsample`. No
 semantics, header preservation, record ordering, duplicate-region behavior,
 region-file syntax, index invalidation, and write-safety before any selected
 record output is implemented.
+M11.2 freezes the future region-file input contract without publishing a
+`select_region` synopsis. Future region files are UTF-8, one M10-style
+`reference` or `reference:start-end` region per non-comment line, with LF or
+CRLF line endings, surrounding whitespace trimmed, blank lines ignored, and
+leading `#` comment lines ignored. Request order is preserved, duplicate and
+overlapping lines are not merged by parsing, and unsupported coordinate models
+such as BED-like rows, 0-based half-open rows, open-ended ranges,
+comma-separated ranges, strand/name columns, or other tabular metadata must be
+rejected before output is written.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

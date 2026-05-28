@@ -30,6 +30,42 @@ Until those contracts are complete, ``check_map --region <REGION>`` and
 ``summary --region <REGION>`` remain the only public region-aware behavior, and
 they remain read-only evidence surfaces.
 
+Region-File Syntax
+------------------
+
+M11.2 freezes the future region-file syntax without making it public CLI
+behavior yet. Until ``select_region`` is implemented, region-file requests must
+fail as unimplemented and report that region-file parsing is specified for
+M11.2 but is not yet public CLI behavior.
+
+Accepted future region files are UTF-8 text files. LF and CRLF line endings
+are accepted. The parser reads one region per non-comment line, trims
+surrounding ASCII whitespace, ignores blank lines, and ignores comment lines
+whose first non-whitespace character is ``#``. Inline comments are not
+recognized.
+
+Each non-comment line uses the M10 region grammar:
+
+* ``reference`` for a whole-reference request;
+* ``reference:start-end`` for an explicit interval;
+* interval coordinates are 1-based closed in input;
+* normalized coordinates remain 0-based half-open.
+
+Request order is preserved. Duplicate lines and overlapping intervals are
+preserved by parsing and normalization. Region-file parsing must not sort,
+merge, or deduplicate request lines; selected-record duplicate emission is
+reserved for the later M11 duplicate-policy task.
+
+Malformed lines fail with the region file path and 1-based line number. Empty
+files, comment-only files, unknown references, ambiguous references, zero-length
+whole-reference requests, empty intervals, zero coordinates, reversed
+intervals, out-of-range intervals, and non-numeric coordinates use the native
+``invalid_region`` taxonomy. Unsupported coordinate models are rejected,
+including BED-like ``chrom start end`` rows, 0-based half-open interval files,
+comma-separated ranges, open-ended ranges, strand/name columns, and other
+tabular metadata. Missing, unreadable, or non-UTF-8 files fail before any
+output is written.
+
 Inherited Substrate
 -------------------
 

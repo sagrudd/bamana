@@ -2193,6 +2193,98 @@ fn milestone_11_activation_baseline_records_selection_scope() {
 }
 
 #[test]
+fn milestone_11_region_file_contract_is_specified_without_cli_behavior() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let region_source = read_utf8(&super::repo_root().join("src").join("bam").join("region.rs"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for required in [
+        "M11.2",
+        "Region-File Syntax",
+        "UTF-8",
+        "LF",
+        "CRLF",
+        "one M10-style region per non-comment line",
+        "reference:start-end",
+        "1-based closed",
+        "0-based half-open",
+        "blank lines",
+        "first non-whitespace character is",
+        "#",
+        "Inline comments are not recognized",
+        "Request order is preserved",
+        "duplicate lines",
+        "overlapping intervals",
+        "must not sort, merge, or deduplicate",
+        "region file path and 1-based line number",
+        "empty or comment-only files",
+        "unknown references",
+        "ambiguous references",
+        "zero-length whole-reference",
+        "empty intervals",
+        "zero coordinates",
+        "reversed intervals",
+        "out-of-range intervals",
+        "non-numeric coordinates",
+        "BED-like",
+        "0-based half-open",
+        "open-ended ranges",
+        "comma-separated ranges",
+        "strand/name columns",
+        "tabular metadata",
+        "No JSON schema or example output is introduced by M11.2",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11.2 region-file contract is missing: {required}"
+        );
+    }
+
+    for required in [
+        "Region-file parsing is specified for M11.2",
+        "not public CLI behavior until select_region is implemented",
+        "provide ordered --region strings instead",
+    ] {
+        assert!(
+            region_source.contains(required),
+            "native region-file rejection text is missing: {required}"
+        );
+    }
+
+    assert!(
+        !cli_source.contains("SelectRegion"),
+        "M11.2 must not implement the select_region CLI before selected-output contracts are complete"
+    );
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

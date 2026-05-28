@@ -532,6 +532,13 @@ command, rather than overloading `check_map`, `summary`, or `subsample`. No
 new CLI behavior is public yet: output semantics, header preservation, record
 ordering, duplicate-region behavior, region-file syntax, index invalidation,
 and write-safety must be specified before implementation.
+M11.2 freezes the future region-file syntax as UTF-8, one M10-style region per
+non-comment line, with blank lines and leading `#` comment lines ignored, LF or
+CRLF accepted, request order preserved, and duplicate or overlapping lines not
+merged. Region-file parsing remains non-public until `select_region` is
+implemented; malformed lines, unknown references, empty/reversed intervals,
+BED-like rows, 0-based half-open files, open-ended ranges, and tabular metadata
+must be rejected precisely.
 
 ## Specification Layer
 

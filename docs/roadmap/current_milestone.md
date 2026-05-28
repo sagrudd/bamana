@@ -49,7 +49,11 @@ Current milestone:
   rather than extending `check_map`, `summary`, or `subsample`. M11 must specify
   selected-record region output and region-file input before implementation:
   output semantics, header preservation, duplicate handling, index
-  invalidation, and write-safety are mandatory contract work.
+  invalidation, and write-safety are mandatory contract work. M11.2 freezes the
+  future region-file syntax as UTF-8 line-oriented input with one M10-style
+  region per non-comment line, blank lines and leading `#` comments ignored,
+  request order preserved, duplicates not merged by parsing, and BED-like or
+  otherwise unsupported coordinate models rejected.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

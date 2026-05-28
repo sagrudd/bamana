@@ -5056,7 +5056,7 @@ Completion evidence:
 
 ### M11.2 Specify Region-File Syntax And Rejection Behavior
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -5065,6 +5065,36 @@ Tasks:
 * define rejection behavior for malformed lines, unknown references, empty
   intervals, reversed intervals, and unsupported coordinate models;
 * update CLI docs, schemas, examples, fixtures, Sphinx docs, and task map.
+
+Acceptance criteria:
+
+* region-file syntax is specified without publishing `select_region` CLI
+  behavior early;
+* accepted line format, comment handling, blank-line handling, line endings,
+  ordering, duplicate preservation, and overlap preservation are documented;
+* malformed-line, unreadable-file, empty-file, unknown-reference,
+  ambiguous-reference, zero-coordinate, empty-interval, reversed-interval,
+  out-of-range, non-numeric, BED-like, 0-based half-open, open-ended, and
+  tabular metadata rejection behavior is documented;
+* docs explicitly state that schemas, examples, and fixtures remain deferred
+  until the command/report contract is complete.
+
+Completion evidence:
+
+* specified future region-file syntax as UTF-8 text with LF or CRLF line
+  endings, one M10-style `reference` or `reference:start-end` region per
+  non-comment line, surrounding whitespace trimmed, blank lines ignored, and
+  leading `#` comment lines ignored;
+* preserved request order, duplicate lines, and overlapping intervals at parse
+  time without sorting, merging, or deduplicating;
+* documented precise rejection behavior with path and 1-based line number for
+  malformed lines and native `invalid_region` taxonomy for region semantic
+  failures;
+* updated README, CLI docs, roadmap, current milestone notes, Sphinx technical
+  notes, CLI command specification, native deferred-region-file rejection text,
+  and contract tests;
+* kept `select_region` unimplemented and deferred schemas, examples, and
+  fixtures to M11.8 when a public report payload exists.
 
 ### M11.3 Specify Selected-Record Output Semantics
 

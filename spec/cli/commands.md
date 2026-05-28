@@ -602,6 +602,24 @@ command may claim region selection support. The ready substrate is the M10.2
 region parser, M10.4 BAI chunk planner, M10.5 region traversal, M10.6
 `check_map --region <REGION>`, and M10.7 `summary --region <REGION>`.
 
+M11.2 future region-file contract:
+
+No public `select_region` synopsis or region-file CLI flag is introduced by
+M11.2. The future region-file syntax is UTF-8 text with LF or CRLF line
+endings, one M10-style region per non-comment line, surrounding ASCII
+whitespace trimmed, blank lines ignored, and lines whose first non-whitespace
+character is `#` ignored as comments. Inline comments are not recognized.
+Accepted region entries are `reference` and `reference:start-end`, with
+1-based closed interval coordinates normalized to 0-based half-open
+coordinates. Request order is preserved, duplicate lines are preserved, and
+overlapping intervals are not merged by parsing. Malformed lines must report
+the region-file path and 1-based line number. Empty or comment-only files,
+unknown references, ambiguous references, zero-length whole-reference requests,
+empty intervals, zero coordinates, reversed intervals, out-of-range intervals,
+non-numeric coordinates, BED-like rows, 0-based half-open rows, open-ended
+ranges, comma-separated ranges, strand/name columns, and other tabular metadata
+must be rejected before selected-record output is written.
+
 ## `check_index`
 
 Synopsis:
@@ -718,6 +736,24 @@ evidence surfaces only. Future selection work must define output semantics,
 header preservation, record ordering, duplicate-region behavior, index
 invalidation or regeneration notes, and output write-safety behavior before any
 command may claim region selection support.
+
+M11.2 future region-file contract:
+
+No public `select_region` synopsis or region-file CLI flag is introduced by
+M11.2. The future region-file syntax is UTF-8 text with LF or CRLF line
+endings, one M10-style region per non-comment line, surrounding ASCII
+whitespace trimmed, blank lines ignored, and lines whose first non-whitespace
+character is `#` ignored as comments. Inline comments are not recognized.
+Accepted region entries are `reference` and `reference:start-end`, with
+1-based closed interval coordinates normalized to 0-based half-open
+coordinates. Request order is preserved, duplicate lines are preserved, and
+overlapping intervals are not merged by parsing. Malformed lines must report
+the region-file path and 1-based line number. Empty or comment-only files,
+unknown references, ambiguous references, zero-length whole-reference requests,
+empty intervals, zero coordinates, reversed intervals, out-of-range intervals,
+non-numeric coordinates, BED-like rows, 0-based half-open rows, open-ended
+ranges, comma-separated ranges, strand/name columns, and other tabular metadata
+must be rejected before selected-record output is written.
 
 ## `check_tag`
 

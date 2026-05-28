@@ -129,7 +129,7 @@ pub fn normalize_region_string(
 pub fn reject_region_file_request(path: &Path) -> Result<(), AppError> {
     Err(AppError::Unimplemented {
         path: path.to_path_buf(),
-        detail: "BED-like or line-oriented region files are explicitly deferred for M10.2; provide ordered region strings instead.".to_string(),
+        detail: "Region-file parsing is specified for M11.2 but is not public CLI behavior until select_region is implemented; provide ordered --region strings instead.".to_string(),
     })
 }
 
@@ -458,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_region_files_as_deferred_for_m10_2() {
+    fn rejects_region_files_as_specified_but_not_yet_public() {
         let error = reject_region_file_request(Path::new("regions.bed"))
             .expect_err("region files should be deferred");
 
@@ -469,7 +469,7 @@ mod tests {
                 .detail
                 .as_deref()
                 .unwrap_or_default()
-                .contains("deferred for M10.2")
+                .contains("specified for M11.2")
         );
     }
 }

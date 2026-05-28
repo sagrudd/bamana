@@ -131,6 +131,11 @@ This order is retained because it matches the dependency chain of the runtime:
   and write-safety are specified
 * commands enabled first: planned `select_region`, after the M11 contract
   freezes its semantics
+* M11.2 region-file contract: future inputs are UTF-8 line-oriented files using
+  one M10-style region per non-comment line; blank lines and leading `#`
+  comment lines are ignored; request order, duplicate lines, and overlapping
+  intervals are preserved; BED-like and other unsupported coordinate models are
+  rejected until explicitly promoted
 
 ### Milestone 12: Extended Index Compatibility
 
