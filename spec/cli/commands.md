@@ -602,6 +602,16 @@ command may claim region selection support. The ready substrate is the M10.2
 region parser, M10.4 BAI chunk planner, M10.5 region traversal, M10.6
 `check_map --region <REGION>`, and M10.7 `summary --region <REGION>`.
 
+M12.6 read-only CSI behavior:
+
+CSI remains detect-only for read-only region evidence. `check_map --region
+<REGION>` and `summary --region <REGION>` must preserve CSI context in JSON
+when an adjacent CSI header sidecar is present, but must use native scan
+fallback rather than indexed traversal. `check_map --region <REGION>` reports
+`index.kind: CSI` and `index.diagnostic_status: unsupported`; `summary
+--region <REGION>` reports `index_derived.kind: CSI` and an unsupported CSI
+fallback note. BAI remains the only index kind used for region traversal.
+
 M11.2 future region-file contract:
 
 No public `select_region` synopsis or region-file CLI flag is introduced by
@@ -933,6 +943,15 @@ evidence surfaces only. Future selection work must define output semantics,
 header preservation, record ordering, duplicate-region behavior, index
 invalidation or regeneration notes, and output write-safety behavior before any
 command may claim region selection support.
+
+M12.6 read-only CSI behavior:
+
+CSI remains detect-only for read-only region evidence. `check_map --region
+<REGION>` and `summary --region <REGION>` must preserve CSI context in JSON
+when an adjacent CSI header sidecar is present, but must use native scan
+fallback rather than indexed traversal. `summary --region <REGION>` reports
+`index_derived.kind: CSI` and an unsupported CSI fallback note. BAI remains the
+only index kind used for region traversal.
 
 M11.2 future region-file contract:
 

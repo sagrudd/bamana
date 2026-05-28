@@ -133,6 +133,10 @@ Key concepts:
   `raw_records_seen`, and `duplicate_records_suppressed`
 * scan fallback reports `fallback_mode: native_scan_required` and
   `scan_records_limit`
+* adjacent CSI sidecars are detect-only in M12.6: `check_map --region
+  <REGION>` preserves `index.kind: CSI`, reports
+  `index.diagnostic_status: unsupported`, and uses native scan fallback rather
+  than indexed traversal
 * region summaries use `region_records_examined`,
   `region_mapped_records_observed`, and `region_unmapped_records_observed`
   rather than whole-file totals
@@ -215,6 +219,9 @@ Key concepts:
   `raw_records_seen`, and `duplicate_records_suppressed`
 * scan fallback reports `fallback_mode: native_scan_required` and
   `scan_records_limit`
+* adjacent CSI sidecars are detect-only in M12.6: `summary --region <REGION>`
+  preserves `index_derived.kind: CSI`, reports a CSI unsupported fallback note,
+  and uses native scan fallback rather than indexed traversal
 * region-scoped `counts`, `fractions_observed`, `mapq`, `mapping`,
   `anomalies`, and optional `flag_categories` describe only requested
   intervals

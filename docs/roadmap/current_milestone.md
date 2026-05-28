@@ -134,8 +134,11 @@ Current milestone:
   with `tiny.invalid.large_reference.bam`,
   `tiny.invalid.mismatched_reference_count.csi`, and
   `tiny.invalid.fastq_gz.bad_gzi` for BAI, CSI, and FASTQ.GZI failure modes.
-  Later M12 tasks must extend selected-region compatibility, benchmark
-  guardrails, and closeout evidence.
+  M12.6 wires detect-only CSI behavior into read-only region evidence:
+  `check_map --region <REGION>` and `summary --region <REGION>` preserve CSI
+  context in JSON while using native scan fallback, and BAI remains the only
+  index kind used for region traversal. Later M12 tasks must extend
+  selected-region compatibility, benchmark guardrails, and closeout evidence.
 
 ## Completed Backbone
 

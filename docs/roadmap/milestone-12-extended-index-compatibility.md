@@ -98,6 +98,19 @@ without checking in new binary assets yet:
 These fixture reservations must preserve the M12.2 support-level vocabulary
 and the M12.4 index diagnostic vocabulary when materialized.
 
+## M12.6 Read-Only CSI Region Behavior
+
+M12.6 applies the M12.2 detect-only CSI decision to read-only region evidence.
+No CSI traversal is promoted in this slice. Instead, when a CSI header sidecar
+is the available adjacent index:
+
+* `check_map --region` reports scan fallback, preserves `index.kind: CSI`,
+  sets `index.diagnostic_status: unsupported`, and keeps the fallback note
+  explicit;
+* `summary --region` reports scan fallback, keeps `index_derived.kind: CSI`,
+  and names CSI unsupported fallback in `semantic_note`;
+* BAI remains the only index kind used for read-only region traversal.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

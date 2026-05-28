@@ -312,6 +312,11 @@ M12.5 extends planned BAI/CSI/GZI fixture coverage with
 `tiny.invalid.mismatched_reference_count.csi`, and
 `tiny.invalid.fastq_gz.bad_gzi`.
 
+M12.6 applies detect-only CSI behavior to read-only region evidence.
+`check_map --region` and `summary --region` use native scan fallback for CSI
+headers, preserve CSI context in JSON, and continue to reserve indexed region
+traversal for usable non-stale BAI sidecars only.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

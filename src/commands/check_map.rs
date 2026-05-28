@@ -1053,7 +1053,11 @@ mod tests {
     use std::{fs, io::Write, thread, time::Duration};
 
     use crate::{
-        bam::index::{build_bai_index_from_bam, test_support::build_bai_file, write_bai_index},
+        bam::index::{
+            build_bai_index_from_bam,
+            test_support::{build_bai_file, build_csi_header},
+            write_bai_index,
+        },
         formats::bgzf::test_support::{
             build_bam_file_with_header, build_bam_file_with_header_and_records, build_light_record,
             write_temp_file,
@@ -1275,6 +1279,66 @@ mod tests {
         ));
         assert_eq!(region_scope.fallback_mode, Some("native_scan_required"));
         assert_eq!(region_scope.scan_records_limit, Some(10));
+    }
+
+    #[test]
+    fn region_request_with_csi_header_reports_unsupported_scan_fallback() {
+        let bam_path = write_temp_file(
+            "check-map-region-csi-fallback",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 5, "read1", 0),
+                    build_light_record(0, 50, "read2", 0),
+                ],
+            ),
+        );
+        let csi_path = std::path::PathBuf::from(format!("{}.csi", bam_path.to_string_lossy()));
+        fs::write(&csi_path, build_csi_header(1)).expect("csi fixture should be written");
+
+        let payload = run(CheckMapRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            regions: region_values(&["chr1:6-9"]),
+        })
+        .expect("check_map region should scan fallback");
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&csi_path).expect("csi fixture should be removable");
+
+        assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
+        assert!(payload.index.present);
+        assert_eq!(payload.index.kind, Some(crate::bam::index::IndexKind::Csi));
+        assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::Unsupported
+        ));
+        assert!(
+            payload
+                .index
+                .diagnostic_detail
+                .as_deref()
+                .is_some_and(|detail| detail.contains("CSI sidecar is not supported"))
+        );
+        assert_eq!(payload.summary.region_records_examined, Some(1));
+        let region_scope = payload
+            .region_scope
+            .expect("region scope should be reported");
+        assert!(matches!(
+            region_scope.execution,
+            super::RegionExecution::ScanFallback
+        ));
+        assert!(
+            region_scope
+                .notes
+                .iter()
+                .any(|note| note.contains("CSI index detected"))
+        );
     }
 
     #[test]

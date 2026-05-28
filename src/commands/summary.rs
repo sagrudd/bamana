@@ -1158,7 +1158,11 @@ mod tests {
     use std::{fs, io::Write, thread, time::Duration};
 
     use crate::{
-        bam::index::{build_bai_index_from_bam, test_support::build_bai_file, write_bai_index},
+        bam::index::{
+            build_bai_index_from_bam,
+            test_support::{build_bai_file, build_csi_header},
+            write_bai_index,
+        },
         bgzf::{
             BGZF_EOF_MARKER,
             test_support::{
@@ -1593,6 +1597,70 @@ mod tests {
         ));
         assert_eq!(region_scope.fallback_mode, Some("native_scan_required"));
         assert_eq!(region_scope.scan_records_limit, Some(10));
+    }
+
+    #[test]
+    fn region_summary_with_csi_header_reports_unsupported_scan_fallback() {
+        let bam_path = write_temp_file(
+            "summary-region-csi-fallback",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 5, "read1", 0),
+                    build_light_record(0, 50, "read2", 0),
+                ],
+            ),
+        );
+        let csi_path = std::path::PathBuf::from(format!("{}.csi", bam_path.to_string_lossy()));
+        fs::write(&csi_path, build_csi_header(1)).expect("csi fixture should be written");
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:6-9"]),
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+        fs::remove_file(&csi_path).expect("csi fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert!(!evidence.index_used);
+        assert_eq!(
+            payload
+                .index_derived
+                .as_ref()
+                .expect("index context should be present")
+                .kind,
+            Some(crate::bam::index::IndexKind::Csi)
+        );
+        assert_eq!(
+            payload
+                .counts
+                .expect("counts should be present")
+                .records_examined,
+            1
+        );
+        let region_scope = payload
+            .region_scope
+            .expect("region scope should be present");
+        assert!(matches!(
+            region_scope.execution,
+            super::RegionExecution::ScanFallback
+        ));
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("CSI index detected")
+        );
     }
 
     #[test]

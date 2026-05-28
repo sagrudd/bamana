@@ -195,6 +195,9 @@ This order is retained because it matches the dependency chain of the runtime:
   `tiny.invalid.mismatched_reference_count.csi`, and
   `tiny.invalid.fastq_gz.bad_gzi` for BAI, CSI, and FASTQ.GZI compatibility
   failure coverage
+* M12.6 read-only CSI region behavior: `check_map --region <REGION>` and
+  `summary --region <REGION>` preserve CSI context in JSON while using native
+  scan fallback; BAI remains the only index kind used for region traversal
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

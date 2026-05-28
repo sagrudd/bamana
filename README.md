@@ -636,6 +636,12 @@ M12.5 extends fixture reservations for the extended index compatibility suite:
 `tiny.invalid.fastq_gz.bad_gzi` now reserve BAI, CSI, and FASTQ.GZI failure
 coverage before binary assets are materialized.
 
+M12.6 wires detect-only CSI behavior into read-only region evidence:
+`check_map --region` and `summary --region` keep BAI as the only indexed
+traversal path, use native scan fallback for adjacent CSI headers, and preserve
+CSI context in `index.kind`, `index.diagnostic_status`, `index_derived.kind`,
+and fallback notes.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

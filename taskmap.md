@@ -5574,12 +5574,28 @@ Completion evidence:
 
 ### M12.6 Wire Supported CSI Behavior
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * wire any explicitly promoted CSI behavior into read-only region evidence;
 * preserve BAI-first behavior unless M12.2 promotes a different contract.
+
+Acceptance:
+
+* `check_map --region <REGION>` reports adjacent CSI sidecars as unsupported
+  scan fallback while preserving `index.kind: CSI` and
+  `index.diagnostic_status: unsupported`;
+* `summary --region <REGION>` reports adjacent CSI sidecars as unsupported
+  scan fallback while preserving `index_derived.kind: CSI`;
+* BAI remains the only index kind used for read-only region traversal.
+
+Completion evidence:
+
+* added command regression coverage for CSI-header sidecars on read-only
+  region requests;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, Sphinx,
+  and contract coverage to freeze the M12.6 detect-only CSI behavior.
 
 ### M12.7 Update Selected-Region Compatibility
 

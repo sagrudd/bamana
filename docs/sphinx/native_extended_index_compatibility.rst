@@ -96,6 +96,20 @@ binary assets in this slice. The reserved fixture ids are:
 Materialized M12 fixtures must preserve the M12.2 support-level vocabulary and
 the M12.4 diagnostic vocabulary.
 
+Read-Only CSI Region Behavior
+-----------------------------
+
+M12.6 wires the detect-only CSI decision into read-only region evidence without
+promoting CSI traversal. ``check_map --region`` and ``summary --region`` keep
+BAI as the only index kind used for region traversal. When a CSI header sidecar
+is the available adjacent index, both commands use native scan fallback and
+preserve CSI context in the JSON payload:
+
+* ``check_map --region`` reports ``index.kind: CSI`` with
+  ``index.diagnostic_status: unsupported``.
+* ``summary --region`` reports ``index_derived.kind: CSI`` and names CSI
+  unsupported fallback in ``semantic_note``.
+
 Remaining M12 Work
 ------------------
 

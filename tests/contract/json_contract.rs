@@ -2488,6 +2488,54 @@ fn milestone_12_5_extends_index_fixture_plan() {
 }
 
 #[test]
+fn milestone_12_6_wires_detect_only_csi_region_behavior() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for required in [
+        "M12.6",
+        "Read-Only CSI Region Behavior",
+        "detect-only CSI",
+        "check_map --region",
+        "summary --region",
+        "native scan fallback",
+        "index.kind: CSI",
+        "index.diagnostic_status: unsupported",
+        "index_derived.kind: CSI",
+        "BAI remains the only index kind",
+        "usable non-stale BAI",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M12.6 CSI region behavior evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));
