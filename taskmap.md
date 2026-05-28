@@ -5494,22 +5494,55 @@ Completion evidence:
 
 ### M12.3 Define Large-Reference Behavior
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * define BAI reference-length thresholds and CSI large-reference expectations;
 * record precise rejection and deferral wording for unsupported ranges.
 
+Acceptance criteria:
+
+* BAI creation has an explicit maximum reference-length contract;
+* BAM `index` rejects references beyond the BAI coordinate ceiling before
+  writing an output sidecar;
+* CSI remains detect-only and is not described as a large-reference fallback.
+
+Completion evidence:
+
+* exported the BAI 2^29 coordinate ceiling and preflighted BAM BAI creation
+  against reference lengths greater than 536,870,912 bases;
+* added a regression test for large-reference BAI rejection;
+* documented that `index --format csi` remains unimplemented and cannot be
+  used as the M12.3 large-reference replacement.
+
 ### M12.4 Strengthen Index Diagnostics
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * harden stale-index, mismatched-reference, unsupported-index, and malformed
   sidecar diagnostics;
 * keep fallback behavior explicit for every index-aware command.
+
+Acceptance criteria:
+
+* `check_map` exposes machine-readable index diagnostic states;
+* stale, unsupported, malformed, mismatched-reference, incomplete, absent, and
+  disabled index states are distinguishable;
+* public docs state how `check_index`, `check_map`, `summary`, and
+  `select_region` report or preserve fallback causes.
+
+Completion evidence:
+
+* added `diagnostic_status` and optional `diagnostic_detail` to the
+  `check_map.index` JSON contract;
+* updated the governed `check_map` schema and success example;
+* added regression coverage for stale, absent, incomplete,
+  mismatched-reference, and disabled `check_map` diagnostics;
+* documented that `summary` and `select_region` keep explicit fallback notes
+  while later M12 work may promote equivalent machine-readable fields.
 
 ### M12.5 Extend Index Fixtures
 

@@ -852,8 +852,10 @@ Creates a format-appropriate sidecar index for supported inputs. BAM BAI input
 validates plausibility, rejects header-declared unsupported sort orders, builds
 native BAI bins/chunks/linear windows from scanner virtual offsets, and
 publishes the sidecar through a temporary path and final rename. Existing output
-paths are refused unless `--force` is supplied. BAM CSI writing remains
-explicitly unimplemented in the current slice. `FASTQ.GZ` input writes a binary
+paths are refused unless `--force` is supplied. BAM BAI creation rejects
+references longer than 536,870,912 bases before writing output. BAM CSI writing
+remains explicitly unimplemented in the current slice and is not a
+large-reference fallback. `FASTQ.GZ` input writes a binary
 `FASTQ.GZI` sidecar by scanning the gzip stream once and sampling checkpoint
 boundaries at approximately 0.1% compressed-offset intervals by default, pinned
 to completed FASTQ record boundaries rather than arbitrary byte positions. The

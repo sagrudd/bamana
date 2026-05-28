@@ -174,11 +174,20 @@ Key concepts:
 * `requested_index_kind` records BAI, CSI, or GZI intent
 * `output_index.created` is true only when a sidecar was actually written
 * BAM BAI writing creates native BAI sidecars for coordinate-sorted BAM input;
-  CSI writing is still unimplemented and keeps `created = false`
+  references longer than 536,870,912 bases are rejected before output is
+  written; CSI writing is still unimplemented and keeps `created = false`
 * FASTQ.GZ indexing writes FASTQ.GZI sidecars with sampled, record-boundary
   checkpoint metadata for enumeration, explode planning, and consume planning
 * `output_index.overwritten` reports whether `--force` replaced an existing
   sidecar
+
+## Index Diagnostics
+
+`check_map.index.diagnostic_status` distinguishes index states that previously
+only appeared in prose fallback notes: `usable`, `absent`, `stale`,
+`unsupported`, `malformed`, `mismatched_reference`, `incomplete`, `disabled`,
+and `not_checked`. `diagnostic_detail` carries the parser or policy detail
+when a selected sidecar is unusable.
 
 ## `summary`
 

@@ -18,7 +18,7 @@ const CSI_MAGIC: &[u8; 4] = b"CSI\x01";
 const BAI_METADATA_BIN: u32 = 37_450;
 const BAI_MAX_REGULAR_BIN: u32 = BAI_METADATA_BIN - 1;
 const BAI_LINEAR_WINDOW_SHIFT: u32 = 14;
-const BAI_MAX_POSITION: u32 = 1 << 29;
+pub const BAI_MAX_POSITION: u32 = 1 << 29;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum IndexKind {

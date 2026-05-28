@@ -297,6 +297,16 @@ the selected index and every discovered candidate: BAI is `read_write`, CSI is
 `check_map`, `summary`, and `select_region`; `index --format csi` remains an
 explicit BAM `unimplemented` path.
 
+M12.3 freezes BAI large-reference behavior: `bamana index --format bai`
+rejects any BAM reference longer than 536,870,912 bases before writing an
+output sidecar. CSI remains detect-only and is not a large-reference fallback.
+
+M12.4 hardens index diagnostics. `check_map.index` reports
+`diagnostic_status` and optional `diagnostic_detail` for usable, absent, stale,
+unsupported, malformed, mismatched-reference, incomplete, and disabled index
+states. `summary` and `select_region` keep explicit fallback causes in their
+existing notes and region-scope fields.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

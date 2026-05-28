@@ -620,6 +620,16 @@ unknown sidecars are `unsupported`, and no sidecar is `absent`. CSI is still
 not used by `check_map`, `summary`, or `select_region`, and `index --format
 csi` still returns an explicit unimplemented response for BAM input.
 
+M12.3 freezes large-reference thresholds for BAI behavior: `bamana index --format bai`
+rejects any BAM reference longer than 536,870,912 bases before writing an
+output sidecar. CSI remains detect-only and is not a large-reference fallback.
+
+M12.4 hardens index diagnostics. `check_map.index` now reports
+`diagnostic_status` and optional `diagnostic_detail` so stale, unsupported,
+malformed, mismatched-reference, incomplete, absent, disabled, and usable index
+states are machine-readable. `summary` and `select_region` continue to preserve
+explicit fallback reasons in their existing notes and region-scope fields.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

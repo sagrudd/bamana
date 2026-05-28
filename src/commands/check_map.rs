@@ -94,6 +94,41 @@ pub struct IndexInfo {
     pub present: bool,
     pub kind: Option<IndexKind>,
     pub used: bool,
+    pub diagnostic_status: IndexDiagnosticStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostic_detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IndexDiagnosticStatus {
+    NotChecked,
+    Absent,
+    Usable,
+    Stale,
+    Unsupported,
+    Malformed,
+    MismatchedReference,
+    Incomplete,
+    Disabled,
+}
+
+impl IndexInfo {
+    fn new(
+        present: bool,
+        kind: Option<IndexKind>,
+        used: bool,
+        diagnostic_status: IndexDiagnosticStatus,
+        diagnostic_detail: Option<String>,
+    ) -> Self {
+        Self {
+            present,
+            kind,
+            used,
+            diagnostic_status,
+            diagnostic_detail,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -199,11 +234,13 @@ pub fn run(request: CheckMapRequest) -> Result<CheckMapPayload, AppError> {
         attempt_index_summary(&request.bam, references_defined)?
     } else {
         (
-            IndexInfo {
-                present: false,
-                kind: None,
-                used: false,
-            },
+            IndexInfo::new(
+                false,
+                None,
+                false,
+                IndexDiagnosticStatus::Disabled,
+                Some("Index preference was disabled by request.".to_string()),
+            ),
             Some("Index preference was disabled; mapping assessment used scan mode.".to_string()),
             None,
         )
@@ -309,25 +346,35 @@ fn region_fallback_index_info(
 ) -> Result<(IndexInfo, Option<String>), AppError> {
     if !request.prefer_index {
         return Ok((
-            IndexInfo {
-                present: false,
-                kind: None,
-                used: false,
-            },
+            IndexInfo::new(
+                false,
+                None,
+                false,
+                IndexDiagnosticStatus::Disabled,
+                Some("Index preference was disabled for region-scoped check_map.".to_string()),
+            ),
             Some("Index preference was disabled for region-scoped check_map.".to_string()),
         ));
     }
 
     match resolve_index_for_bam(&request.bam) {
         IndexResolution::Present(resolved) => {
-            let index_info = IndexInfo {
-                present: true,
-                kind: Some(resolved.kind),
-                used: false,
-            };
+            let index_info = IndexInfo::new(
+                true,
+                Some(resolved.kind),
+                false,
+                IndexDiagnosticStatus::NotChecked,
+                None,
+            );
             if bam_newer_than_index(&request.bam, &resolved.path) == Some(true) {
                 return Ok((
-                    index_info,
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        IndexDiagnosticStatus::Stale,
+                        Some("Selected BAI sidecar is older than the BAM.".to_string()),
+                    ),
                     Some(
                         "BAI index was present but timestamp-stale for region traversal."
                             .to_string(),
@@ -344,7 +391,13 @@ fn region_fallback_index_info(
                 )),
                 Err(AppError::UnsupportedIndex { detail, .. })
                 | Err(AppError::InvalidIndex { detail, .. }) => Ok((
-                    index_info,
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        classify_invalid_index_detail(&detail),
+                        Some(detail.clone()),
+                    ),
                     Some(format!(
                         "BAI index was present but unusable for region traversal: {detail}"
                     )),
@@ -353,22 +406,23 @@ fn region_fallback_index_info(
             }
         }
         IndexResolution::Unsupported(resolved) => Ok((
-            IndexInfo {
-                present: true,
-                kind: Some(resolved.kind),
-                used: false,
-            },
+            IndexInfo::new(
+                true,
+                Some(resolved.kind),
+                false,
+                IndexDiagnosticStatus::Unsupported,
+                Some(format!(
+                    "{} sidecar is not supported for check_map indexed evidence.",
+                    index_kind_label(resolved.kind)
+                )),
+            ),
             Some(format!(
                 "{} index detected, but it is not usable for region traversal.",
                 index_kind_label(resolved.kind)
             )),
         )),
         IndexResolution::NotFound => Ok((
-            IndexInfo {
-                present: false,
-                kind: None,
-                used: false,
-            },
+            IndexInfo::new(false, None, false, IndexDiagnosticStatus::Absent, None),
             Some("No usable BAM index was found for region traversal.".to_string()),
         )),
     }
@@ -407,11 +461,7 @@ fn attempt_region_index_payload(
 
     Ok(Some(build_region_payload(
         header,
-        IndexInfo {
-            present: true,
-            kind: Some(resolved.kind),
-            used: true,
-        },
+        IndexInfo::new(true, Some(resolved.kind), true, IndexDiagnosticStatus::Usable, None),
         scan_state,
         RegionScopeOptions {
             regions: regions.clone(),
@@ -436,11 +486,13 @@ fn attempt_index_summary(
         IndexResolution::Present(resolved) => {
             if bam_newer_than_index(bam_path, &resolved.path) == Some(true) {
                 return Ok((
-                    IndexInfo {
-                        present: true,
-                        kind: Some(resolved.kind),
-                        used: false,
-                    },
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        IndexDiagnosticStatus::Stale,
+                        Some("Selected BAI sidecar is older than the BAM.".to_string()),
+                    ),
                     Some(
                         "BAI index was present but timestamp-stale; falling back to alignment scan."
                             .to_string(),
@@ -451,20 +503,24 @@ fn attempt_index_summary(
 
             match parse_bai(&resolved.path, references_defined) {
                 Ok(summary) if summary.reference_summaries.iter().all(Option::is_some) => Ok((
-                    IndexInfo {
-                        present: true,
-                        kind: Some(resolved.kind),
-                        used: true,
-                    },
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        true,
+                        IndexDiagnosticStatus::Usable,
+                        None,
+                    ),
                     Some("Discovered BAI sidecar passed structural validation and supplied complete per-reference mapped/unmapped metadata.".to_string()),
                     Some(summary),
                 )),
                 Ok(_) => Ok((
-                    IndexInfo {
-                        present: true,
-                        kind: Some(resolved.kind),
-                        used: false,
-                    },
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        IndexDiagnosticStatus::Incomplete,
+                        Some("BAI mapped/unmapped metadata was incomplete.".to_string()),
+                    ),
                     Some(
                         "BAI index was present, but per-reference mapped/unmapped metadata was incomplete; falling back to alignment scan."
                             .to_string(),
@@ -472,20 +528,24 @@ fn attempt_index_summary(
                     None,
                 )),
                 Err(AppError::UnsupportedIndex { detail, .. }) => Ok((
-                    IndexInfo {
-                        present: true,
-                        kind: Some(resolved.kind),
-                        used: false,
-                    },
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        IndexDiagnosticStatus::Unsupported,
+                        Some(detail.clone()),
+                    ),
                     Some(format!("{detail} Falling back to alignment scan.")),
                     None,
                 )),
                 Err(AppError::InvalidIndex { detail, .. }) => Ok((
-                    IndexInfo {
-                        present: true,
-                        kind: Some(resolved.kind),
-                        used: false,
-                    },
+                    IndexInfo::new(
+                        true,
+                        Some(resolved.kind),
+                        false,
+                        classify_invalid_index_detail(&detail),
+                        Some(detail.clone()),
+                    ),
                     Some(format!(
                         "BAI index was present but unusable: {detail} Falling back to alignment scan."
                     )),
@@ -495,11 +555,16 @@ fn attempt_index_summary(
             }
         }
         IndexResolution::Unsupported(resolved) => Ok((
-            IndexInfo {
-                present: true,
-                kind: Some(resolved.kind),
-                used: false,
-            },
+            IndexInfo::new(
+                true,
+                Some(resolved.kind),
+                false,
+                IndexDiagnosticStatus::Unsupported,
+                Some(format!(
+                    "{} sidecar is not supported for check_map indexed evidence.",
+                    index_kind_label(resolved.kind)
+                )),
+            ),
             Some(format!(
                 "{} index detected, but it is not usable for check_map index-derived evidence in this slice; falling back to alignment scan.",
                 index_kind_label(resolved.kind)
@@ -507,11 +572,7 @@ fn attempt_index_summary(
             None,
         )),
         IndexResolution::NotFound => Ok((
-            IndexInfo {
-                present: false,
-                kind: None,
-                used: false,
-            },
+            IndexInfo::new(false, None, false, IndexDiagnosticStatus::Absent, None),
             None,
             None,
         )),
@@ -524,6 +585,14 @@ fn index_kind_label(kind: IndexKind) -> &'static str {
         IndexKind::Csi => "CSI",
         IndexKind::Gzi => "GZI",
         IndexKind::Unknown => "UNKNOWN",
+    }
+}
+
+fn classify_invalid_index_detail(detail: &str) -> IndexDiagnosticStatus {
+    if detail.contains("does not match BAM header reference count") {
+        IndexDiagnosticStatus::MismatchedReference
+    } else {
+        IndexDiagnosticStatus::Malformed
     }
 }
 
@@ -991,7 +1060,7 @@ mod tests {
         },
     };
 
-    use super::{CheckMapRequest, EvidenceSource, MappingStatus, run};
+    use super::{CheckMapRequest, EvidenceSource, IndexDiagnosticStatus, MappingStatus, run};
 
     fn region_values(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| (*value).to_string()).collect()
@@ -1295,6 +1364,10 @@ mod tests {
         assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert!(payload.index.present);
         assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::Stale
+        ));
         assert_eq!(payload.summary.records_examined, Some(1));
         assert!(payload.semantic_note.contains("timestamp-stale"));
     }
@@ -1376,6 +1449,10 @@ mod tests {
         assert!(matches!(payload.mapping_status, MappingStatus::Mapped));
         assert!(!payload.index.present);
         assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::Absent
+        ));
         assert_eq!(payload.summary.records_examined, Some(2));
         assert_eq!(payload.summary.mapped_records_observed, Some(1));
         assert_eq!(payload.summary.unmapped_records_observed, Some(1));
@@ -1419,6 +1496,10 @@ mod tests {
         assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert!(payload.index.present);
         assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::Incomplete
+        ));
         assert_eq!(payload.summary.records_examined, Some(2));
         assert_eq!(payload.summary.mapped_records_observed, Some(1));
         assert!(
@@ -1460,6 +1541,17 @@ mod tests {
         assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert!(payload.index.present);
         assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::MismatchedReference
+        ));
+        assert!(
+            payload
+                .index
+                .diagnostic_detail
+                .as_deref()
+                .is_some_and(|detail| detail.contains("does not match BAM header"))
+        );
         assert_eq!(payload.summary.records_examined, Some(1));
         assert!(
             payload
@@ -1498,6 +1590,10 @@ mod tests {
         assert!(matches!(payload.evidence_source, EvidenceSource::Scan));
         assert!(!payload.index.present);
         assert!(!payload.index.used);
+        assert!(matches!(
+            payload.index.diagnostic_status,
+            IndexDiagnosticStatus::Disabled
+        ));
         assert_eq!(payload.summary.mapped_records_observed, Some(1));
         assert_eq!(payload.summary.total_mapped_reads, None);
         assert!(

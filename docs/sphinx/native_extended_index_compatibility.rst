@@ -57,12 +57,34 @@ fallback when CSI is the selected adjacent sidecar. M12.2 does not implement
 CSI bin parsing, chunk planning, random-access fetch, CSI writing, or
 large-reference promotion.
 
+Large-Reference Boundary
+------------------------
+
+M12.3 freezes BAI large-reference behavior at the BAI coordinate ceiling:
+536,870,912 bases, or 2^29. ``bamana index --format bai`` rejects BAM input
+when any reference length is greater than that threshold and fails before
+writing an output sidecar. CSI remains detect-only, so ``index --format csi``
+is not a large-reference fallback in this slice.
+
+Diagnostic Hardening
+--------------------
+
+M12.4 makes ``check_map`` fallback diagnostics machine-readable. The
+``index`` object reports ``diagnostic_status`` and optional
+``diagnostic_detail``. The status values are ``usable``, ``absent``,
+``stale``, ``unsupported``, ``malformed``, ``mismatched_reference``,
+``incomplete``, ``disabled``, and ``not_checked``.
+
+``summary`` and ``select_region`` keep their existing fallback notes and
+region-scope fields in this slice. Those notes must continue to name stale,
+unsupported, malformed, mismatched-reference, missing-index, and disabled-index
+fallback causes explicitly when those states are observed.
+
 Remaining M12 Work
 ------------------
 
-Later M12 tasks must define large-reference thresholds,
-stale/mismatched/unsupported-index diagnostics, fixtures, selected-region
-compatibility behavior, benchmark guardrails, and closeout evidence.
+Later M12 tasks must extend fixtures, selected-region compatibility behavior,
+benchmark guardrails, and closeout evidence.
 
 Non-Goals
 ---------

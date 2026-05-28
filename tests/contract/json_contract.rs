@@ -2292,6 +2292,89 @@ fn milestone_12_2_freezes_csi_support_levels() {
 }
 
 #[test]
+fn milestone_12_3_and_12_4_freeze_large_reference_and_diagnostics() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_docs = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let check_map_schema = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("jsonschema")
+            .join("check_map.schema.json"),
+    );
+    let check_map_example = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("examples")
+            .join("check_map.success.json"),
+    );
+
+    for required in [
+        "M12.3",
+        "M12.4",
+        "536,870,912",
+        "large-reference",
+        "CSI remains detect-only",
+        "not a large-reference fallback",
+        "diagnostic_status",
+        "diagnostic_detail",
+        "usable",
+        "absent",
+        "stale",
+        "unsupported",
+        "malformed",
+        "mismatched_reference",
+        "incomplete",
+        "disabled",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_docs.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required)
+                || check_map_schema.contains(required)
+                || check_map_example.contains(required),
+            "M12.3/M12.4 contract evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        check_map_schema.contains("\"diagnostic_status\"")
+            && check_map_schema.contains("\"mismatched_reference\"")
+            && check_map_schema.contains("\"diagnostic_detail\""),
+        "check_map schema does not govern machine-readable index diagnostics"
+    );
+    assert!(
+        check_map_example.contains("\"diagnostic_status\": \"usable\""),
+        "check_map success example does not include the usable diagnostic"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

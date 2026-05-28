@@ -186,6 +186,11 @@ This order is retained because it matches the dependency chain of the runtime:
   `planning_sidecar`, unknown sidecars as `unsupported`, and absent sidecars as
   `absent`; CSI is not promoted to read traversal or writing in this milestone
   slice
+* M12.3/M12.4 compatibility hardening: BAI creation rejects references longer
+  than 536,870,912 bases before writing output, CSI remains detect-only rather
+  than a large-reference fallback, and `check_map.index` reports
+  machine-readable diagnostic states for usable, absent, stale, unsupported,
+  malformed, mismatched-reference, incomplete, and disabled index conditions
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

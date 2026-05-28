@@ -9,11 +9,26 @@
     "index": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["present", "kind", "used"],
+      "required": ["present", "kind", "used", "diagnostic_status"],
       "properties": {
         "present": { "type": "boolean" },
         "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
-        "used": { "type": "boolean" }
+        "used": { "type": "boolean" },
+        "diagnostic_status": {
+          "type": "string",
+          "enum": [
+            "not_checked",
+            "absent",
+            "usable",
+            "stale",
+            "unsupported",
+            "malformed",
+            "mismatched_reference",
+            "incomplete",
+            "disabled"
+          ]
+        },
+        "diagnostic_detail": { "type": "string" }
       }
     },
     "reference": {

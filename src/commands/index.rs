@@ -8,7 +8,10 @@ use serde::Serialize;
 use crate::{
     bam::{
         header::parse_bam_header,
-        index::{IndexKind, build_bai_index_from_bam, default_index_output_path, write_bai_index},
+        index::{
+            BAI_MAX_POSITION, IndexKind, build_bai_index_from_bam, default_index_output_path,
+            write_bai_index,
+        },
     },
     cli::IndexFormatArg,
     error::AppError,
@@ -199,6 +202,26 @@ fn handle_bam_index(
         }
     }
 
+    if let Some(reference) = header
+        .header
+        .references
+        .iter()
+        .find(|reference| reference.length > BAI_MAX_POSITION)
+    {
+        return CommandResponse::failure_with_data(
+            "index",
+            Some(request.input.as_path()),
+            Some(payload),
+            AppError::InvalidIndex {
+                path: request.input.clone(),
+                detail: format!(
+                    "BAI supports reference lengths up to {BAI_MAX_POSITION} bases; reference {} has length {}. CSI remains detect-only and cannot be used as a large-reference replacement in this slice.",
+                    reference.name, reference.length
+                ),
+            },
+        );
+    }
+
     let temp_path = temporary_output_path(output_path);
     remove_stale_temp(&temp_path);
 
@@ -336,7 +359,7 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
 
     use crate::{
-        bam::index::parse_bai,
+        bam::index::{BAI_MAX_POSITION, parse_bai},
         bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -473,5 +496,35 @@ mod tests {
         assert!(!response.ok);
         let error = response.error.expect("error should exist");
         assert_eq!(error.code, "unsupported_index");
+    }
+
+    #[test]
+    fn rejects_bai_creation_for_reference_beyond_bai_coordinate_limit() {
+        let large_length = BAI_MAX_POSITION + 1;
+        let bytes = build_bam_file_with_header_and_records(
+            &format!("@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chrLarge\tLN:{large_length}\n"),
+            &[("chrLarge", large_length)],
+            &[],
+        );
+        let input = write_temp_file("index-large-reference", "bam", &bytes);
+        let output = PathBuf::from(format!("{}.bai", input.to_string_lossy()));
+
+        let response = run(IndexRequest {
+            input: input.clone(),
+            out: None,
+            force: false,
+            format: Some(IndexFormatArg::Bai),
+        });
+        fs::remove_file(input).expect("fixture should remove");
+
+        assert!(!response.ok);
+        assert!(!output.exists());
+        let error = response.error.expect("error should exist");
+        assert_eq!(error.code, "invalid_index");
+        assert!(
+            error
+                .detail
+                .is_some_and(|detail| detail.contains("BAI supports reference lengths"))
+        );
     }
 }

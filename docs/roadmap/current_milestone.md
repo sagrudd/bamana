@@ -124,10 +124,14 @@ Current milestone:
   `planning_sidecar`, unknown sidecars are `unsupported`, and absent sidecars
   are `absent`. `index --format csi` remains unimplemented, while
   `check_map`, `summary`, and `select_region` continue to treat CSI as native
-  scan fallback rather than indexed traversal. Later M12 tasks must define
-  large-reference thresholds, stale/mismatched and unsupported-index
-  diagnostics, fixtures, selected-region compatibility, benchmark guardrails,
-  and closeout evidence.
+  scan fallback rather than indexed traversal. M12.3 freezes large-reference
+  thresholds: BAM BAI creation rejects references longer than 536,870,912 bases
+  before writing output, and CSI remains detect-only rather than a
+  large-reference fallback. M12.4 hardens diagnostics by adding
+  `check_map.index.diagnostic_status` and optional `diagnostic_detail` for
+  usable, absent, stale, unsupported, malformed, mismatched-reference,
+  incomplete, and disabled index states. Later M12 tasks must extend fixtures,
+  selected-region compatibility, benchmark guardrails, and closeout evidence.
 
 ## Completed Backbone
 

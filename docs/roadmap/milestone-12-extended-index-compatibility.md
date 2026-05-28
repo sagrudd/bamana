@@ -62,6 +62,26 @@ implementation accident:
 * M12.2 does not add CSI bin parsing, CSI chunk planning, CSI random-access
   fetch, CSI writing, or large-reference promotion.
 
+## M12.3 Large-Reference Behavior
+
+M12.3 freezes the BAI coordinate ceiling at 2^29 bases. BAM `index` rejects BAI
+creation when any reference length is greater than 536,870,912 bases and
+returns `invalid_index` before writing an output sidecar. References at or
+below the threshold remain eligible for BAI creation, subject to the existing
+coordinate-sort and record-coordinate checks. CSI remains detect-only, so
+`index --format csi` is still not a large-reference replacement in this slice.
+
+## M12.4 Index Diagnostic Hardening
+
+M12.4 adds machine-readable `check_map.index.diagnostic_status` and optional
+`diagnostic_detail` fields so fallback causes are explicit rather than only
+embedded in prose. The statuses distinguish `usable`, `absent`, `stale`,
+`unsupported`, `malformed`, `mismatched_reference`, `incomplete`, `disabled`,
+and `not_checked`. `summary` and `select_region` retain their existing
+fallback-note fields for this slice, and the M12.4 docs require those notes to
+continue naming stale, unsupported, malformed, mismatched-reference, and
+missing-index fallback causes.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

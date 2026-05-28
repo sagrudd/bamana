@@ -10,7 +10,8 @@
     "index": {
       "present": true,
       "kind": "BAI",
-      "used": true
+      "used": true,
+      "diagnostic_status": "usable"
     },
     "references": [
       {
