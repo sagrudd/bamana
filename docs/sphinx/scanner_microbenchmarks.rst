@@ -43,8 +43,9 @@ The JSON result contains:
 * optional ``summary``, ``check_sort``, ``check_map``, ``validate``,
   ``check_tag``, ``subsample_bam``, ``sort``, ``merge``, ``checksum``,
   ``explode``, ``consume``, ``index_bam``, ``check_index``,
-  ``check_map_indexed``, ``summary_indexed``, ``inspect_duplication``,
-  ``deduplicate``, and ``forensic_inspect`` command timings when
+  ``check_map_indexed``, ``summary_indexed``, ``select_region_scan_fallback``,
+  ``select_region_indexed_output``, ``inspect_duplication``, ``deduplicate``,
+  and ``forensic_inspect`` command timings when
   ``--bamana-bin`` is supplied
 
 The scanner timings and command timings answer different questions. Scanner
@@ -156,11 +157,28 @@ prove that ``check_map --region <REGION>`` and ``summary --region <REGION>``
 can parse a region, fall back to native scan evidence, filter records by the
 requested interval, and emit region-scoped JSON through the benchmark hook.
 
+``select_region_scan_fallback`` is a command-level M11 selected-output timing
+before the generated BAI sidecar exists. It proves that ``select_region`` can
+parse a region, fall back to native scan traversal, filter selected records,
+preserve retained raw BAM record bytes, write BGZF BAM file output through the
+temporary-output path, append header provenance, and emit governed JSON through
+the benchmark hook.
+
 ``check_map_region_indexed`` and ``summary_region_indexed`` are command-level
 M10 indexed-region timings after ``index_bam`` has created a BAI sidecar. They
 exercise index lookup, BAI chunk planning, random-access traversal, region
 filtering, process startup, and JSON emission for the promoted read-only
 region evidence surfaces. They do not claim selected-record output, biological
+interpretation, broad comparator parity, native CRAM indexed queries, or
+exhaustive validation of every index offset.
+
+``select_region_indexed_output`` is a command-level M11 selected-output timing
+after ``index_bam`` has created a BAI sidecar. It exercises region parsing, BAI
+chunk planning, random-access traversal, selected-record filtering, duplicate
+suppression, raw-record preservation, BGZF BAM output writing, temporary-output
+finalization, header provenance, index-invalidation reporting, process startup,
+and JSON emission. It does not claim binary stdout output, public
+``--region-file`` behavior, replacement output-index creation, biological
 interpretation, broad comparator parity, native CRAM indexed queries, or
 exhaustive validation of every index offset.
 
@@ -194,6 +212,15 @@ BAI chunk planning, random-access traversal, region filtering, command startup,
 and JSON emission. They are smoke timings over deterministic synthetic BAM
 fixtures, not comparator-parity claims, native CRAM indexed-query support, or
 biological interpretation.
+
+Milestone 11 selected-region output timings distinguish scan fallback, BAI
+chunk planning, random-access traversal, selected-record filtering, duplicate
+suppression, raw-record preservation, BGZF BAM file writing, temporary-output
+finalization, header provenance, index-invalidation reporting, command startup,
+and JSON emission. They are smoke timings over deterministic synthetic BAM
+fixtures, not stdout-output evidence, public region-file evidence,
+replacement output-index evidence, comparator-parity claims, native CRAM
+indexed-query support, or biological interpretation.
 
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived

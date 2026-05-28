@@ -5351,7 +5351,7 @@ Completion evidence:
 
 ### M11.9 Add Dependency And Benchmark Guardrails
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -5359,6 +5359,34 @@ Tasks:
   usage outside documented CRAM compatibility;
 * add command-level benchmark or smoke timing rows;
 * document benchmark interpretation limits.
+
+Acceptance criteria:
+
+* dependency-boundary tests explicitly protect the selected-region scan
+  fallback, indexed output, and header/index-invalidation paths;
+* `scanner_microbench --bamana-bin` emits governed smoke timing rows for
+  selected-region scan fallback and indexed selected-output execution;
+* benchmark schema and result documentation include those timing rows;
+* docs distinguish scan fallback, BAI chunk planning, random-access traversal,
+  selected-record filtering, duplicate suppression, raw-record preservation,
+  BGZF BAM file writing, temporary-output finalization, header provenance,
+  index-invalidation reporting, command startup, and JSON emission without
+  claiming stdout-output evidence, public region-file evidence, replacement
+  output-index evidence, comparator parity, native CRAM indexed queries, or
+  biological interpretation.
+
+Completion evidence:
+
+* added M11 dependency-boundary coverage for
+  `select_region_scan_fallback_output`, `select_region_indexed_output`, and
+  `select_region_header_and_index_invalidation`;
+* added `scanner_microbench --bamana-bin` timing rows
+  `select_region_scan_fallback` and `select_region_indexed_output`;
+* updated `benchmarks/results/scanner_microbench.schema.json` and benchmark
+  result docs for the new rows;
+* updated README, CLI docs, roadmap docs, Sphinx benchmark docs, Sphinx M11
+  technical notes, and this task map with interpretation limits;
+* added contract coverage for the M11.9 dependency and benchmark guardrails.
 
 ### M11.10 Close Milestone 11
 

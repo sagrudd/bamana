@@ -332,6 +332,40 @@ The M11.8 schema governs the current file-output behavior only:
 index creation, and broader comparator parity remain outside the current
 schema until later tasks promote them.
 
+## M11.9 Dependency And Benchmark Guardrails
+
+M11.9 protects selected-region output hot paths from dependency drift and adds
+command-level smoke timings for the current file-output slice.
+
+The dependency guardrail explicitly names:
+
+* `select_region_scan_fallback_output`;
+* `select_region_indexed_output`;
+* `select_region_header_and_index_invalidation`.
+
+Those paths cover the command wrapper, region parser, scan fallback, BAI chunk
+planning, random-access traversal, selected-record filtering, duplicate
+suppression, raw-record preservation, BGZF BAM file writing, temporary-output
+finalization, header provenance, and index-invalidation reporting. Production
+direct `noodles` imports remain limited to documented CRAM compatibility
+paths.
+
+`scanner_microbench --bamana-bin` now emits two M11 timing rows for
+`select_region --bam <input.bam>`:
+
+* `select_region_scan_fallback`, before the generated BAI sidecar exists;
+* `select_region_indexed_output`, after `index_bam` has created the BAI
+  sidecar.
+
+These are smoke timings over deterministic synthetic BAM fixtures. They
+distinguish scan fallback, BAI chunk planning, random-access traversal,
+selected-record filtering, duplicate suppression, raw-record preservation,
+BGZF BAM file writing, temporary-output finalization, header provenance,
+index-invalidation reporting, command startup, and JSON emission. They do not
+claim stdout-output evidence, public region-file evidence, replacement
+output-index evidence, comparator-parity claims, native CRAM indexed-query
+support, biological interpretation, or exhaustive index-offset validation.
+
 ## Ten-Task Outline
 
 1. M11.1 activate scope and freeze the selection command decision.

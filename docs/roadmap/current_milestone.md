@@ -78,6 +78,17 @@ Current milestone:
   M11.8 adds the governed schema, canonical success/failure examples,
   JSON-output documentation, CLI contract text, and fixture-plan reservations
   for the implemented `select_region` file-output surface.
+  M11.9 adds dependency and benchmark guardrails: selected-region output hot
+  paths remain protected from direct production `noodles` imports, and
+  `scanner_microbench --bamana-bin` emits `select_region_scan_fallback` and
+  `select_region_indexed_output` smoke timings that distinguish scan fallback,
+  BAI chunk planning, random-access traversal, selected-record filtering,
+  duplicate suppression, raw-record preservation, BGZF BAM file writing,
+  temporary-output finalization, header provenance, index-invalidation
+  reporting, command startup, and JSON emission without claiming
+  stdout-output evidence, public region-file evidence, replacement
+  output-index evidence, comparator-parity claims, native CRAM indexed-query
+  support, or biological interpretation.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

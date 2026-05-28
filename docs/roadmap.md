@@ -158,6 +158,12 @@ This order is retained because it matches the dependency chain of the runtime:
 * M11.8 governed contract artifacts: `select_region` now has a JSON schema,
   canonical success/failure examples, JSON-output documentation, CLI contract
   text, and fixture-plan reservations for the implemented file-output surface
+* M11.9 dependency and benchmark guardrails: selected-region output hot paths
+  stay protected from direct production `noodles` imports, and
+  `scanner_microbench --bamana-bin` emits `select_region_scan_fallback` and
+  `select_region_indexed_output` smoke timings with interpretation limits for
+  stdout output, public region files, replacement output indexes, comparator
+  parity, native CRAM indexed queries, and biological interpretation
 
 ### Milestone 12: Extended Index Compatibility
 

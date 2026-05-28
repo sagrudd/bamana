@@ -170,6 +170,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             let merge_output = workdir.join("scanner-microbench-merge-out.bam");
             let explode_output_dir = workdir.join("scanner-microbench-explode-out");
             let consume_output = workdir.join("scanner-microbench-consume-out.bam");
+            let select_region_scan_output =
+                workdir.join("scanner-microbench-select-region-scan-out.bam");
+            let select_region_indexed_output =
+                workdir.join("scanner-microbench-select-region-indexed-out.bam");
             let deduplicate_output = workdir.join("scanner-microbench-deduplicate-out.bam");
             let bam_index_output = PathBuf::from(format!("{}.bai", fixture.to_string_lossy()));
             let _ = fs::remove_file(&bam_index_output);
@@ -342,6 +346,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     args.iterations,
                 )?,
                 measure_command(
+                    "select_region_scan_fallback",
+                    bamana_bin,
+                    &[
+                        "select_region",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--out",
+                        fixture_arg(&select_region_scan_output),
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
                     "index_bam",
                     bamana_bin,
                     &[
@@ -417,6 +436,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     args.iterations,
                 )?,
                 measure_command(
+                    "select_region_indexed_output",
+                    bamana_bin,
+                    &[
+                        "select_region",
+                        "--bam",
+                        fixture_arg(&fixture),
+                        "--region",
+                        "chr000:1-1000",
+                        "--out",
+                        fixture_arg(&select_region_indexed_output),
+                        "--force",
+                    ],
+                    args.iterations,
+                )?,
+                measure_command(
                     "inspect_duplication",
                     bamana_bin,
                     &[
@@ -481,11 +515,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "Selective field extraction measures scanner traversal plus core field, read-name, sequence-length, and selected aux-tag access."
             .to_string(),
-        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, region-aware check_map scan fallback, region-aware summary scan fallback, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, indexed-region check_map traversal, indexed-region summary traversal, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
+        "Command timings include summary, check_sort, check_map, validate, check_tag, BAM subsample dry-run, sort with checksum verification, merge with checksum verification, checksum all-domain hashing, BAM explode, BAM consume, region-aware check_map scan fallback, region-aware summary scan fallback, selected-region scan-fallback output, BAM index construction, check_index validation, indexed check_map evidence, indexed summary evidence, indexed-region check_map traversal, indexed-region summary traversal, indexed select_region output, inspect_duplication, deduplicate dry-run, and forensic_inspect when --bamana-bin is supplied; they include process startup and JSON emission."
             .to_string(),
         "Scanner command timings are smoke timings over deterministic synthetic BAM input; they are not comparator parity claims against other tools."
             .to_string(),
-        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, check_map_region_scan_fallback and summary_region_scan_fallback measure region parsing, region filtering, native scan fallback, process startup, and JSON emission before a sidecar exists, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, check_map_region_indexed and summary_region_indexed measure region parsing, BAI chunk planning, random-access traversal, region filtering, process startup, and JSON emission after the sidecar exists, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+        "check_sort uses strict sequential inspection, check_map and summary use full scans before BAM index construction so they exercise scan-derived evidence, check_tag uses full aux traversal for NM, validate uses the default full structural pass, sort uses full-record materialization, in-memory coordinate ordering, native BGZF compression, output finalization, and canonical checksum verification, merge uses two full-record materialization passes, reference dictionary compatibility checks, in-memory coordinate merge, native BGZF compression, output finalization, and canonical checksum verification, checksum uses all checksum domains with header inclusion, NM exclusion, and mapped-only filtering, explode uses scanner-backed BAM contiguous shard planning, original-header preservation, native BGZF shard compression, and multi-output finalization, consume uses scanner-backed BAM alignment ingest normalization, explicit alignment mode and mixed-format policy reporting, native BGZF output compression, and deferred checksum/index reporting, check_map_region_scan_fallback and summary_region_scan_fallback measure region parsing, region filtering, native scan fallback, process startup, and JSON emission before a sidecar exists, select_region_scan_fallback measures region parsing, native scan fallback, selected-record filtering, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, and JSON emission before a sidecar exists, index_bam measures native BAI construction and sidecar finalization, check_index measures BAI structural validation and timestamp compatibility checks, check_map_indexed and summary_indexed measure metadata-backed index evidence after the sidecar exists rather than random-access chunk traversal, check_map_region_indexed and summary_region_indexed measure region parsing, BAI chunk planning, random-access traversal, region filtering, process startup, and JSON emission after the sidecar exists, select_region_indexed_output measures region parsing, BAI chunk planning, random-access traversal, selected-record filtering, duplicate suppression, raw-record preservation, BGZF BAM output writing, temporary-output finalization, header provenance, index-invalidation reporting, and JSON emission after the sidecar exists, inspect_duplication uses a full qname-seq-qual-rg CLI scan, deduplicate uses a full dry-run qname-seq-qual-rg CLI plan, and forensic_inspect uses explicit full-scan provenance scopes."
+            .to_string(),
+        "Selected-region output smoke timings are regression guardrails for the current BGZF BAM file-output slice; they do not measure stdout output, public region-file input, replacement output-index creation, comparator parity, native CRAM indexed queries, or biological interpretation."
             .to_string(),
         "Indexed-region smoke timings distinguish index lookup, BAI chunk planning, random-access traversal, region filtering, scan fallback, command startup, and JSON emission, but they do not claim broad comparator parity, native CRAM indexed queries, biological interpretation, or selected-record output."
             .to_string(),

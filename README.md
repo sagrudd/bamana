@@ -581,6 +581,17 @@ coverage, and fixture-plan reservations for indexed success, scan fallback,
 duplicate/overlap suppression, output-index sidecar collisions, forced sidecar
 removal, and same-path rejection. Binary stdout output and public
 `--region-file` remain deferred.
+M11.9 adds selected-region output guardrails: production direct `noodles`
+imports remain limited to documented CRAM compatibility paths, and
+`scanner_microbench --bamana-bin` now emits `select_region_scan_fallback` and
+`select_region_indexed_output` smoke timings for
+`select_region --bam <input.bam>`. Those rows distinguish scan fallback, BAI
+chunk planning, random-access traversal, selected-record filtering, duplicate
+suppression, raw-record preservation, BGZF BAM file writing, temporary-output
+finalization, header provenance, index-invalidation reporting, command startup,
+and JSON emission without claiming stdout-output evidence, public region-file
+evidence, replacement output-index evidence, comparator-parity claims, native
+CRAM indexed-query support, or biological interpretation.
 
 ## Specification Layer
 

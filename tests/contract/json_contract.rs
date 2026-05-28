@@ -2894,6 +2894,112 @@ fn milestone_11_selection_contract_artifacts_are_governed() {
 }
 
 #[test]
+fn milestone_11_dependency_and_benchmark_guardrails_are_documented() {
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for substrate in [
+        "select_region_scan_fallback_output",
+        "select_region_indexed_output",
+        "select_region_header_and_index_invalidation",
+    ] {
+        assert!(
+            dependency_tests.contains(&format!("\"{substrate}\"")),
+            "M11 dependency guardrails do not explicitly name substrate: {substrate}"
+        );
+    }
+
+    for command in [
+        "select_region_scan_fallback",
+        "select_region_indexed_output",
+    ] {
+        assert!(
+            scanner_source.contains(&format!("\"{command}\""))
+                && scanner_doc.contains(&format!("``{command}``"))
+                && scanner_schema.contains(&format!("\"{command}\""))
+                && benchmark_results.contains(&format!("`{command}`")),
+            "M11 benchmark hooks do not explicitly name command timing row: {command}"
+        );
+    }
+
+    for required in [
+        "select_region --bam <input.bam>",
+        "production direct `noodles` imports remain limited",
+        "scan fallback",
+        "BAI chunk planning",
+        "random-access traversal",
+        "selected-record filtering",
+        "duplicate suppression",
+        "raw-record preservation",
+        "BGZF BAM file writing",
+        "temporary-output finalization",
+        "header provenance",
+        "index-invalidation reporting",
+        "command startup",
+        "JSON emission",
+        "stdout-output evidence",
+        "public region-file evidence",
+        "replacement output-index evidence",
+        "comparator-parity claims",
+        "native CRAM indexed-query support",
+        "biological interpretation",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || scanner_source.contains(required)
+                || scanner_doc.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11 benchmark interpretation notes are missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

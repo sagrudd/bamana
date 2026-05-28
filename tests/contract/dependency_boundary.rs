@@ -335,6 +335,47 @@ const M10_INDEXED_REGION_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M11_SELECTED_REGION_OUTPUT_HOT_PATHS: &[(&str, &[&str])] = &[
+    (
+        "select_region_scan_fallback_output",
+        &[
+            "src/commands/select_region.rs",
+            "src/bam/region.rs",
+            "src/bam/scan.rs",
+            "src/bam/record.rs",
+            "src/bam/write.rs",
+            "src/bgzf/writer.rs",
+            "src/output_safety.rs",
+        ],
+    ),
+    (
+        "select_region_indexed_output",
+        &[
+            "src/commands/select_region.rs",
+            "src/bam/region.rs",
+            "src/bam/region_plan.rs",
+            "src/bam/region_traversal.rs",
+            "src/bam/index.rs",
+            "src/bam/scan.rs",
+            "src/bam/record.rs",
+            "src/bam/write.rs",
+            "src/bgzf/reader.rs",
+            "src/bgzf/virtual_offset.rs",
+            "src/bgzf/writer.rs",
+            "src/output_safety.rs",
+        ],
+    ),
+    (
+        "select_region_header_and_index_invalidation",
+        &[
+            "src/commands/select_region.rs",
+            "src/bam/header.rs",
+            "src/bam/write.rs",
+            "src/output_safety.rs",
+        ],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -682,6 +723,47 @@ fn m10_indexed_region_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M10 indexed-region planning and traversal paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m11_selected_region_output_hot_paths_do_not_import_noodles() {
+    let selected_region_paths: Vec<_> = M11_SELECTED_REGION_OUTPUT_HOT_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        selected_region_paths,
+        [
+            "select_region_scan_fallback_output",
+            "select_region_indexed_output",
+            "select_region_header_and_index_invalidation"
+        ],
+        "M11 dependency boundary must explicitly name selected-region scan fallback, indexed output, and header/index-invalidation paths"
+    );
+
+    let mut violations = Vec::new();
+
+    for (command, paths) in M11_SELECTED_REGION_OUTPUT_HOT_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) {
+                    violations.push(format!("{command}: {relative}:{}: {line}", line_number + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M11 selected-region output hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
         violations.join("\n")
     );
 }
