@@ -78,6 +78,25 @@ assert `output_index.created = true` for BAI output. BAM CSI and unsupported
 failure fixtures must still assert `output_index.created = false`. FASTQ.GZI
 success fixtures may also assert `output_index.created = true`.
 
+M12.5 extends the index fixture taxonomy without materializing the binary
+assets yet:
+
+* large-reference BAI rejection:
+  `tiny.invalid.large_reference.bam`, expected to fail `index --format bai`
+  before any output sidecar is written;
+* CSI reference-count mismatch:
+  `tiny.invalid.mismatched_reference_count.csi`, expected to fail
+  `check_index` and drive `check_map`/`summary` scan fallback with
+  mismatched-reference diagnostics;
+* malformed FASTQ.GZI:
+  `tiny.invalid.fastq_gz.bad_gzi`, expected to exercise FASTQ.GZ
+  planner-sidecar fallback or failure behavior for `enumerate`, `explode`, and
+  `consume`.
+
+M12 fixtures must preserve the M12.2 support-level contract and the M12.4
+diagnostic vocabulary: `usable`, `absent`, `stale`, `unsupported`,
+`malformed`, `mismatched_reference`, `incomplete`, and `disabled`.
+
 ### M10 indexed-region workflow coverage
 
 M10.3 freezes region-aware `check_map` and region-aware `summary` as the first

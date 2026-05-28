@@ -630,6 +630,12 @@ malformed, mismatched-reference, incomplete, absent, disabled, and usable index
 states are machine-readable. `summary` and `select_region` continue to preserve
 explicit fallback reasons in their existing notes and region-scope fields.
 
+M12.5 extends fixture reservations for the extended index compatibility suite:
+`tiny.invalid.large_reference.bam`,
+`tiny.invalid.mismatched_reference_count.csi`, and
+`tiny.invalid.fastq_gz.bad_gzi` now reserve BAI, CSI, and FASTQ.GZI failure
+coverage before binary assets are materialized.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

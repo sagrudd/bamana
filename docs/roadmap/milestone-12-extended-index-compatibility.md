@@ -82,6 +82,22 @@ fallback-note fields for this slice, and the M12.4 docs require those notes to
 continue naming stale, unsupported, malformed, mismatched-reference, and
 missing-index fallback causes.
 
+## M12.5 Fixture Extension
+
+M12.5 extends the planned fixture suite for the M12 compatibility surface
+without checking in new binary assets yet:
+
+* `tiny.invalid.large_reference.bam` reserves the BAI large-reference rejection
+  case for `index --format bai`;
+* `tiny.invalid.mismatched_reference_count.csi` reserves CSI reference-count
+  mismatch diagnostics for `check_index` plus scan-fallback outputs for
+  `check_map` and `summary`;
+* `tiny.invalid.fastq_gz.bad_gzi` reserves malformed FASTQ.GZI
+  planner-sidecar behavior for `enumerate`, `explode`, and `consume`.
+
+These fixture reservations must preserve the M12.2 support-level vocabulary
+and the M12.4 index diagnostic vocabulary when materialized.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

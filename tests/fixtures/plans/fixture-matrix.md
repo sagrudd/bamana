@@ -28,6 +28,9 @@ Primary-purpose coverage should be favored over adding many overlapping files.
 | `tiny.invalid.mismatched_reference_count.bai` | BAI reference-count mismatch | Scan fallback after unusable index | `check_index`, `check_map`, `summary` | failure + fallback |
 | `tiny.valid.coordinate.csi_header` | CSI header detection | Unsupported-index fallback | `check_index`, `check_map`, `summary` | unsupported + fallback |
 | `tiny.invalid.bad_csi` | Malformed CSI failure | Unsupported-index failure fallback | `check_index`, `check_map` | failure |
+| `tiny.invalid.large_reference.bam` | BAI large-reference rejection | CSI detect-only deferral evidence | `index` | failure |
+| `tiny.invalid.mismatched_reference_count.csi` | CSI reference-count mismatch | M12 unsupported-index diagnostics | `check_index`, `check_map`, `summary` | failure + fallback |
+| `tiny.invalid.fastq_gz.bad_gzi` | Malformed FASTQ.GZI sidecar | FASTQ.GZ planner-sidecar diagnostics | `enumerate`, `explode`, `consume` | failure + fallback |
 | `tiny.invalid.unsorted_coordinate` | Coordinate-sort violation | BAM index rejection during BAI writing | `check_sort`, `index` | failure |
 | `tiny.transforms.source` | Transform source BAM | Checksum baseline | `sort`, `explode`, `checksum` | success |
 | `tiny.transforms.shard1` + `tiny.transforms.shard2` | Deterministic explode outputs | Merge round-trip | `explode`, `merge`, `checksum` | success |

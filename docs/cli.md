@@ -307,6 +307,11 @@ unsupported, malformed, mismatched-reference, incomplete, and disabled index
 states. `summary` and `select_region` keep explicit fallback causes in their
 existing notes and region-scope fields.
 
+M12.5 extends planned BAI/CSI/GZI fixture coverage with
+`tiny.invalid.large_reference.bam`,
+`tiny.invalid.mismatched_reference_count.csi`, and
+`tiny.invalid.fastq_gz.bad_gzi`.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

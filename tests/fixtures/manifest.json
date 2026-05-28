@@ -443,6 +443,76 @@
       "tag_inventory": []
     },
     {
+      "id": "tiny.invalid.large_reference.bam",
+      "path": "bam/indexing/tiny.invalid.large_reference.bam",
+      "format": "BAM",
+      "category": "indexing",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "Coordinate-sorted BAM header with a reference longer than the BAI 2^29 coordinate ceiling, reserved for M12.3 BAI large-reference rejection.",
+      "primary_commands": ["index"],
+      "secondary_commands": ["check_index", "summary"],
+      "generated": true,
+      "source_fixture_ids": [],
+      "regeneration_strategy": "hand_author_minimal_coordinate_bam_with_reference_length_536870913",
+      "expected_artifacts": [
+        "expected/index/tiny.invalid.large_reference.bai.failure.json"
+      ],
+      "has_index": false,
+      "sort_order": "coordinate",
+      "mapped_state": "header_only",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
+      "id": "tiny.invalid.mismatched_reference_count.csi",
+      "path": "bam/indexing/tiny.invalid.mismatched_reference_count.bam.csi",
+      "format": "CSI",
+      "category": "indexing",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "CSI header whose reference count intentionally disagrees with tiny.valid.coordinate for M12 check_index mismatch diagnostics.",
+      "primary_commands": ["check_index"],
+      "secondary_commands": ["check_map", "summary"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.coordinate.csi_header"],
+      "regeneration_strategy": "rewrite_csi_reference_count_to_mismatch_bam_header",
+      "expected_artifacts": [
+        "expected/check_index/tiny.invalid.mismatched_reference_count.csi.failure.json",
+        "expected/check_map/tiny.invalid.mismatched_reference_count.csi.fallback.success.json",
+        "expected/summary/tiny.invalid.mismatched_reference_count.csi.fallback.success.json"
+      ],
+      "has_index": true,
+      "sort_order": "coordinate",
+      "mapped_state": "mixed",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
+      "id": "tiny.invalid.fastq_gz.bad_gzi",
+      "path": "fastq/indexing/tiny.invalid.fastq_gz.bad.gzi",
+      "format": "GZI",
+      "category": "indexing",
+      "validity": "invalid",
+      "status": "planned",
+      "description": "Malformed FASTQ.GZI sidecar reserved for FASTQ.GZ enumeration, consume, and explode compatibility diagnostics.",
+      "primary_commands": ["enumerate", "explode", "consume"],
+      "secondary_commands": ["index"],
+      "generated": true,
+      "source_fixture_ids": ["tiny.valid.fastq_gz.gzi"],
+      "regeneration_strategy": "mutate_fastq_gzi_magic_or_truncate_checkpoint_table",
+      "expected_artifacts": [
+        "expected/enumerate/tiny.invalid.fastq_gz.bad_gzi.fallback.success.json",
+        "expected/explode/tiny.invalid.fastq_gz.bad_gzi.failure.json",
+        "expected/consume/tiny.invalid.fastq_gz.bad_gzi.failure.json"
+      ],
+      "has_index": true,
+      "sort_order": null,
+      "mapped_state": "unmapped",
+      "size_class": "tiny",
+      "tag_inventory": []
+    },
+    {
       "id": "tiny.transforms.source",
       "path": "bam/transforms/tiny.transforms.source.bam",
       "format": "BAM",

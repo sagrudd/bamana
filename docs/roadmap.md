@@ -191,6 +191,10 @@ This order is retained because it matches the dependency chain of the runtime:
   than a large-reference fallback, and `check_map.index` reports
   machine-readable diagnostic states for usable, absent, stale, unsupported,
   malformed, mismatched-reference, incomplete, and disabled index conditions
+* M12.5 fixture extension: reserved `tiny.invalid.large_reference.bam`,
+  `tiny.invalid.mismatched_reference_count.csi`, and
+  `tiny.invalid.fastq_gz.bad_gzi` for BAI, CSI, and FASTQ.GZI compatibility
+  failure coverage
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

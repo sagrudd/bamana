@@ -158,6 +158,10 @@ and validation command wave:
 * `tiny.valid.coordinate.csi_header` covers detected-but-not-supported CSI
   behavior;
 * `tiny.invalid.bad_csi` covers malformed CSI reporting;
+* M12.5 reserves `tiny.invalid.large_reference.bam` for BAI large-reference
+  rejection, `tiny.invalid.mismatched_reference_count.csi` for CSI
+  reference-count mismatch diagnostics, and `tiny.invalid.fastq_gz.bad_gzi`
+  for malformed FASTQ.GZI planner-sidecar behavior;
 * `tiny.valid.fastq_gz.gzi` covers implemented FASTQ.GZI sidecar behavior for
   `index`, `enumerate`, `explode`, and `consume`;
 * `tiny.tags.nm_rg`, `tiny.tags.mixed_aux_types`, and

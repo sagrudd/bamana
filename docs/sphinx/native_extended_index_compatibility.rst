@@ -80,11 +80,27 @@ region-scope fields in this slice. Those notes must continue to name stale,
 unsupported, malformed, mismatched-reference, missing-index, and disabled-index
 fallback causes explicitly when those states are observed.
 
+Fixture Extension
+-----------------
+
+M12.5 extends the fixture plan for BAI/CSI/GZI compatibility without adding
+binary assets in this slice. The reserved fixture ids are:
+
+* ``tiny.invalid.large_reference.bam`` for BAI large-reference rejection during
+  ``index --format bai``.
+* ``tiny.invalid.mismatched_reference_count.csi`` for CSI reference-count
+  mismatch diagnostics and scan fallback.
+* ``tiny.invalid.fastq_gz.bad_gzi`` for malformed FASTQ.GZI planner-sidecar
+  behavior in ``enumerate``, ``explode``, and ``consume``.
+
+Materialized M12 fixtures must preserve the M12.2 support-level vocabulary and
+the M12.4 diagnostic vocabulary.
+
 Remaining M12 Work
 ------------------
 
-Later M12 tasks must extend fixtures, selected-region compatibility behavior,
-benchmark guardrails, and closeout evidence.
+Later M12 tasks must extend selected-region compatibility behavior, benchmark
+guardrails, and closeout evidence.
 
 Non-Goals
 ---------

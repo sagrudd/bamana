@@ -130,8 +130,12 @@ Current milestone:
   large-reference fallback. M12.4 hardens diagnostics by adding
   `check_map.index.diagnostic_status` and optional `diagnostic_detail` for
   usable, absent, stale, unsupported, malformed, mismatched-reference,
-  incomplete, and disabled index states. Later M12 tasks must extend fixtures,
-  selected-region compatibility, benchmark guardrails, and closeout evidence.
+  incomplete, and disabled index states. M12.5 extends planned fixture coverage
+  with `tiny.invalid.large_reference.bam`,
+  `tiny.invalid.mismatched_reference_count.csi`, and
+  `tiny.invalid.fastq_gz.bad_gzi` for BAI, CSI, and FASTQ.GZI failure modes.
+  Later M12 tasks must extend selected-region compatibility, benchmark
+  guardrails, and closeout evidence.
 
 ## Completed Backbone
 

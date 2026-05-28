@@ -2375,6 +2375,119 @@ fn milestone_12_3_and_12_4_freeze_large_reference_and_diagnostics() {
 }
 
 #[test]
+fn milestone_12_5_extends_index_fixture_plan() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let fixtures_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let fixture_matrix = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("fixtures")
+            .join("plans")
+            .join("fixture-matrix.md"),
+    );
+    let coverage_map = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("fixtures")
+            .join("plans")
+            .join("coverage-map.md"),
+    );
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for required in [
+        "M12.5",
+        "tiny.invalid.large_reference.bam",
+        "tiny.invalid.mismatched_reference_count.csi",
+        "tiny.invalid.fastq_gz.bad_gzi",
+        "BAI large-reference rejection",
+        "CSI reference-count mismatch",
+        "malformed FASTQ.GZI",
+        "planner-sidecar",
+        "support-level vocabulary",
+        "diagnostic vocabulary",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || fixtures_doc.contains(required)
+                || fixture_matrix.contains(required)
+                || coverage_map.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M12.5 fixture extension evidence is missing: {required}"
+        );
+    }
+
+    let manifest = load_fixture_manifest();
+    for (required_id, expected_format, expected_validity, expected_command, expected_artifact) in [
+        (
+            "tiny.invalid.large_reference.bam",
+            "BAM",
+            "invalid",
+            "index",
+            "expected/index/tiny.invalid.large_reference.bai.failure.json",
+        ),
+        (
+            "tiny.invalid.mismatched_reference_count.csi",
+            "CSI",
+            "invalid",
+            "check_index",
+            "expected/check_index/tiny.invalid.mismatched_reference_count.csi.failure.json",
+        ),
+        (
+            "tiny.invalid.fastq_gz.bad_gzi",
+            "GZI",
+            "invalid",
+            "explode",
+            "expected/explode/tiny.invalid.fastq_gz.bad_gzi.failure.json",
+        ),
+    ] {
+        let fixture = manifest
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.id == required_id)
+            .unwrap_or_else(|| panic!("fixture manifest is missing M12.5 fixture {required_id}"));
+
+        assert_eq!(fixture.format, expected_format);
+        assert_eq!(fixture.validity, expected_validity);
+        assert!(
+            fixture
+                .primary_commands
+                .iter()
+                .any(|command| command == expected_command)
+                || fixture
+                    .secondary_commands
+                    .iter()
+                    .any(|command| command == expected_command),
+            "fixture {required_id} is not mapped to {expected_command}"
+        );
+        assert!(
+            fixture
+                .expected_artifacts
+                .iter()
+                .any(|artifact| artifact == expected_artifact),
+            "fixture {required_id} is missing expected artifact {expected_artifact}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

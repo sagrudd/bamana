@@ -21,6 +21,7 @@ Examples to reserve:
   is actually present and stable
 * `consume.tiny.valid.fastq.dry_run.success.json`
 * `consume.tiny.valid.fastq_gz.dry_run.success.json`
+* `consume.tiny.invalid.fastq_gz.bad_gzi.failure.json`
 * `consume.tiny.consume.mixed_alignment_raw.failure.json`
 * `consume.tiny.consume.directory_tree.dry_run.success.json`
 

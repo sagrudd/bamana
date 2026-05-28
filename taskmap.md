@@ -5546,12 +5546,31 @@ Completion evidence:
 
 ### M12.5 Extend Index Fixtures
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * extend BAI/CSI/GZI fixture reservations and expected artifacts for
   compatibility and failure modes.
+
+Acceptance criteria:
+
+* fixture manifest reserves M12-specific BAI, CSI, and FASTQ.GZI failure
+  fixtures;
+* fixture matrix and coverage-map docs name the scenarios and expected command
+  coverage;
+* expected-output README files reserve the future golden-output stems.
+
+Completion evidence:
+
+* reserved `tiny.invalid.large_reference.bam` for BAI large-reference
+  rejection;
+* reserved `tiny.invalid.mismatched_reference_count.csi` for CSI
+  reference-count mismatch diagnostics and fallback behavior;
+* reserved `tiny.invalid.fastq_gz.bad_gzi` for malformed FASTQ.GZI
+  planner-sidecar behavior;
+* updated fixture matrix, coverage map, docs, expected-output README files,
+  roadmap, Sphinx, README, CLI docs, and contract coverage.
 
 ### M12.6 Wire Supported CSI Behavior
 
