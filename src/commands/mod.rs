@@ -18,6 +18,7 @@ pub mod index;
 pub mod inspect_duplication;
 pub mod merge;
 pub mod reheader;
+pub mod select_region;
 pub mod sort;
 pub mod subsample;
 pub mod summary;

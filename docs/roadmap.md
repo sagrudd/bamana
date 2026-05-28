@@ -145,6 +145,12 @@ This order is retained because it matches the dependency chain of the runtime:
 * M11.5 duplicate policy: future selected output emits each physical source
   record at most once in source virtual-offset order, suppressing duplicate
   physical records from repeated, overlapping, or broad-bin region discovery
+* M11.6 implementation slice: `select_region` now writes BGZF BAM file output
+  for CLI `--region` requests, uses native indexed traversal when a usable
+  non-stale BAI exists, falls back to native scanning otherwise, preserves raw
+  selected record bytes, and keeps `--out -`, `--region-file`, final index
+  invalidation semantics, schemas, examples, and fixtures deferred to later
+  M11 tasks
 
 ### Milestone 12: Extended Index Compatibility
 

@@ -180,6 +180,46 @@ M11.5 does not add schemas, examples, or fixtures because write-safety and final
 command implementation remain pending; M11.8 must add them once the remaining
 contracts are complete.
 
+Native Selected-Record Writing
+------------------------------
+
+M11.6 implements the first runnable ``select_region`` slice for BAM file
+output::
+
+   bamana select_region --bam <input.bam> --region <REGION> --out <output.bam> [--dry-run] [--force] [--prefer-index]
+
+The command accepts BGZF-compressed BAM input and repeated CLI ``--region``
+values. It writes BGZF-compressed BAM file output through Bamana's native BGZF
+writer. Selected alignment records preserve their raw BAM record bytes; the
+writer does not reserialize alignment fields or reinterpret auxiliary tags.
+
+With ``--prefer-index`` enabled, a usable non-stale adjacent BAI sidecar drives
+native indexed traversal through the M10 chunk planner and random-access
+traversal helpers. Missing, stale, unsupported, malformed, or incomplete index
+state falls back to native scanner selection. Both execution modes use
+``source_virtual_offset_order`` and ``emit_once_per_source_record`` so repeated
+regions, overlapping intervals, and broad BAI bins do not duplicate physical
+source records in the selected BAM output.
+
+The output header follows the M11.4 policy. The full binary reference
+dictionary is preserved, including references with no selected records. Textual
+header records are retained except that existing ``@HD`` ``SO`` is rewritten to
+``unknown`` and ``SS`` is removed. A collision-free ``@PG`` record for
+``bamana select_region`` is appended with ``PN:bamana``, the Bamana version,
+and ``PP`` only when the previous program chain has one unambiguous terminal
+program.
+
+Dry runs report planned selection without writing BAM output. Applied file
+outputs report the selected path, ``output_format: "bam"``, ``compression:
+"bgzf"``, selected unique record count, duplicate suppression, execution mode,
+index path when used, fallback reason when applicable, and header policy.
+
+M11.6 deliberately leaves ``--out -`` binary stdout routing rejected until
+response/report separation is implemented. ``--region-file`` remains
+syntax-specified but is not yet a public CLI flag. Final output index
+invalidation or regeneration semantics, governed JSON schemas, golden examples,
+and fixtures remain M11.7 and M11.8 work.
+
 Inherited Substrate
 -------------------
 

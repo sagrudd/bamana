@@ -71,6 +71,9 @@ pub enum Commands {
     Reheader(ReheaderArgs),
     /// Sort a BAM file into a requested output ordering.
     Sort(SortArgs),
+    /// Select BAM alignment records that overlap requested regions.
+    #[command(name = "select_region")]
+    SelectRegion(SelectRegionArgs),
     /// Strip reference-bound alignment state from a BAM while preserving non-mapping metadata.
     Unmap(UnmapArgs),
     /// Perform shallow BAM verification only.
@@ -188,6 +191,28 @@ pub struct SubsampleArgs {
     /// Maximum worker threads for FASTQ.GZ import. Defaults to all available cores; use 1 to keep deterministic ingest order.
     #[arg(short = 'j', long = "threads", default_value_t = 0)]
     pub threads: usize,
+    /// Overwrite an existing output path.
+    #[arg(long = "force")]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct SelectRegionArgs {
+    /// Input BAM to select records from.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output BAM path for selected records.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// M10 region string to select. May be repeated.
+    #[arg(long = "region")]
+    pub regions: Vec<String>,
+    /// Plan and report only; do not write output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Prefer an adjacent BAI index when available; otherwise use native scan fallback.
+    #[arg(long = "prefer-index", default_value_t = true)]
+    pub prefer_index: bool,
     /// Overwrite an existing output path.
     #[arg(long = "force")]
     pub force: bool,

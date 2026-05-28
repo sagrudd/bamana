@@ -63,6 +63,13 @@ Current milestone:
   policy: emit each physical source record at most once in source virtual-offset
   order, suppressing duplicates from repeated regions, overlapping intervals,
   adjacent chunks, and broad bins while keeping match metadata in reports.
+  M11.6 implements the first runnable `select_region` slice for BGZF BAM file
+  output with CLI `--region` values: usable non-stale BAI sidecars drive native
+  indexed traversal, unusable index state falls back to native scanning,
+  selected records preserve raw BAM record bytes, and output reports
+  `source_virtual_offset_order` plus `emit_once_per_source_record`. Binary
+  stdout output, public `--region-file`, final index invalidation semantics,
+  schemas, examples, and fixtures remain later M11 work.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

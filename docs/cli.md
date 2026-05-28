@@ -233,6 +233,18 @@ lines, overlapping intervals, adjacent chunks, and broad bins do not repeat
 records in the output; all matched normalized region identifiers remain report
 metadata. Request-order repeated output, per-region BAM blocks, and one output
 file per region remain unsupported.
+M11.6 implements the first runnable `select_region` slice for BGZF BAM file
+output using repeated CLI `--region` values:
+`bamana select_region --bam <input.bam> --region <REGION> --out <output.bam>
+[--dry-run] [--force] [--prefer-index]`. Usable non-stale BAI sidecars drive
+native indexed traversal; missing, stale, unsupported, or invalid index state
+falls back to native scanning. Selected records preserve raw BAM record bytes,
+output ordering is `source_virtual_offset_order`, duplicate emission is
+`emit_once_per_source_record`, and the output header preserves the full
+reference dictionary while appending `@PG` provenance and downgrading sort
+metadata conservatively. `--out -`, public `--region-file`, final index
+invalidation semantics, and governed schemas/examples/fixtures remain later
+M11 work.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

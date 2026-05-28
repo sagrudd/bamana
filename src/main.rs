@@ -14,8 +14,9 @@ use commands::{
     deduplicate::DeduplicateRequest, enumerate::EnumerateRequest, explode::ExplodeRequest,
     fastq::FastqRequest, forensic_inspect::ForensicInspectRequest, header::HeaderRequest,
     identify::IdentifyRequest, index::IndexRequest, inspect_duplication::InspectDuplicationRequest,
-    merge::MergeRequest, reheader::ReheaderRequest, sort::SortRequest, subsample::SubsampleRequest,
-    summary::SummaryRequest, unmap::UnmapRequest, validate::ValidateRequest, verify::VerifyRequest,
+    merge::MergeRequest, reheader::ReheaderRequest, select_region::SelectRegionRequest,
+    sort::SortRequest, subsample::SubsampleRequest, summary::SummaryRequest, unmap::UnmapRequest,
+    validate::ValidateRequest, verify::VerifyRequest,
 };
 use serde::Serialize;
 
@@ -247,6 +248,21 @@ fn main() -> ExitCode {
                 verify_checksum: args.verify_checksum,
                 force: args.force,
             })
+        }),
+        Commands::SelectRegion(args) => emit_timed_response(cli.global.json_pretty, || {
+            let bam = args.bam;
+            CommandResponse::from_result(
+                "select_region",
+                Some(bam.as_path()),
+                commands::select_region::run(SelectRegionRequest {
+                    bam: bam.clone(),
+                    out: args.out,
+                    regions: args.regions,
+                    dry_run: args.dry_run,
+                    force: args.force,
+                    prefer_index: args.prefer_index,
+                }),
+            )
         }),
         Commands::Unmap(args) => emit_timed_response(cli.global.json_pretty, || {
             let bam = args.bam;

@@ -54,3 +54,20 @@ annotate_rg
 command. It inserts, replaces, or conflict-checks per-record ``RG:Z`` tags and
 can coordinate that record-level rewrite with explicit ``@RG`` header policy.
 It is intentionally distinct from ``reheader``, which is header-only.
+
+select_region
+-------------
+
+``bamana select_region`` is being promoted through Milestone 11. The M11.6
+implementation supports BGZF BAM file output for CLI ``--region`` requests:
+
+.. code-block:: bash
+
+   bamana select_region --bam input.bam --region chr1:1-1000 --out selected.bam
+
+Usable non-stale BAI sidecars drive native indexed traversal; otherwise the
+command falls back to native scanner selection. Selected alignment records
+preserve raw BAM record bytes, emit once per physical source record, and remain
+in source virtual-offset order. Binary stdout output, public ``--region-file``,
+final index invalidation semantics, and governed schemas/examples/fixtures
+remain later M11 work.

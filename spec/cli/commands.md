@@ -707,6 +707,31 @@ supported by M11.5. M11.5 does not add schemas, examples, or fixtures because
 write-safety and final command implementation remain pending; M11.8 must add
 them once the remaining contracts are complete.
 
+M11.6 selected-record writing implementation:
+
+`select_region` is introduced for BGZF BAM file output with CLI `--region`
+requests. The implemented synopsis is `bamana select_region --bam <input.bam>
+--region <REGION> --out <output.bam> [--dry-run] [--force] [--prefer-index]`;
+`--region` may be repeated. The command rejects non-BAM inputs before output,
+writes BGZF-compressed BAM file output, and reports JSON to stdout for file
+outputs.
+
+When a usable non-stale BAI sidecar is present and `--prefer-index` remains
+enabled, selection uses native indexed traversal through the BAI chunk planner.
+Missing, stale, unsupported, malformed, or incomplete index state falls back to
+native scanner selection with a fallback reason. Selected records preserve raw
+BAM record bytes, output ordering is `source_virtual_offset_order`, and
+duplicate emission is `emit_once_per_source_record`.
+
+The output header preserves the full binary reference dictionary and retained
+textual header records, rewrites existing `@HD SO` to `unknown`, removes
+`@HD SS`, and appends collision-free `@PG` provenance for
+`bamana select_region`. Dry runs write no BAM output and report
+`output_created: false`. `--out -` binary stdout output, public
+`--region-file`, final index invalidation or regeneration semantics, governed
+JSON schemas, golden examples, and fixtures remain deferred to M11.7 and
+M11.8.
+
 ## `check_index`
 
 Synopsis:
@@ -928,6 +953,31 @@ output, per-region BAM blocks, and one-output-file-per-region behavior are not
 supported by M11.5. M11.5 does not add schemas, examples, or fixtures because
 write-safety and final command implementation remain pending; M11.8 must add
 them once the remaining contracts are complete.
+
+M11.6 selected-record writing implementation:
+
+`select_region` is introduced for BGZF BAM file output with CLI `--region`
+requests. The implemented synopsis is `bamana select_region --bam <input.bam>
+--region <REGION> --out <output.bam> [--dry-run] [--force] [--prefer-index]`;
+`--region` may be repeated. The command rejects non-BAM inputs before output,
+writes BGZF-compressed BAM file output, and reports JSON to stdout for file
+outputs.
+
+When a usable non-stale BAI sidecar is present and `--prefer-index` remains
+enabled, selection uses native indexed traversal through the BAI chunk planner.
+Missing, stale, unsupported, malformed, or incomplete index state falls back to
+native scanner selection with a fallback reason. Selected records preserve raw
+BAM record bytes, output ordering is `source_virtual_offset_order`, and
+duplicate emission is `emit_once_per_source_record`.
+
+The output header preserves the full binary reference dictionary and retained
+textual header records, rewrites existing `@HD SO` to `unknown`, removes
+`@HD SS`, and appends collision-free `@PG` provenance for
+`bamana select_region`. Dry runs write no BAM output and report
+`output_created: false`. `--out -` binary stdout output, public
+`--region-file`, final index invalidation or regeneration semantics, governed
+JSON schemas, golden examples, and fixtures remain deferred to M11.7 and
+M11.8.
 
 ## `check_tag`
 

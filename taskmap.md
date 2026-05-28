@@ -5224,13 +5224,49 @@ Completion evidence:
 
 ### M11.6 Implement Native Selected-Record Writing
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * implement selected-record BAM writing from native indexed traversal;
 * preserve raw record bytes where the contract requires it;
 * add unit and command tests.
+
+Acceptance criteria:
+
+* `select_region --bam <input.bam> --region <REGION> --out <output.bam>`
+  writes BGZF-compressed BAM file output for supported BAM inputs;
+* usable, current BAI sidecars drive native indexed traversal and unusable
+  sidecars fall back to native scanner selection with explicit reporting;
+* retained alignment records preserve their raw BAM record bytes;
+* output header handling follows the M11.4 contract for reference dictionary
+  preservation, conservative `@HD` sort metadata, and `@PG` provenance;
+* repeated and overlapping CLI regions emit each physical source record at
+  most once in source virtual-offset order;
+* `--out -`, public `--region-file`, governed schemas/examples/fixtures, and
+  final index invalidation semantics remain deferred to later M11 tasks.
+
+Completion evidence:
+
+* added `src/commands/select_region.rs` and wired `Commands::SelectRegion` into
+  the CLI and command dispatcher;
+* implemented native selected-record collection through
+  `traverse_planned_region_chunks` when a usable non-stale BAI is available,
+  with native scan fallback when no usable BAI path can be used;
+* wrote selected BAM file output through `BgzfWriter`, preserving selected
+  records' raw BAM record bytes and serializing the preserved reference
+  dictionary through the native BAM header writer;
+* rewrote existing `@HD` sort metadata to `SO:unknown`, removed `SS`, appended
+  a collision-free `@PG` record for `bamana select_region`, and retained
+  unselected references in the output header;
+* reported `source_virtual_offset_order`,
+  `emit_once_per_source_record`, selected unique counts, duplicate suppression,
+  index/fallback execution mode, and dry-run no-write state;
+* added focused unit coverage for indexed selected-record output and dry-run
+  planning;
+* updated README, CLI docs, roadmap notes, Sphinx technical notes, CLI
+  specification, task map, and contract tests while preserving M11.7 and M11.8
+  as the remaining write-safety/index and schema/example work.
 
 ### M11.7 Add Write-Safety And Index Invalidation Semantics
 

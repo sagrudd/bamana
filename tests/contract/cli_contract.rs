@@ -21,6 +21,7 @@ fn cli_source_declares_stable_global_option_and_commands() {
         "Checksum(ChecksumArgs)",
         "Merge(MergeArgs)",
         "Sort(SortArgs)",
+        "SelectRegion(SelectRegionArgs)",
         "Verify(BamPathArgs)",
         "CheckEof(BamPathArgs)",
         "Header(BamPathArgs)",

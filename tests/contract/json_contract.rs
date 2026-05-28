@@ -2125,7 +2125,6 @@ fn milestone_11_activation_baseline_records_selection_scope() {
     );
     let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
     let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
-    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
 
     for (name, text) in [
         ("README", &readme),
@@ -2187,8 +2186,9 @@ fn milestone_11_activation_baseline_records_selection_scope() {
         "Sphinx index does not include the M11 technical note"
     );
     assert!(
-        !cli_source.contains("SelectRegion"),
-        "M11.1 must not implement the select_region CLI before its contract is frozen"
+        m11.contains("The command is not implemented by M11.1")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M11.1 must remain recorded as a historical no-CLI activation task"
     );
 }
 
@@ -2216,7 +2216,6 @@ fn milestone_11_region_file_contract_is_specified_without_cli_behavior() {
     );
     let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
     let region_source = read_utf8(&super::repo_root().join("src").join("bam").join("region.rs"));
-    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
 
     for required in [
         "M11.2",
@@ -2279,8 +2278,9 @@ fn milestone_11_region_file_contract_is_specified_without_cli_behavior() {
     }
 
     assert!(
-        !cli_source.contains("SelectRegion"),
-        "M11.2 must not implement the select_region CLI before selected-output contracts are complete"
+        m11.contains("M11.2 specifies the region-file contract")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M11.2 must remain recorded as syntax-only before the M11.6 implementation task"
     );
 }
 
@@ -2307,7 +2307,6 @@ fn milestone_11_selected_record_output_contract_is_specified_without_cli_behavio
             .join("native_indexed_region_selection.rst"),
     );
     let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
-    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
 
     for required in [
         "M11.3",
@@ -2368,8 +2367,9 @@ fn milestone_11_selected_record_output_contract_is_specified_without_cli_behavio
     }
 
     assert!(
-        !cli_source.contains("SelectRegion"),
-        "M11.3 must not implement the select_region CLI before header/order/write-safety contracts are complete"
+        m11.contains("M11.3 specifies selected-record output semantics")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M11.3 must remain recorded as output-contract-only before the M11.6 implementation task"
     );
 }
 
@@ -2396,7 +2396,6 @@ fn milestone_11_header_sort_contract_is_specified_without_cli_behavior() {
             .join("native_indexed_region_selection.rst"),
     );
     let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
-    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
 
     for required in [
         "M11.4",
@@ -2447,8 +2446,9 @@ fn milestone_11_header_sort_contract_is_specified_without_cli_behavior() {
     }
 
     assert!(
-        !cli_source.contains("SelectRegion"),
-        "M11.4 must not implement the select_region CLI before duplicate/write-safety contracts are complete"
+        m11.contains("M11.4 specifies the future selected-output header contract")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M11.4 must remain recorded as header-contract-only before the M11.6 implementation task"
     );
 }
 
@@ -2475,7 +2475,6 @@ fn milestone_11_duplicate_overlap_contract_is_specified_without_cli_behavior() {
             .join("native_indexed_region_selection.rst"),
     );
     let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
-    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
 
     for required in [
         "M11.5",
@@ -2527,8 +2526,117 @@ fn milestone_11_duplicate_overlap_contract_is_specified_without_cli_behavior() {
     }
 
     assert!(
-        !cli_source.contains("SelectRegion"),
-        "M11.5 must not implement the select_region CLI before write-safety and implementation tasks"
+        m11.contains("M11.5 specifies record ordering")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M11.5 must remain recorded as duplicate-policy-only before the M11.6 implementation task"
+    );
+}
+
+#[test]
+fn milestone_11_selected_record_writing_is_implemented_natively() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let public_commands = read_utf8(&docs_dir().join("sphinx").join("public_commands.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+    let command_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("select_region.rs"),
+    );
+
+    for required in [
+        "M11.6",
+        "Native Selected-Record Writing",
+        "select_region",
+        "--bam",
+        "--region",
+        "--out",
+        "--dry-run",
+        "--force",
+        "--prefer-index",
+        "BGZF-compressed BAM",
+        "raw BAM record bytes",
+        "native indexed traversal",
+        "native scan",
+        "source_virtual_offset_order",
+        "emit_once_per_source_record",
+        "SO:unknown",
+        "@PG",
+        "--out -",
+        "--region-file",
+        "M11.7",
+        "M11.8",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || public_commands.contains(required)
+                || taskmap.contains(required),
+            "M11.6 selected-record writing docs are missing: {required}"
+        );
+    }
+
+    for token in [
+        "SelectRegion(SelectRegionArgs)",
+        "pub struct SelectRegionArgs",
+        "long = \"bam\"",
+        "long = \"out\"",
+        "long = \"region\"",
+        "long = \"dry-run\"",
+        "long = \"force\"",
+        "long = \"prefer-index\"",
+    ] {
+        assert!(
+            cli_source.contains(token),
+            "M11.6 CLI implementation is missing token: {token}"
+        );
+    }
+
+    for token in [
+        "traverse_planned_region_chunks",
+        "BgzfWriter",
+        "writer.write_all(&record.raw_record)",
+        "serialize_bam_header_payload",
+        "finalize_completed_output",
+        "SelectRegionExecutionMode::Indexed",
+        "SelectRegionExecutionMode::ScanFallback",
+        "source_virtual_offset_order",
+        "emit_once_per_source_record",
+    ] {
+        assert!(
+            command_source.contains(token),
+            "M11.6 native selected-record writer is missing token: {token}"
+        );
+    }
+
+    assert!(
+        !command_source.contains("noodles"),
+        "select_region production command path must stay free of direct noodles imports"
     );
 }
 
@@ -2761,8 +2869,9 @@ fn milestone_10_indexed_selection_surface_is_explicitly_deferred() {
     assert!(cli_source.contains("CheckMap"));
     assert!(cli_source.contains("Summary"));
     assert!(
-        !cli_source.contains("SelectRegion") && !cli_source.contains("RegionSelect"),
-        "M10.8 must not add a selected-record output command before the public contract exists"
+        m10.contains("M10.8 deliberately defers a public indexed region selection command")
+            && taskmap.contains("M11.6 Implement Native Selected-Record Writing"),
+        "M10.8 must remain documented as a historical selected-output deferral"
     );
 }
 
