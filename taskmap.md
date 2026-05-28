@@ -5270,13 +5270,45 @@ Completion evidence:
 
 ### M11.7 Add Write-Safety And Index Invalidation Semantics
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * apply output-safety collision and finalization rules;
 * define index invalidation and optional regeneration notes;
 * update docs, schemas, examples, and tests.
+
+Acceptance criteria:
+
+* applied `select_region` file output refuses to overwrite an existing BAM
+  output unless `--force` is supplied;
+* same-path input/output rewrites are rejected even with `--force`;
+* adjacent output index sidecars (`<out>.bai`, `<out>.csi`, `.bai`, `.csi`) are
+  treated as output collisions unless `--force` is supplied;
+* forced applied runs remove stale adjacent output index sidecars before
+  publishing selected BAM output;
+* dry runs report planned index invalidation without removing sidecars or
+  writing output;
+* the response reports that no output index is created and gives the operator a
+  regeneration command.
+
+Completion evidence:
+
+* added structured `output.index_invalidation` reporting to `select_region`
+  responses, including adjacent index candidates, preexisting sidecars, removed
+  sidecars, action, `output_index_created: false`, and
+  `bamana index --input <output>` regeneration guidance;
+* extended output validation to reject same-path input/output rewrites and to
+  apply adjacent output index sidecar collision rules;
+* implemented forced stale-sidecar removal before selected BAM output writing,
+  so no pre-existing output BAI/CSI sidecar is left beside the new selected
+  BAM;
+* added unit coverage for sidecar collision without force, forced sidecar
+  removal, dry-run planned invalidation without removal, and same-path
+  rejection;
+* updated README, CLI docs, roadmap notes, Sphinx technical notes, CLI
+  specification, task map, and contract tests for the M11.7 write-safety and
+  index-invalidation contract.
 
 ### M11.8 Update Public Contracts, Schemas, Examples, And Fixtures
 

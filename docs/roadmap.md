@@ -148,9 +148,13 @@ This order is retained because it matches the dependency chain of the runtime:
 * M11.6 implementation slice: `select_region` now writes BGZF BAM file output
   for CLI `--region` requests, uses native indexed traversal when a usable
   non-stale BAI exists, falls back to native scanning otherwise, preserves raw
-  selected record bytes, and keeps `--out -`, `--region-file`, final index
-  invalidation semantics, schemas, examples, and fixtures deferred to later
-  M11 tasks
+  selected record bytes, and keeps `--out -`, `--region-file`, schemas,
+  examples, and fixtures deferred to later M11 tasks
+* M11.7 write-safety and index invalidation: same-path input/output rewrites
+  are rejected, existing output BAM or adjacent output BAI/CSI sidecars are
+  collisions unless `--force` is supplied, forced applied runs remove stale
+  adjacent output index sidecars, dry runs report planned invalidation without
+  deleting files, and no replacement output index is created
 
 ### Milestone 12: Extended Index Compatibility
 

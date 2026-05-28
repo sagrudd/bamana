@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -55,6 +56,17 @@ pub struct SelectRegionOutput {
     pub records_written: u64,
     pub duplicate_emission_policy: &'static str,
     pub output_ordering_policy: &'static str,
+    pub index_invalidation: SelectRegionIndexInvalidation,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SelectRegionIndexInvalidation {
+    pub adjacent_index_paths: Vec<String>,
+    pub preexisting_index_paths: Vec<String>,
+    pub removed_index_paths: Vec<String>,
+    pub invalidation_action: &'static str,
+    pub output_index_created: bool,
+    pub regeneration: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -128,6 +140,8 @@ pub fn run(request: SelectRegionRequest) -> Result<SelectRegionPayload, AppError
         &rewritten_header_text,
         &header.header.references,
     )?;
+    let index_invalidation =
+        prepare_output_index_invalidation(&request.out, request.force, request.dry_run)?;
 
     if !request.dry_run {
         write_selected_bam(
@@ -152,7 +166,8 @@ pub fn run(request: SelectRegionRequest) -> Result<SelectRegionPayload, AppError
     let mut notes = vec![
         "Selected BAM output preserves raw alignment record bytes for retained records.".to_string(),
         "Each physical source BAM record is emitted at most once in source virtual-offset order.".to_string(),
-        "Any pre-existing BAM index for the output must be treated as invalid until M11.7 index invalidation semantics are complete.".to_string(),
+        "select_region does not create an output BAM index; run bamana index on the selected BAM when an index is required.".to_string(),
+        "Adjacent output index sidecars are rejected unless --force is supplied; forced applied runs remove those sidecars before writing selected output.".to_string(),
     ];
     if selection.mode == SelectRegionExecutionMode::ScanFallback {
         notes.push("No usable BAI index was used; native scan fallback selected records in encounter order.".to_string());
@@ -177,6 +192,7 @@ pub fn run(request: SelectRegionRequest) -> Result<SelectRegionPayload, AppError
             },
             duplicate_emission_policy: "emit_once_per_source_record",
             output_ordering_policy: "source_virtual_offset_order",
+            index_invalidation,
         },
         region_scope: SelectRegionScope {
             source: "cli_regions",
@@ -355,7 +371,114 @@ fn validate_output_target(request: &SelectRegionRequest) -> Result<(), AppError>
             detail: "select_region --out - requires binary-stdout response routing; file output is implemented in M11.6 and stdout BAM output remains deferred.".to_string(),
         });
     }
+    if request.out == request.bam || existing_paths_are_same_file(&request.bam, &request.out) {
+        return Err(AppError::UnsupportedInputForCommand {
+            path: request.out.clone(),
+            detail: "select_region refuses same-path input/output rewrites; write to a distinct BAM path."
+                .to_string(),
+        });
+    }
     Ok(())
+}
+
+fn prepare_output_index_invalidation(
+    output: &Path,
+    force: bool,
+    dry_run: bool,
+) -> Result<SelectRegionIndexInvalidation, AppError> {
+    let adjacent = output_index_candidate_paths(output);
+    let existing = adjacent
+        .iter()
+        .filter(|path| path.is_file())
+        .cloned()
+        .collect::<Vec<_>>();
+    let regeneration = format!("bamana index --input {}", output.to_string_lossy());
+
+    if dry_run {
+        return Ok(SelectRegionIndexInvalidation {
+            adjacent_index_paths: stringify_paths(adjacent),
+            preexisting_index_paths: stringify_paths(existing.clone()),
+            removed_index_paths: Vec::new(),
+            invalidation_action: if existing.is_empty() {
+                "would_leave_no_output_index"
+            } else {
+                "would_remove_existing_index_sidecars_on_apply"
+            },
+            output_index_created: false,
+            regeneration,
+        });
+    }
+
+    if let Some(first_existing) = existing.first() {
+        if !force {
+            return Err(AppError::OutputExists {
+                path: first_existing.clone(),
+            });
+        }
+    }
+
+    let mut removed = Vec::new();
+    for path in &existing {
+        fs::remove_file(path).map_err(|error| AppError::WriteError {
+            path: path.clone(),
+            message: format!("failed to remove stale output index sidecar: {error}"),
+        })?;
+        removed.push(path.clone());
+    }
+
+    let invalidation_action = if removed.is_empty() {
+        "no_existing_index_sidecars"
+    } else {
+        "removed_existing_index_sidecars"
+    };
+
+    Ok(SelectRegionIndexInvalidation {
+        adjacent_index_paths: stringify_paths(adjacent),
+        preexisting_index_paths: stringify_paths(existing),
+        removed_index_paths: stringify_paths(removed),
+        invalidation_action,
+        output_index_created: false,
+        regeneration,
+    })
+}
+
+fn output_index_candidate_paths(output: &Path) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    push_unique_path(
+        &mut paths,
+        PathBuf::from(format!("{}.bai", output.to_string_lossy())),
+    );
+    let mut plain_bai = output.to_path_buf();
+    plain_bai.set_extension("bai");
+    push_unique_path(&mut paths, plain_bai);
+    push_unique_path(
+        &mut paths,
+        PathBuf::from(format!("{}.csi", output.to_string_lossy())),
+    );
+    let mut plain_csi = output.to_path_buf();
+    plain_csi.set_extension("csi");
+    push_unique_path(&mut paths, plain_csi);
+    paths
+}
+
+fn push_unique_path(paths: &mut Vec<PathBuf>, path: PathBuf) {
+    if !paths.iter().any(|existing| existing == &path) {
+        paths.push(path);
+    }
+}
+
+fn stringify_paths(paths: Vec<PathBuf>) -> Vec<String> {
+    paths
+        .into_iter()
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect()
+}
+
+fn existing_paths_are_same_file(left: &Path, right: &Path) -> bool {
+    match (fs::canonicalize(left), fs::canonicalize(right)) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => false,
+    }
 }
 
 fn rewrite_selected_output_header(header: &HeaderPayload) -> String {
@@ -560,6 +683,7 @@ mod tests {
             scan::BamScanner,
         },
         commands::select_region::{SelectRegionExecutionMode, SelectRegionRequest, run},
+        error::AppError,
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -646,6 +770,120 @@ mod tests {
         assert!(!payload.output.output_created);
         assert_eq!(payload.output.records_written, 0);
         assert!(!out.exists());
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+    }
+
+    #[test]
+    fn existing_output_index_sidecar_requires_force() {
+        let (bam, bai) = indexed_fixture("select-region-index-collision");
+        let out = bam.with_extension("collision.selected.bam");
+        let output_index = PathBuf::from(format!("{}.bai", out.to_string_lossy()));
+        fs::write(&output_index, b"stale-index").expect("stale index should write");
+
+        let error = run(SelectRegionRequest {
+            bam: bam.clone(),
+            out: out.clone(),
+            regions: region_values(&["chr1:6-9"]),
+            dry_run: false,
+            force: false,
+            prefer_index: true,
+        })
+        .expect_err("stale adjacent output index should require force");
+
+        assert!(matches!(error, AppError::OutputExists { path } if path == output_index));
+        assert!(output_index.exists());
+        assert!(!out.exists());
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+        fs::remove_file(output_index).expect("output index should remove");
+    }
+
+    #[test]
+    fn force_removes_existing_output_index_sidecar_before_writing() {
+        let (bam, bai) = indexed_fixture("select-region-index-force");
+        let out = bam.with_extension("force.selected.bam");
+        let output_index = PathBuf::from(format!("{}.bai", out.to_string_lossy()));
+        fs::write(&output_index, b"stale-index").expect("stale index should write");
+
+        let payload = run(SelectRegionRequest {
+            bam: bam.clone(),
+            out: out.clone(),
+            regions: region_values(&["chr1:6-9"]),
+            dry_run: false,
+            force: true,
+            prefer_index: true,
+        })
+        .expect("force should remove stale output index and write output");
+
+        assert!(payload.output.output_created);
+        assert_eq!(
+            payload.output.index_invalidation.invalidation_action,
+            "removed_existing_index_sidecars"
+        );
+        assert_eq!(
+            payload.output.index_invalidation.removed_index_paths,
+            vec![output_index.to_string_lossy().into_owned()]
+        );
+        assert!(!payload.output.index_invalidation.output_index_created);
+        assert!(!output_index.exists());
+        assert!(out.exists());
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+        fs::remove_file(out).expect("out should remove");
+    }
+
+    #[test]
+    fn dry_run_reports_index_invalidation_without_removing_sidecar() {
+        let (bam, bai) = indexed_fixture("select-region-index-dry-run");
+        let out = bam.with_extension("index-dry.selected.bam");
+        let output_index = PathBuf::from(format!("{}.bai", out.to_string_lossy()));
+        fs::write(&output_index, b"stale-index").expect("stale index should write");
+
+        let payload = run(SelectRegionRequest {
+            bam: bam.clone(),
+            out: out.clone(),
+            regions: region_values(&["chr1:6-9"]),
+            dry_run: true,
+            force: false,
+            prefer_index: true,
+        })
+        .expect("dry run should report planned index invalidation");
+
+        assert_eq!(
+            payload.output.index_invalidation.invalidation_action,
+            "would_remove_existing_index_sidecars_on_apply"
+        );
+        assert_eq!(
+            payload.output.index_invalidation.removed_index_paths.len(),
+            0
+        );
+        assert!(output_index.exists());
+        assert!(!out.exists());
+
+        fs::remove_file(bam).expect("bam should remove");
+        fs::remove_file(bai).expect("bai should remove");
+        fs::remove_file(output_index).expect("output index should remove");
+    }
+
+    #[test]
+    fn same_path_input_output_is_rejected() {
+        let (bam, bai) = indexed_fixture("select-region-same-path");
+
+        let error = run(SelectRegionRequest {
+            bam: bam.clone(),
+            out: bam.clone(),
+            regions: region_values(&["chr1:6-9"]),
+            dry_run: false,
+            force: true,
+            prefer_index: true,
+        })
+        .expect_err("same-path rewrite should be rejected");
+
+        assert!(matches!(error, AppError::UnsupportedInputForCommand { .. }));
 
         fs::remove_file(bam).expect("bam should remove");
         fs::remove_file(bai).expect("bai should remove");

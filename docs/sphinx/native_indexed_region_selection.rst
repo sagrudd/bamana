@@ -220,6 +220,34 @@ syntax-specified but is not yet a public CLI flag. Final output index
 invalidation or regeneration semantics, governed JSON schemas, golden examples,
 and fixtures remain M11.7 and M11.8 work.
 
+Write-Safety And Index Invalidation
+-----------------------------------
+
+M11.7 completes the file-output safety contract for the current
+``select_region`` slice. Applied runs write through a temporary BGZF BAM and
+publish only after the writer finishes. Existing BAM output paths are rejected
+unless ``--force`` is supplied. Same-path input/output rewrites are rejected
+even with ``--force``.
+
+Adjacent output index sidecars are treated as output-safety participants. Before
+an applied run writes selected BAM output, Bamana checks conventional BAM index
+sidecar names for the requested output: ``<out>.bai``, ``<out>.csi``, the
+``.bai`` extension form, and the ``.csi`` extension form. If any already exist
+and ``--force`` is absent, the command fails with ``output_exists`` before
+writing BAM output. With ``--force``, those pre-existing sidecars are removed
+before selected BAM output is written.
+
+``select_region`` does not create a replacement output index in M11.7. The JSON
+payload reports ``output.index_invalidation`` with adjacent index candidates,
+pre-existing sidecars, removed sidecars, the invalidation action,
+``output_index_created: false``, and regeneration guidance of the form
+``bamana index --input <output.bam>``. Dry runs report what would be removed by
+an applied forced run but do not remove files.
+
+M11.7 does not add public schemas, golden examples, or fixtures; M11.8 remains
+responsible for governing the final ``select_region`` JSON schema, examples,
+and fixture plan.
+
 Inherited Substrate
 -------------------
 

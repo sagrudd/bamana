@@ -242,9 +242,16 @@ falls back to native scanning. Selected records preserve raw BAM record bytes,
 output ordering is `source_virtual_offset_order`, duplicate emission is
 `emit_once_per_source_record`, and the output header preserves the full
 reference dictionary while appending `@PG` provenance and downgrading sort
-metadata conservatively. `--out -`, public `--region-file`, final index
-invalidation semantics, and governed schemas/examples/fixtures remain later
-M11 work.
+metadata conservatively. `--out -`, public `--region-file`, and governed
+schemas/examples/fixtures remain later M11 work.
+M11.7 completes the current `select_region` file-output safety contract:
+same-path input/output rewrites are rejected, existing BAM outputs and adjacent
+output index sidecars are collisions unless `--force` is supplied, forced
+applied runs remove stale adjacent `.bai`/`.csi` sidecars before writing
+selected BAM output, dry runs report planned index invalidation without
+removing files, and the response reports `output.index_invalidation` with
+`output_index_created: false` plus `bamana index --input <output.bam>`
+regeneration guidance.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

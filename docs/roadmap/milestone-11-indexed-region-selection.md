@@ -275,6 +275,41 @@ M11 tasks:
 * final output index invalidation/regeneration semantics, governed JSON
   schemas, golden examples, and fixtures remain M11.7 and M11.8 work.
 
+## M11.7 Write-Safety And Index Invalidation
+
+M11.7 completes the file-output safety contract for the current `select_region`
+slice. Applied runs continue to write through a temporary BGZF BAM and publish
+only after the writer finishes. Existing BAM output paths are refused unless
+`--force` is supplied. Same-path input/output rewrites are rejected even with
+`--force`; operators must write selected records to a distinct BAM path.
+
+Adjacent output index sidecars are part of the output safety contract. Before
+an applied run writes selected BAM output, Bamana checks all conventional BAM
+index sidecar names for the requested output:
+
+* `<out>.bai`;
+* `<out>.csi`;
+* `<out with .bai extension>`;
+* `<out with .csi extension>`.
+
+If any of those sidecars already exist and `--force` is not supplied, the
+command fails with `output_exists` before writing BAM output. With `--force`,
+pre-existing adjacent output index sidecars are removed before selected BAM
+output is written. This is intentionally conservative: selected-region output
+changes record membership and header provenance, so any existing BAI or CSI
+beside the output path cannot be trusted for the new file.
+
+`select_region` does not create a replacement output index in M11.7. The
+response reports `output.index_invalidation` with adjacent index candidates,
+pre-existing sidecars, removed sidecars, the invalidation action,
+`output_index_created: false`, and a regeneration command of the form
+`bamana index --input <output.bam>`. Dry runs report the sidecars that would be
+removed by an applied forced run but do not remove files.
+
+M11.7 does not add public schemas, golden examples, or fixtures; M11.8 remains
+responsible for governing the final `select_region` JSON schema, examples, and
+fixture plan.
+
 ## Ten-Task Outline
 
 1. M11.1 activate scope and freeze the selection command decision.

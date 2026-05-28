@@ -68,8 +68,13 @@ Current milestone:
   indexed traversal, unusable index state falls back to native scanning,
   selected records preserve raw BAM record bytes, and output reports
   `source_virtual_offset_order` plus `emit_once_per_source_record`. Binary
-  stdout output, public `--region-file`, final index invalidation semantics,
-  schemas, examples, and fixtures remain later M11 work.
+  stdout output, public `--region-file`, schemas, examples, and fixtures remain
+  later M11 work.
+  M11.7 completes write-safety and index invalidation for that slice: same-path
+  input/output rewrites are rejected, adjacent output BAI/CSI sidecars are
+  collisions unless `--force` is supplied, forced applied runs remove those
+  stale sidecars before writing selected BAM output, dry runs only report
+  planned invalidation, and no replacement output index is created.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

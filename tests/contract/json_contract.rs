@@ -2641,6 +2641,96 @@ fn milestone_11_selected_record_writing_is_implemented_natively() {
 }
 
 #[test]
+fn milestone_11_write_safety_and_index_invalidation_are_implemented() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let public_commands = read_utf8(&docs_dir().join("sphinx").join("public_commands.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let command_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("select_region.rs"),
+    );
+
+    for required in [
+        "M11.7",
+        "Write-Safety",
+        "Index Invalidation",
+        "same-path input/output",
+        "Existing BAM output paths",
+        "Adjacent output index sidecars",
+        "<out>.bai",
+        "<out>.csi",
+        "output_exists",
+        "removed before",
+        "output.index_invalidation",
+        "adjacent_index_paths",
+        "preexisting_index_paths",
+        "removed_index_paths",
+        "invalidation_action",
+        "output_index_created: false",
+        "bamana index --input <output.bam>",
+        "Dry runs",
+        "M11.8",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || public_commands.contains(required)
+                || taskmap.contains(required),
+            "M11.7 write-safety/index-invalidation docs are missing: {required}"
+        );
+    }
+
+    for token in [
+        "SelectRegionIndexInvalidation",
+        "prepare_output_index_invalidation",
+        "output_index_candidate_paths",
+        "existing_paths_are_same_file",
+        "UnsupportedInputForCommand",
+        "OutputExists",
+        "fs::remove_file(path)",
+        "removed_existing_index_sidecars",
+        "would_remove_existing_index_sidecars_on_apply",
+        "output_index_created: false",
+        "bamana index --input",
+        "existing_output_index_sidecar_requires_force",
+        "force_removes_existing_output_index_sidecar_before_writing",
+        "dry_run_reports_index_invalidation_without_removing_sidecar",
+        "same_path_input_output_is_rejected",
+    ] {
+        assert!(
+            command_source.contains(token),
+            "M11.7 select_region implementation is missing token: {token}"
+        );
+    }
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

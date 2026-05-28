@@ -732,6 +732,28 @@ textual header records, rewrites existing `@HD SO` to `unknown`, removes
 JSON schemas, golden examples, and fixtures remain deferred to M11.7 and
 M11.8.
 
+M11.7 write-safety and index invalidation implementation:
+
+Applied `select_region` file-output runs write through a temporary BGZF BAM
+and publish only after the writer finishes. Existing BAM output paths are
+refused unless `--force` is supplied. Same-path input/output rewrites are
+rejected even with `--force`.
+
+Adjacent output index sidecars are treated as output collisions. Bamana checks
+`<out>.bai`, `<out>.csi`, the `.bai` extension form, and the `.csi` extension
+form for the requested output. If any sidecar exists and `--force` is absent,
+the command fails with `output_exists` before writing selected BAM output. With
+`--force`, pre-existing adjacent output index sidecars are removed before BAM
+output is written.
+
+The command does not create a replacement output index. Responses report
+`output.index_invalidation.adjacent_index_paths`, `preexisting_index_paths`,
+`removed_index_paths`, `invalidation_action`, `output_index_created: false`,
+and regeneration guidance as `bamana index --input <output.bam>`. Dry runs do
+not remove sidecars; they report the sidecars that would be removed by an
+applied forced run. Public schemas, golden examples, and fixtures remain M11.8
+work.
+
 ## `check_index`
 
 Synopsis:
@@ -978,6 +1000,28 @@ textual header records, rewrites existing `@HD SO` to `unknown`, removes
 `--region-file`, final index invalidation or regeneration semantics, governed
 JSON schemas, golden examples, and fixtures remain deferred to M11.7 and
 M11.8.
+
+M11.7 write-safety and index invalidation implementation:
+
+Applied `select_region` file-output runs write through a temporary BGZF BAM
+and publish only after the writer finishes. Existing BAM output paths are
+refused unless `--force` is supplied. Same-path input/output rewrites are
+rejected even with `--force`.
+
+Adjacent output index sidecars are treated as output collisions. Bamana checks
+`<out>.bai`, `<out>.csi`, the `.bai` extension form, and the `.csi` extension
+form for the requested output. If any sidecar exists and `--force` is absent,
+the command fails with `output_exists` before writing selected BAM output. With
+`--force`, pre-existing adjacent output index sidecars are removed before BAM
+output is written.
+
+The command does not create a replacement output index. Responses report
+`output.index_invalidation.adjacent_index_paths`, `preexisting_index_paths`,
+`removed_index_paths`, `invalidation_action`, `output_index_created: false`,
+and regeneration guidance as `bamana index --input <output.bam>`. Dry runs do
+not remove sidecars; they report the sidecars that would be removed by an
+applied forced run. Public schemas, golden examples, and fixtures remain M11.8
+work.
 
 ## `check_tag`
 

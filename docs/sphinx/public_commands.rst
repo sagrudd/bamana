@@ -69,5 +69,10 @@ Usable non-stale BAI sidecars drive native indexed traversal; otherwise the
 command falls back to native scanner selection. Selected alignment records
 preserve raw BAM record bytes, emit once per physical source record, and remain
 in source virtual-offset order. Binary stdout output, public ``--region-file``,
-final index invalidation semantics, and governed schemas/examples/fixtures
-remain later M11 work.
+and governed schemas/examples/fixtures remain later M11 work.
+
+M11.7 adds the current file-output safety rule: same-path input/output rewrites
+are rejected, existing output BAM paths and adjacent output BAI/CSI sidecars
+are collisions unless ``--force`` is supplied, forced applied runs remove stale
+adjacent output index sidecars, and no replacement output index is created.
+Use ``bamana index --input <selected.bam>`` when an index is required.

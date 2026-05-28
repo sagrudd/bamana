@@ -565,8 +565,15 @@ records preserve raw BAM record bytes, output uses `source_virtual_offset_order`
 and `emit_once_per_source_record`, and the header preserves the reference
 dictionary while downgrading `@HD SO` to `unknown`, removing `SS`, and appending
 `@PG` provenance. Binary stdout output via `--out -`, public `--region-file`,
-final index invalidation semantics, and governed schemas/examples/fixtures
-remain deferred to later M11 tasks.
+and governed schemas/examples/fixtures remain deferred to later M11 tasks.
+M11.7 completes the current `select_region` file-output safety contract:
+same-path input/output rewrites are rejected, existing BAM outputs and adjacent
+output index sidecars are collisions unless `--force` is supplied, forced
+applied runs remove stale adjacent `.bai`/`.csi` sidecars before writing
+selected BAM output, dry runs report planned index invalidation without
+removing files, and the response reports `output.index_invalidation` with
+`output_index_created: false` plus `bamana index --input <output.bam>`
+regeneration guidance.
 
 ## Specification Layer
 
