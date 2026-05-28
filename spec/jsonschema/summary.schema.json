@@ -116,6 +116,20 @@
         }
       }
     },
+    "indexDerived": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "kind", "used"],
+      "properties": {
+        "present": { "type": "boolean" },
+        "kind": { "$ref": "./common/defs.schema.json#/$defs/indexKind" },
+        "used": { "type": "boolean" },
+        "total_mapped_reads": { "type": "integer", "minimum": 0 },
+        "total_unmapped_reads": { "type": "integer", "minimum": 0 },
+        "references_with_mapped_reads": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      }
+    },
     "data": {
       "type": "object",
       "additionalProperties": true,
@@ -145,6 +159,7 @@
         "mapping": { "type": "object" },
         "region_scope": { "$ref": "#/$defs/regionScope" },
         "anomalies": { "type": "object" },
+        "index_derived": { "$ref": "#/$defs/indexDerived" },
         "confidence": { "$ref": "./common/defs.schema.json#/$defs/confidenceLevel" },
         "semantic_note": { "type": "string" }
       }

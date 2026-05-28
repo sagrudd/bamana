@@ -2620,6 +2620,106 @@ fn milestone_12_7_updates_select_region_index_compatibility() {
 }
 
 #[test]
+fn milestone_12_8_refreshes_public_contract_artifacts() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let fixtures_doc = read_utf8(&docs_dir().join("fixtures.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let coverage_map = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("fixtures")
+            .join("plans")
+            .join("coverage-map.md"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let check_index_schema = read_utf8(&schema_path_for_command("check_index"));
+    let check_map_schema = read_utf8(&schema_path_for_command("check_map"));
+    let summary_schema = read_utf8(&schema_path_for_command("summary"));
+    let select_region_schema = read_utf8(&schema_path_for_command("select_region"));
+    let check_map_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("check_map.region.success.json"),
+    );
+    let summary_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("summary.region.success.json"),
+    );
+    let select_region_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("select_region.success.json"),
+    );
+
+    for required in [
+        "M12.8",
+        "Public Contract Refresh",
+        "support_level",
+        "diagnostic_status",
+        "index_derived",
+        "input_index",
+        "tiny.invalid.large_reference.bam",
+        "tiny.invalid.mismatched_reference_count.csi",
+        "tiny.invalid.fastq_gz.bad_gzi",
+        "large-reference BAI",
+        "CSI reference-count mismatch",
+        "malformed FASTQ.GZI",
+        "planner-sidecar",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || fixtures_doc.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || coverage_map.contains(required)
+                || taskmap.contains(required)
+                || check_index_schema.contains(required)
+                || check_map_schema.contains(required)
+                || summary_schema.contains(required)
+                || select_region_schema.contains(required)
+                || check_map_region_example.contains(required)
+                || summary_region_example.contains(required)
+                || select_region_example.contains(required),
+            "M12.8 public contract refresh evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        check_index_schema.contains("\"support_level\"")
+            && check_map_schema.contains("\"diagnostic_status\"")
+            && summary_schema.contains("\"index_derived\"")
+            && select_region_schema.contains("\"input_index\""),
+        "M12.8 schemas do not govern the refreshed index contract fields"
+    );
+    assert!(
+        check_map_region_example.contains("\"diagnostic_status\": \"usable\"")
+            && summary_region_example.contains("\"index_derived\"")
+            && select_region_example.contains("\"input_index\""),
+        "M12.8 examples do not expose the refreshed index contract fields"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

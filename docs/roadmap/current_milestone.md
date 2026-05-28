@@ -141,8 +141,11 @@ Current milestone:
   selected-region output: `select_region` reports `input_index` compatibility
   for selected adjacent input sidecars, treats CSI as detect-only scan
   fallback, and leaves output BAI/CSI invalidation plus replacement-index
-  deferrals unchanged. Later M12 tasks must extend benchmark guardrails and
-  closeout evidence.
+  deferrals unchanged. M12.8 refreshes public contracts and docs so schemas,
+  examples, CLI docs, README, roadmap, Sphinx, and fixture docs align around
+  `support_level`, `diagnostic_status`, `index_derived`, `input_index`, and the
+  reserved M12 fixture outputs. Later M12 tasks must extend benchmark
+  guardrails and closeout evidence.
 
 ## Completed Backbone
 

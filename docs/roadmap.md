@@ -202,6 +202,10 @@ This order is retained because it matches the dependency chain of the runtime:
   `input_index` compatibility for selected adjacent input sidecars, keeps CSI
   as detect-only scan fallback, and leaves output BAI/CSI invalidation and
   replacement-index deferrals unchanged
+* M12.8 public contract refresh: schemas, examples, CLI docs, README, roadmap,
+  Sphinx, and fixture docs now align around `support_level`,
+  `diagnostic_status`, `index_derived`, `input_index`, and the reserved M12
+  fixture outputs
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 

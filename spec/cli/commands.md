@@ -612,6 +612,13 @@ fallback rather than indexed traversal. `check_map --region <REGION>` reports
 --region <REGION>` reports `index_derived.kind: CSI` and an unsupported CSI
 fallback note. BAI remains the only index kind used for region traversal.
 
+M12.8 public contract refresh:
+
+The region `check_map` example includes `index.diagnostic_status`, and the
+region `summary` example includes `index_derived` with whole-file BAI totals
+omitted. These examples keep the public contract aligned with the M12.4
+diagnostic vocabulary and the M12.6 read-only CSI fallback policy.
+
 M11.2 future region-file contract:
 
 No public `select_region` synopsis or region-file CLI flag is introduced by
@@ -806,6 +813,13 @@ M12.7 adds `input_index` to the JSON contract. The object reports `present`,
 adjacent input sidecar. CSI is reported as `detect_only_csi` and uses scan
 fallback rather than indexed traversal. Output BAI/CSI invalidation remains
 unchanged and no replacement output index is created.
+
+M12.8 public contract refresh:
+
+`select_region` success examples include `input_index`, and the schema governs
+all compatibility values. Fixture docs map M12 reserved assets to the selected
+public contracts but do not claim replacement output-index creation, CSI-backed
+traversal, or CSI writing.
 
 The output header preserves the full binary reference dictionary and retained
 textual header records, rewrites existing `@HD SO` to `unknown`, removes

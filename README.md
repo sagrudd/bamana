@@ -648,6 +648,12 @@ sidecars remain detect-only scan fallback, and the JSON payload reports
 `input_index.kind: CSI`, `input_index.compatibility: detect_only_csi`, and
 `execution.fallback_reason: detect_only_csi_index` when CSI is selected.
 
+M12.8 refreshes public contracts and docs for the M12 decisions: region
+`check_map` examples include `index.diagnostic_status`, region `summary`
+examples include `index_derived`, `select_region` examples include
+`input_index`, and fixture docs map the reserved large-reference BAI, CSI
+reference-count mismatch, and malformed FASTQ.GZI cases to governed outputs.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

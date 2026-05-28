@@ -324,6 +324,12 @@ to native scanning, and unsupported, stale, malformed, incomplete, missing, or
 disabled index states remain explicit fallback causes. Output BAI/CSI sidecar
 invalidation remains unchanged, and no replacement output index is created.
 
+M12.8 refreshes public contract artifacts for the M12 decisions. Region
+`check_map` examples now carry `index.diagnostic_status`, region `summary`
+examples carry `index_derived`, `select_region` examples carry `input_index`,
+and fixture documentation maps the reserved M12 large-reference BAI, CSI
+reference-count mismatch, and malformed FASTQ.GZI cases to governed outputs.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

@@ -128,6 +128,26 @@ Output BAI/CSI invalidation remains governed by
 ``output.index_invalidation``. ``select_region`` still does not create a
 replacement output index.
 
+Public Contract Refresh
+-----------------------
+
+M12.8 consolidates the public schema, example, CLI, roadmap, Sphinx, and
+fixture documentation for the M12 support decisions:
+
+* ``check_index`` governs ``support_level`` for selected and candidate
+  sidecars: BAI ``read_write``, CSI ``detect_only``, FASTQ.GZI
+  ``planning_sidecar``, unknown ``unsupported``, and absent ``absent``.
+* ``check_map`` governs ``index.diagnostic_status`` in whole-file and region
+  examples.
+* ``summary`` governs ``index_derived`` in the schema and region examples,
+  including the rule that region-scoped indexed traversal omits whole-file BAI
+  totals.
+* ``select_region`` governs ``input_index`` and its compatibility values,
+  including ``used_bai`` and ``detect_only_csi``.
+* Fixture docs map the reserved M12 assets to the public contracts for
+  large-reference BAI rejection, CSI reference-count mismatch, and malformed
+  FASTQ.GZI planner-sidecar behavior.
+
 Remaining M12 Work
 ------------------
 

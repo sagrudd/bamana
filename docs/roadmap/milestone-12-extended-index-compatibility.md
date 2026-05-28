@@ -127,6 +127,26 @@ input sidecar:
 * output BAI/CSI invalidation remains under `output.index_invalidation`, and
   `select_region` still does not create replacement output indexes.
 
+## M12.8 Public Contract Refresh
+
+M12.8 consolidates the public contract artifacts for the M12 decisions already
+implemented in M12.1-M12.7. The refreshed governed surface is:
+
+* `check_index` schema and examples include `support_level` for selected and
+  candidate sidecars, with BAI `read_write`, CSI `detect_only`, FASTQ.GZI
+  `planning_sidecar`, unknown `unsupported`, and absent `absent`;
+* `check_map` schema and examples include `index.diagnostic_status`, including
+  region examples, so stale, unsupported, malformed, mismatched-reference,
+  incomplete, disabled, absent, and usable states are machine-readable;
+* `summary` schema and region examples govern `index_derived`, including
+  region-scoped traversal context where whole-file BAI totals are omitted;
+* `select_region` schema and examples govern `input_index`, including
+  `used_bai`, `detect_only_csi`, unsupported, missing, stale, malformed,
+  incomplete, and disabled compatibility states;
+* fixture documentation maps the M12 reserved assets to those public contracts:
+  large-reference BAI rejection, CSI reference-count mismatch, and malformed
+  FASTQ.GZI planner-sidecar behavior.
+
 ## Ten-Task Outline
 
 1. M12.1 activate scope and audit current BAI, CSI, and FASTQ.GZI behavior.

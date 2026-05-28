@@ -205,6 +205,9 @@ Key concepts:
 * `index_derived` keeps BAI-derived totals separate from scan-derived counts
   and is present only when the selected BAI is not timestamp-stale, passes
   implemented structural checks, and supplies complete mapped/unmapped metadata
+* region-scoped `index_derived` is governed in M12.8: indexed traversal reports
+  `present`, `kind`, `used`, and a note, but omits whole-file BAI mapped and
+  unmapped totals because the index is used only to find records
 * stale, unsupported, malformed, or incomplete sidecars are explained in
   `semantic_note`; the summary then uses native scan evidence without
   `index_derived`

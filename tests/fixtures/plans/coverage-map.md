@@ -97,6 +97,11 @@ M12 fixtures must preserve the M12.2 support-level contract and the M12.4
 diagnostic vocabulary: `usable`, `absent`, `stale`, `unsupported`,
 `malformed`, `mismatched_reference`, `incomplete`, and `disabled`.
 
+M12.8 maps those fixtures back to governed public contract artifacts:
+`check_index.support_level`, `check_map.index.diagnostic_status`,
+`summary.index_derived`, `select_region.input_index`, and FASTQ.GZI
+planner-sidecar fallback or failure examples.
+
 ### M10 indexed-region workflow coverage
 
 M10.3 freezes region-aware `check_map` and region-aware `summary` as the first

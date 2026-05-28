@@ -162,6 +162,11 @@ and validation command wave:
   rejection, `tiny.invalid.mismatched_reference_count.csi` for CSI
   reference-count mismatch diagnostics, and `tiny.invalid.fastq_gz.bad_gzi`
   for malformed FASTQ.GZI planner-sidecar behavior;
+* M12.8 ties those reserved fixtures to public contract artifacts: `index`
+  large-reference failures, `check_index.support_level`,
+  `check_map.index.diagnostic_status`, `summary.index_derived`,
+  `select_region.input_index`, and FASTQ.GZI planner-sidecar fallback or
+  failure examples;
 * `tiny.valid.fastq_gz.gzi` covers implemented FASTQ.GZI sidecar behavior for
   `index`, `enumerate`, `explode`, and `consume`;
 * `tiny.tags.nm_rg`, `tiny.tags.mixed_aux_types`, and

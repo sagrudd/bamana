@@ -5627,12 +5627,31 @@ Completion evidence:
 
 ### M12.8 Update Public Contracts And Docs
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * update schemas, examples, CLI contracts, README, roadmap, Sphinx, and fixture
   docs for the M12 support decisions.
+
+Acceptance:
+
+* M12 schemas govern `check_index.support_level`,
+  `check_map.index.diagnostic_status`, `summary.index_derived`, and
+  `select_region.input_index`;
+* examples expose the refreshed M12 region and selected-region fields;
+* fixture docs map reserved M12 assets to the governed output contracts;
+* README, CLI docs, roadmap, current milestone, Sphinx, and CLI contracts carry
+  the public contract refresh.
+
+Completion evidence:
+
+* updated `check_map.region.success.json`, `summary.region.success.json`, and
+  the relevant JSON schemas, and confirmed `select_region.success.json`
+  exposes `input_index`;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, current
+  milestone, Sphinx, fixture docs, coverage map, and taskmap;
+* added contract coverage for the M12.8 public contract refresh.
 
 ### M12.9 Add Benchmark And Dependency Guardrails
 

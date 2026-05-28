@@ -67,6 +67,12 @@
     "anomalies": {
       "contradictory_mapping_state_records": 0
     },
+    "index_derived": {
+      "present": true,
+      "kind": "BAI",
+      "used": true,
+      "note": "Index was used for region traversal only; whole-file BAI mapped/unmapped totals are intentionally omitted from region-scoped summary output."
+    },
     "confidence": "high",
     "semantic_note": "Summary metrics are scoped to requested regions and cannot be interpreted as full-file totals."
   },
