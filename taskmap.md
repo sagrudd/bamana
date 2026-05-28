@@ -5180,13 +5180,47 @@ Completion evidence:
 
 ### M11.5 Specify Duplicate And Overlapping Region Policy
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * define record ordering across repeated and overlapping regions;
 * define duplicate suppression or duplication preservation behavior;
 * update contracts, docs, fixtures, and tests.
+
+Acceptance criteria:
+
+* selected-output duplicate and overlap behavior is specified without
+  implementing `select_region`;
+* record identity and output ordering are explicit;
+* repeated regions, duplicate region-file lines, overlapping intervals, adjacent
+  chunks, and broad-bin rediscovery behavior are explicit;
+* report metadata requirements for duplicate suppression and region matches are
+  specified;
+* unsupported repeated-output and per-region-output modes are documented.
+
+Completion evidence:
+
+* froze selected output to emit each physical BAM alignment record at most once,
+  using the source BAM virtual-offset range as physical record identity;
+* required output order to be ascending source virtual-offset order, with scan
+  fallback using native BAM encounter order;
+* documented that region request order and region-file line order are preserved
+  in normalized request metadata but do not control output ordering or repeat
+  records;
+* documented duplicate suppression for repeated region strings, repeated
+  region-file lines, overlapping intervals, adjacent BAI chunks, and broad bins;
+* required future reports to include requested region count, normalized region
+  count, duplicate region request count, overlapping region request count when
+  detectable, selected unique record count, duplicate physical records
+  suppressed, `source_virtual_offset_order`, and
+  `emit_once_per_source_record`;
+* documented that request-order repeated output, per-region BAM blocks, and
+  one-output-file-per-region behavior are unsupported by M11.5;
+* updated README, CLI docs, roadmap, current milestone notes, Sphinx technical
+  notes, CLI command specification, task map, and contract tests;
+* kept `select_region` unimplemented and deferred schemas, examples, and
+  fixtures to M11.8.
 
 ### M11.6 Implement Native Selected-Record Writing
 

@@ -185,6 +185,53 @@ and overlapping-region emission policy, final record ordering, and write-safety
 remain unfrozen. M11.8 must add governed schemas, examples, and fixtures once
 those contracts are complete.
 
+## M11.5 Duplicate And Overlapping Region Policy
+
+M11.5 specifies record ordering and duplicate/overlap behavior, but it does not
+implement `select_region` and does not make the command runnable.
+
+Selected output emits each physical BAM alignment record at most once. Physical
+record identity is the source BAM virtual-offset range for the raw record.
+Repeated region strings, repeated region-file lines, overlapping intervals,
+adjacent BAI chunks, or broad bins that discover the same record more than once
+must not duplicate that record in the selected BAM output.
+
+Record order is deterministic source order:
+
+* selected records are emitted in ascending source BAM virtual-offset order;
+* scan fallback emits records in native BAM encounter order, which is the same
+  source-order policy;
+* region request order is preserved in normalized request metadata but does not
+  control output ordering;
+* region-file line order is preserved in normalized request metadata but does
+  not cause selected records to be repeated;
+* multi-reference requests do not create per-region output blocks; all selected
+  records share one source-order output stream.
+
+When a record matches more than one requested interval, the future report must
+retain all matched normalized region identifiers for that record or for the
+selection evidence path. The selected BAM output still contains one copy of the
+record. The report must distinguish:
+
+* requested region count;
+* normalized region count;
+* duplicate region request count;
+* overlapping region request count when detectable;
+* selected unique record count;
+* duplicate physical records suppressed;
+* output ordering policy: `source_virtual_offset_order`;
+* duplicate emission policy: `emit_once_per_source_record`.
+
+M11.5 intentionally does not support a request-order repeated-output mode,
+per-region BAM block output, or one-output-file-per-region behavior. Those
+would require a separate future contract because they change duplicate
+multiplicity and sorting claims.
+
+M11.5 does not add a JSON schema, golden example, or fixture because
+write-safety and final command implementation remain pending. M11.8 must add
+governed schemas, examples, and fixtures once the remaining contracts are
+complete.
+
 ## Ten-Task Outline
 
 1. M11.1 activate scope and freeze the selection command decision.

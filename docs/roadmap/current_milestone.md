@@ -59,7 +59,10 @@ Current milestone:
   reports that write no BAM output. M11.4 freezes header behavior: preserve the
   full binary reference dictionary and textual header, append only `@PG`
   provenance, downgrade existing `@HD SO` to `unknown`, remove `SS`, and report
-  input/output sort metadata.
+  input/output sort metadata. M11.5 freezes duplicate and overlapping-region
+  policy: emit each physical source record at most once in source virtual-offset
+  order, suppressing duplicates from repeated regions, overlapping intervals,
+  adjacent chunks, and broad bins while keeping match metadata in reports.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

@@ -2453,6 +2453,86 @@ fn milestone_11_header_sort_contract_is_specified_without_cli_behavior() {
 }
 
 #[test]
+fn milestone_11_duplicate_overlap_contract_is_specified_without_cli_behavior() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for required in [
+        "M11.5",
+        "Duplicate And Overlapping Regions",
+        "each physical BAM alignment record at most once",
+        "source BAM virtual-offset range",
+        "Repeated region strings",
+        "repeated region-file lines",
+        "overlapping intervals",
+        "adjacent BAI chunks",
+        "broad bins",
+        "must not duplicate",
+        "deterministic source order",
+        "ascending source BAM virtual-offset order",
+        "native BAM encounter order",
+        "Region request order",
+        "region-file line order",
+        "do not control output ordering",
+        "be repeated",
+        "Multi-reference requests",
+        "one source-order output stream",
+        "all matched normalized region identifiers",
+        "selected BAM output still contains one copy",
+        "requested region count",
+        "normalized region count",
+        "duplicate region request count",
+        "overlapping region request count",
+        "selected unique record count",
+        "duplicate physical records suppressed",
+        "source_virtual_offset_order",
+        "emit_once_per_source_record",
+        "request-order repeated output",
+        "per-region BAM blocks",
+        "one output file per region",
+        "M11.5 does not add schemas, examples, or fixtures",
+        "M11.8 must add",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11.5 duplicate/overlap contract is missing: {required}"
+        );
+    }
+
+    assert!(
+        !cli_source.contains("SelectRegion"),
+        "M11.5 must not implement the select_region CLI before write-safety and implementation tasks"
+    );
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

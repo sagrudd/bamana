@@ -225,6 +225,14 @@ records, keeps unselected references in the header, appends only a
 collision-free `@PG` provenance record for `bamana select_region`, rewrites
 existing `@HD SO` to `unknown`, removes `@HD SS`, and reports input/output sort
 metadata and the downgrade reason in JSON.
+M11.5 freezes duplicate and overlapping-region output policy without making
+`select_region` runnable. Future selected BAM output emits each physical source
+record once at most, identified by source BAM virtual-offset range and ordered
+by ascending source virtual offset. Repeated regions, duplicate region-file
+lines, overlapping intervals, adjacent chunks, and broad bins do not repeat
+records in the output; all matched normalized region identifiers remain report
+metadata. Request-order repeated output, per-region BAM blocks, and one output
+file per region remain unsupported.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

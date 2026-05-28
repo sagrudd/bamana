@@ -142,6 +142,9 @@ This order is retained because it matches the dependency chain of the runtime:
 * M11.4 header contract: future selected output preserves the full reference
   dictionary and textual header, appends only `@PG` provenance, downgrades
   `@HD SO` to `unknown`, removes `SS`, and reports input/output sort metadata
+* M11.5 duplicate policy: future selected output emits each physical source
+  record at most once in source virtual-offset order, suppressing duplicate
+  physical records from repeated, overlapping, or broad-bin region discovery
 
 ### Milestone 12: Extended Index Compatibility
 

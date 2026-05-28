@@ -679,6 +679,34 @@ guaranteed to preserve whole-file order. M11.4 does not add schemas, examples,
 or fixtures because duplicate emission, final record ordering, and write-safety
 remain unfrozen; M11.8 must add them once those contracts are complete.
 
+M11.5 future duplicate and overlapping-region contract:
+
+No public `select_region` command is introduced by M11.5. Future selected BAM
+output emits each physical BAM alignment record at most once. Physical record
+identity is the source BAM virtual-offset range for the raw record. Repeated
+region strings, repeated region-file lines, overlapping intervals, adjacent BAI
+chunks, and broad bins that discover the same record more than once must not
+duplicate that record in selected BAM output.
+
+Record order is deterministic source order: selected records are emitted in
+ascending source BAM virtual-offset order, and scan fallback emits records in
+native BAM encounter order. Region request order and region-file line order are
+preserved in normalized request metadata but do not control output ordering and
+do not cause records to be repeated. Multi-reference requests produce one
+source-order output stream rather than per-region output blocks.
+
+When a record matches more than one requested interval, the future report must
+retain all matched normalized region identifiers, while the selected BAM output
+contains one copy of the record. Reports must include requested region count,
+normalized region count, duplicate region request count, overlapping region
+request count when detectable, selected unique record count, duplicate physical
+records suppressed, output ordering policy `source_virtual_offset_order`, and
+duplicate emission policy `emit_once_per_source_record`. Request-order repeated
+output, per-region BAM blocks, and one-output-file-per-region behavior are not
+supported by M11.5. M11.5 does not add schemas, examples, or fixtures because
+write-safety and final command implementation remain pending; M11.8 must add
+them once the remaining contracts are complete.
+
 ## `check_index`
 
 Synopsis:
@@ -872,6 +900,34 @@ that sort-order metadata was downgraded because selected-region output is not
 guaranteed to preserve whole-file order. M11.4 does not add schemas, examples,
 or fixtures because duplicate emission, final record ordering, and write-safety
 remain unfrozen; M11.8 must add them once those contracts are complete.
+
+M11.5 future duplicate and overlapping-region contract:
+
+No public `select_region` command is introduced by M11.5. Future selected BAM
+output emits each physical BAM alignment record at most once. Physical record
+identity is the source BAM virtual-offset range for the raw record. Repeated
+region strings, repeated region-file lines, overlapping intervals, adjacent BAI
+chunks, and broad bins that discover the same record more than once must not
+duplicate that record in selected BAM output.
+
+Record order is deterministic source order: selected records are emitted in
+ascending source BAM virtual-offset order, and scan fallback emits records in
+native BAM encounter order. Region request order and region-file line order are
+preserved in normalized request metadata but do not control output ordering and
+do not cause records to be repeated. Multi-reference requests produce one
+source-order output stream rather than per-region output blocks.
+
+When a record matches more than one requested interval, the future report must
+retain all matched normalized region identifiers, while the selected BAM output
+contains one copy of the record. Reports must include requested region count,
+normalized region count, duplicate region request count, overlapping region
+request count when detectable, selected unique record count, duplicate physical
+records suppressed, output ordering policy `source_virtual_offset_order`, and
+duplicate emission policy `emit_once_per_source_record`. Request-order repeated
+output, per-region BAM blocks, and one-output-file-per-region behavior are not
+supported by M11.5. M11.5 does not add schemas, examples, or fixtures because
+write-safety and final command implementation remain pending; M11.8 must add
+them once the remaining contracts are complete.
 
 ## `check_tag`
 

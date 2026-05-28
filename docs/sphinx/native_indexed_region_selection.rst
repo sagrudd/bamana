@@ -144,6 +144,42 @@ does not add schemas, examples, or fixtures because duplicate emission, final
 record ordering, and write-safety remain unfrozen; M11.8 must add them after
 those contracts are complete.
 
+Duplicate And Overlapping Regions
+---------------------------------
+
+M11.5 freezes record ordering and duplicate/overlap behavior without making
+``select_region`` runnable.
+
+Selected output emits each physical BAM alignment record at most once. Physical
+record identity is the source BAM virtual-offset range for the raw record.
+Repeated region strings, repeated region-file lines, overlapping intervals,
+adjacent BAI chunks, and broad bins that discover the same record more than
+once must not duplicate that record in the selected BAM output.
+
+Record order is deterministic source order. Selected records are emitted in
+ascending source BAM virtual-offset order. Scan fallback emits records in
+native BAM encounter order, which is the same source-order policy. Region
+request order and region-file line order are preserved in normalized request
+metadata but do not control output ordering and do not cause selected records to
+be repeated. Multi-reference requests produce one source-order output stream,
+not per-region output blocks.
+
+When a record matches more than one requested interval, the future report must
+retain all matched normalized region identifiers for that record or evidence
+path. The selected BAM output still contains one copy of the record. Reports
+must distinguish requested region count, normalized region count, duplicate
+region request count, overlapping region request count when detectable,
+selected unique record count, duplicate physical records suppressed, output
+ordering policy ``source_virtual_offset_order``, and duplicate emission policy
+``emit_once_per_source_record``.
+
+M11.5 intentionally does not support request-order repeated output, per-region
+BAM blocks, or one output file per region. Those modes would need a separate
+future contract because they change duplicate multiplicity and sorting claims.
+M11.5 does not add schemas, examples, or fixtures because write-safety and final
+command implementation remain pending; M11.8 must add them once the remaining
+contracts are complete.
+
 Inherited Substrate
 -------------------
 

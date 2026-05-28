@@ -552,6 +552,12 @@ textual header records, keeps unselected references in the header, appends only
 a collision-free `@PG` provenance record for `bamana select_region`, rewrites
 existing `@HD SO` to `unknown`, removes `@HD SS`, and reports input/output sort
 metadata so selected output does not overclaim coordinate or queryname order.
+M11.5 freezes duplicate and overlapping-region output policy without making
+`select_region` runnable. Future selected BAM output emits each physical source
+record at most once, ordered by source BAM virtual offset, while preserving
+region request order only in metadata. Repeated regions, region-file duplicate
+lines, overlapping intervals, adjacent chunks, and broad BAI bins suppress
+duplicate physical records rather than repeating them in the output.
 
 ## Specification Layer
 
