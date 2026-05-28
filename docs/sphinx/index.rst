@@ -44,3 +44,4 @@ Build the site locally with:
    native_bam_index_random_access
    native_indexed_region_workflows
    native_indexed_region_selection
+   native_extended_index_compatibility

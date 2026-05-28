@@ -602,6 +602,17 @@ The milestone leaves `select_region` governed for BGZF BAM file output from CLI
 index creation, CSI large-reference behavior, native CRAM indexed queries, and
 broad comparator parity still deferred.
 
+Milestone 12 is active for extended index compatibility. M12.1 records the
+baseline without changing CLI behavior: BAI detection, parsing, structural
+validation, mapped/unmapped metadata extraction, timestamp-staleness checks,
+and native BAI writing are implemented for coordinate-sorted BAM inputs;
+`check_index` discovers adjacent BAI, CSI, GZI, and unknown sidecars; CSI
+remains header-only detected-but-not-supported for random-access use; `index
+--format csi` remains explicitly unimplemented; `check_map`, `summary`, and
+`select_region` remain BAI-first with native scan fallback for missing, stale,
+unsupported, malformed, or incomplete index state; FASTQ.GZI remains a
+FASTQ.GZ planning sidecar and is not a BAM random-access index.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

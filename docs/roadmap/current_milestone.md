@@ -101,8 +101,27 @@ Latest closed milestone:
   `--out -`, replacement output index creation, CSI large-reference behavior,
   native CRAM indexed queries, and broad comparator parity still deferred.
 
-Milestone 11 is closed; Milestone 12 remains planned until its activation task
-is started.
+Current milestone:
+
+* **Milestone 12: Extended Index Compatibility** is active as of 2026-05-28.
+  Milestone 12 is active as of 2026-05-28.
+  M12 follows the completed M11 selected-region file-output milestone and does
+  not reopen Milestone 11 contracts. M12.1 activates the scope and records the
+  current index baseline: BAI detection, parsing, structural validation,
+  mapped/unmapped metadata extraction, timestamp-staleness checks, and native
+  BAI writing are implemented for coordinate-sorted BAM inputs; `check_index`
+  discovers adjacent BAI, CSI, GZI, and unknown sidecars; CSI is parsed only at
+  header level and remains detected-but-not-supported for random-access use;
+  `index --format csi` remains explicitly unimplemented; `check_map`,
+  `summary`, and `select_region` remain BAI-first for indexed evidence or
+  selected-output traversal and fall back to native scans when index state is
+  missing, stale, unsupported, malformed, or incomplete; `select_region`
+  invalidates adjacent output BAI/CSI sidecars without creating a replacement
+  output index; FASTQ.GZI remains a FASTQ.GZ enumeration, consume, and explode
+  planning sidecar rather than a BAM random-access index. Later M12 tasks must
+  freeze CSI support levels, large-reference thresholds, stale/mismatched and
+  unsupported-index diagnostics, fixtures, selected-region compatibility,
+  schemas/examples/docs, benchmark guardrails, and closeout evidence.
 
 ## Completed Backbone
 

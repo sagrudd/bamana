@@ -2046,7 +2046,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 12: Extended Index Compatibility",
-            "status: planned",
+            "status: active",
             "roadmap/milestone-12-extended-index-compatibility.md",
         ),
         (
@@ -2109,6 +2109,91 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
             "post-M10 roadmap is missing: {required}"
         );
     }
+}
+
+#[test]
+fn milestone_12_activation_baseline_records_index_compatibility_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m12 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-12-extended-index-compatibility.md"),
+    );
+    let m12_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_extended_index_compatibility.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M12 roadmap", &m12),
+        ("M12 Sphinx", &m12_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 12 is active")
+                || text.contains("status: active")
+                || text.contains("Status: active as of 2026-05-28")
+                || text.contains("Status: complete."),
+            "{name} does not record Milestone 12 activation"
+        );
+    }
+
+    for required in [
+        "M12.1",
+        "Extended Index Compatibility",
+        "does not reopen Milestone 11",
+        "BAI detection",
+        "structural validation",
+        "mapped/unmapped metadata",
+        "timestamp-staleness",
+        "native BAI writing",
+        "coordinate-sorted BAM",
+        "check_index",
+        "BAI, CSI, GZI, and unknown sidecars",
+        "--prefer-csi",
+        "CSI",
+        "header-only",
+        "detected-but-not-supported",
+        "index --format csi",
+        "explicitly unimplemented",
+        "check_map",
+        "summary",
+        "select_region",
+        "BAI-first",
+        "native scan fallback",
+        "missing, stale, unsupported, malformed, or incomplete",
+        "FASTQ.GZI",
+        "FASTQ.GZ planning sidecar",
+        "not a BAM random-access index",
+        "CSI support levels",
+        "large-reference thresholds",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m12.contains(required)
+                || m12_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M12 activation baseline is missing: {required}"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_extended_index_compatibility"),
+        "Sphinx index does not include the M12 technical note"
+    );
 }
 
 #[test]

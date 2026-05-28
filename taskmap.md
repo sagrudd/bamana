@@ -5425,3 +5425,124 @@ Completion evidence:
   `cargo fmt --check`, and `git diff --check`;
 * scanner smoke evidence reported `select_region_scan_fallback` and
   `select_region_indexed_output` as `1/1` successful.
+
+## Milestone 12: Extended Index Compatibility
+
+### M12.1 Activate Scope And Audit Current Index Behavior
+
+Status: complete.
+
+Tasks:
+
+* activate Milestone 12 after the M11 closeout;
+* audit current BAI, CSI, and FASTQ.GZI behavior without changing CLI
+  behavior;
+* update roadmap, README, CLI docs, Sphinx docs, and contract coverage with the
+  M12.1 baseline.
+
+Acceptance criteria:
+
+* roadmap and current milestone docs record Milestone 12 as active;
+* the baseline names implemented BAI detection, parsing, structural validation,
+  mapped/unmapped metadata extraction, timestamp-staleness checks, and native
+  BAI writing for coordinate-sorted BAM inputs;
+* the baseline records CSI as discovered and header-parsed but
+  detected-not-usable for random-access traversal, with `index --format csi`
+  still explicitly unimplemented;
+* the baseline records `check_map`, `summary`, and `select_region` as
+  BAI-first with native scan fallback for missing, stale, unsupported,
+  malformed, or incomplete index state;
+* the baseline records FASTQ.GZI as a FASTQ.GZ enumeration, consume, and
+  explode planning sidecar rather than a BAM random-access index.
+
+Completion evidence:
+
+* updated README, CLI docs, roadmap summary, current milestone notes, M12
+  roadmap detail, Sphinx index, and a new Sphinx M12 technical note;
+* added contract coverage for the M12.1 activation baseline;
+* no runtime command behavior was changed.
+
+### M12.2 Freeze CSI Support Levels
+
+Status: pending.
+
+Tasks:
+
+* decide whether CSI remains detect-only, becomes read-compatible for a scoped
+  subset, or gains write support;
+* document command-specific behavior for `check_index`, `index`, `check_map`,
+  `summary`, and `select_region`.
+
+### M12.3 Define Large-Reference Behavior
+
+Status: pending.
+
+Tasks:
+
+* define BAI reference-length thresholds and CSI large-reference expectations;
+* record precise rejection and deferral wording for unsupported ranges.
+
+### M12.4 Strengthen Index Diagnostics
+
+Status: pending.
+
+Tasks:
+
+* harden stale-index, mismatched-reference, unsupported-index, and malformed
+  sidecar diagnostics;
+* keep fallback behavior explicit for every index-aware command.
+
+### M12.5 Extend Index Fixtures
+
+Status: pending.
+
+Tasks:
+
+* extend BAI/CSI/GZI fixture reservations and expected artifacts for
+  compatibility and failure modes.
+
+### M12.6 Wire Supported CSI Behavior
+
+Status: pending.
+
+Tasks:
+
+* wire any explicitly promoted CSI behavior into read-only region evidence;
+* preserve BAI-first behavior unless M12.2 promotes a different contract.
+
+### M12.7 Update Selected-Region Compatibility
+
+Status: pending.
+
+Tasks:
+
+* update `select_region` index compatibility behavior to match the M12 support
+  decisions;
+* keep output index invalidation and replacement-index deferrals explicit.
+
+### M12.8 Update Public Contracts And Docs
+
+Status: pending.
+
+Tasks:
+
+* update schemas, examples, CLI contracts, README, roadmap, Sphinx, and fixture
+  docs for the M12 support decisions.
+
+### M12.9 Add Benchmark And Dependency Guardrails
+
+Status: pending.
+
+Tasks:
+
+* add index compatibility benchmark or smoke timing evidence;
+* extend dependency-boundary tests where M12 promotes new hot paths.
+
+### M12.10 Close Milestone 12
+
+Status: pending.
+
+Tasks:
+
+* run full verification and record explicit residual risk;
+* commit and push the closing milestone change.

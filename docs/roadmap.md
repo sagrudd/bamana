@@ -170,12 +170,17 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 12: Extended Index Compatibility
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-12-extended-index-compatibility.md](roadmap/milestone-12-extended-index-compatibility.md)
 * goal: harden CSI, large-reference, stale-index, and cross-index compatibility
   behavior without weakening native BAM ownership
 * commands enabled first: index-aware `check_index`, `check_map`, `summary`,
   and any M11 selection surface
+* M12.1 activation baseline: BAI detection/parsing/writing is implemented for
+  coordinate-sorted BAM; CSI is discovered and parsed at header level but
+  remains detected-not-usable; `check_map`, `summary`, and `select_region`
+  remain BAI-first with scan fallback; FASTQ.GZI remains a FASTQ.GZ planning
+  sidecar rather than a BAM random-access index
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 
