@@ -139,6 +139,52 @@ header behavior, record ordering, duplicate policy, and write-safety remain
 unfrozen. M11.8 must add governed schemas, examples, and fixtures once those
 contracts are complete.
 
+## M11.4 Header Preservation And Sort-Order Contract
+
+M11.4 specifies the future selected-output header contract, but it does not
+implement `select_region` and does not make the command runnable.
+
+Selected BAM output must preserve the input BAM reference dictionary exactly:
+
+* binary reference dictionary order, names, lengths, and reference indexes are
+  authoritative and must be copied without filtering to only selected
+  references;
+* record `refID`, `next_refID`, CIGAR, mate, auxiliary, and read-group
+  references remain valid against the unchanged dictionary;
+* textual `@SQ` records are preserved in encounter order and must continue to
+  reconcile with the binary reference dictionary;
+* references with no selected records remain in the output header.
+
+The textual header must be preserved conservatively. `@RG`, existing `@PG`,
+`@CO`, and unknown SAM-style header records are retained. The only permitted
+selected-output header mutation in M11.4 is command provenance:
+
+* append a new `@PG` record for `bamana select_region`;
+* generate a collision-free `ID`;
+* set `PN:bamana`;
+* include the Bamana version when available;
+* set `PP` to the previous terminal program only when the program chain is
+  unambiguous;
+* never remove, rewrite, or reorder unrelated header records for provenance.
+
+Sort metadata is intentionally conservative. Region selection can emit records
+from multiple intervals, repeated intervals, overlapping intervals, region files,
+or scan fallback, so the output must not claim coordinate or queryname order
+until a later task proves a narrower case:
+
+* if an input `@HD` record exists, selected output rewrites `SO` to `unknown`;
+* selected output removes `SS` from `@HD`;
+* if no input `@HD` exists, M11.4 does not require synthesizing one solely for
+  sort metadata;
+* the JSON report records input `@HD` `SO`/`SS`, output `@HD` `SO`/`SS`, and a
+  note that sort-order metadata was downgraded because selected-region output
+  is not guaranteed to preserve whole-file order.
+
+M11.4 does not add a JSON schema, golden example, or fixture because duplicate
+and overlapping-region emission policy, final record ordering, and write-safety
+remain unfrozen. M11.8 must add governed schemas, examples, and fixtures once
+those contracts are complete.
+
 ## Ten-Task Outline
 
 1. M11.1 activate scope and freeze the selection command decision.

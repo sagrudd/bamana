@@ -546,6 +546,12 @@ outputs, and mandatory `--report <path>` when `--out -` sends binary BAM to
 stdout. SAM, CRAM, FASTQ, FASTQ.GZ, FASTA, text output, uncompressed BAM, and
 alternate compression modes remain rejected or unpromoted. Dry runs write no
 BAM output and must report `dry_run: true` and `output_created: false`.
+M11.4 freezes selected-output header semantics without making `select_region`
+runnable. Future output preserves the full binary reference dictionary and
+textual header records, keeps unselected references in the header, appends only
+a collision-free `@PG` provenance record for `bamana select_region`, rewrites
+existing `@HD SO` to `unknown`, removes `@HD SS`, and reports input/output sort
+metadata so selected output does not overclaim coordinate or queryname order.
 
 ## Specification Layer
 

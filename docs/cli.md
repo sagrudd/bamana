@@ -218,6 +218,13 @@ alternate compression modes are not promoted. Dry runs write no BAM output and
 must report `dry_run: true`, `output_created: false`, the requested output
 target, region source, intended execution mode, and planned rejection or
 fallback state.
+M11.4 freezes selected-output header semantics without making `select_region`
+runnable. Future output preserves the full binary reference dictionary,
+preserves textual `@SQ`, `@RG`, existing `@PG`, `@CO`, and unknown header
+records, keeps unselected references in the header, appends only a
+collision-free `@PG` provenance record for `bamana select_region`, rewrites
+existing `@HD SO` to `unknown`, removes `@HD SS`, and reports input/output sort
+metadata and the downgrade reason in JSON.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

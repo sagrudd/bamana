@@ -56,7 +56,10 @@ Current milestone:
   otherwise unsupported coordinate models rejected. M11.3 freezes selected-record
   output as BAM-only: BGZF-compressed BAM input and output, explicit `--out`,
   JSON report separation when `--out -` writes binary BAM to stdout, and dry-run
-  reports that write no BAM output.
+  reports that write no BAM output. M11.4 freezes header behavior: preserve the
+  full binary reference dictionary and textual header, append only `@PG`
+  provenance, downgrade existing `@HD SO` to `unknown`, remove `SS`, and report
+  input/output sort metadata.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

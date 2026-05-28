@@ -2374,6 +2374,85 @@ fn milestone_11_selected_record_output_contract_is_specified_without_cli_behavio
 }
 
 #[test]
+fn milestone_11_header_sort_contract_is_specified_without_cli_behavior() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for required in [
+        "M11.4",
+        "Header Preservation",
+        "Sort Order",
+        "reference dictionary exactly",
+        "binary reference dictionary order",
+        "names, lengths, and reference indexes",
+        "without filtering to selected references",
+        "references with no selected records remain",
+        "Textual `@SQ` records are preserved",
+        "reconcile with the binary reference dictionary",
+        "`@RG`",
+        "existing `@PG`",
+        "`@CO`",
+        "unknown SAM-style header records",
+        "only permitted selected-output header mutation",
+        "append a new `@PG` record",
+        "bamana select_region",
+        "collision-free `ID`",
+        "PN:bamana",
+        "Bamana version",
+        "set `PP`",
+        "program chain is unambiguous",
+        "Unrelated header records must not be removed",
+        "Sort metadata is conservative",
+        "rewrites `SO` to `unknown`",
+        "removes `SS`",
+        "does not require synthesizing",
+        "input `@HD` `SO`/`SS`",
+        "output `@HD` `SO`/`SS`",
+        "sort-order metadata was downgraded",
+        "not guaranteed to preserve whole-file order",
+        "M11.4 does not add",
+        "M11.8 must add",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11.4 header/sort contract is missing: {required}"
+        );
+    }
+
+    assert!(
+        !cli_source.contains("SelectRegion"),
+        "M11.4 must not implement the select_region CLI before duplicate/write-safety contracts are complete"
+    );
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

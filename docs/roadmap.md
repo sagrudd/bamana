@@ -139,6 +139,9 @@ This order is retained because it matches the dependency chain of the runtime:
 * M11.3 output contract: future selected-record output is BAM-only, using
   BGZF-compressed BAM input and output, explicit `--out`, JSON report separation
   when binary BAM is sent to stdout, and dry-run reports with no BAM writes
+* M11.4 header contract: future selected output preserves the full reference
+  dictionary and textual header, appends only `@PG` provenance, downgrades
+  `@HD SO` to `unknown`, removes `SS`, and reports input/output sort metadata
 
 ### Milestone 12: Extended Index Compatibility
 

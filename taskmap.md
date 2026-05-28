@@ -5141,13 +5141,42 @@ Completion evidence:
 
 ### M11.4 Specify Header Preservation And Sort-Order Behavior
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * define header preservation and reference dictionary behavior;
 * define `@HD SO` and `SS` handling after region selection;
 * update contracts, docs, examples, fixtures, and tests.
+
+Acceptance criteria:
+
+* selected-output header behavior is specified without implementing
+  `select_region`;
+* binary reference dictionary preservation is explicit;
+* textual header preservation and permitted provenance mutation are explicit;
+* `@HD SO` and `SS` behavior is conservative and does not overclaim output
+  sort order;
+* docs explain why schemas, examples, and fixtures remain deferred until
+  duplicate policy, final record ordering, and write-safety are frozen.
+
+Completion evidence:
+
+* froze selected output to preserve the full binary reference dictionary,
+  including unselected references, reference order, names, lengths, and indexes;
+* documented that textual `@SQ`, `@RG`, existing `@PG`, `@CO`, and unknown
+  SAM-style header records are retained;
+* permitted only a collision-free appended `@PG` provenance record for
+  `bamana select_region`, with `PN:bamana`, version when available, and `PP`
+  only when the prior program chain is unambiguous;
+* required selected output with existing `@HD` to rewrite `SO` to `unknown` and
+  remove `SS`; missing `@HD` is not synthesized solely for sort metadata;
+* required future JSON reports to record input and output `@HD` `SO`/`SS` plus
+  the sort-order downgrade note;
+* updated README, CLI docs, roadmap, current milestone notes, Sphinx technical
+  notes, CLI command specification, task map, and contract tests;
+* kept `select_region` unimplemented and deferred schemas, examples, and
+  fixtures to M11.8.
 
 ### M11.5 Specify Duplicate And Overlapping Region Policy
 

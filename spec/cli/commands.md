@@ -653,6 +653,32 @@ or fixtures because header behavior, record ordering, duplicate policy, and
 write-safety remain unfrozen; M11.8 must add them once those contracts are
 complete.
 
+M11.4 future header and sort-order contract:
+
+No public `select_region` command is introduced by M11.4. Future selected BAM
+output preserves the input BAM reference dictionary exactly: binary reference
+dictionary order, names, lengths, and reference indexes are copied without
+filtering to selected references, and references with no selected records remain
+in the output header. Textual `@SQ` records are preserved in encounter order
+and must continue to reconcile with the binary reference dictionary. `@RG`,
+existing `@PG`, `@CO`, and unknown SAM-style header records are retained.
+
+The only permitted selected-output header mutation in M11.4 is provenance:
+append a new `@PG` record for `bamana select_region`, generate a collision-free
+`ID`, set `PN:bamana`, include the Bamana version when available, and set `PP`
+to the previous terminal program only when the program chain is unambiguous.
+Unrelated header records must not be removed, rewritten, or reordered for
+provenance.
+
+Sort metadata is conservative. If an input `@HD` record exists, selected output
+rewrites `SO` to `unknown` and removes `SS`. If no input `@HD` exists, M11.4
+does not require synthesizing one solely for sort metadata. The future JSON
+report must record input `@HD` `SO`/`SS`, output `@HD` `SO`/`SS`, and a note
+that sort-order metadata was downgraded because selected-region output is not
+guaranteed to preserve whole-file order. M11.4 does not add schemas, examples,
+or fixtures because duplicate emission, final record ordering, and write-safety
+remain unfrozen; M11.8 must add them once those contracts are complete.
+
 ## `check_index`
 
 Synopsis:
@@ -820,6 +846,32 @@ interpretation or whole-file validation. M11.3 does not add schemas, examples,
 or fixtures because header behavior, record ordering, duplicate policy, and
 write-safety remain unfrozen; M11.8 must add them once those contracts are
 complete.
+
+M11.4 future header and sort-order contract:
+
+No public `select_region` command is introduced by M11.4. Future selected BAM
+output preserves the input BAM reference dictionary exactly: binary reference
+dictionary order, names, lengths, and reference indexes are copied without
+filtering to selected references, and references with no selected records remain
+in the output header. Textual `@SQ` records are preserved in encounter order
+and must continue to reconcile with the binary reference dictionary. `@RG`,
+existing `@PG`, `@CO`, and unknown SAM-style header records are retained.
+
+The only permitted selected-output header mutation in M11.4 is provenance:
+append a new `@PG` record for `bamana select_region`, generate a collision-free
+`ID`, set `PN:bamana`, include the Bamana version when available, and set `PP`
+to the previous terminal program only when the program chain is unambiguous.
+Unrelated header records must not be removed, rewritten, or reordered for
+provenance.
+
+Sort metadata is conservative. If an input `@HD` record exists, selected output
+rewrites `SO` to `unknown` and removes `SS`. If no input `@HD` exists, M11.4
+does not require synthesizing one solely for sort metadata. The future JSON
+report must record input `@HD` `SO`/`SS`, output `@HD` `SO`/`SS`, and a note
+that sort-order metadata was downgraded because selected-region output is not
+guaranteed to preserve whole-file order. M11.4 does not add schemas, examples,
+or fixtures because duplicate emission, final record ordering, and write-safety
+remain unfrozen; M11.8 must add them once those contracts are complete.
 
 ## `check_tag`
 
