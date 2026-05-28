@@ -209,6 +209,15 @@ overlapping lines are not merged by parsing, and unsupported coordinate models
 such as BED-like rows, 0-based half-open rows, open-ended ranges,
 comma-separated ranges, strand/name columns, or other tabular metadata must be
 rejected before output is written.
+M11.3 freezes selected-record output semantics without making `select_region`
+runnable. The planned data stream is BAM-only: BGZF-compressed BAM input,
+BGZF-compressed BAM output, explicit `--out`, JSON report to stdout for file
+outputs, and mandatory `--report <path>` when `--out -` writes binary BAM to
+stdout. SAM, CRAM, FASTQ, FASTQ.GZ, FASTA, text output, uncompressed BAM, and
+alternate compression modes are not promoted. Dry runs write no BAM output and
+must report `dry_run: true`, `output_created: false`, the requested output
+target, region source, intended execution mode, and planned rejection or
+fallback state.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

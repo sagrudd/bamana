@@ -53,7 +53,10 @@ Current milestone:
   future region-file syntax as UTF-8 line-oriented input with one M10-style
   region per non-comment line, blank lines and leading `#` comments ignored,
   request order preserved, duplicates not merged by parsing, and BED-like or
-  otherwise unsupported coordinate models rejected.
+  otherwise unsupported coordinate models rejected. M11.3 freezes selected-record
+  output as BAM-only: BGZF-compressed BAM input and output, explicit `--out`,
+  JSON report separation when `--out -` writes binary BAM to stdout, and dry-run
+  reports that write no BAM output.
 
 Milestone 11 is active as the current milestone; Milestone 10 remains complete.
 

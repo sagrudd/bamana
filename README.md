@@ -539,6 +539,13 @@ merged. Region-file parsing remains non-public until `select_region` is
 implemented; malformed lines, unknown references, empty/reversed intervals,
 BED-like rows, 0-based half-open files, open-ended ranges, and tabular metadata
 must be rejected precisely.
+M11.3 freezes selected-record output semantics without making `select_region`
+runnable. Future applied runs are BAM-only: BGZF-compressed BAM input,
+BGZF-compressed BAM output, explicit `--out`, JSON report to stdout for file
+outputs, and mandatory `--report <path>` when `--out -` sends binary BAM to
+stdout. SAM, CRAM, FASTQ, FASTQ.GZ, FASTA, text output, uncompressed BAM, and
+alternate compression modes remain rejected or unpromoted. Dry runs write no
+BAM output and must report `dry_run: true` and `output_created: false`.
 
 ## Specification Layer
 

@@ -136,6 +136,9 @@ This order is retained because it matches the dependency chain of the runtime:
   comment lines are ignored; request order, duplicate lines, and overlapping
   intervals are preserved; BED-like and other unsupported coordinate models are
   rejected until explicitly promoted
+* M11.3 output contract: future selected-record output is BAM-only, using
+  BGZF-compressed BAM input and output, explicit `--out`, JSON report separation
+  when binary BAM is sent to stdout, and dry-run reports with no BAM writes
 
 ### Milestone 12: Extended Index Compatibility
 

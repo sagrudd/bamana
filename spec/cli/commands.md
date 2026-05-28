@@ -620,6 +620,39 @@ non-numeric coordinates, BED-like rows, 0-based half-open rows, open-ended
 ranges, comma-separated ranges, strand/name columns, and other tabular metadata
 must be rejected before selected-record output is written.
 
+M11.3 future selected-record output contract:
+
+No public `select_region` command is introduced by M11.3. The planned
+invocation shape is `bamana select_region --bam <input.bam> (--region <REGION>
+... | --region-file <regions.txt>) --out <output.bam|-> [--report
+<report.json>] [--dry-run] [--force]`. The selected-record data stream is
+BAM-only. Input must be BGZF-compressed BAM, and SAM, CRAM, FASTQ, FASTQ.GZ,
+FASTA, and unknown inputs must be rejected before output is written. Output is
+BGZF-compressed BAM for file output and stdout output. M11.3 does not promote
+SAM, CRAM, FASTQ, FASTQ.GZ, text, uncompressed BAM, or alternate compression
+output modes.
+
+Applied runs require explicit `--out`. File output writes selected BAM records
+to the requested path and emits a JSON report to stdout. `--report
+<report.json>` additionally writes the same JSON report to a file. `--out -`
+writes binary BGZF BAM to stdout, requires `--report <report.json>`, and must
+reject `--report -` or an omitted report path. Human diagnostics must use
+stderr.
+
+Dry runs write no BAM output and do not create or replace a report sidecar
+unless `--report <report.json>` is explicitly supplied. Dry-run reports must
+include `dry_run: true`, `output_created: false`, requested output target,
+region source, intended execution mode, and planned rejection or fallback
+state. Future report payloads must distinguish `command: "select_region"`,
+input path, output target, report destination, `output_format: "bam"`,
+`compression: "bgzf"`, region source, normalized region count, index execution
+mode, selected-record counts, records examined, chunks traversed, fallback
+reason when applicable, and notes that selection does not imply biological
+interpretation or whole-file validation. M11.3 does not add schemas, examples,
+or fixtures because header behavior, record ordering, duplicate policy, and
+write-safety remain unfrozen; M11.8 must add them once those contracts are
+complete.
+
 ## `check_index`
 
 Synopsis:
@@ -754,6 +787,39 @@ empty intervals, zero coordinates, reversed intervals, out-of-range intervals,
 non-numeric coordinates, BED-like rows, 0-based half-open rows, open-ended
 ranges, comma-separated ranges, strand/name columns, and other tabular metadata
 must be rejected before selected-record output is written.
+
+M11.3 future selected-record output contract:
+
+No public `select_region` command is introduced by M11.3. The planned
+invocation shape is `bamana select_region --bam <input.bam> (--region <REGION>
+... | --region-file <regions.txt>) --out <output.bam|-> [--report
+<report.json>] [--dry-run] [--force]`. The selected-record data stream is
+BAM-only. Input must be BGZF-compressed BAM, and SAM, CRAM, FASTQ, FASTQ.GZ,
+FASTA, and unknown inputs must be rejected before output is written. Output is
+BGZF-compressed BAM for file output and stdout output. M11.3 does not promote
+SAM, CRAM, FASTQ, FASTQ.GZ, text, uncompressed BAM, or alternate compression
+output modes.
+
+Applied runs require explicit `--out`. File output writes selected BAM records
+to the requested path and emits a JSON report to stdout. `--report
+<report.json>` additionally writes the same JSON report to a file. `--out -`
+writes binary BGZF BAM to stdout, requires `--report <report.json>`, and must
+reject `--report -` or an omitted report path. Human diagnostics must use
+stderr.
+
+Dry runs write no BAM output and do not create or replace a report sidecar
+unless `--report <report.json>` is explicitly supplied. Dry-run reports must
+include `dry_run: true`, `output_created: false`, requested output target,
+region source, intended execution mode, and planned rejection or fallback
+state. Future report payloads must distinguish `command: "select_region"`,
+input path, output target, report destination, `output_format: "bam"`,
+`compression: "bgzf"`, region source, normalized region count, index execution
+mode, selected-record counts, records examined, chunks traversed, fallback
+reason when applicable, and notes that selection does not imply biological
+interpretation or whole-file validation. M11.3 does not add schemas, examples,
+or fixtures because header behavior, record ordering, duplicate policy, and
+write-safety remain unfrozen; M11.8 must add them once those contracts are
+complete.
 
 ## `check_tag`
 

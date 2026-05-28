@@ -66,6 +66,46 @@ comma-separated ranges, open-ended ranges, strand/name columns, and other
 tabular metadata. Missing, unreadable, or non-UTF-8 files fail before any
 output is written.
 
+Selected-Record Output
+----------------------
+
+M11.3 freezes selected-record output semantics without making
+``select_region`` runnable. The planned invocation shape is::
+
+   bamana select_region --bam <input.bam> (--region <REGION> ... | --region-file <regions.txt>) --out <output.bam|-> [--report <report.json>] [--dry-run] [--force]
+
+The data stream is BAM-only. Input must be BGZF-compressed BAM. SAM, CRAM,
+FASTQ, FASTQ.GZ, FASTA, and unknown inputs are rejected before any output is
+written. Output is BGZF-compressed BAM for file output and stdout output. M11.3
+does not introduce SAM, CRAM, FASTQ, FASTQ.GZ, text, uncompressed BAM, or
+alternate compression output modes.
+
+Applied runs require an explicit ``--out``. File output writes the selected BAM
+to the requested path and emits a JSON report to stdout. ``--report
+<report.json>`` additionally writes the same report to a file. ``--out -``
+writes BGZF BAM to stdout; because stdout is then binary, it requires
+``--report <report.json>`` and must reject ``--report -`` or an omitted report
+path. Human diagnostics must use stderr.
+
+Dry runs never write BAM output and never create or replace a report sidecar
+unless ``--report <report.json>`` is explicitly supplied. Dry-run reports must
+include ``dry_run: true``, ``output_created: false``, the requested output
+target, region source, intended execution mode, and planned rejection or
+fallback state. Dry-run stdout is JSON unless a report file is supplied and a
+later CLI contract deliberately suppresses stdout.
+
+The future JSON report must identify ``command: "select_region"``, input path,
+output target, report destination, ``output_format: "bam"``, ``compression:
+"bgzf"``, region source, normalized region count, index execution mode,
+selected-record counts, records examined, chunks traversed, fallback reason
+when applicable, and notes that selected-record output is not biological
+interpretation or whole-file validation.
+
+M11.3 does not add a JSON schema, golden example, or fixture because header
+behavior, record ordering, duplicate policy, and write-safety remain unfrozen.
+M11.8 must add governed schemas, examples, and fixtures after those contracts
+are complete.
+
 Inherited Substrate
 -------------------
 

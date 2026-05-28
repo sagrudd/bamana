@@ -2285,6 +2285,95 @@ fn milestone_11_region_file_contract_is_specified_without_cli_behavior() {
 }
 
 #[test]
+fn milestone_11_selected_record_output_contract_is_specified_without_cli_behavior() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let spec = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m11 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-11-indexed-region-selection.md"),
+    );
+    let m11_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("native_indexed_region_selection.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for required in [
+        "M11.3",
+        "Selected-Record Output",
+        "bamana select_region --bam <input.bam>",
+        "--out <output.bam|->",
+        "--report <report.json>",
+        "BAM-only",
+        "BGZF-compressed BAM input",
+        "BGZF-compressed BAM output",
+        "SAM",
+        "CRAM",
+        "FASTQ",
+        "FASTQ.GZ",
+        "FASTA",
+        "unknown inputs",
+        "text",
+        "uncompressed BAM",
+        "alternate compression",
+        "Applied runs require explicit `--out`",
+        "JSON report to stdout",
+        "--out -",
+        "binary BGZF BAM to stdout",
+        "requires `--report <report.json>`",
+        "reject `--report -`",
+        "Human diagnostics must use stderr",
+        "Dry runs write no BAM output",
+        "dry_run: true",
+        "output_created: false",
+        "requested output target",
+        "region source",
+        "intended execution mode",
+        "planned rejection or fallback state",
+        "command: \"select_region\"",
+        "output_format: \"bam\"",
+        "compression: \"bgzf\"",
+        "normalized region count",
+        "selected-record counts",
+        "records examined",
+        "chunks traversed",
+        "fallback reason",
+        "biological interpretation",
+        "whole-file validation",
+        "M11.3 does not add a JSON schema",
+        "M11.8 must add",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || spec.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m11.contains(required)
+                || m11_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M11.3 selected-record output contract is missing: {required}"
+        );
+    }
+
+    assert!(
+        !cli_source.contains("SelectRegion"),
+        "M11.3 must not implement the select_region CLI before header/order/write-safety contracts are complete"
+    );
+}
+
+#[test]
 fn milestone_10_region_syntax_contract_is_documented_and_native() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

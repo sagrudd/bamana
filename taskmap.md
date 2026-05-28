@@ -5098,13 +5098,46 @@ Completion evidence:
 
 ### M11.3 Specify Selected-Record Output Semantics
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * define stdout, file output, dry-run, compression, and JSON report semantics;
 * define whether output is BAM-only or whether SAM/CRAM/FASTQ are rejected;
 * update contracts, schemas, examples, docs, and tests.
+
+Acceptance criteria:
+
+* selected-record output format is specified without implementing
+  `select_region`;
+* file output, binary stdout output, JSON report routing, dry-run behavior, and
+  compression behavior are explicit;
+* supported input and output formats are explicit;
+* rejected SAM, CRAM, FASTQ, FASTQ.GZ, FASTA, text, uncompressed BAM, and
+  alternate compression modes are documented;
+* docs explain why schemas, examples, and fixtures remain deferred until header
+  behavior, record ordering, duplicate policy, and write-safety are frozen.
+
+Completion evidence:
+
+* specified the planned invocation shape as
+  `bamana select_region --bam <input.bam> (--region <REGION> ... |
+  --region-file <regions.txt>) --out <output.bam|-> [--report <report.json>]
+  [--dry-run] [--force]`;
+* froze selected-record data as BAM-only with BGZF-compressed BAM input and
+  BGZF-compressed BAM output;
+* documented that SAM, CRAM, FASTQ, FASTQ.GZ, FASTA, unknown inputs, text
+  output, uncompressed BAM output, and alternate compression output modes are
+  rejected or unpromoted;
+* defined JSON report routing for file outputs, mandatory report-file routing
+  when `--out -` writes binary BAM to stdout, and stderr-only human diagnostics;
+* defined dry-run reports as no-BAM-write operations with `dry_run: true`,
+  `output_created: false`, output target, region source, intended execution
+  mode, and planned rejection or fallback state;
+* updated README, CLI docs, roadmap, current milestone notes, Sphinx technical
+  notes, CLI command specification, task map, and contract tests;
+* kept `select_region` unimplemented and deferred schemas, examples, and
+  fixtures to M11.8.
 
 ### M11.4 Specify Header Preservation And Sort-Order Behavior
 
