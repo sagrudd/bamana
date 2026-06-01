@@ -431,6 +431,19 @@ reported intent rather than performed work in this slice.
 Non-dry-run consume output is published from a completed temporary BAM and
 final rename. Dry-run mode is side-effect bounded and writes no BAM output.
 
+M13.3 freezes the CRAM reference/cache policy fields under
+`consume.reference`. `strict` requires an explicit indexed FASTA and otherwise
+fails with `reference_required`; missing FASTA or missing `.fai` fails as
+`reference_not_found`; explicit FASTA takes precedence over `--reference-cache`
+and reports `source_used: explicit_fasta` with
+`decode_without_external_reference: false` when CRAM decoding succeeds.
+`allow-embedded` and cache-free `auto-conservative` permit only
+no-external-reference decode attempts, while dry runs leave `source_used` and
+`decode_without_external_reference` unknown. `allow-cache` and
+`auto-conservative --reference-cache` return `unimplemented`, and
+`--reference-cache` is recorded but not searched, populated, or used for
+fallback in this slice.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

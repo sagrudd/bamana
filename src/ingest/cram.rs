@@ -366,6 +366,11 @@ fn temporary_normalized_bam_path(input_path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::{ConsumeReferencePolicy, prepare_reference_context};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     #[test]
     fn strict_policy_requires_explicit_reference() {
@@ -394,5 +399,116 @@ mod tests {
 
         assert!(context.notes.iter().any(|note| note.contains("Dry-run")));
         assert!(context.source_used_hint.is_none());
+    }
+
+    #[test]
+    fn explicit_reference_takes_precedence_over_cache() {
+        let reference = write_minimal_reference("explicit-reference-precedence");
+        let cache = unique_temp_path("reference-cache");
+
+        let context = prepare_reference_context(
+            Path::new("out.bam"),
+            ConsumeReferencePolicy::AllowCache,
+            Some(&reference),
+            Some(&cache),
+            true,
+        )
+        .expect("explicit FASTA should take precedence over reference cache");
+
+        assert!(context.explicit_reference_provided);
+        assert!(context.reference_cache_provided);
+        assert_eq!(
+            context.source_used_hint,
+            Some(super::ConsumeReferenceSourceUsed::ExplicitFasta)
+        );
+        assert_eq!(context.decode_without_external_reference_hint, Some(false));
+        assert!(
+            context
+                .notes
+                .iter()
+                .any(|note| note.contains("takes precedence over the reference cache"))
+        );
+
+        cleanup_reference(&reference);
+    }
+
+    #[test]
+    fn allow_cache_requires_unimplemented_cache_decode() {
+        let missing_cache = unique_temp_path("missing-reference-cache");
+        let error = prepare_reference_context(
+            Path::new("out.bam"),
+            ConsumeReferencePolicy::AllowCache,
+            None,
+            Some(&missing_cache),
+            true,
+        )
+        .expect_err("allow-cache remains unimplemented even when a cache path is supplied");
+
+        let json_error = error.to_json_error();
+        assert_eq!(json_error.code, "unimplemented");
+        assert!(
+            json_error
+                .detail
+                .as_deref()
+                .unwrap_or_default()
+                .contains("Cache-based CRAM decoding")
+        );
+    }
+
+    #[test]
+    fn auto_conservative_with_cache_is_unimplemented() {
+        let cache = unique_temp_path("auto-reference-cache");
+        let error = prepare_reference_context(
+            Path::new("out.bam"),
+            ConsumeReferencePolicy::AutoConservative,
+            None,
+            Some(&cache),
+            true,
+        )
+        .expect_err("auto-conservative cache-backed decode remains unimplemented");
+
+        assert_eq!(error.to_json_error().code, "unimplemented");
+    }
+
+    #[test]
+    fn allow_embedded_dry_run_without_reference_is_policy_shape_only() {
+        let context = prepare_reference_context(
+            Path::new("out.bam"),
+            ConsumeReferencePolicy::AllowEmbedded,
+            None,
+            None,
+            true,
+        )
+        .expect("allow-embedded dry-run should validate policy shape");
+
+        assert!(context.source_used_hint.is_none());
+        assert_eq!(context.decode_without_external_reference_hint, None);
+        assert!(
+            context
+                .notes
+                .iter()
+                .any(|note| note.contains("cannot prove decode success"))
+        );
+    }
+
+    fn write_minimal_reference(label: &str) -> PathBuf {
+        let path = unique_temp_path(label).with_extension("fa");
+        let fai = PathBuf::from(format!("{}.fai", path.to_string_lossy()));
+        fs::write(&path, b">chr1\nACGT\n").expect("write test FASTA");
+        fs::write(&fai, b"chr1\t4\t6\t4\t5\n").expect("write test FAI");
+        path
+    }
+
+    fn cleanup_reference(path: &Path) {
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(PathBuf::from(format!("{}.fai", path.to_string_lossy())));
+    }
+
+    fn unique_temp_path(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock before Unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!("bamana-{label}-{nonce}"))
     }
 }

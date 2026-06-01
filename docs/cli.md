@@ -371,6 +371,19 @@ confined to `src/ingest/cram.rs`, and any future native CRAM work must arrive
 as a separate staged implementation plan with fixtures, contracts, dependency
 guardrails, and benchmark evidence.
 
+M13.3 freezes CRAM reference and cache policy semantics. `strict` remains the
+default and fails before decode with `reference_required` unless
+`--reference <fasta>` names a readable FASTA with an adjacent `.fai`; missing
+FASTA or `.fai` fails as `reference_not_found`. Explicit FASTA always takes
+precedence over `--reference-cache` and, on success, reports
+`source_used: explicit_fasta` with `decode_without_external_reference: false`.
+`allow-embedded` and cache-free `auto-conservative` only permit
+no-external-reference decode attempts; dry runs validate policy shape but leave
+`source_used` and `decode_without_external_reference` unknown. `allow-cache`
+and `auto-conservative --reference-cache` return `unimplemented`, and
+`--reference-cache` is recorded but not searched, populated, or used for
+fallback in this slice.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

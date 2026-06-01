@@ -75,6 +75,38 @@ This decision lets M13.3-M13.9 focus on freezing reference/cache semantics,
 indexed-query position, fixtures, public contracts, and dependency guardrails
 around the compatibility boundary that actually exists.
 
+## M13.3 Reference And Cache Policy Freeze
+
+M13.3 freezes the CRAM reference and cache semantics for the compatibility-only
+Milestone 13 direction:
+
+* `strict` is the default and safest policy. Without `--reference <fasta>`, it
+  fails before decode with `reference_required`.
+* `--reference <fasta>` must name a readable FASTA with an adjacent `.fai`.
+  Missing FASTA or missing `.fai` fails as `reference_not_found`.
+* An explicit FASTA always takes precedence over `--reference-cache`,
+  regardless of the selected policy, and reports `source_used:
+  explicit_fasta` plus `decode_without_external_reference: false` when CRAM
+  decoding succeeds.
+* `allow-embedded` permits only a no-external-reference decode attempt. Dry
+  runs validate policy shape, leave `source_used` and
+  `decode_without_external_reference` unknown, and do not prove decode success.
+  Real decode failures that require reference material return
+  `reference_required`.
+* `auto-conservative` uses an explicit FASTA when one is supplied. Without
+  explicit FASTA or cache, it behaves like the conservative
+  no-external-reference attempt above. With `--reference-cache`, it returns
+  `unimplemented` because cache-backed decoding is not implemented.
+* `allow-cache` is reserved for cache-backed CRAM decoding and returns
+  `unimplemented` in this slice, whether or not the cache path exists.
+* `--reference-cache` is a recorded request field only until cache-backed
+  decoding is implemented; it is not searched, populated, or used for fallback.
+
+These rules are governed by the `consume.reference` JSON object:
+`policy`, `explicit_reference_provided`, `reference_cache_provided`,
+`cram_inputs_present`, optional `source_used`, and optional
+`decode_without_external_reference`.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -82,7 +114,7 @@ around the compatibility boundary that actually exists.
 2. M13.2 decide native CRAM promotion, compatibility-only continuation, or
    explicit deferral. Complete: compatibility-only continuation.
 3. M13.3 freeze reference discovery, explicit FASTA, embedded-reference, and
-   cache policy semantics.
+   cache policy semantics. Complete.
 4. M13.4 define whether CRAM indexed queries are unsupported, transitional, or
    native work.
 5. M13.5 add CRAM fixtures and oracle boundaries for the chosen decision.

@@ -241,6 +241,13 @@ This order is retained because it matches the dependency chain of the runtime:
   direct production `noodles_*` imports stay confined to `src/ingest/cram.rs`,
   and native CRAM parsing/writing, CRAI/indexed CRAM queries, cache-backed
   decoding, and broad comparator parity remain deferred
+* M13.3 reference/cache policy freeze: `strict` requires explicit indexed
+  FASTA and otherwise fails with `reference_required`; explicit FASTA takes
+  precedence over `--reference-cache`; `allow-embedded` and cache-free
+  `auto-conservative` only attempt no-external-reference decode; `allow-cache`
+  and `auto-conservative --reference-cache` return `unimplemented`; and
+  `--reference-cache` is recorded but not searched, populated, or used for
+  fallback in this slice
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

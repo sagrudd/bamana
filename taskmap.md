@@ -5803,12 +5803,37 @@ Completion evidence:
 
 ### M13.3 Freeze Reference And Cache Policy Semantics
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * freeze explicit FASTA, embedded-reference, reference-cache, and
   auto-conservative semantics.
+
+Acceptance:
+
+* `strict`, `allow-embedded`, `allow-cache`, and `auto-conservative` semantics
+  are documented as a governed contract;
+* explicit FASTA precedence over `--reference-cache` is test-covered and
+  documented;
+* cache-backed decoding remains unimplemented and cannot be mistaken for a
+  fallback path;
+* the `consume.reference` JSON fields remain the governed reporting surface.
+
+Completion evidence:
+
+* froze `strict` as default, explicit indexed FASTA as required for strict CRAM
+  decode, missing FASTA or `.fai` as `reference_not_found`, and missing strict
+  reference as `reference_required`;
+* documented `allow-embedded` and cache-free `auto-conservative` as
+  no-external-reference decode attempts whose dry runs validate policy shape
+  but do not prove decode success;
+* documented `allow-cache` and `auto-conservative --reference-cache` as
+  `unimplemented` until cache-backed decoding exists;
+* added unit tests for explicit FASTA precedence, allow-cache rejection,
+  auto-conservative cache rejection, and allow-embedded dry-run policy shape;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, current
+  milestone, M13 roadmap, Sphinx, taskmap, and contract coverage.
 
 ### M13.4 Define CRAM Indexed Query Position
 

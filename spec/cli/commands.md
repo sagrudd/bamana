@@ -125,14 +125,23 @@ Mixed-format policy:
 
 CRAM reference policy:
 
-* `strict` is the safest policy, the current default, and currently requires an explicit indexed
-  FASTA supplied with `--reference`
-* `allow-embedded` permits a conservative decode attempt without external FASTA
-  and reports whether decode completed without one
+* `strict` is the safest policy, the current default, and currently requires an
+  explicit indexed FASTA supplied with `--reference`; without one it fails
+  before decode with `reference_required`
+* `--reference <fasta>` must name a readable FASTA with an adjacent `.fai`;
+  missing FASTA or missing `.fai` fails as `reference_not_found`
+* explicit FASTA takes precedence over `--reference-cache` and reports
+  `source_used: explicit_fasta` with `decode_without_external_reference: false`
+  when CRAM decoding succeeds
+* `allow-embedded` permits only a conservative no-external-reference decode
+  attempt; dry runs validate policy shape but do not prove decode success
 * `allow-cache` is reserved for cache-backed CRAM decoding and remains
-  unimplemented in the current slice
-* `auto-conservative` uses an explicit FASTA when provided and otherwise falls
-  back only to conservative no-external-reference decode attempts
+  unimplemented in the current slice, whether or not the cache path exists
+* `auto-conservative` uses an explicit FASTA when provided, otherwise falls
+  back only to conservative no-external-reference decode attempts, and returns
+  `unimplemented` if `--reference-cache` is supplied without explicit FASTA
+* `--reference-cache` is recorded in the JSON payload but is not searched,
+  populated, or used for fallback in this slice
 * Bamana does not silently guess CRAM reference behavior
 
 Directory traversal rules:

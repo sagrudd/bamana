@@ -196,6 +196,15 @@ Current milestone:
   and benchmark evidence. CRAI/indexed CRAM queries, native CRAM parsing,
   native CRAM writing, cache-backed decoding, and broad comparator parity
   remain deferred unless a later M13 task explicitly changes that contract.
+  M13.3 freezes reference and cache policy semantics: `strict` requires
+  explicit indexed FASTA and otherwise fails with `reference_required`;
+  missing FASTA or missing `.fai` fails as `reference_not_found`; explicit
+  FASTA takes precedence over `--reference-cache`; `allow-embedded` and
+  cache-free `auto-conservative` only attempt no-external-reference decode;
+  dry runs validate policy shape without proving decode success; `allow-cache`
+  and `auto-conservative --reference-cache` return `unimplemented`; and
+  `--reference-cache` is recorded but not searched, populated, or used for
+  fallback in this slice.
 
 ## Completed Backbone
 

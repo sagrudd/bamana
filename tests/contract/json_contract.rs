@@ -3093,6 +3093,96 @@ fn milestone_13_2_freezes_cram_as_compatibility_only() {
 }
 
 #[test]
+fn milestone_13_3_freezes_cram_reference_and_cache_policy() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cram_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("ingest")
+            .join("cram.rs"),
+    );
+    let consume_schema = read_utf8(&schema_path_for_command("consume"));
+    let consume_example = read_utf8(&spec_dir().join("examples").join("consume.success.json"));
+
+    for required in [
+        "M13.3",
+        "Reference And Cache Policy Freeze",
+        "strict",
+        "default",
+        "reference_required",
+        "--reference <fasta>",
+        "adjacent `.fai`",
+        "reference_not_found",
+        "explicit FASTA",
+        "takes precedence",
+        "--reference-cache",
+        "source_used: explicit_fasta",
+        "decode_without_external_reference: false",
+        "allow-embedded",
+        "no-external-reference decode attempt",
+        "dry runs validate policy shape",
+        "do not prove decode success",
+        "auto-conservative",
+        "allow-cache",
+        "unimplemented",
+        "not searched, populated, or used for fallback",
+        "consume.reference",
+        "explicit_reference_provided",
+        "reference_cache_provided",
+        "cram_inputs_present",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || cram_source.contains(required)
+                || consume_schema.contains(required)
+                || consume_example.contains(required),
+            "M13.3 CRAM reference/cache policy evidence is missing: {required}"
+        );
+    }
+
+    for required_test in [
+        "explicit_reference_takes_precedence_over_cache",
+        "allow_cache_requires_unimplemented_cache_decode",
+        "auto_conservative_with_cache_is_unimplemented",
+        "allow_embedded_dry_run_without_reference_is_policy_shape_only",
+    ] {
+        assert!(
+            cram_source.contains(required_test),
+            "M13.3 CRAM policy branch is not unit-covered: {required_test}"
+        );
+    }
+
+    assert!(
+        consume_schema.contains("\"reference\"")
+            && consume_schema.contains("\"policy\"")
+            && consume_schema.contains("\"explicit_reference_provided\"")
+            && consume_schema.contains("\"reference_cache_provided\"")
+            && consume_schema.contains("\"decode_without_external_reference\""),
+        "consume schema does not govern CRAM reference/cache policy fields"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));
