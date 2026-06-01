@@ -503,6 +503,14 @@ The public `benchmark` JSON payload now includes
 `fastq_ingress` and `fastq_gz_enumerate`, making the aligned comparator claim
 specific to each measured runner rather than a broad parity statement.
 
+M14.6 adds
+[benchmarks/comparator_mismatches.md](/Users/stephen/Projects/bamana/benchmarks/comparator_mismatches.md)
+as the unsupported comparator register. It documents semantic mismatch reasons
+and promotion requirements for no-claim surfaces such as `fastq`, `unmap`,
+CRAM consume behavior, mixed-directory ingest, scaffolded BAM/FASTQ
+subsampling, `rasusa` downsampling, mapped sort/index pipelines,
+`select_region`, mutation commands, and forensic commands.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

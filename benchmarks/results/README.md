@@ -113,6 +113,12 @@ Benchmark interpretation notes:
   explicit semantic equivalence assumptions, unsupported mismatch cases, result
   artifacts, and release claim boundaries, and the public `benchmark` JSON
   payload exposes those assumptions.
+* M14.6 adds `benchmarks/comparator_mismatches.md` as the unsupported
+  comparator register. No-claim and scaffolded mismatch surfaces such as
+  `fastq`, `unmap`, CRAM consume behavior, mixed-directory ingest, BAM/FASTQ
+  subsampling, rasusa downsampling, full mapped sort/index pipelines,
+  `select_region`, mutation commands, and forensic commands are documented as
+  intentional benchmark boundaries rather than missing implementations.
 
 First analysis slice:
 

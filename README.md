@@ -844,6 +844,14 @@ public `benchmark` JSON payload so release-facing evidence is tied to the exact
 runner, input, container image, thread count, and archived artifacts rather
 than broad comparator parity.
 
+M14.6 adds the unsupported comparator register at
+[benchmarks/comparator_mismatches.md](/Users/stephen/Projects/bamana/benchmarks/comparator_mismatches.md).
+It records semantic mismatch reasons for no-claim and scaffolded surfaces,
+including `fastq`, `unmap`, CRAM consume behavior, mixed-directory ingest,
+BAM/FASTQ subsampling, `rasusa` downsampling, mapped sort/index pipelines,
+`select_region`, mutation commands, and forensic commands. These entries are
+intentional benchmark boundaries, not missing implementation work.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

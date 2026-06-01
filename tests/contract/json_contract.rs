@@ -4729,6 +4729,119 @@ fn milestone_14_5_records_aligned_comparator_profiles() {
 }
 
 #[test]
+fn milestone_14_6_documents_comparator_mismatches() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmarks_readme = read_utf8(&super::repo_root().join("benchmarks").join("README.md"));
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let evidence_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("command_evidence_matrix.md"),
+    );
+    let mismatch_register = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("comparator_mismatches.md"),
+    );
+    let profile_catalog = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("comparator_profiles.json"),
+    );
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        evidence_matrix.as_str(),
+        mismatch_register.as_str(),
+        profile_catalog.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.6",
+        "benchmarks/comparator_mismatches.md",
+        "Comparator Mismatch Register",
+        "documented_no_claim",
+        "scaffolded_mismatch",
+        "partial_profile_only",
+        "semantic mismatch reason",
+        "Semantic Mismatch Reason",
+        "Current Boundary",
+        "Promotion Requirement",
+        "intentional benchmark boundaries",
+        "not missing implementation",
+        "`fastq` BAM-to-FASTQ export",
+        "`unmap` mapped-BAM stripping",
+        "`identify` format sniffing",
+        "CRAM consume behavior",
+        "BAM/SAM `consume --mode alignment`",
+        "Mixed-directory ingest",
+        "BAM `subsample` against `samtools view -s`",
+        "FASTQ.GZ `subsample` against `seqtk sample`",
+        "`rasusa` read/alignment downsampling",
+        "Mapped BAM sort/index pipeline",
+        "`select_region` indexed output",
+        "Mutation commands `reheader` and `annotate_rg`",
+        "Forensic commands `inspect_duplication`, `deduplicate`, and `forensic_inspect`",
+        "header policy",
+        "field-level equivalence contract",
+        "CRAI traversal remain unsupported",
+        "seed/fraction policy alignment",
+        "coverage-versus-fraction strategy",
+        "selected-record equivalence oracle",
+        "fastq_ingress",
+        "fastq_gz_enumerate",
+        "benchmarks/comparator_profiles.json",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.6 comparator mismatch evidence is missing: {required}"
+        );
+    }
+
+    for no_claim in ["fastq", "unmap", "identify"] {
+        assert!(
+            mismatch_register.contains(no_claim)
+                && evidence_matrix.contains(&format!("| `{no_claim}` |")),
+            "M14.6 must align mismatch register with matrix row for {no_claim}"
+        );
+    }
+
+    assert!(
+        mismatch_register.contains("`fastq_ingress` is `partial_profile_only`")
+            && mismatch_register.contains("`fastq_gz_enumerate` is `partial_profile_only`"),
+        "M14.6 must preserve public profile exceptions"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

@@ -6249,7 +6249,7 @@ Completion evidence:
 
 ### M14.6 Document Comparator Mismatches
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6259,6 +6259,23 @@ Acceptance:
 
 * unsupported comparator surfaces are visible in benchmark docs and cannot be
   mistaken for missing implementation.
+
+Completion evidence:
+
+* added `benchmarks/comparator_mismatches.md` as the unsupported comparator
+  register;
+* documented `documented_no_claim`, `scaffolded_mismatch`, and
+  `partial_profile_only` evidence statuses;
+* recorded semantic mismatch reasons, current boundaries, and promotion
+  requirements for `fastq`, `unmap`, `identify`, CRAM consume behavior,
+  BAM/SAM alignment ingest, mixed-directory ingest, BAM and FASTQ.GZ
+  subsampling, `rasusa` downsampling, mapped BAM sort/index pipelines,
+  `select_region`, mutation commands, and forensic commands;
+* preserved `fastq_ingress` and `fastq_gz_enumerate` as the only public-profile
+  exceptions through `benchmarks/comparator_profiles.json`;
+* updated README, CLI docs, benchmark docs, command evidence matrix, result
+  docs, Sphinx, roadmap, current milestone, M14 roadmap, taskmap, and contract
+  coverage.
 
 ### M14.7 Add Benchmark Schema Stability Checks
 

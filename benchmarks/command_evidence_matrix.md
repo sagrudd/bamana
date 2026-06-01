@@ -6,6 +6,8 @@ where evidence exists and where Bamana makes no external comparator claim.
 M14.5 adds `benchmarks/comparator_profiles.json` as the aligned measured
 profile catalog for public-profile comparator rows; it does not change any
 no-claim command rows.
+M14.6 adds `benchmarks/comparator_mismatches.md` as the unsupported comparator
+register for documented no-claim and scaffolded mismatch surfaces.
 
 Evidence levels:
 

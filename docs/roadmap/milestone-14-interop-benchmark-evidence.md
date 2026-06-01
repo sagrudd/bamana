@@ -143,6 +143,21 @@ selected profile. M14.5 does not promote `fastq`, `unmap`, CRAM behavior,
 workflow-matrix scaffold rows, or unmeasured command modes to comparator
 claims.
 
+## M14.6 Comparator Mismatch Register
+
+M14.6 adds `benchmarks/comparator_mismatches.md` as the unsupported comparator
+register. The register documents no-claim and scaffolded mismatch surfaces so
+they are visible as intentional benchmark boundaries rather than missing
+implementation.
+
+The register covers `fastq`, `unmap`, `identify`, CRAM consume behavior,
+BAM/SAM alignment ingest, mixed-directory ingest, BAM and FASTQ.GZ
+subsampling, `rasusa` downsampling, mapped BAM sort/index pipelines,
+`select_region`, mutation commands, and forensic commands. Each surface records
+an evidence status, semantic mismatch reason, current boundary, and promotion
+requirement. The only public-profile exceptions remain `fastq_ingress` and
+`fastq_gz_enumerate`, bounded by `benchmarks/comparator_profiles.json`.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -166,6 +181,9 @@ claims.
    mismatch cases, result artifacts, and release claim boundaries, and the
    public `benchmark` JSON contract exposes those fields.
 6. M14.6 document unsupported comparator cases and semantic mismatch reasons.
+   Complete: `benchmarks/comparator_mismatches.md` records documented no-claim
+   and scaffolded mismatch surfaces with semantic mismatch reasons, current
+   boundaries, and promotion requirements.
 7. M14.7 add CI or local harness checks for benchmark schema stability.
 8. M14.8 update benchmark docs, README, CLI docs, roadmap, and Sphinx docs.
 9. M14.9 add dependency-boundary tests for benchmark-only tools and oracles.

@@ -142,3 +142,18 @@ and release claim boundary. The public ``benchmark`` JSON payload also exposes
 ``semantic_equivalence_assumptions`` and ``unsupported_mismatch_cases`` so
 automation can distinguish an aligned measured profile from broad comparator
 parity.
+
+M14.6 Comparator Mismatch Register
+----------------------------------
+
+M14.6 documents unsupported comparator cases in
+``benchmarks/comparator_mismatches.md``. The register marks no-claim and
+scaffolded mismatch surfaces as intentional benchmark boundaries rather than
+missing implementation.
+
+The register covers public-contract no-claim surfaces such as ``fastq`` and
+``unmap``, CRAM consume behavior, mixed-directory ingest, scaffolded BAM and
+FASTQ subsampling, ``rasusa`` downsampling, mapped sort/index pipelines,
+``select_region``, mutation commands, and forensic commands. Each row records
+the evidence status, semantic mismatch reason, current boundary, and promotion
+requirement needed before a release-facing comparator claim can be made.

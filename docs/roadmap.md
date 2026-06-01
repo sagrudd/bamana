@@ -335,6 +335,9 @@ This order is retained because it matches the dependency chain of the runtime:
   `fastq_ingress` and `fastq_gz_enumerate` as measured public comparator
   profiles with explicit semantic equivalence assumptions, unsupported
   mismatch cases, result artifacts, and release claim boundaries
+* M14.6 comparator mismatch register: `benchmarks/comparator_mismatches.md`
+  records documented no-claim and scaffolded mismatch surfaces with semantic
+  mismatch reasons, current benchmark boundaries, and promotion requirements
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

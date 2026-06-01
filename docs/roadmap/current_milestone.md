@@ -266,7 +266,10 @@ Current milestone:
   `benchmarks/comparator_profiles.schema.json`, and makes the public
   `benchmark` JSON payload expose `semantic_equivalence_assumptions` and
   `unsupported_mismatch_cases` for the aligned `fastq_ingress` and
-  `fastq_gz_enumerate` comparator profiles.
+  `fastq_gz_enumerate` comparator profiles. M14.6 adds
+  `benchmarks/comparator_mismatches.md` so no-claim and scaffolded mismatch
+  surfaces record semantic mismatch reasons, current benchmark boundaries, and
+  promotion requirements before any release-facing comparator claim.
 
 ## Completed Backbone
 

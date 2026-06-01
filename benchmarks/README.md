@@ -60,6 +60,10 @@ Only `fastq_ingress` and `fastq_gz_enumerate` are currently cataloged as
 measured public comparator profiles, and each entry names semantic equivalence
 assumptions, unsupported mismatch cases, result artifacts, and the release
 claim boundary.
+M14.6 adds the unsupported comparator register at
+[comparator_mismatches.md](/Users/stephen/Projects/bamana/benchmarks/comparator_mismatches.md)
+so no-claim and scaffolded mismatch surfaces are visible as intentional
+benchmark boundaries rather than missing implementation.
 
 ## Readiness For Tomorrow
 
