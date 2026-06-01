@@ -153,3 +153,12 @@ outside CRAM ingestion and reference-policy handling.
 For Milestone 13, M13.2 chooses compatibility-only continuation: keep the
 current CRAM compatibility boundary, do not promote native CRAM parsing or
 writing, and defer any narrowing of `cram-compat` to later M13 tasks.
+
+M13.9 strengthens the boundary rather than widening it. The dependency
+contract now names `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+`cram_benchmark_guardrail` as protected M13 surfaces. Direct production
+`noodles_*` usage must remain confined to `src/ingest/cram.rs`; indexed-region
+commands, index commands, region planning/traversal modules, and
+`scanner_microbench` must not import `noodles` directly. Benchmark rows remain
+synthetic BAM smoke timings and must not be cited as CRAM indexed-query,
+CRAM compatibility-throughput, or CRAM comparator-parity evidence.

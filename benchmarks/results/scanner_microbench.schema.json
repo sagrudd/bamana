@@ -2,6 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/benchmarks/results/scanner_microbench.schema.json",
   "title": "Bamana Native BAM Scanner Microbenchmark Result",
+  "x-bamana-m13-cram-benchmark-guardrail": {
+    "fixture_format": "BAM",
+    "cram_command_timing_rows": "none",
+    "consume_timing_scope": "synthetic BAM alignment ingest only",
+    "indexed_cram_query_evidence": "not measured"
+  },
   "type": "object",
   "required": ["benchmark", "version", "profile", "iterations", "fixture", "results", "notes"],
   "properties": {

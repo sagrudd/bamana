@@ -431,6 +431,15 @@ roadmap/taskmap. M13.8 is documentation/schema-only: it does not add a new
 CRAM command path, does not add CRAI parsing, does not add CRAM region support,
 does not add CRAI creation, and does not add CRAM indexed-query JSON fields.
 
+M13.9 adds guardrails rather than CRAM functionality. Dependency-boundary tests
+now protect `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+`cram_benchmark_guardrail`, keeping direct production `noodles_*` imports
+confined to `src/ingest/cram.rs`. `scanner_microbench` remains a synthetic
+BAM benchmark: it emits no CRAM command timing rows, its `consume` timing is
+BAM alignment ingest only, and it is not evidence for CRAI parsing, CRAM region
+input, CRAM random-access traversal, CRAM indexed-query behavior, CRAM
+compatibility throughput, or CRAM comparator parity.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

@@ -591,6 +591,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
         "The scanner_microbench consume timing does not exercise CRAM compatibility behavior; CRAM remains covered by explicit reference-policy tests and documentation rather than this synthetic BAM smoke hook."
             .to_string(),
+        "M13.9 CRAM benchmark guardrail: scanner_microbench generates only synthetic BAM fixtures, emits no CRAM command timing rows, and does not measure CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM indexed-query evidence, or CRAM comparator parity."
+            .to_string(),
     ];
     if args.bamana_bin.is_none() {
         notes.push(

@@ -226,6 +226,27 @@ unchanged for CRAM. It adds no CRAI parser, no CRAM region input, no CRAI
 creation, no CRAM random-access evidence, no benchmark CRAM indexed-query
 evidence, and no CRAM indexed-query JSON fields.
 
+## M13.9 CRAM Dependency And Benchmark Guardrails
+
+M13.9 strengthens the compatibility-only decision with explicit dependency and
+benchmark guardrails:
+
+* `tests/contract/dependency_boundary.rs` names `cram_consume_boundary`,
+  `non_cram_indexed_surfaces`, and `cram_benchmark_guardrail` as protected M13
+  surfaces.
+* Direct production `noodles_*` references remain allowed only in
+  `src/ingest/cram.rs`; `check_map`, `summary`, `select_region`, `check_index`,
+  `index`, native index modules, region modules, and `scanner_microbench` must
+  remain free of direct `noodles` imports.
+* `scanner_microbench` remains synthetic BAM-only. It emits no CRAM command
+  timing rows, and the existing `consume` timing row is BAM alignment ingest
+  only.
+* `benchmarks/results/scanner_microbench.schema.json`, benchmark result docs,
+  and Sphinx benchmark docs record that M13.9 benchmark evidence does not cover
+  CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
+  indexed-query evidence, CRAM compatibility throughput, or CRAM comparator
+  parity.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -248,7 +269,9 @@ evidence, and no CRAM indexed-query JSON fields.
 8. M13.8 update schemas, examples, README, CLI docs, Sphinx docs, and roadmap
    notes. Complete: public docs and schema inventory consolidated without
    runtime CRAM expansion.
-9. M13.9 add CRAM dependency-boundary and benchmark guardrails.
+9. M13.9 add CRAM dependency-boundary and benchmark guardrails. Complete:
+   dependency tests and benchmark docs/schema now guard the compatibility-only
+   CRAM boundary.
 10. M13.10 close the milestone with full verification and residual risk notes.
 
 ## Non-Goals

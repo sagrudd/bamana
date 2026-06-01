@@ -235,6 +235,13 @@ fixtures, not stdout-output evidence, public region-file evidence,
 replacement output-index evidence, comparator-parity claims, native CRAM
 indexed-query support, or biological interpretation.
 
+Milestone 13 CRAM benchmark guardrails keep ``scanner_microbench`` scoped to
+deterministic synthetic BAM fixtures. The benchmark emits no CRAM command
+timing rows, and its ``consume`` row is synthetic BAM alignment ingest only.
+It does not measure CRAI parsing, CRAM region input, CRAM random-access
+traversal, CRAM indexed-query evidence, CRAM compatibility throughput, or CRAM
+comparator parity.
+
 Results conform to
 ``benchmarks/results/scanner_microbench.schema.json`` and can be archived
 beside other benchmark result artifacts.

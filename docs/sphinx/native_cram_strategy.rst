@@ -235,6 +235,27 @@ CRAM in M13.8. There is no CRAI parser, no CRAM region input, no CRAI creation,
 no CRAM random-access evidence, no benchmark CRAM indexed-query evidence, and
 no CRAM indexed-query JSON field.
 
+CRAM Dependency And Benchmark Guardrails
+----------------------------------------
+
+M13.9 strengthens the compatibility-only decision with explicit dependency and
+benchmark guardrails:
+
+* ``tests/contract/dependency_boundary.rs`` names
+  ``cram_consume_boundary``, ``non_cram_indexed_surfaces``, and
+  ``cram_benchmark_guardrail`` as protected M13 surfaces.
+* Direct production ``noodles_*`` references remain allowed only in
+  ``src/ingest/cram.rs``. ``check_map``, ``summary``, ``select_region``,
+  ``check_index``, ``index``, native index modules, region modules, and
+  ``scanner_microbench`` must remain free of direct ``noodles`` imports.
+* ``scanner_microbench`` remains synthetic BAM-only. It emits no CRAM command
+  timing rows, and its ``consume`` timing row is BAM alignment ingest only.
+* ``benchmarks/results/scanner_microbench.schema.json``, benchmark result
+  docs, and Sphinx benchmark docs record that M13.9 benchmark evidence does not
+  cover CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
+  indexed-query evidence, CRAM compatibility throughput, or CRAM comparator
+  parity.
+
 Non-Goals
 ---------
 

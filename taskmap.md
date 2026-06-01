@@ -6001,11 +6001,38 @@ Completion evidence:
 
 ### M13.9 Add CRAM Guardrails
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * add CRAM dependency-boundary and benchmark guardrails.
+
+Acceptance:
+
+* dependency-boundary tests explicitly name the M13 CRAM consume boundary,
+  non-CRAM indexed surfaces, and benchmark guardrail surface;
+* direct production `noodles_*` imports remain confined to
+  `src/ingest/cram.rs`;
+* benchmark docs and schema state that `scanner_microbench` is synthetic
+  BAM-only for M13 and emits no CRAM command timing rows;
+* no benchmark artifact claims CRAI parsing, CRAM region input, CRAM
+  random-access traversal, CRAM indexed-query evidence, CRAM compatibility
+  throughput, or CRAM comparator parity.
+
+Completion evidence:
+
+* added `m13_cram_guardrail_paths_keep_noodles_confined_to_cram_ingest` to
+  `tests/contract/dependency_boundary.rs`;
+* added M13 CRAM benchmark guardrail metadata to
+  `benchmarks/results/scanner_microbench.schema.json`;
+* added runtime benchmark notes to `src/bin/scanner_microbench.rs` documenting
+  that CRAM command timing rows are absent and the `consume` timing is
+  synthetic BAM alignment ingest only;
+* updated README, CLI docs, JSON-output docs, CLI contracts, dependency policy,
+  noodles-demotion notes, testing-oracle notes, benchmark result docs, Sphinx
+  benchmark docs, M13 Sphinx notes, roadmap, current milestone, M13 roadmap,
+  and this taskmap;
+* added contract coverage for the M13.9 dependency and benchmark guardrails.
 
 ### M13.10 Close Milestone 13
 

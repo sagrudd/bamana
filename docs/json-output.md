@@ -477,6 +477,14 @@ region, indexing, and benchmark schemas retain their existing BAM/BAI/CSI or
 benchmark contracts and intentionally carry no CRAI object, no CRAM
 random-access evidence, and no CRAM indexed-query status.
 
+M13.9 adds benchmark guardrails around those JSON claims. The
+`scanner_microbench` result schema records that its fixture format is BAM, its
+CRAM command timing rows are `none`, and its `consume` timing scope is
+synthetic BAM alignment ingest only. Benchmark JSON from that tool must not be
+read as CRAI evidence, CRAM region evidence, CRAM random-access evidence, CRAM
+indexed-query evidence, CRAM compatibility-throughput evidence, or CRAM
+comparator-parity evidence.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

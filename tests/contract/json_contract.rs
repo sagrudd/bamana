@@ -3603,6 +3603,119 @@ fn milestone_13_8_consolidates_public_docs_and_schema_inventory() {
 }
 
 #[test]
+fn milestone_13_9_adds_cram_dependency_and_benchmark_guardrails() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let dependency_policy = read_utf8(&docs_dir().join("dependency-policy.md"));
+    let noodles_demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let scanner_schema_path = super::repo_root()
+        .join("benchmarks")
+        .join("results")
+        .join("scanner_microbench.schema.json");
+    let scanner_schema = read_utf8(&scanner_schema_path);
+    let scanner_schema_json: Value = serde_json::from_str(&scanner_schema)
+        .unwrap_or_else(|error| panic!("scanner schema did not parse: {error}"));
+    let scanner_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("bin")
+            .join("scanner_microbench.rs"),
+    );
+    let scanner_doc = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("scanner_microbenchmarks.rst"),
+    );
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for required in [
+        "M13.9",
+        "CRAM Dependency And Benchmark Guardrails",
+        "dependency-boundary and benchmark guardrails",
+        "cram_consume_boundary",
+        "non_cram_indexed_surfaces",
+        "cram_benchmark_guardrail",
+        "src/ingest/cram.rs",
+        "production `noodles_*` usage remains confined",
+        "scanner_microbench",
+        "synthetic BAM",
+        "fixture_format",
+        "BAM",
+        "cram_command_timing_rows",
+        "none",
+        "consume_timing_scope",
+        "synthetic BAM alignment ingest only",
+        "indexed_cram_query_evidence",
+        "not measured",
+        "no CRAM command timing rows",
+        "CRAI parsing",
+        "CRAM region input",
+        "CRAM random-access traversal",
+        "CRAM indexed-query evidence",
+        "CRAM compatibility throughput",
+        "CRAM comparator parity",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || dependency_policy.contains(required)
+                || noodles_demotion.contains(required)
+                || oracle_policy.contains(required)
+                || benchmark_results.contains(required)
+                || scanner_schema.contains(required)
+                || scanner_source.contains(required)
+                || scanner_doc.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || dependency_tests.contains(required)
+                || taskmap.contains(required),
+            "M13.9 CRAM guardrail evidence is missing: {required}"
+        );
+    }
+
+    let command_enum =
+        scanner_schema_json["$defs"]["command_timing"]["properties"]["command"]["enum"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{} has no command enum", scanner_schema_path.display()));
+    for command in command_enum {
+        let command = command
+            .as_str()
+            .unwrap_or_else(|| panic!("scanner command enum contains non-string value: {command}"));
+        assert!(
+            !command.to_ascii_lowercase().contains("cram"),
+            "M13.9 benchmark guardrail forbids CRAM command timing rows, found {command}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

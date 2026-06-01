@@ -759,6 +759,15 @@ normalization, `.crai` sidecars are either skipped with
 `unsupported_format` when requested directly, and no inspection, region,
 indexing, or benchmark contract gains CRAM indexed-query output in M13.8.
 
+M13.9 adds CRAM dependency-boundary and benchmark guardrails. The dependency
+tests now name `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+`cram_benchmark_guardrail`; direct production `noodles_*` usage remains
+confined to `src/ingest/cram.rs`. `scanner_microbench` stays synthetic
+BAM-only, emits no CRAM command timing rows, and its `consume` row is BAM
+alignment ingest only. The benchmark must not be cited as evidence for CRAI
+parsing, CRAM region input, CRAM random-access traversal, CRAM indexed-query
+support, CRAM compatibility throughput, or CRAM comparator parity.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

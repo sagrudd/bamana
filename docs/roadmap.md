@@ -281,6 +281,13 @@ This order is retained because it matches the dependency chain of the runtime:
   record the same CRAM boundary; this slice adds no CRAI parser, CRAM region
   input, CRAI creation, CRAM random-access evidence, benchmark CRAM
   indexed-query evidence, or CRAM indexed-query JSON fields
+* M13.9 CRAM dependency and benchmark guardrails: protected surfaces are
+  `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+  `cram_benchmark_guardrail`; direct production `noodles_*` usage remains
+  confined to `src/ingest/cram.rs`; `scanner_microbench` stays synthetic
+  BAM-only, emits no CRAM command timing rows, and is not evidence for CRAI
+  parsing, CRAM region input, CRAM random-access traversal, CRAM indexed-query
+  behavior, CRAM compatibility throughput, or CRAM comparator parity
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

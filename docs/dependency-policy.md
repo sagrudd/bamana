@@ -85,6 +85,15 @@ keeps CRAM ingestion in the native-core package through the explicit
 transitional `cram-compat` feature but does not promote a native CRAM substrate
 or broaden the `noodles` exception beyond `src/ingest/cram.rs`.
 
+M13.9 adds an explicit guardrail around that decision. The protected CRAM
+boundary is `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+`cram_benchmark_guardrail` in `tests/contract/dependency_boundary.rs`. Direct
+production `noodles_*` usage remains confined to `src/ingest/cram.rs`;
+`check_map`, `summary`, `select_region`, `check_index`, `index`, native index
+modules, region modules, and `scanner_microbench` must stay free of direct
+`noodles` imports. Benchmark evidence remains synthetic BAM-only and cannot be
+used as CRAM indexed-query or CRAM comparator-parity evidence.
+
 ## Dependency Review Rule
 
 Any new dependency added to hot-path code must justify:

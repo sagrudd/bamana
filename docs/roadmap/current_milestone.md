@@ -63,6 +63,16 @@ remain unchanged for CRAM: there is no CRAI parser, no CRAM region input, no
 CRAI creation, no CRAM random-access evidence, no benchmark CRAM indexed-query
 evidence, and no CRAM indexed-query JSON field.
 
+M13.9 adds dependency-boundary and benchmark guardrails. The protected surfaces
+are `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+`cram_benchmark_guardrail`; direct production `noodles_*` usage remains
+confined to `src/ingest/cram.rs`; `scanner_microbench` remains synthetic
+BAM-only, emits no CRAM command timing rows, and its `consume` row is BAM
+alignment ingest only. Benchmark evidence from this slice is not evidence for
+CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
+indexed-query behavior, CRAM compatibility throughput, or CRAM comparator
+parity.
+
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6

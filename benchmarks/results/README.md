@@ -75,6 +75,11 @@ Benchmark interpretation notes:
   reporting, CSI-preserving native scan fallback, and selected-region
   `input_index` compatibility from CSI bin parsing, CSI chunk planning, CSI
   random-access traversal, CSI writing, or large-reference CSI support
+* M13.9 CRAM benchmark guardrails keep `scanner_microbench` scoped to
+  deterministic synthetic BAM fixtures. It emits no CRAM command timing rows,
+  and its `consume` row is synthetic BAM alignment ingest only. It does not
+  measure CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
+  indexed-query evidence, or CRAM comparator parity
 
 First analysis slice:
 

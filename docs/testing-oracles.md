@@ -136,6 +136,23 @@ oracle or compatibility comparison and must not define the production execution
 engine, checksum semantics, sharding policy, output-safety model, or ingest
 normalization policy.
 
+## Milestone 13 CRAM Guardrail Oracle Boundary
+
+M13.9 keeps CRAM compatibility evidence separate from native BAM, BGZF, FASTQ,
+index, region, and benchmark claims. The only production direct `noodles_*`
+exception remains `src/ingest/cram.rs`, where CRAM ingestion and
+reference-policy compatibility are explicitly transitional.
+
+Test-only CRAM oracle usage remains limited to fixture generation,
+compatibility checks, and explicitly labelled oracle validation. It must not
+define the production engine for `check_map --region`, `summary --region`,
+`select_region`, `check_index`, `index`, or `scanner_microbench`.
+
+Benchmark smoke timings remain synthetic BAM evidence unless a future milestone
+adds a separate CRAM benchmark contract. M13.9 explicitly records no CRAM
+command timing rows, no CRAI parser benchmark, no CRAM random-access benchmark,
+no CRAM indexed-query evidence, and no CRAM comparator-parity claim.
+
 ## Milestone 9 Index And Random-Access Oracle Boundary
 
 The Milestone 9 BAM index and random-access set is `index`, `check_index`,

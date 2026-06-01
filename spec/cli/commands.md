@@ -178,6 +178,11 @@ CRAM indexed query policy:
 * M13.8 does not add CRAI parsing, CRAM region input, CRAI creation, CRAM
   random-access evidence, benchmark CRAM indexed-query evidence, or CRAM
   indexed-query JSON fields
+* M13.9 adds dependency-boundary and benchmark guardrails: direct production
+  `noodles_*` usage remains confined to `src/ingest/cram.rs`; protected
+  surfaces are `cram_consume_boundary`, `non_cram_indexed_surfaces`, and
+  `cram_benchmark_guardrail`; `scanner_microbench` emits no CRAM command
+  timing rows, and its `consume` row is synthetic BAM alignment ingest only
 
 Directory traversal rules:
 

@@ -417,6 +417,36 @@ const M12_INDEX_COMPATIBILITY_HOT_PATHS: &[(&str, &[&str])] = &[
     ),
 ];
 
+const M13_CRAM_GUARDRAIL_PATHS: &[(&str, &[&str])] = &[
+    (
+        "cram_consume_boundary",
+        &[
+            "src/commands/consume.rs",
+            "src/ingest/consume.rs",
+            "src/ingest/discovery.rs",
+            "src/ingest/cram.rs",
+        ],
+    ),
+    (
+        "non_cram_indexed_surfaces",
+        &[
+            "src/commands/check_map.rs",
+            "src/commands/summary.rs",
+            "src/commands/select_region.rs",
+            "src/commands/check_index.rs",
+            "src/commands/index.rs",
+            "src/bam/index.rs",
+            "src/bam/region.rs",
+            "src/bam/region_plan.rs",
+            "src/bam/region_traversal.rs",
+        ],
+    ),
+    (
+        "cram_benchmark_guardrail",
+        &["src/bin/scanner_microbench.rs"],
+    ),
+];
+
 #[test]
 fn production_noodles_usage_stays_inside_cram_compatibility_boundary() {
     let src_dir = repo_root().join("src");
@@ -847,6 +877,51 @@ fn m12_index_compatibility_hot_paths_do_not_import_noodles() {
     assert!(
         violations.is_empty(),
         "M12 index compatibility hot paths must stay noodles-free outside documented CRAM compatibility:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m13_cram_guardrail_paths_keep_noodles_confined_to_cram_ingest() {
+    let guardrail_paths: Vec<_> = M13_CRAM_GUARDRAIL_PATHS
+        .iter()
+        .map(|(command, _paths)| *command)
+        .collect();
+    assert_eq!(
+        guardrail_paths,
+        [
+            "cram_consume_boundary",
+            "non_cram_indexed_surfaces",
+            "cram_benchmark_guardrail"
+        ],
+        "M13 dependency boundary must explicitly name CRAM consume, non-CRAM indexed surfaces, and benchmark guardrails"
+    );
+
+    let mut violations = Vec::new();
+
+    for (guardrail, paths) in M13_CRAM_GUARDRAIL_PATHS {
+        for relative in *paths {
+            let path = repo_root().join(relative);
+            let allowed = ALLOWED_PRODUCTION_NOODLES_FILES.contains(relative);
+            for (line_number, line) in read_utf8(&path).lines().enumerate() {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                    continue;
+                }
+
+                if contains_direct_noodles_reference(trimmed) && !allowed {
+                    violations.push(format!(
+                        "{guardrail}: {relative}:{}: {line}",
+                        line_number + 1
+                    ));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "M13 CRAM guardrail paths must keep direct production noodles usage confined to src/ingest/cram.rs:\n{}",
         violations.join("\n")
     );
 }
