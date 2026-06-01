@@ -5909,12 +5909,34 @@ Completion evidence:
 
 ### M13.6 Implement Chosen CRAM Behavior
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * implement only the chosen CRAM behavior with documented dependency
   boundaries.
+
+Acceptance:
+
+* CRAM remains limited to `consume` alignment-mode normalization;
+* cache-backed CRAM decoding remains `unimplemented`;
+* `.crai` sidecars are not probed, parsed, planned, or used;
+* directory discovery skips `.crai` sidecars with a documented reason;
+* direct `.crai` requests fail before probing with a documented error;
+* direct production `noodles_*` imports remain confined to
+  `src/ingest/cram.rs`.
+
+Completion evidence:
+
+* added discovery-time CRAI sidecar detection;
+* directory discovery now skips `.crai` sidecars with
+  `cram_index_sidecar_deferred`;
+* direct `.crai` requests now fail before probing as `unsupported_format`;
+* added unit tests for directory CRAI skip behavior and direct CRAI rejection;
+* documented that no CRAI parsing, indexed CRAM traversal, native CRAM parser,
+  or native CRAM writer is introduced;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, current
+  milestone, M13 roadmap, Sphinx, taskmap, and contract coverage.
 
 ### M13.7 Update CRAM-Facing Command Contracts
 

@@ -3357,6 +3357,90 @@ fn milestone_13_5_freezes_cram_fixture_and_oracle_boundary() {
 }
 
 #[test]
+fn milestone_13_6_implements_chosen_cram_boundary_only() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let discovery_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("ingest")
+            .join("discovery.rs"),
+    );
+    let cram_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("ingest")
+            .join("cram.rs"),
+    );
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+
+    for required in [
+        "M13.6",
+        "Implemented CRAM Boundary",
+        "consume-only alignment-mode normalization",
+        "cache-backed decoding remains `unimplemented`",
+        "src/ingest/cram.rs",
+        "directory discovery skips `.crai` sidecars",
+        "before probing",
+        "cram_index_sidecar_deferred",
+        "direct `.crai` requests fail",
+        "unsupported_format",
+        "No CRAI parsing",
+        "indexed CRAM traversal",
+        "native CRAM parser",
+        "native CRAM writer",
+        "direct production `noodles_*` imports",
+        "not probed, parsed, planned, or used",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || discovery_source.contains(required)
+                || cram_source.contains(required)
+                || dependency_tests.contains(required),
+            "M13.6 implemented CRAM boundary evidence is missing: {required}"
+        );
+    }
+
+    for required_source in [
+        "is_cram_index_sidecar",
+        "eq_ignore_ascii_case(\"crai\")",
+        "cram_index_sidecar_deferred",
+        "CRAI sidecars are unsupported/deferred",
+        "directory_discovery_skips_crai_sidecars_without_probing",
+        "direct_crai_request_is_rejected_before_probe",
+    ] {
+        assert!(
+            discovery_source.contains(required_source),
+            "M13.6 CRAI discovery guard is missing source evidence: {required_source}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

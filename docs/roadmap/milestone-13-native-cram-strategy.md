@@ -165,6 +165,24 @@ derived CRAM artifacts only under that explicit test/fixture boundary; they
 must not define production behavior, reference-cache semantics, CRAI behavior,
 indexed CRAM traversal, or native BAM/BGZF/FASTQ hot paths.
 
+## M13.6 Implemented CRAM Boundary
+
+M13.6 implements only the chosen compatibility behavior and adds a concrete
+guard against accidental indexed-CRAM expansion:
+
+* CRAM remains accepted only as consume-only alignment-mode normalization.
+* Strict, explicit-FASTA, allow-embedded, allow-cache, and auto-conservative
+  reference behavior remains the M13.3 behavior.
+* Cache-backed CRAM decoding remains `unimplemented`.
+* Directory discovery skips adjacent `.crai` sidecars before probing with
+  reason `cram_index_sidecar_deferred`.
+* A directly requested `.crai` path is rejected before probing as
+  `unsupported_format`.
+* CRAI bytes are not parsed, planned, or used for traversal, and no native CRAM
+  parser or writer is introduced.
+* Direct production `noodles_*` imports remain confined to
+  `src/ingest/cram.rs`.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -179,7 +197,8 @@ indexed CRAM traversal, or native BAM/BGZF/FASTQ hot paths.
    Complete: provenance-first plan with derived fixtures planned and CRAI
    fixtures deferred.
 6. M13.6 implement only the chosen CRAM behavior with documented dependency
-   boundaries.
+   boundaries. Complete: CRAI sidecars are actively skipped or rejected while
+   CRAM remains consume-only compatibility normalization.
 7. M13.7 update `consume` and inspection command contracts where CRAM behavior
    changes.
 8. M13.8 update schemas, examples, README, CLI docs, Sphinx docs, and roadmap

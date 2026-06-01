@@ -263,6 +263,13 @@ This order is retained because it matches the dependency chain of the runtime:
   fixtures, and CRAM random-access oracle outputs explicitly deferred; `noodles`
   and external tools are allowed only for fixture generation, fixture
   validation, or test-only compatibility checks
+* M13.6 implemented boundary: CRAM remains consume-only alignment-mode
+  normalization; cache-backed decoding remains `unimplemented`; direct
+  production `noodles_*` imports stay confined to `src/ingest/cram.rs`;
+  directory discovery skips `.crai` sidecars before probing with
+  `cram_index_sidecar_deferred`; direct `.crai` requests fail as
+  `unsupported_format`; and no CRAI parsing, indexed CRAM traversal, native
+  CRAM parser, or native CRAM writer is introduced
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

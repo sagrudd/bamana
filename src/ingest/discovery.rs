@@ -78,6 +78,13 @@ fn discover_requested_paths_with_reader(
         let metadata =
             fs::symlink_metadata(path).map_err(|error| AppError::from_io(path, error))?;
         if metadata.is_file() {
+            if is_cram_index_sidecar(path) {
+                return Err(AppError::UnsupportedFormat {
+                    path: path.clone(),
+                    format: "CRAI sidecars are unsupported/deferred in Milestone 13 and are not valid consume inputs."
+                        .to_string(),
+                });
+            }
             candidate_files.push((path.clone(), path.clone()));
             continue;
         }
@@ -156,6 +163,15 @@ fn collect_directory_files(
         }
 
         if metadata.is_file() {
+            if is_cram_index_sidecar(&path) {
+                skipped_entries.push(SkippedEntry {
+                    path: path.to_string_lossy().into_owned(),
+                    detected_format: "UNSUPPORTED",
+                    consumed: false,
+                    reason: "cram_index_sidecar_deferred".to_string(),
+                });
+                continue;
+            }
             candidate_files.push((path.clone(), path));
             continue;
         }
@@ -194,6 +210,12 @@ fn collect_directory_files(
 
 fn is_stdin_path(path: &Path) -> bool {
     path == Path::new("-")
+}
+
+fn is_cram_index_sidecar(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("crai"))
 }
 
 fn materialize_stream_input(
@@ -237,7 +259,7 @@ pub fn cleanup_staged_paths(paths: &[PathBuf]) {
 
 #[cfg(test)]
 mod tests {
-    use std::{io::Cursor, path::PathBuf};
+    use std::{fs, io::Cursor, path::PathBuf};
 
     use super::{DiscoveryOptions, cleanup_staged_paths, discover_requested_paths_with_reader};
     use crate::formats::probe::DetectedFormat;
@@ -280,5 +302,67 @@ mod tests {
         .expect_err("duplicate stdin should fail");
 
         assert_eq!(error.to_json_error().code, "invalid_consume_mode");
+    }
+
+    #[test]
+    fn directory_discovery_skips_crai_sidecars_without_probing() {
+        let root = std::env::temp_dir().join(format!(
+            "bamana-discovery-crai-sidecar-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).expect("fixture dir should create");
+        let cram = root.join("sample.cram");
+        let crai = root.join("sample.cram.crai");
+        fs::write(&cram, b"CRAM").expect("cram hint should write");
+        fs::write(&crai, b"not parsed as an index").expect("crai sidecar should write");
+
+        let discovery = discover_requested_paths_with_reader(
+            &[root.clone()],
+            &DiscoveryOptions { recursive: false },
+            Cursor::new(Vec::<u8>::new()),
+        )
+        .expect("directory discovery should skip CRAI sidecars");
+
+        assert_eq!(discovery.discovered_files.len(), 1);
+        assert_eq!(discovery.discovered_files[0].path, cram);
+        assert_eq!(discovery.skipped_entries.len(), 1);
+        assert_eq!(
+            discovery.skipped_entries[0].reason,
+            "cram_index_sidecar_deferred"
+        );
+        assert_eq!(
+            discovery.skipped_entries[0].path,
+            crai.to_string_lossy().into_owned()
+        );
+
+        fs::remove_file(discovery.discovered_files[0].path.clone()).expect("cram should remove");
+        fs::remove_file(crai).expect("crai sidecar should remove");
+        fs::remove_dir(root).expect("fixture dir should remove");
+    }
+
+    #[test]
+    fn direct_crai_request_is_rejected_before_probe() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-direct-crai-{}.crai", std::process::id()));
+        fs::write(&path, b"not parsed as an index").expect("crai sidecar should write");
+
+        let error = discover_requested_paths_with_reader(
+            std::slice::from_ref(&path),
+            &DiscoveryOptions { recursive: false },
+            Cursor::new(Vec::<u8>::new()),
+        )
+        .expect_err("direct CRAI input should be rejected");
+
+        let json_error = error.to_json_error();
+        assert_eq!(json_error.code, "unsupported_format");
+        assert!(
+            json_error
+                .detail
+                .as_deref()
+                .unwrap_or_default()
+                .contains("CRAI sidecars are unsupported/deferred")
+        );
+
+        fs::remove_file(path).expect("crai sidecar should remove");
     }
 }

@@ -40,6 +40,13 @@ fixtures, and CRAM random-access oracle outputs are explicitly deferred.
 `noodles` or external tools may be used only for fixture generation, fixture
 validation, or test-only compatibility checks.
 
+M13.6 implements only that boundary: CRAM remains consume-only alignment-mode
+normalization; cache-backed decoding remains `unimplemented`; directory
+discovery skips `.crai` sidecars with `cram_index_sidecar_deferred`; direct
+`.crai` requests fail as `unsupported_format`; no CRAI parsing or indexed CRAM
+traversal is introduced; and direct production `noodles_*` imports remain
+confined to `src/ingest/cram.rs`.
+
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6

@@ -452,6 +452,12 @@ random-access traversal. `check_map --region`, `summary --region`, and
 and JSON outputs expose no JSON CRAI evidence or CRAM indexed-query fields
 until a future milestone defines a staged promotion plan.
 
+M13.6 adds the implemented discovery guard for this boundary. Directory
+traversal skips `.crai` sidecars before probing and reports skipped entries
+with reason `cram_index_sidecar_deferred`. Direct `.crai` requests fail before
+probing with `unsupported_format`. Neither path parses CRAI bytes, plans indexed
+CRAM traversal, or adds CRAM indexed-query fields to JSON.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

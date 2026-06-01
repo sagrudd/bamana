@@ -159,6 +159,9 @@ CRAM indexed query policy:
   from CRAM indexing
 * JSON outputs expose no JSON CRAI evidence and no CRAM indexed-query fields
   until a future milestone defines a staged promotion plan
+* M13.6 enforces the boundary in discovery: directory traversal skips `.crai`
+  sidecars before probing with reason `cram_index_sidecar_deferred`, and direct
+  `.crai` requests fail before probing as `unsupported_format`
 
 Directory traversal rules:
 

@@ -405,6 +405,14 @@ deferred. `noodles` or external tools may be used only for fixture generation,
 fixture validation, or test-only compatibility checks and must not define
 production behavior.
 
+M13.6 implements only that chosen boundary. CRAM remains accepted only as
+consume-only alignment-mode normalization, cache-backed decoding remains
+`unimplemented`, direct production `noodles_*` imports stay confined to
+`src/ingest/cram.rs`, directory discovery skips `.crai` sidecars before probing
+with reason `cram_index_sidecar_deferred`, and direct `.crai` requests fail
+before probing as `unsupported_format`. No CRAI parsing, indexed CRAM
+traversal, native CRAM parser, or native CRAM writer is introduced.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent
