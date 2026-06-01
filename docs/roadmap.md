@@ -256,6 +256,13 @@ This order is retained because it matches the dependency chain of the runtime:
   not accept CRAM region input; `index` does not create CRAI; JSON outputs
   expose no JSON CRAI evidence; and any future milestone must add a staged plan
   before promoting indexed CRAM queries
+* M13.5 CRAM fixture/oracle boundary: the fixture plan is provenance-first,
+  with `tiny.valid.cram.explicit_ref.source_sam` and `tiny.ref.primary`
+  present, derived CRAM/BAM compatibility fixtures planned,
+  `tiny.valid.cram.no_external_ref` deferred, and CRAI fixtures, indexed CRAM
+  fixtures, and CRAM random-access oracle outputs explicitly deferred; `noodles`
+  and external tools are allowed only for fixture generation, fixture
+  validation, or test-only compatibility checks
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

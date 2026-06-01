@@ -394,6 +394,17 @@ not accept CRAM region input, `index` does not create CRAI, JSON outputs expose
 no JSON CRAI evidence, and any future milestone must add a staged plan before
 promoting indexed CRAM queries.
 
+M13.5 freezes the CRAM fixture and oracle boundary as provenance-first rather
+than as a broad binary corpus. Present roots are
+`tiny.valid.cram.explicit_ref.source_sam` and `tiny.ref.primary`; derived
+explicit-reference, reference-required, compatible-refdict, and
+incompatible-refdict CRAM/BAM fixtures remain planned; the
+`tiny.valid.cram.no_external_ref` fixture remains deferred; and CRAI fixtures,
+indexed CRAM fixtures, and CRAM random-access oracle outputs are explicitly
+deferred. `noodles` or external tools may be used only for fixture generation,
+fixture validation, or test-only compatibility checks and must not define
+production behavior.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

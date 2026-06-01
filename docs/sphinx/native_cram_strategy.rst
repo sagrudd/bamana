@@ -135,6 +135,40 @@ The contract is deliberately narrow:
   boundaries, CLI contracts, schemas, examples, benchmarks, and regression
   tests before behavior changes.
 
+CRAM Fixture And Oracle Boundary
+--------------------------------
+
+M13.5 freezes the CRAM fixture set as a provenance-first plan rather than a
+broad binary corpus. The fixture boundary follows the M13.2 compatibility-only
+direction, the M13.3 reference/cache policy, and the M13.4 indexed-query
+deferral.
+
+Fixture status is:
+
+* present provenance roots: ``tiny.valid.cram.explicit_ref.source_sam`` and
+  ``tiny.ref.primary``;
+* planned derived alignment fixtures:
+  ``tiny.valid.cram.explicit_ref.source_bam``,
+  ``tiny.valid.cram.explicit_ref``,
+  ``tiny.valid.cram.reference_required``,
+  ``tiny.valid.cram.compatible_refdict``,
+  ``tiny.valid.bam.compatible_refdict``, and
+  ``tiny.valid.bam.incompatible_refdict``;
+* deferred no-external-reference fixture:
+  ``tiny.valid.cram.no_external_ref``;
+* no CRAI fixture in M13.5. ``.crai`` artifacts, indexed CRAM fixtures, and
+  CRAM random-access oracle outputs are explicitly deferred.
+
+The source SAM and FASTA remain the auditable source of truth. Derived BAM and
+CRAM files must be regenerated from those sources with documented commands and
+reviewed as derived artifacts, not treated as opaque authorities.
+
+Oracle use is limited to fixture generation, fixture validation, and test-only
+compatibility checks. ``noodles`` or external tools may help produce or compare
+derived CRAM artifacts only under that explicit test/fixture boundary; they
+must not define production behavior, reference-cache semantics, CRAI behavior,
+indexed CRAM traversal, or native BAM/BGZF/FASTQ hot paths.
+
 Non-Goals
 ---------
 

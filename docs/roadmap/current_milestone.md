@@ -33,6 +33,13 @@ accept CRAM region input; `index` does not create CRAI; JSON outputs expose no
 JSON CRAI evidence; and any future milestone must add a staged plan before
 indexed CRAM queries are promoted.
 
+M13.5 freezes the fixture/oracle boundary as provenance-first: source SAM and
+FASTA roots are present, derived CRAM/BAM fixtures remain planned,
+no-external-reference CRAM remains deferred, and CRAI fixtures, indexed CRAM
+fixtures, and CRAM random-access oracle outputs are explicitly deferred.
+`noodles` or external tools may be used only for fixture generation, fixture
+validation, or test-only compatibility checks.
+
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6

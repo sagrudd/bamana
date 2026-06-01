@@ -161,3 +161,25 @@ stay in native tests. Any future differential test for these paths must be
 clearly labelled as an oracle or compatibility comparison and must not define
 the production index writer, validation depth, random-access engine, or
 consumer evidence policy.
+
+## Milestone 13 CRAM Fixture Oracle Boundary
+
+M13.5 keeps CRAM oracle use limited to fixture generation, fixture validation,
+and test-only compatibility checks. `noodles` or external tools may help
+produce or compare derived CRAM artifacts from the committed source SAM and
+explicit FASTA, but they must not define production behavior.
+
+The authoritative fixture status is provenance-first:
+
+* `tiny.valid.cram.explicit_ref.source_sam` and `tiny.ref.primary` are present
+  source roots;
+* derived explicit-reference, reference-required, compatible-refdict, and
+  incompatible-refdict CRAM/BAM fixtures remain planned until regenerated and
+  reviewed;
+* `tiny.valid.cram.no_external_ref` remains deferred;
+* CRAI fixtures, indexed CRAM fixtures, and CRAM random-access oracle outputs
+  are explicitly deferred for M13.5.
+
+CRAM fixture oracles must not define reference-cache semantics, CRAI behavior,
+indexed CRAM traversal, native BAM/BGZF/FASTQ behavior, or public JSON
+evidence.

@@ -24,6 +24,8 @@ executable:
 | `tiny.valid.bam.compatible_refdict` | planned | Optional BAM companion with the same reference dictionary as the compatible CRAM | alignment-mode compatibility success |
 | `tiny.valid.bam.incompatible_refdict` | planned | Optional BAM companion with a different reference dictionary | `consume` failure with `incompatible_headers` |
 | `tiny.valid.cram.no_external_ref` | deferred | Optional no-external-reference CRAM for `allow-embedded` or `auto-conservative` coverage | only added if reproducible and reviewable |
+| `tiny.valid.cram.explicit_ref.crai` | deferred | CRAI sidecar for the explicit-reference CRAM | explicitly out of scope for M13.5 |
+| `tiny.valid.cram.indexed_region` | deferred | Indexed CRAM region-query fixture | explicitly out of scope until a future indexed-CRAM milestone |
 
 ## Notes
 
@@ -34,8 +36,23 @@ executable:
   artifacts should always be reviewed in relation to those two text fixtures.
 * Compatibility tests should verify both CRAM classification and conservative
   header checking across alignment-bearing formats.
-* `.crai` artifacts are optional for this stage and should only be added when a
-  concrete consume or interop test needs them.
+* `.crai` artifacts are explicitly deferred for M13.5. They should not be added
+  opportunistically and must wait for a future task that promotes indexed CRAM
+  behavior with contracts, schemas, examples, and benchmark evidence.
+* No CRAM random-access oracle output is reserved in this milestone. Existing
+  region commands stay BAM/BAI oriented.
+
+## M13.5 Oracle Boundary
+
+`noodles` or external tools may be used to generate, validate, or compare the
+derived CRAM fixtures only under the test/fixture boundary. They may confirm
+that generated CRAM bytes match the source SAM and explicit FASTA, and they may
+act as compatibility checks for planned consume outputs.
+
+Oracle checks must not define production behavior, reference-cache semantics,
+CRAI behavior, indexed CRAM traversal, native BAM/BGZF/FASTQ behavior, or
+fixture status. The manifest and this plan remain authoritative for whether a
+fixture is present, planned, or deferred.
 
 ## Reserved Expected Outputs
 

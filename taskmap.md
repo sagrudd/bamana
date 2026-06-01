@@ -5872,12 +5872,40 @@ Completion evidence:
 
 ### M13.5 Add CRAM Fixtures And Oracle Boundaries
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * materialize or explicitly defer the CRAM fixture set and oracle boundaries
   chosen by M13.2-M13.4.
+
+Acceptance:
+
+* CRAM fixture status is frozen as present, planned, or deferred;
+* source SAM and FASTA provenance roots are documented as present and
+  authoritative;
+* derived CRAM/BAM fixtures are documented as planned rather than silently
+  materialized;
+* no-external-reference, CRAI, indexed CRAM, and CRAM random-access oracle
+  fixtures are explicitly deferred where appropriate;
+* oracle use is restricted to fixture generation, fixture validation, and
+  test-only compatibility checks.
+
+Completion evidence:
+
+* froze M13.5 as a provenance-first CRAM fixture plan;
+* documented present roots `tiny.valid.cram.explicit_ref.source_sam` and
+  `tiny.ref.primary`;
+* documented planned derived fixtures for explicit-reference success,
+  strict-reference-required failure, compatible refdict success, and
+  incompatible refdict failure;
+* documented `tiny.valid.cram.no_external_ref` as deferred;
+* explicitly deferred CRAI fixtures, indexed CRAM fixtures, and CRAM
+  random-access oracle outputs;
+* added testing-oracle policy text limiting `noodles` and external tools to
+  fixture generation, fixture validation, and test-only compatibility checks;
+* updated README, CLI docs, fixture docs, roadmap, current milestone, M13
+  roadmap, Sphinx, taskmap, and contract coverage.
 
 ### M13.6 Implement Chosen CRAM Behavior
 

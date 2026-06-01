@@ -154,6 +154,13 @@ CRAM fixtures must remain explicit about whether they require a reference and
 which reference source they are intended to use. The fixture plan must never
 blur missing-reference failures into generic decode failures.
 
+M13.5 freezes this as a provenance-first fixture boundary. The source SAM and
+FASTA are present roots, derived CRAM/BAM fixtures remain planned until
+regenerated and reviewed, `tiny.valid.cram.no_external_ref` remains deferred,
+and CRAI fixtures, indexed CRAM fixtures, and CRAM random-access oracle outputs
+are explicitly deferred. `noodles` or external tools may be used only for
+fixture generation, fixture validation, or test-only compatibility checks.
+
 ### Source Provenance Package
 
 The first real CRAM consume package should be rooted in plain-text source files:

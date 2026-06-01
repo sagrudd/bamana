@@ -3239,6 +3239,124 @@ fn milestone_13_4_freezes_cram_indexed_queries_as_unsupported() {
 }
 
 #[test]
+fn milestone_13_5_freezes_cram_fixture_and_oracle_boundary() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let fixtures_readme = read_utf8(&fixtures_dir().join("README.md"));
+    let cram_readme = read_utf8(&fixtures_dir().join("cram").join("README.md"));
+    let fixture_plan = read_utf8(&fixtures_dir().join("plans").join("cram-fixtures.md"));
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+    let manifest_text = read_utf8(&fixtures_dir().join("manifest.json"));
+    let manifest_json: Value = serde_json::from_str(&manifest_text)
+        .expect("fixture manifest should parse as JSON for M13.5 checks");
+    let fixtures = manifest_json["fixtures"]
+        .as_array()
+        .expect("fixture manifest fixtures should be an array");
+
+    for required in [
+        "M13.5",
+        "CRAM Fixture And Oracle Boundary",
+        "provenance-first",
+        "broad binary corpus",
+        "tiny.valid.cram.explicit_ref.source_sam",
+        "tiny.ref.primary",
+        "present provenance roots",
+        "planned derived alignment fixtures",
+        "tiny.valid.cram.explicit_ref.source_bam",
+        "tiny.valid.cram.explicit_ref",
+        "tiny.valid.cram.reference_required",
+        "tiny.valid.cram.compatible_refdict",
+        "tiny.valid.bam.compatible_refdict",
+        "tiny.valid.bam.incompatible_refdict",
+        "tiny.valid.cram.no_external_ref",
+        "deferred no-external-reference fixture",
+        "no CRAI fixture",
+        "CRAI fixtures",
+        "indexed CRAM fixtures",
+        "CRAM random-access oracle outputs",
+        "explicitly deferred",
+        "auditable source of truth",
+        "derived artifacts",
+        "fixture generation",
+        "fixture validation",
+        "test-only compatibility checks",
+        "must not define production behavior",
+        "reference-cache semantics",
+        "CRAI behavior",
+        "indexed CRAM traversal",
+        "native BAM/BGZF/FASTQ",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || fixtures_readme.contains(required)
+                || cram_readme.contains(required)
+                || fixture_plan.contains(required)
+                || oracle_policy.contains(required)
+                || manifest_text.contains(required),
+            "M13.5 CRAM fixture/oracle boundary evidence is missing: {required}"
+        );
+    }
+
+    for (id, status, planned_status) in [
+        (
+            "tiny.valid.cram.explicit_ref.source_sam",
+            "present",
+            "present",
+        ),
+        ("tiny.ref.primary", "present", "present"),
+        (
+            "tiny.valid.cram.explicit_ref.source_bam",
+            "planned",
+            "planned",
+        ),
+        ("tiny.valid.cram.explicit_ref", "planned", "planned"),
+        ("tiny.valid.cram.reference_required", "planned", "planned"),
+        ("tiny.valid.cram.compatible_refdict", "planned", "planned"),
+        ("tiny.valid.bam.compatible_refdict", "planned", "planned"),
+        ("tiny.valid.bam.incompatible_refdict", "planned", "planned"),
+        ("tiny.valid.cram.no_external_ref", "planned", "deferred"),
+    ] {
+        let fixture = fixtures
+            .iter()
+            .find(|fixture| fixture["id"] == id)
+            .unwrap_or_else(|| panic!("M13.5 fixture manifest is missing {id}"));
+        assert_eq!(
+            fixture["status"], status,
+            "M13.5 fixture {id} has unexpected status"
+        );
+        assert_eq!(
+            fixture["planned_status"], planned_status,
+            "M13.5 fixture {id} has unexpected planned_status"
+        );
+    }
+
+    assert!(
+        fixtures.iter().all(|fixture| {
+            let id = fixture["id"].as_str().unwrap_or_default();
+            let path = fixture["path"].as_str().unwrap_or_default();
+            !id.to_ascii_lowercase().contains("crai")
+                && !path.to_ascii_lowercase().contains(".crai")
+        }),
+        "M13.5 must not materialize CRAI fixtures while indexed CRAM is deferred"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));
