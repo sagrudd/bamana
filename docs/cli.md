@@ -544,6 +544,24 @@ unmeasured `fastq`, `unmap`, and `identify` comparator claims,
 command-specific fixture generation, generated fixture retention, broad
 external tool parity, and future release packaging/CI hardening.
 
+Milestone 15 is active as of 2026-06-01. M15.1 activates release hardening
+after Milestone 14 closeout without adding commands, changing behavior, changing
+JSON schemas, or promoting benchmark/comparator claims. The starting release
+boundary accepts the currently implemented and documented CLI commands:
+`benchmark`, `identify`, `enumerate`, `subsample`, `inspect_duplication`,
+`deduplicate`, `forensic_inspect`, `annotate_rg`, `consume`, `explode`,
+`fastq`, `checksum`, `merge`, `reheader`, `sort`, `select_region`, `unmap`,
+`verify`, `check_eof`, `header`, `check_map`, `check_index`, `index`,
+`summary`, `validate`, `check_tag`, and `check_sort`. `benchmark`, `fastq`,
+and `unmap` remain named public contract commands. Acceptance is limited to
+current schemas, examples, CLI docs, Sphinx docs, roadmap notes, and contract
+tests; broad comparator parity, release performance promises, biological
+equivalence, CRAM indexed-query behavior, CSI writing, native CRAM parsing or
+writing, public `select_region --region-file`, binary stdout selected-record
+output, replacement output-index creation, and unmeasured benchmark claims for
+`fastq`, `unmap`, or `identify` remain outside the release boundary unless
+later M15 tasks explicitly promote them.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

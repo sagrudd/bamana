@@ -47,3 +47,4 @@ Build the site locally with:
    native_extended_index_compatibility
    native_cram_strategy
    interop_benchmark_evidence
+   release_hardening

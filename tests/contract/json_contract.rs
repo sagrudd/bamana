@@ -2061,7 +2061,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 15: Release Hardening And Public Contract Freeze",
-            "status: planned",
+            "status: active",
             "roadmap/milestone-15-release-hardening.md",
         ),
     ];
@@ -2107,6 +2107,127 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
                 )
                 .contains(required),
             "post-M10 roadmap is missing: {required}"
+        );
+    }
+}
+
+#[test]
+fn milestone_15_activation_baseline_records_release_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m15 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-15-release-hardening.md"),
+    );
+    let m15_sphinx = read_utf8(&docs_dir().join("sphinx").join("release_hardening.rst"));
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli_docs),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M15 roadmap", &m15),
+        ("M15 Sphinx", &m15_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 15 is active")
+                || text.contains("Status: active as of 2026-06-01")
+                || text.contains("status: active"),
+            "{name} does not record Milestone 15 activation"
+        );
+        assert!(
+            text.contains("M15.1"),
+            "{name} does not record the M15.1 activation baseline"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("release_hardening"),
+        "Sphinx index does not include the M15 release hardening note"
+    );
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m15.as_str(),
+        m15_sphinx.as_str(),
+        taskmap.as_str(),
+        cli_source.as_str(),
+    ]
+    .join("\n");
+
+    for command in [
+        "benchmark",
+        "identify",
+        "enumerate",
+        "subsample",
+        "inspect_duplication",
+        "deduplicate",
+        "forensic_inspect",
+        "annotate_rg",
+        "consume",
+        "explode",
+        "fastq",
+        "checksum",
+        "merge",
+        "reheader",
+        "sort",
+        "select_region",
+        "unmap",
+        "verify",
+        "check_eof",
+        "header",
+        "check_map",
+        "check_index",
+        "index",
+        "summary",
+        "validate",
+        "check_tag",
+        "check_sort",
+    ] {
+        assert!(
+            all_text.contains(command),
+            "M15.1 release command inventory is missing {command}"
+        );
+    }
+
+    for required in [
+        "Release Hardening And Public Contract Freeze",
+        "release boundary",
+        "currently implemented and documented CLI commands",
+        "`benchmark`, `fastq`, and `unmap` remain named public contract commands",
+        "does not add commands",
+        "change command behavior",
+        "change JSON schemas",
+        "promote benchmark/comparator claims",
+        "current schemas, examples, CLI docs, Sphinx docs",
+        "roadmap notes, and contract tests",
+        "broad external-tool comparator parity",
+        "release performance promises",
+        "biological equivalence",
+        "CRAM indexed-query behavior",
+        "CSI writing",
+        "native CRAM parsing",
+        "writing",
+        "public `select_region --region-file`",
+        "binary stdout",
+        "selected-record output",
+        "replacement output-index creation",
+        "unmeasured benchmark claims",
+        "`fastq`, `unmap`, or `identify`",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M15.1 activation baseline is missing: {required}"
         );
     }
 }

@@ -365,12 +365,24 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 
-* status: planned
+* status: active as of 2026-06-01
 * detail: [roadmap/milestone-15-release-hardening.md](roadmap/milestone-15-release-hardening.md)
 * goal: prepare a coherent release boundary with contract stability,
   documentation completeness, packaging, CI, and operational support evidence
 * commands enabled first: all public contract commands accepted into the
   release boundary
+* M15.1 activation baseline: Milestone 15 is active only after the Milestone 14
+  closeout commit. The release boundary accepts the currently implemented and
+  documented CLI commands: `benchmark`, `identify`, `enumerate`, `subsample`,
+  `inspect_duplication`, `deduplicate`, `forensic_inspect`, `annotate_rg`,
+  `consume`, `explode`, `fastq`, `checksum`, `merge`, `reheader`, `sort`,
+  `select_region`, `unmap`, `verify`, `check_eof`, `header`, `check_map`,
+  `check_index`, `index`, `summary`, `validate`, `check_tag`, and
+  `check_sort`. `benchmark`, `fastq`, and `unmap` remain named public contract
+  commands. Acceptance is limited to the behavior already represented in
+  schemas, examples, CLI docs, Sphinx docs, roadmap notes, and contract tests;
+  deferred surfaces remain outside the release boundary until later M15 tasks
+  freeze or explicitly exclude them.
 
 CRAM remains explicitly staged later and must not derail the BAM/FASTQ native
 core sequence.

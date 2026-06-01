@@ -28,8 +28,8 @@ Milestone 13 is complete as of 2026-06-01.
 2026-06-01. It was activated by M14.1 only after Milestone 13 closeout
 evidence was recorded and closed after M14.1 through M14.10 completed on
 2026-06-01.
-Status: complete as of 2026-06-01 for Milestone 14. Milestone 15 remains
-planned.
+Status: complete as of 2026-06-01 for Milestone 14. Milestone 15 is active as
+of 2026-06-01.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
@@ -296,6 +296,25 @@ Current milestone:
   comparator claims, command-specific fixture generation, generated fixture
   retention, broad external tool parity, and future release packaging/CI
   hardening before Milestone 15.
+
+* **Milestone 15: Release Hardening And Public Contract Freeze** is active as
+  of 2026-06-01. M15.1 activates the release hardening scope after Milestone
+  14 closeout without adding commands, changing command behavior, changing
+  JSON schemas, or promoting benchmark/comparator claims. The starting release
+  boundary accepts the currently implemented and documented CLI commands:
+  `benchmark`, `identify`, `enumerate`, `subsample`, `inspect_duplication`,
+  `deduplicate`, `forensic_inspect`, `annotate_rg`, `consume`, `explode`,
+  `fastq`, `checksum`, `merge`, `reheader`, `sort`, `select_region`, `unmap`,
+  `verify`, `check_eof`, `header`, `check_map`, `check_index`, `index`,
+  `summary`, `validate`, `check_tag`, and `check_sort`. `benchmark`, `fastq`,
+  and `unmap` remain named public contract commands. Acceptance is limited to
+  current schemas, examples, CLI docs, Sphinx docs, roadmap notes, and contract
+  tests; broad external-tool comparator parity, release performance promises,
+  biological equivalence, CRAM indexed-query behavior, CSI writing, native CRAM
+  parsing or writing, public `select_region --region-file`, binary stdout
+  selected-record output, replacement output-index creation, and unmeasured
+  benchmark claims for `fastq`, `unmap`, or `identify` remain outside the
+  release boundary unless later M15 tasks explicitly promote them.
 
 ## Completed Backbone
 

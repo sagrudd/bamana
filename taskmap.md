@@ -6402,3 +6402,174 @@ Completion evidence:
   `unmap`, and `identify` comparator claims, command-specific fixture
   generation, generated fixture retention, broad external tool parity, and
   future release packaging/CI hardening before Milestone 15.
+
+## Milestone 15: Release Hardening And Public Contract Freeze
+
+Status: active as of 2026-06-01.
+
+Goal:
+
+* prepare a coherent release boundary with contract stability, documentation
+  completeness, packaging checks, CI verification, and operational support
+  evidence.
+
+### M15.1 Activate Release Scope
+
+Status: complete.
+
+Tasks:
+
+* activate Milestone 15 only after Milestone 14 closeout evidence is recorded;
+* list public commands accepted into the release boundary;
+* preserve `benchmark`, `fastq`, and `unmap` as named public contract
+  commands;
+* record that acceptance is limited to currently documented, tested, and
+  schema-governed behavior.
+
+Acceptance:
+
+* release scope is active;
+* accepted commands are explicit;
+* deferred benchmark, CRAM, CSI, selected-output, comparator, and performance
+  surfaces are not silently promoted.
+
+Completion evidence:
+
+* activated Milestone 15 in roadmap, current milestone, M15 roadmap, README,
+  CLI docs, Sphinx docs, and taskmap;
+* accepted the currently implemented and documented CLI commands into the
+  release hardening inventory: `benchmark`, `identify`, `enumerate`,
+  `subsample`, `inspect_duplication`, `deduplicate`, `forensic_inspect`,
+  `annotate_rg`, `consume`, `explode`, `fastq`, `checksum`, `merge`,
+  `reheader`, `sort`, `select_region`, `unmap`, `verify`, `check_eof`,
+  `header`, `check_map`, `check_index`, `index`, `summary`, `validate`,
+  `check_tag`, and `check_sort`;
+* preserved `benchmark`, `fastq`, and `unmap` as named public contract
+  commands;
+* documented that M15.1 does not add commands, change command behavior, change
+  JSON schemas, or promote benchmark/comparator claims;
+* kept broad external-tool comparator parity, release performance promises,
+  biological equivalence, CRAM indexed-query behavior, CSI writing, native CRAM
+  parsing or writing, public `select_region --region-file`, binary stdout
+  selected-record output, replacement output-index creation, and unmeasured
+  benchmark claims for `fastq`, `unmap`, or `identify` outside the release
+  boundary unless later M15 tasks explicitly promote them;
+* added contract coverage for the M15.1 activation baseline.
+
+### M15.2 Freeze CLI And JSON Compatibility
+
+Status: pending.
+
+Tasks:
+
+* freeze CLI option semantics and JSON output compatibility rules.
+
+Acceptance:
+
+* release-facing option and JSON compatibility rules are explicit and covered
+  by contract tests.
+
+### M15.3 Audit Release Artifacts
+
+Status: pending.
+
+Tasks:
+
+* audit every schema, example, fixture, benchmark note, and Sphinx page.
+
+Acceptance:
+
+* public release artifacts have no unreviewed stale milestone notes or missing
+  contract pointers.
+
+### M15.4 Define Versioning And Deprecation Policy
+
+Status: pending.
+
+Tasks:
+
+* define deprecation, compatibility, and versioning policy.
+
+Acceptance:
+
+* versioning and deprecation behavior is documented for CLI, JSON, schemas,
+  examples, and benchmark outputs.
+
+### M15.5 Harden Installation And Packaging
+
+Status: pending.
+
+Tasks:
+
+* harden installation, packaging, binary naming, and release artifact checks.
+
+Acceptance:
+
+* packaging checks are reproducible and documented.
+
+### M15.6 Add CI Release Verification
+
+Status: pending.
+
+Tasks:
+
+* add CI verification for formatting, tests, contracts, Sphinx, schemas,
+  examples, and smoke benchmarks.
+
+Acceptance:
+
+* release verification is automated or explicitly documented where automation
+  remains unavailable.
+
+### M15.7 Audit Operational Failures
+
+Status: pending.
+
+Tasks:
+
+* audit operational failure modes and error-message quality.
+
+Acceptance:
+
+* release-facing failures are structured, documented, and covered by tests or
+  examples where practical.
+
+### M15.8 Refresh Release Documentation
+
+Status: pending.
+
+Tasks:
+
+* update README, user docs, technical docs, roadmap, and release notes.
+
+Acceptance:
+
+* release-facing documentation matches the frozen contract boundary.
+
+### M15.9 Add Final Dependency And Supply-Chain Checks
+
+Status: pending.
+
+Tasks:
+
+* add final dependency-boundary and license/supply-chain checks.
+
+Acceptance:
+
+* native hot-path dependency boundaries and release supply-chain assumptions
+  are explicit and verified.
+
+### M15.10 Close Milestone 15
+
+Status: pending.
+
+Tasks:
+
+* close the release hardening milestone with archived verification evidence and
+  explicit known limitations.
+
+Acceptance:
+
+* M15.1 through M15.10 are complete;
+* verification evidence is recorded;
+* release limitations are explicit.
