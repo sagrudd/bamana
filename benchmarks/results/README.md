@@ -34,6 +34,7 @@ Contracts:
 * [tidy_result_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/tidy_result_contract.md): human-readable aggregation contract
 * [../tools/tool_registry.example.json](/Users/stephen/Projects/bamana/benchmarks/tools/tool_registry.example.json): canonical `tool` and `workflow_variant` values
 * [support_matrix_contract.md](/Users/stephen/Projects/bamana/benchmarks/results/support_matrix_contract.md): support and capability reporting contract
+* [../command_evidence_matrix.md](/Users/stephen/Projects/bamana/benchmarks/command_evidence_matrix.md): M14.2 command-level comparator, smoke, and no-claim evidence matrix
 
 Examples:
 
@@ -80,6 +81,14 @@ Benchmark interpretation notes:
   and its `consume` row is synthetic BAM alignment ingest only. It does not
   measure CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
   indexed-query evidence, or CRAM comparator parity
+* M14.2 records command-level evidence status in
+  [../command_evidence_matrix.md](/Users/stephen/Projects/bamana/benchmarks/command_evidence_matrix.md).
+  Only `fastq_ingress` and `fastq_gz_enumerate` are current public-profile
+  comparator evidence. Repository-local command timings are local smoke
+  evidence. `fastq`, `unmap`, `identify`, unmeasured command modes, and
+  scaffold-only workflow-matrix rows remain no external comparator claim
+  surfaces until later M14 tasks promote them with command-specific fixtures,
+  semantic assumptions, and schema coverage.
 
 First analysis slice:
 

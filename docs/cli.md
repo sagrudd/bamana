@@ -471,6 +471,16 @@ scenario-specific rather than broad comparator parity, biological equivalence,
 release performance promises, CRAM comparator claims, or external-tool
 authority.
 
+M14.2 records command-level benchmark and comparator evidence in
+[benchmarks/command_evidence_matrix.md](/Users/stephen/Projects/bamana/benchmarks/command_evidence_matrix.md).
+The current public-profile comparator evidence is limited to
+`fastq_gz_enumerate` for FASTQ.GZ `enumerate` and `fastq_ingress` for FASTQ.GZ
+unmapped `consume`. Repository-local command timings are `local_smoke`;
+workflow-matrix comparator rows are `scenario_matrix_comparator_scaffold`, not
+release-facing comparator parity. `identify`, `fastq`, `unmap`, CRAM consume
+behavior, unmeasured command modes, and scaffold-only rows remain
+`no_external_comparator_claim` surfaces.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

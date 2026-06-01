@@ -313,6 +313,11 @@ This order is retained because it matches the dependency chain of the runtime:
   registry, and support matrix docs are present; existing smoke timings are
   regression guardrails and existing comparator rows are profile-specific, not
   broad comparator parity or biological-equivalence claims
+* M14.2 evidence matrix: `benchmarks/command_evidence_matrix.md` classifies
+  public command surfaces as public-profile comparator, local smoke,
+  scenario-matrix comparator scaffold, or no external comparator claim; only
+  `fastq_gz_enumerate` for FASTQ.GZ `enumerate` and `fastq_ingress` for
+  FASTQ.GZ unmapped `consume` are current public-profile comparator evidence
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

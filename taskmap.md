@@ -6126,7 +6126,7 @@ Completion evidence:
 
 ### M14.2 Define Command Comparator Evidence Matrix
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6138,6 +6138,21 @@ Acceptance:
 * each public command family has an explicit evidence level;
 * commands without semantic comparator coverage are documented as no-claim
   surfaces rather than implied parity.
+
+Completion evidence:
+
+* added `benchmarks/command_evidence_matrix.md` with command-level
+  classifications for `public_profile_comparator`, `local_smoke`,
+  `scenario_matrix_comparator_scaffold`, and
+  `no_external_comparator_claim`;
+* documented that current public-profile comparator evidence is limited to
+  FASTQ.GZ `enumerate` through `fastq_gz_enumerate` and FASTQ.GZ unmapped
+  `consume` through `fastq_ingress`;
+* documented that `identify`, `fastq`, `unmap`, CRAM consume behavior,
+  unmeasured command modes, and scaffold-only workflow rows remain no external
+  comparator claim surfaces;
+* updated README, CLI docs, benchmark result docs, Sphinx, roadmap, current
+  milestone, M14 roadmap, taskmap, and contract coverage.
 
 ### M14.3 Extend Benchmark Result Schemas
 

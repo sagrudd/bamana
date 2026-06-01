@@ -59,6 +59,32 @@ scenario-specific. Broad comparator parity, biological equivalence, release
 performance promises, CRAM comparator claims, and external-tool authority
 remain out of scope until later M14 tasks pin command-specific evidence.
 
+## M14.2 Command Comparator Evidence Matrix
+
+M14.2 defines the current command-level evidence matrix in
+`benchmarks/command_evidence_matrix.md`. The matrix classifies public command
+surfaces as `public_profile_comparator`,
+`scenario_matrix_comparator_scaffold`, `local_smoke`, or
+`no_external_comparator_claim`.
+
+Current public-profile comparator evidence is limited to:
+
+* FASTQ.GZ `enumerate` through `fastq_gz_enumerate`, comparing Bamana-native
+  record counting with gzip decompression plus line counting;
+* FASTQ.GZ unmapped `consume` through `fastq_ingress`, comparing Bamana
+  normalization with a fastcat-plus-samtools path.
+
+Repository-local smoke evidence covers commands represented in
+`bgzf_microbench`, `header_microbench`, `scanner_microbench`, and
+`fastq_microbench`. Workflow-matrix comparator rows for BAM `subsample`,
+`sort`, and FASTQ.GZ `subsample` remain scaffolded evidence only, not
+release-facing comparator parity.
+
+`identify`, `fastq`, `unmap`, CRAM consume behavior, unmeasured command modes,
+and scaffold-only workflow rows remain `no_external_comparator_claim` surfaces
+until later M14 tasks add command-specific fixtures, semantic assumptions, and
+schema coverage.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -67,6 +93,8 @@ remain out of scope until later M14 tasks pin command-specific evidence.
    boundaries.
 2. M14.2 define which public commands have comparator evidence, smoke evidence,
    or no external comparator claim.
+   Complete: command-level evidence matrix added with public-profile
+   comparator, local-smoke, scaffolded-comparator, and no-claim classifications.
 3. M14.3 extend benchmark result schemas for post-M10 command families.
 4. M14.4 add reproducible fixture generation and fixture provenance metadata.
 5. M14.5 add measured comparator profiles only where semantics are aligned.

@@ -61,3 +61,30 @@ Existing smoke timings are regression guardrails. Existing comparator rows are
 profile- and scenario-specific. They are not broad comparator parity,
 biological equivalence, release performance promises, CRAM comparator claims,
 or external-tool authority.
+
+M14.2 Command Evidence Matrix
+-----------------------------
+
+M14.2 defines which public commands have comparator evidence, smoke evidence,
+or no external comparator claim. The governed source is
+``benchmarks/command_evidence_matrix.md``.
+
+The current evidence levels are:
+
+* ``public_profile_comparator`` for ``enumerate`` on FASTQ.GZ through
+  ``fastq_gz_enumerate`` and for ``consume`` on FASTQ.GZ unmapped ingest
+  through ``fastq_ingress``.
+* ``local_smoke`` for commands covered by ``bgzf_microbench``,
+  ``header_microbench``, ``scanner_microbench``, or ``fastq_microbench``.
+* ``scenario_matrix_comparator_scaffold`` for workflow-matrix rows such as
+  BAM ``subsample``/``sort`` and FASTQ.GZ ``subsample`` where comparator tools
+  are represented but not promoted to release-facing comparator evidence.
+* ``no_external_comparator_claim`` for ``identify``, ``fastq``, ``unmap``,
+  unmeasured command modes, CRAM consume behavior, and any workflow-matrix row
+  that lacks command-specific fixtures, semantic assumptions, and schema
+  coverage.
+
+The public contract commands ``benchmark``, ``fastq``, and ``unmap`` remain
+explicitly governed: ``benchmark`` owns profile execution and reporting,
+``fastq`` currently has no benchmark hook or comparator claim, and ``unmap``
+currently has no benchmark hook or comparator claim.

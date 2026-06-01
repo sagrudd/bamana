@@ -800,6 +800,16 @@ scenario-specific rather than broad comparator parity, biological equivalence,
 release performance promises, CRAM comparator claims, or external-tool
 authority.
 
+M14.2 adds a command-level evidence matrix at
+[benchmarks/command_evidence_matrix.md](/Users/stephen/Projects/bamana/benchmarks/command_evidence_matrix.md).
+Only `fastq_gz_enumerate` for FASTQ.GZ `enumerate` and `fastq_ingress` for
+FASTQ.GZ unmapped `consume` are current public-profile comparator evidence.
+Repository-local command timings are `local_smoke`; workflow-matrix comparator
+rows remain `scenario_matrix_comparator_scaffold` until command-specific
+fixtures, semantic assumptions, and schema coverage promote them. `identify`,
+`fastq`, `unmap`, CRAM consume behavior, unmeasured command modes, and
+scaffold-only rows remain `no_external_comparator_claim` surfaces.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

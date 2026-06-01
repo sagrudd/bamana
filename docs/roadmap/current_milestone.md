@@ -248,7 +248,14 @@ Current milestone:
   place. Existing smoke timings are regression guardrails, and existing
   comparator rows are profile- and scenario-specific rather than broad
   comparator parity, biological-equivalence, release-performance, CRAM
-  comparator, or external-tool authority claims.
+  comparator, or external-tool authority claims. M14.2 adds
+  `benchmarks/command_evidence_matrix.md` and classifies each public command
+  as public-profile comparator, local smoke, scenario-matrix comparator
+  scaffold, or no external comparator claim. Only FASTQ.GZ `enumerate` through
+  `fastq_gz_enumerate` and FASTQ.GZ unmapped `consume` through
+  `fastq_ingress` are current public-profile comparator evidence. `identify`,
+  `fastq`, `unmap`, CRAM consume behavior, unmeasured command modes, and
+  scaffold-only workflow rows remain no-claim surfaces.
 
 ## Completed Backbone
 

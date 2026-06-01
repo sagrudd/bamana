@@ -3960,6 +3960,179 @@ fn milestone_14_activation_baseline_records_benchmark_evidence_scope() {
 }
 
 #[test]
+fn milestone_14_2_records_command_comparator_evidence_matrix() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let evidence_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("command_evidence_matrix.md"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let workflow_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("tools")
+            .join("workflow_variant_matrix.md"),
+    );
+    let scanner_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let header_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("header_microbench.schema.json"),
+    );
+    let bgzf_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("bgzf_microbench.schema.json"),
+    );
+    let fastq_schema = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("fastq_microbench.schema.json"),
+    );
+
+    let public_docs = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmark_results.as_str(),
+    ]
+    .join("\n");
+    let evidence_sources = [
+        evidence_matrix.as_str(),
+        workflow_matrix.as_str(),
+        scanner_schema.as_str(),
+        header_schema.as_str(),
+        bgzf_schema.as_str(),
+        fastq_schema.as_str(),
+    ]
+    .join("\n");
+    let all_text = format!("{public_docs}\n{evidence_sources}");
+
+    for required in [
+        "M14.2",
+        "benchmarks/command_evidence_matrix.md",
+        "Command Evidence Matrix",
+        "public_profile_comparator",
+        "scenario_matrix_comparator_scaffold",
+        "local_smoke",
+        "no_external_comparator_claim",
+        "fastq_gz_enumerate",
+        "fastq_ingress",
+        "FASTQ.GZ `enumerate`",
+        "FASTQ.GZ unmapped `consume`",
+        "enumerate_fastq",
+        "enumerate_fastq_gz",
+        "subsample_fastq",
+        "subsample_fastq_gz",
+        "subsample_bam",
+        "fastcat-plus-samtools",
+        "gzip decompression plus line counting",
+        "workflow-matrix comparator rows",
+        "command-specific fixtures",
+        "semantic assumptions",
+        "schema coverage",
+        "does not add benchmark profiles",
+        "result schemas",
+        "fixture generation",
+        "runtime command behavior",
+        "not release-facing comparator parity",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.2 command evidence matrix is missing: {required}"
+        );
+    }
+
+    for command in [
+        "benchmark",
+        "identify",
+        "enumerate",
+        "subsample",
+        "inspect_duplication",
+        "deduplicate",
+        "forensic_inspect",
+        "annotate_rg",
+        "consume",
+        "explode",
+        "fastq",
+        "checksum",
+        "merge",
+        "reheader",
+        "sort",
+        "select_region",
+        "unmap",
+        "verify",
+        "check_eof",
+        "header",
+        "check_map",
+        "check_index",
+        "index",
+        "summary",
+        "validate",
+        "check_tag",
+        "check_sort",
+    ] {
+        assert!(
+            evidence_matrix.contains(&format!("| `{command}` |")),
+            "M14.2 matrix is missing command row: {command}"
+        );
+    }
+
+    for no_claim in ["identify", "fastq", "unmap"] {
+        let expected = format!("| `{no_claim}` | `no_external_comparator_claim`");
+        assert!(
+            evidence_matrix.contains(&expected),
+            "M14.2 matrix must keep {no_claim} as no external comparator claim"
+        );
+    }
+
+    assert!(
+        evidence_matrix.contains("CRAM consume behavior")
+            && evidence_matrix.contains("unmeasured command modes")
+            && evidence_matrix.contains("scaffold-only workflow rows"),
+        "M14.2 matrix does not preserve no-claim mode boundaries"
+    );
+    assert!(
+        evidence_matrix.contains("`benchmark` | `local_smoke`")
+            && evidence_matrix.contains("Public contract command")
+            && evidence_matrix.contains("profile output scope is governed per profile"),
+        "M14.2 matrix does not keep benchmark as a governed public contract command"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));
