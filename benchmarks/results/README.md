@@ -119,6 +119,11 @@ Benchmark interpretation notes:
   subsampling, rasusa downsampling, full mapped sort/index pipelines,
   `select_region`, mutation commands, and forensic commands are documented as
   intentional benchmark boundaries rather than missing implementations.
+* M14.7 adds `benchmarks/bin/check_schema_stability.py` and
+  `benchmarks/schema_stability_manifest.json`. The local harness pins every
+  benchmark schema path, `$id`, contract surface, version pointer, and required
+  stability metadata so benchmark schema changes fail verification unless the
+  manifest and docs are updated deliberately.
 
 First analysis slice:
 

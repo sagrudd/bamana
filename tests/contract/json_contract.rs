@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, process::Command};
 
 use serde_json::Value;
 
@@ -4839,6 +4839,156 @@ fn milestone_14_6_documents_comparator_mismatches() {
             && mismatch_register.contains("`fastq_gz_enumerate` is `partial_profile_only`"),
         "M14.6 must preserve public profile exceptions"
     );
+}
+
+#[test]
+fn milestone_14_7_checks_benchmark_schema_stability() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmarks_readme = read_utf8(&super::repo_root().join("benchmarks").join("README.md"));
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let harness = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("bin")
+            .join("check_schema_stability.py"),
+    );
+    let manifest_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("schema_stability_manifest.json"),
+    );
+    let manifest: Value = serde_json::from_str(&manifest_text).unwrap();
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        harness.as_str(),
+        manifest_text.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.7",
+        "benchmarks/bin/check_schema_stability.py",
+        "benchmarks/schema_stability_manifest.json",
+        "schema stability",
+        "benchmark schema stability",
+        "benchmarks/**/*.schema.json",
+        "version_pointer",
+        "contract_surface",
+        "required_pointers",
+        "x-bamana-benchmark-contract-version",
+        "benchmark schema additions",
+        "unexpected `$id`",
+        "version metadata",
+        "required stability metadata",
+        "local benchmark schema stability harness",
+        "before release-facing evidence changes",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.7 schema stability evidence is missing: {required}"
+        );
+    }
+
+    let output = Command::new("python3")
+        .arg("benchmarks/bin/check_schema_stability.py")
+        .current_dir(super::repo_root())
+        .output()
+        .expect("failed to launch benchmark schema stability harness");
+    assert!(
+        output.status.success(),
+        "benchmark schema stability harness failed:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let schemas = manifest["schemas"]
+        .as_array()
+        .expect("schema stability manifest must contain schemas");
+    let paths: BTreeSet<&str> = schemas
+        .iter()
+        .map(|entry| {
+            entry["path"]
+                .as_str()
+                .expect("schema stability entry missing path")
+        })
+        .collect();
+    for path in [
+        "benchmarks/params.schema.json",
+        "benchmarks/inputs/manifest.schema.json",
+        "benchmarks/results/result.schema.json",
+        "benchmarks/results/benchmark_row.schema.json",
+        "benchmarks/results/bgzf_microbench.schema.json",
+        "benchmarks/results/header_microbench.schema.json",
+        "benchmarks/results/fastq_microbench.schema.json",
+        "benchmarks/results/scanner_microbench.schema.json",
+        "benchmarks/tools/tool_registry.schema.json",
+        "benchmarks/comparator_profiles.schema.json",
+    ] {
+        assert!(
+            paths.contains(path),
+            "schema stability manifest is missing {path}"
+        );
+    }
+
+    for entry in schemas {
+        let path = entry["path"].as_str().unwrap();
+        assert!(
+            entry["id"]
+                .as_str()
+                .is_some_and(|id| id.starts_with("https://bamana.dev/benchmarks/")),
+            "{path} stability entry must pin benchmark $id"
+        );
+        assert!(
+            entry["contract_surface"]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
+            "{path} stability entry must name contract_surface"
+        );
+        assert!(
+            entry["version_pointer"]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
+            "{path} stability entry must name version_pointer"
+        );
+        assert_eq!(
+            entry["version"], "1.0.0",
+            "{path} stability entry must pin version 1.0.0"
+        );
+        assert!(
+            entry["required_pointers"]
+                .as_array()
+                .is_some_and(|pointers| !pointers.is_empty()),
+            "{path} stability entry must list required_pointers"
+        );
+    }
 }
 
 #[test]

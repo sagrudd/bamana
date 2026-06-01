@@ -852,6 +852,13 @@ BAM/FASTQ subsampling, `rasusa` downsampling, mapped sort/index pipelines,
 `select_region`, mutation commands, and forensic commands. These entries are
 intentional benchmark boundaries, not missing implementation work.
 
+M14.7 adds benchmark schema stability checks through
+`benchmarks/bin/check_schema_stability.py` and
+`benchmarks/schema_stability_manifest.json`. The local harness pins every
+`benchmarks/**/*.schema.json` path, `$id`, contract surface, version pointer,
+and required metadata so benchmark schema changes are caught during contract
+verification rather than drifting silently.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

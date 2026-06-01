@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0.0",
+  "task": "M14.7",
+  "description": "Pinned inventory for benchmark JSON schema stability checks.",
+  "schemas": [
+    {
+      "path": "benchmarks/params.schema.json",
+      "id": "https://bamana.dev/benchmarks/params.schema.json",
+      "contract_surface": "benchmark run parameters",
+      "version_pointer": "/x-benchmark-schema-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type"]
+    },
+    {
+      "path": "benchmarks/inputs/manifest.schema.json",
+      "id": "https://bamana.dev/benchmarks/inputs/manifest.schema.json",
+      "contract_surface": "benchmark input manifest",
+      "version_pointer": "/x-benchmark-schema-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type", "/$defs/fixtureProvenance"]
+    },
+    {
+      "path": "benchmarks/results/result.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/result.schema.json",
+      "contract_surface": "raw benchmark result",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type", "/x-bamana-m14-result-schema-extension"]
+    },
+    {
+      "path": "benchmarks/results/benchmark_row.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/benchmark_row.schema.json",
+      "contract_surface": "tidy benchmark result row",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type", "/x-bamana-m14-result-schema-extension"]
+    },
+    {
+      "path": "benchmarks/results/bgzf_microbench.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/bgzf_microbench.schema.json",
+      "contract_surface": "BGZF microbenchmark result",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/type", "/properties/benchmark"]
+    },
+    {
+      "path": "benchmarks/results/header_microbench.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/header_microbench.schema.json",
+      "contract_surface": "header microbenchmark result",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/type", "/properties/benchmark", "/x-bamana-m14-post-m10-command-families"]
+    },
+    {
+      "path": "benchmarks/results/fastq_microbench.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/fastq_microbench.schema.json",
+      "contract_surface": "FASTQ microbenchmark result",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/type", "/properties/benchmark", "/x-bamana-m14-post-m10-command-families"]
+    },
+    {
+      "path": "benchmarks/results/scanner_microbench.schema.json",
+      "id": "https://bamana.dev/benchmarks/results/scanner_microbench.schema.json",
+      "contract_surface": "scanner microbenchmark result",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": [
+        "/title",
+        "/type",
+        "/properties/benchmark",
+        "/x-bamana-m13-cram-benchmark-guardrail",
+        "/x-bamana-m14-post-m10-command-families"
+      ]
+    },
+    {
+      "path": "benchmarks/tools/tool_registry.schema.json",
+      "id": "https://bamana.dev/benchmarks/tools/tool_registry.schema.json",
+      "contract_surface": "benchmark tool registry",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type", "/properties/tools"]
+    },
+    {
+      "path": "benchmarks/comparator_profiles.schema.json",
+      "id": "https://bamana.dev/benchmarks/comparator_profiles.schema.json",
+      "contract_surface": "aligned comparator profile catalog",
+      "version_pointer": "/x-bamana-benchmark-contract-version",
+      "version": "1.0.0",
+      "required_pointers": ["/title", "/description", "/type", "/x-bamana-m14-comparator-profile-task", "/properties/profiles"]
+    }
+  ]
+}

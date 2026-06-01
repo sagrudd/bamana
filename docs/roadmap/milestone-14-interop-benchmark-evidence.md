@@ -158,6 +158,20 @@ an evidence status, semantic mismatch reason, current boundary, and promotion
 requirement. The only public-profile exceptions remain `fastq_ingress` and
 `fastq_gz_enumerate`, bounded by `benchmarks/comparator_profiles.json`.
 
+## M14.7 Benchmark Schema Stability Checks
+
+M14.7 adds the local benchmark schema stability harness
+`benchmarks/bin/check_schema_stability.py` and the pinned inventory
+`benchmarks/schema_stability_manifest.json`. The manifest lists every
+`benchmarks/**/*.schema.json` file with its `$id`, contract surface, version
+pointer, version value, and required stability pointers.
+
+The harness fails when benchmark schemas are added, removed, renamed, have
+unexpected `$id` values, lose version metadata, or drop required M14 metadata.
+It covers benchmark params, input manifests, raw/tidy result schemas,
+microbenchmark result schemas, tool registry schemas, and comparator-profile
+schemas.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -185,6 +199,9 @@ requirement. The only public-profile exceptions remain `fastq_ingress` and
    and scaffolded mismatch surfaces with semantic mismatch reasons, current
    boundaries, and promotion requirements.
 7. M14.7 add CI or local harness checks for benchmark schema stability.
+   Complete: `benchmarks/bin/check_schema_stability.py` validates the pinned
+   schema inventory in `benchmarks/schema_stability_manifest.json` and is
+   covered by contract tests.
 8. M14.8 update benchmark docs, README, CLI docs, roadmap, and Sphinx docs.
 9. M14.9 add dependency-boundary tests for benchmark-only tools and oracles.
 10. M14.10 close the milestone with archived smoke evidence and residual risk

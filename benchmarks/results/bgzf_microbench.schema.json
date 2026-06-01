@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/benchmarks/results/bgzf_microbench.schema.json",
   "title": "Bamana BGZF Microbenchmark Result",
+  "x-bamana-benchmark-contract-version": "1.0.0",
   "type": "object",
   "required": ["benchmark", "version", "profile", "iterations", "fixture", "results", "notes"],
   "properties": {

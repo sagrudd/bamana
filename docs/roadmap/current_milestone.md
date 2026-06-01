@@ -269,7 +269,11 @@ Current milestone:
   `fastq_gz_enumerate` comparator profiles. M14.6 adds
   `benchmarks/comparator_mismatches.md` so no-claim and scaffolded mismatch
   surfaces record semantic mismatch reasons, current benchmark boundaries, and
-  promotion requirements before any release-facing comparator claim.
+  promotion requirements before any release-facing comparator claim. M14.7 adds
+  `benchmarks/bin/check_schema_stability.py` and
+  `benchmarks/schema_stability_manifest.json` so benchmark schema additions,
+  removals, `$id` drift, version metadata loss, and required metadata loss are
+  caught by local verification and contract tests.
 
 ## Completed Backbone
 

@@ -6279,7 +6279,7 @@ Completion evidence:
 
 ### M14.7 Add Benchmark Schema Stability Checks
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6289,6 +6289,22 @@ Acceptance:
 
 * benchmark schema changes are caught by contract or equivalent verification
   before release-facing evidence changes.
+
+Completion evidence:
+
+* added `benchmarks/bin/check_schema_stability.py` as the local benchmark
+  schema stability harness;
+* added `benchmarks/schema_stability_manifest.json` as the pinned inventory of
+  every `benchmarks/**/*.schema.json` file;
+* pinned benchmark schema paths, `$id` values, contract surfaces, version
+  pointers, version values, and required stability pointers;
+* added `x-bamana-benchmark-contract-version` metadata to benchmark result and
+  comparator-profile schemas that lacked explicit version metadata;
+* added contract coverage that runs the harness and checks the manifest covers
+  params, input manifest, raw/tidy result schemas, microbenchmark schemas, tool
+  registry schema, and comparator-profile schema;
+* updated README, CLI docs, benchmark docs, result docs, Sphinx, roadmap,
+  current milestone, M14 roadmap, and taskmap.
 
 ### M14.8 Refresh Benchmark Documentation
 

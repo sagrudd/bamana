@@ -511,6 +511,12 @@ CRAM consume behavior, mixed-directory ingest, scaffolded BAM/FASTQ
 subsampling, `rasusa` downsampling, mapped sort/index pipelines,
 `select_region`, mutation commands, and forensic commands.
 
+M14.7 adds local benchmark schema stability checks with
+`benchmarks/bin/check_schema_stability.py`. The checker reads
+`benchmarks/schema_stability_manifest.json` and fails when benchmark schemas
+are added, removed, renamed, have unexpected `$id` values, lose version
+metadata, or drop required stability pointers.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

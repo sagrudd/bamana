@@ -157,3 +157,17 @@ FASTQ subsampling, ``rasusa`` downsampling, mapped sort/index pipelines,
 ``select_region``, mutation commands, and forensic commands. Each row records
 the evidence status, semantic mismatch reason, current boundary, and promotion
 requirement needed before a release-facing comparator claim can be made.
+
+M14.7 Benchmark Schema Stability
+--------------------------------
+
+M14.7 adds a local benchmark schema stability harness:
+``benchmarks/bin/check_schema_stability.py``. The checker reads
+``benchmarks/schema_stability_manifest.json`` and requires every
+``benchmarks/**/*.schema.json`` file to be listed with its path, ``$id``,
+contract surface, version pointer, version value, and required stability
+pointers.
+
+The harness catches benchmark schema additions, removals, renames, unexpected
+``$id`` changes, missing version metadata, and missing M14 result/profile
+metadata before benchmark evidence can drift silently.

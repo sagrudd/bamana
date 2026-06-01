@@ -338,6 +338,10 @@ This order is retained because it matches the dependency chain of the runtime:
 * M14.6 comparator mismatch register: `benchmarks/comparator_mismatches.md`
   records documented no-claim and scaffolded mismatch surfaces with semantic
   mismatch reasons, current benchmark boundaries, and promotion requirements
+* M14.7 schema stability checks: `benchmarks/bin/check_schema_stability.py`
+  validates `benchmarks/schema_stability_manifest.json` so every benchmark
+  schema path, `$id`, version pointer, and required stability metadata is
+  checked locally and by contract tests
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

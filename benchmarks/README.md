@@ -64,6 +64,17 @@ M14.6 adds the unsupported comparator register at
 [comparator_mismatches.md](/Users/stephen/Projects/bamana/benchmarks/comparator_mismatches.md)
 so no-claim and scaffolded mismatch surfaces are visible as intentional
 benchmark boundaries rather than missing implementation.
+M14.7 adds a local benchmark schema stability harness:
+
+```bash
+python3 benchmarks/bin/check_schema_stability.py
+```
+
+The harness reads
+[schema_stability_manifest.json](/Users/stephen/Projects/bamana/benchmarks/schema_stability_manifest.json),
+requires every `benchmarks/**/*.schema.json` file to be listed, pins each
+schema `$id`, checks version metadata, and verifies required stability
+pointers for result, input, tool, and comparator-profile contracts.
 
 ## Readiness For Tomorrow
 

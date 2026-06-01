@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/benchmarks/results/fastq_microbench.schema.json",
   "title": "Bamana Native FASTQ Microbenchmark Result",
+  "x-bamana-benchmark-contract-version": "1.0.0",
   "x-bamana-m14-post-m10-command-families": {
     "task": "M14.3",
     "runtime_behavior": "unchanged",

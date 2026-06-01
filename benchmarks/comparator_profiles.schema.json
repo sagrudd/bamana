@@ -3,6 +3,7 @@
   "$id": "https://bamana.dev/benchmarks/comparator_profiles.schema.json",
   "title": "Bamana Aligned Comparator Profiles",
   "description": "Governed catalog of measured benchmark comparator profiles whose semantic assumptions are explicit.",
+  "x-bamana-benchmark-contract-version": "1.0.0",
   "x-bamana-m14-comparator-profile-task": "M14.5",
   "type": "object",
   "additionalProperties": false,
