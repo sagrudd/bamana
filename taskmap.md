@@ -5969,11 +5969,35 @@ Completion evidence:
 
 ### M13.8 Update Public Docs And Schemas
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * update schemas, examples, README, CLI docs, Sphinx docs, and roadmap notes.
+
+Acceptance:
+
+* public documentation names the governed CRAM-facing schema and examples;
+* schema metadata records the M13 consume-only CRAM boundary;
+* docs state that M13.8 is documentation/schema-only and does not expand CRAM
+  runtime behavior;
+* inspection, region, indexing, and benchmark contracts remain unchanged for
+  CRAM and expose no CRAM indexed-query fields.
+
+Completion evidence:
+
+* updated `spec/jsonschema/consume.schema.json` with M13 CRAM contract metadata
+  covering consume-only compatibility normalization,
+  `cram_index_sidecar_deferred`, direct `unsupported_format` rejection, and no
+  CRAM indexed-query fields;
+* consolidated the public artifact inventory in README, CLI docs, JSON-output
+  docs, CLI contracts, roadmap, current-milestone notes, M13 roadmap, Sphinx
+  native CRAM notes, and this taskmap;
+* kept the governed examples
+  `spec/examples/consume.success.crai_sidecar_skipped.json` and
+  `spec/examples/consume.failure.crai_sidecar_direct.json` as the canonical
+  public shapes;
+* added contract coverage for the M13.8 public docs and schema inventory.
 
 ### M13.9 Add CRAM Guardrails
 

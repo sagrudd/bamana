@@ -210,6 +210,31 @@ expanding CRAM support:
   ``check_index``, and ``index`` keep their existing BAM/BAI/CSI contracts and
   expose no CRAM indexed-query fields.
 
+Public Docs And Schema Inventory
+--------------------------------
+
+M13.8 consolidates the public documentation, schema, and example inventory for
+the M13.6-M13.7 boundary. It is a documentation/schema refresh only and does
+not add runtime CRAM behavior.
+
+The governed artifacts are:
+
+* ``spec/jsonschema/consume.schema.json``, including M13 CRAM contract metadata
+  for consume-only compatibility normalization, ``cram_index_sidecar_deferred``,
+  direct ``unsupported_format`` rejection, and no CRAM indexed-query fields.
+* ``spec/examples/consume.success.crai_sidecar_skipped.json`` for the
+  directory-discovery skipped-sidecar shape.
+* ``spec/examples/consume.failure.crai_sidecar_direct.json`` for the direct
+  ``.crai`` rejection shape.
+* ``spec/cli/commands.md``, ``README.md``, ``docs/cli.md``,
+  ``docs/json-output.md``, roadmap notes, the current-milestone note, these
+  Sphinx notes, and the task map.
+
+Inspection, region, indexing, and benchmark contracts remain unchanged for
+CRAM in M13.8. There is no CRAI parser, no CRAM region input, no CRAI creation,
+no CRAM random-access evidence, no benchmark CRAM indexed-query evidence, and
+no CRAM indexed-query JSON field.
+
 Non-Goals
 ---------
 

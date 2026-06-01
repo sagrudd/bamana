@@ -2,9 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bamana.dev/spec/jsonschema/consume.schema.json",
   "title": "Bamana Consume Response",
-  "description": "Contract for bamana consume JSON output.",
+  "description": "Contract for bamana consume JSON output. M13.8 records the public CRAM-facing schema surface: CRAM remains consume-only compatibility normalization, directory-discovered .crai sidecars use cram_index_sidecar_deferred, direct .crai requests fail as unsupported_format, and no CRAM indexed-query fields are present.",
   "x-bamana-command": "consume",
   "x-bamana-contract-version": "0.1.0",
+  "x-bamana-m13-cram-contract": {
+    "scope": "consume-only compatibility normalization",
+    "directory_crai_sidecar_reason": "cram_index_sidecar_deferred",
+    "direct_crai_request_error": "unsupported_format",
+    "indexed_query_fields": "none"
+  },
   "$defs": {
     "consumeMode": {
       "type": "string",

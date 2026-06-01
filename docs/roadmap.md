@@ -275,6 +275,12 @@ This order is retained because it matches the dependency chain of the runtime:
   `cram_index_sidecar_deferred`, canonical examples cover directory `.crai`
   sidecar skip and direct `.crai` rejection, and inspection/region commands
   keep existing BAM/BAI/CSI contracts without CRAM indexed-query fields
+* M13.8 public docs and schema inventory: `spec/jsonschema/consume.schema.json`,
+  the two CRAI consume examples, CLI contracts, README, CLI docs, JSON-output
+  docs, Sphinx notes, roadmap notes, current-milestone notes, and taskmap now
+  record the same CRAM boundary; this slice adds no CRAI parser, CRAM region
+  input, CRAI creation, CRAM random-access evidence, benchmark CRAM
+  indexed-query evidence, or CRAM indexed-query JSON fields
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

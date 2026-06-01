@@ -468,6 +468,15 @@ A direct `.crai` request fails with `unsupported_format` before discovery
 payload population, so it does not create consumed, skipped, or rejected file
 entries.
 
+M13.8 records the public JSON artifact inventory for the same boundary without
+adding new output fields. The only schema changed for CRAM-facing behavior is
+`spec/jsonschema/consume.schema.json`, and the only canonical examples added
+for this slice are `spec/examples/consume.success.crai_sidecar_skipped.json`
+and `spec/examples/consume.failure.crai_sidecar_direct.json`. Inspection,
+region, indexing, and benchmark schemas retain their existing BAM/BAI/CSI or
+benchmark contracts and intentionally carry no CRAI object, no CRAM
+random-access evidence, and no CRAM indexed-query status.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

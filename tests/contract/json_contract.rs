@@ -3526,6 +3526,83 @@ fn milestone_13_7_refreshes_cram_facing_contract_artifacts() {
 }
 
 #[test]
+fn milestone_13_8_consolidates_public_docs_and_schema_inventory() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let consume_schema = read_utf8(&schema_path_for_command("consume"));
+    let sidecar_skip_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("consume.success.crai_sidecar_skipped.json"),
+    );
+    let direct_reject_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("consume.failure.crai_sidecar_direct.json"),
+    );
+
+    for required in [
+        "M13.8",
+        "Public Docs And Schema Inventory",
+        "public docs and schema inventory",
+        "documentation/schema-only",
+        "without adding runtime behavior",
+        "governed public artifacts",
+        "spec/jsonschema/consume.schema.json",
+        "spec/examples/consume.success.crai_sidecar_skipped.json",
+        "spec/examples/consume.failure.crai_sidecar_direct.json",
+        "spec/cli/commands.md",
+        "docs/cli.md",
+        "docs/json-output.md",
+        "README.md",
+        "Sphinx native CRAM",
+        "roadmap/taskmap",
+        "x-bamana-m13-cram-contract",
+        "consume-only compatibility normalization",
+        "directory_crai_sidecar_reason",
+        "direct_crai_request_error",
+        "indexed_query_fields",
+        "none",
+        "cram_index_sidecar_deferred",
+        "unsupported_format",
+        "no CRAI parser",
+        "no CRAM region input",
+        "no CRAI creation",
+        "no CRAM random-access evidence",
+        "no benchmark CRAM indexed-query evidence",
+        "no CRAM indexed-query JSON",
+        "Inspection, region, indexing, and benchmark contracts",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || consume_schema.contains(required)
+                || sidecar_skip_example.contains(required)
+                || direct_reject_example.contains(required),
+            "M13.8 public docs/schema inventory evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

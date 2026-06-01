@@ -203,6 +203,29 @@ expanding CRAM support:
   and `index` keep their existing BAM/BAI/CSI contracts and expose no CRAM
   indexed-query fields.
 
+## M13.8 Public Docs And Schema Inventory
+
+M13.8 consolidates the public documentation, schema, and example inventory for
+the M13.6-M13.7 boundary without adding runtime behavior. The governed public
+artifacts are:
+
+* `spec/jsonschema/consume.schema.json`, including the M13 CRAM contract
+  metadata that records consume-only compatibility normalization,
+  `cram_index_sidecar_deferred`, direct `unsupported_format` rejection, and no
+  CRAM indexed-query fields;
+* `spec/examples/consume.success.crai_sidecar_skipped.json`, the canonical
+  directory-discovery example for skipped `.crai` sidecars;
+* `spec/examples/consume.failure.crai_sidecar_direct.json`, the canonical
+  direct-request failure example for `.crai` inputs;
+* `spec/cli/commands.md`, `README.md`, `docs/cli.md`, `docs/json-output.md`,
+  this roadmap, the current-milestone note, Sphinx native CRAM notes, and the
+  task map.
+
+M13.8 explicitly leaves inspection, region, indexing, and benchmark contracts
+unchanged for CRAM. It adds no CRAI parser, no CRAM region input, no CRAI
+creation, no CRAM random-access evidence, no benchmark CRAM indexed-query
+evidence, and no CRAM indexed-query JSON fields.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -223,7 +246,8 @@ expanding CRAM support:
    changes. Complete: consume schema/examples refreshed; inspection and region
    command contracts remain unchanged for CRAM.
 8. M13.8 update schemas, examples, README, CLI docs, Sphinx docs, and roadmap
-   notes.
+   notes. Complete: public docs and schema inventory consolidated without
+   runtime CRAM expansion.
 9. M13.9 add CRAM dependency-boundary and benchmark guardrails.
 10. M13.10 close the milestone with full verification and residual risk notes.
 

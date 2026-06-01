@@ -423,6 +423,14 @@ commands do not gain CRAM behavior: `check_map --region`, `summary --region`,
 `select_region`, `check_index`, and `index` retain their existing BAM/BAI/CSI
 contracts and expose no CRAM indexed-query fields.
 
+M13.8 consolidates the public docs and schema inventory for that boundary. The
+CLI-facing governed artifacts are `spec/cli/commands.md`, `docs/cli.md`,
+`docs/json-output.md`, `spec/jsonschema/consume.schema.json`, the two CRAI
+consume examples under `spec/examples/`, the native CRAM Sphinx notes, and the
+roadmap/taskmap. M13.8 is documentation/schema-only: it does not add a new
+CRAM command path, does not add CRAI parsing, does not add CRAM region support,
+does not add CRAI creation, and does not add CRAM indexed-query JSON fields.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

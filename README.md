@@ -746,6 +746,19 @@ commands do not gain CRAM behavior: `check_map --region`, `summary --region`,
 `select_region`, `check_index`, and `index` retain their existing BAM/BAI/CSI
 contracts and expose no CRAM indexed-query fields.
 
+M13.8 consolidates the public documentation and schema inventory for that
+boundary without adding runtime behavior. The governed public artifacts are
+`spec/jsonschema/consume.schema.json`,
+`spec/examples/consume.success.crai_sidecar_skipped.json`,
+`spec/examples/consume.failure.crai_sidecar_direct.json`,
+`spec/cli/commands.md`, `docs/cli.md`, `docs/json-output.md`, this README,
+the Sphinx native CRAM strategy notes, and the roadmap/taskmap. Those artifacts
+state the same invariant: CRAM support is consume-only compatibility
+normalization, `.crai` sidecars are either skipped with
+`cram_index_sidecar_deferred` during directory discovery or rejected with
+`unsupported_format` when requested directly, and no inspection, region,
+indexing, or benchmark contract gains CRAM indexed-query output in M13.8.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

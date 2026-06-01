@@ -170,6 +170,14 @@ CRAM indexed query policy:
   `check_map --region`, `summary --region`, `select_region`, `check_index`,
   and `index` retain their existing BAM/BAI/CSI contracts and expose no CRAM
   indexed-query fields
+* M13.8 consolidates public docs and schemas for the same boundary without
+  changing command behavior; the governed artifacts are
+  `spec/jsonschema/consume.schema.json`, the two CRAI consume examples in
+  `spec/examples/`, this CLI contract, user-facing CLI and JSON docs, Sphinx
+  native CRAM notes, and the roadmap/taskmap
+* M13.8 does not add CRAI parsing, CRAM region input, CRAI creation, CRAM
+  random-access evidence, benchmark CRAM indexed-query evidence, or CRAM
+  indexed-query JSON fields
 
 Directory traversal rules:
 
