@@ -187,7 +187,15 @@ Current milestone:
   also records that the fixture plan is still partly reserved: source SAM and
   explicit FASTA provenance are present, while derived CRAM/BAM binaries and
   no-external-reference fixtures remain planned or deferred until reproducible
-  generation is documented.
+  generation is documented. M13.2 chooses compatibility-only continuation for
+  Milestone 13: no native CRAM substrate is promoted, CRAM ingestion stays in
+  the native-core package through the explicit transitional `cram-compat`
+  feature, direct production `noodles_*` imports remain confined to
+  `src/ingest/cram.rs`, and future native CRAM work must arrive as a separate
+  staged implementation plan with fixtures, contracts, dependency guardrails,
+  and benchmark evidence. CRAI/indexed CRAM queries, native CRAM parsing,
+  native CRAM writing, cache-backed decoding, and broad comparator parity
+  remain deferred unless a later M13 task explicitly changes that contract.
 
 ## Completed Backbone
 

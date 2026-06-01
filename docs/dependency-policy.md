@@ -80,6 +80,11 @@ The CRAM exception should be removed or redesigned when one of these is true:
 Until then, CRAM compatibility remains explicitly transitional and must not be
 used as precedent for new production `noodles` usage.
 
+M13.2 chooses compatibility-only continuation for Milestone 13. The decision
+keeps CRAM ingestion in the native-core package through the explicit
+transitional `cram-compat` feature but does not promote a native CRAM substrate
+or broaden the `noodles` exception beyond `src/ingest/cram.rs`.
+
 ## Dependency Review Rule
 
 Any new dependency added to hot-path code must justify:

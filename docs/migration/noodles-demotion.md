@@ -87,6 +87,12 @@ ownership would only move architectural ambiguity around rather than remove it.
 * decide whether CRAM remains explicitly compatibility-oriented or receives a
   separate Bamana-native staged implementation
 
+M13.2 records that CRAM remains compatibility-only for Milestone 13. That
+decision does not make `noodles` a general production dependency: direct
+production `noodles_*` imports remain confined to `src/ingest/cram.rs`, and any
+future native CRAM work must arrive as a separate staged implementation plan
+with fixtures, contracts, dependency guardrails, and benchmark evidence.
+
 ## Priority Order
 
 Recommended migration priority:
@@ -143,3 +149,7 @@ or redesigned when:
 
 Until one of those outcomes is chosen, the compatibility slice must not expand
 outside CRAM ingestion and reference-policy handling.
+
+For Milestone 13, M13.2 chooses compatibility-only continuation: keep the
+current CRAM compatibility boundary, do not promote native CRAM parsing or
+writing, and defer any narrowing of `cram-compat` to later M13 tasks.

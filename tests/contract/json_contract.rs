@@ -3020,6 +3020,79 @@ fn milestone_13_activation_baseline_records_cram_strategy_scope() {
 }
 
 #[test]
+fn milestone_13_2_freezes_cram_as_compatibility_only() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cargo = read_utf8(&super::repo_root().join("Cargo.toml"));
+    let dependency_policy = read_utf8(&docs_dir().join("dependency-policy.md"));
+    let noodles_demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
+    let dependency_tests = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("contract")
+            .join("dependency_boundary.rs"),
+    );
+
+    for required in [
+        "M13.2",
+        "CRAM Direction Decision",
+        "compatibility-only continuation",
+        "does not promote a native CRAM substrate",
+        "does not remove CRAM",
+        "does not broaden CRAM support",
+        "consume",
+        "alignment-mode",
+        "normalization",
+        "direct production `noodles_*` imports",
+        "src/ingest/cram.rs",
+        "BAM, BGZF, FASTQ, sampling, indexing, and forensic hot paths",
+        "Bamana-native",
+        "cram-compat",
+        "explicit transitional compatibility feature",
+        "non-default",
+        "narrower",
+        "replaced",
+        "separate staged implementation plan",
+        "fixtures, contracts, dependency guardrails, and benchmark evidence",
+        "CRAI/indexed CRAM queries",
+        "native CRAM parsing",
+        "native CRAM writing",
+        "cache-backed decoding",
+        "broad comparator parity",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || cargo.contains(required)
+                || dependency_policy.contains(required)
+                || noodles_demotion.contains(required)
+                || dependency_tests.contains(required),
+            "M13.2 CRAM direction decision evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        dependency_tests.contains("ALLOWED_PRODUCTION_NOODLES_FILES")
+            && dependency_tests.contains("\"src/ingest/cram.rs\""),
+        "M13.2 must preserve the narrow CRAM compatibility noodles boundary"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

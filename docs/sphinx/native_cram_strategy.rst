@@ -46,6 +46,36 @@ M13.1 is an audit and activation task. Later M13 tasks must decide whether CRAM
 remains compatibility-only, moves behind a narrower optional compatibility
 feature, or receives a staged Bamana-native implementation.
 
+CRAM Direction Decision
+-----------------------
+
+M13.2 chooses compatibility-only continuation for Milestone 13. Bamana does not
+promote a native CRAM substrate in this milestone, does not remove CRAM
+ingestion from the native-core package, and does not broaden CRAM support into
+general-purpose indexed CRAM querying.
+
+The chosen direction is:
+
+* keep CRAM support limited to the existing ``consume`` alignment-mode
+  normalization path;
+* keep direct production ``noodles_*`` imports confined to
+  ``src/ingest/cram.rs``;
+* keep BAM, BGZF, FASTQ, sampling, indexing, and forensic hot paths
+  Bamana-native;
+* keep ``cram-compat`` as the explicit transitional compatibility feature
+  while later M13 tasks decide whether it should become non-default, narrower,
+  or replaced;
+* require any future native CRAM work to arrive as a separate staged
+  implementation plan with fixtures, contracts, dependency guardrails, and
+  benchmark evidence;
+* treat CRAI/indexed CRAM queries, native CRAM parsing, native CRAM writing,
+  cache-backed decoding, and broad comparator parity as deferred unless a
+  later M13 task explicitly changes that contract.
+
+This decision lets M13.3-M13.9 focus on freezing reference/cache semantics,
+indexed-query position, fixtures, public contracts, and dependency guardrails
+around the compatibility boundary that actually exists.
+
 Non-Goals
 ---------
 

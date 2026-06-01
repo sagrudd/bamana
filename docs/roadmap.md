@@ -235,6 +235,12 @@ This order is retained because it matches the dependency chain of the runtime:
   decode, CRAI/indexed CRAM queries and native CRAM parsing/writing remain
   deferred, and direct production `noodles_*` imports remain allowed only in
   the documented CRAM compatibility boundary
+* M13.2 direction decision: CRAM remains compatibility-only for Milestone 13;
+  no native CRAM substrate is promoted, CRAM ingestion stays in the
+  native-core package through the explicit transitional `cram-compat` feature,
+  direct production `noodles_*` imports stay confined to `src/ingest/cram.rs`,
+  and native CRAM parsing/writing, CRAI/indexed CRAM queries, cache-backed
+  decoding, and broad comparator parity remain deferred
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

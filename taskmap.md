@@ -5773,13 +5773,33 @@ Completion evidence:
 
 ### M13.2 Decide Native CRAM Direction
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * decide whether CRAM remains compatibility-only, receives a staged
   Bamana-native implementation, moves behind a narrower optional feature, or is
   explicitly deferred from the native-core package.
+
+Acceptance:
+
+* Milestone 13 CRAM direction is a documented contract decision;
+* direct production `noodles_*` imports remain confined to
+  `src/ingest/cram.rs`;
+* native CRAM parsing/writing, CRAI/indexed CRAM queries, cache-backed
+  decoding, and broad comparator parity remain explicitly deferred unless a
+  later M13 task changes the contract.
+
+Completion evidence:
+
+* chose compatibility-only continuation for Milestone 13;
+* recorded that CRAM ingestion remains in the native-core package through the
+  explicit transitional `cram-compat` feature;
+* documented that no native CRAM substrate is promoted in M13.2 and any future
+  native CRAM work must arrive as a separate staged implementation plan with
+  fixtures, contracts, dependency guardrails, and benchmark evidence;
+* updated README, CLI docs, roadmap, current milestone, M13 roadmap, Sphinx,
+  dependency policy, noodles demotion docs, taskmap, and contract coverage.
 
 ### M13.3 Freeze Reference And Cache Policy Semantics
 

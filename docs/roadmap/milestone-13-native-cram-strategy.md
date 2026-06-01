@@ -48,12 +48,39 @@ behavior. The current baseline is intentionally conservative:
   fixtures remain planned or deferred until reproducible generation is
   documented.
 
+## M13.2 CRAM Direction Decision
+
+M13.2 chooses **compatibility-only continuation** for Milestone 13. Bamana does
+not promote a native CRAM substrate in this milestone, does not remove CRAM
+ingestion from the native-core package, and does not broaden CRAM support into
+general-purpose indexed CRAM querying. The chosen direction is:
+
+* keep CRAM support limited to the existing `consume` alignment-mode
+  normalization path;
+* keep direct production `noodles_*` imports confined to
+  `src/ingest/cram.rs`;
+* keep BAM, BGZF, FASTQ, sampling, indexing, and forensic hot paths
+  Bamana-native;
+* keep `cram-compat` as the explicit transitional compatibility feature while
+  later M13 tasks decide whether it should become non-default, narrower, or
+  replaced;
+* require any future native CRAM work to arrive as a separate staged
+  implementation plan with fixtures, contracts, dependency guardrails, and
+  benchmark evidence;
+* treat CRAI/indexed CRAM queries, native CRAM parsing, native CRAM writing,
+  cache-backed decoding, and broad comparator parity as deferred unless a
+  later M13 task explicitly changes that contract.
+
+This decision lets M13.3-M13.9 focus on freezing reference/cache semantics,
+indexed-query position, fixtures, public contracts, and dependency guardrails
+around the compatibility boundary that actually exists.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
    behavior.
 2. M13.2 decide native CRAM promotion, compatibility-only continuation, or
-   explicit deferral.
+   explicit deferral. Complete: compatibility-only continuation.
 3. M13.3 freeze reference discovery, explicit FASTA, embedded-reference, and
    cache policy semantics.
 4. M13.4 define whether CRAM indexed queries are unsupported, transitional, or

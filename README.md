@@ -685,6 +685,15 @@ no-external-reference decode. CRAI handling, indexed CRAM queries, native CRAM
 parsing, native CRAM writing, cache-backed decoding, and broad comparator
 parity remain deferred.
 
+M13.2 chooses compatibility-only continuation for Milestone 13. Bamana does not
+promote a native CRAM substrate in this milestone, does not remove CRAM
+ingestion from the native-core package, and does not broaden CRAM support into
+general-purpose indexed CRAM querying. `cram-compat` remains the explicit
+transitional compatibility feature, direct production `noodles_*` imports stay
+confined to `src/ingest/cram.rs`, and any future native CRAM work must arrive
+as a separate staged implementation plan with fixtures, contracts, dependency
+guardrails, and benchmark evidence.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external
