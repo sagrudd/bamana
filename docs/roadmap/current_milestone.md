@@ -276,7 +276,10 @@ Current milestone:
   caught by local verification and contract tests. M14.8 adds
   `benchmarks/public_evidence_guide.md` as the public documentation index that
   separates benchmark profiles, smoke hooks, scaffolded comparator evidence,
-  and no-external-comparator-claim surfaces.
+  and no-external-comparator-claim surfaces. M14.9 adds dependency-boundary
+  tests so `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` stay
+  confined to benchmark wrappers, comparators, fixtures, oracle aids, or the
+  governed benchmark runner rather than Bamana-native production hot paths.
 
 ## Completed Backbone
 

@@ -190,3 +190,16 @@ The guide points readers to ``benchmarks/command_evidence_matrix.md``,
 contract commands explicit: ``benchmark`` owns governed profile execution,
 while ``fastq`` and ``unmap`` currently remain no-external-comparator-claim
 surfaces.
+
+M14.9 Benchmark Dependency Guardrails
+-------------------------------------
+
+M14.9 keeps benchmark-only external tools out of Bamana-native production hot
+paths. ``samtools``, ``fastcat``, ``sambamba``, ``seqtk``, and ``rasusa`` may
+appear as wrappers, comparators, fixtures, or oracle aids. They may also be
+referenced by the governed benchmark profile runner in
+``src/commands/benchmark.rs``.
+
+Those tools must not become production engines for BAM, BGZF, FASTQ, sampling,
+ingest, index, region, mutation, remediation, or forensic command paths. The
+boundary is enforced by ``tests/contract/dependency_boundary.rs``.

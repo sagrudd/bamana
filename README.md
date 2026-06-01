@@ -865,6 +865,12 @@ It is the consolidated documentation index for public benchmark profiles,
 local smoke hooks, scaffolded comparator evidence, and
 `no_external_comparator_claim` surfaces.
 
+M14.9 adds benchmark dependency guardrails: `samtools`, `fastcat`, `sambamba`,
+`seqtk`, and `rasusa` are benchmark-only external tools. They may appear as
+wrappers, comparators, fixtures, or oracle aids, with governed benchmark
+orchestration in `src/commands/benchmark.rs`, but they must not enter
+Bamana-native production hot paths.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

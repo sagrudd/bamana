@@ -522,6 +522,12 @@ documentation index. It separates public benchmark profiles, local smoke hooks,
 scaffolded comparator evidence, and `no_external_comparator_claim` surfaces so
 operators do not infer a comparator claim from smoke or scaffold rows.
 
+M14.9 adds benchmark dependency guardrails. `samtools`, `fastcat`, `sambamba`,
+`seqtk`, and `rasusa` remain benchmark-only external tools for wrappers,
+comparators, fixtures, or oracle aids. Aside from governed profile
+orchestration in `src/commands/benchmark.rs`, Bamana-native production hot
+paths must not call or embed those tools.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

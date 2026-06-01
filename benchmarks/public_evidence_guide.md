@@ -60,6 +60,14 @@ The public contract commands `benchmark`, `fastq`, and `unmap` must remain
 easy to distinguish here: `benchmark` owns governed profile execution,
 `fastq` currently has no external comparator claim, and `unmap` currently has no external comparator claim.
 
+## Benchmark-Only Tool Boundary
+
+M14.9 treats `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` as
+benchmark-only external tools. They may be used as wrappers, comparators,
+fixtures, or oracle aids. They do not enter Bamana-native production hot paths,
+and their presence in benchmark evidence does not authorize production command
+implementations to shell out to those tools.
+
 ## Promotion Rule
 
 A new comparator claim needs all of the following before it can move from

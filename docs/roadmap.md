@@ -346,6 +346,10 @@ This order is retained because it matches the dependency chain of the runtime:
   consolidates public profile, smoke hook, scaffolded comparator, and
   no-external-comparator-claim interpretation across README, CLI docs,
   roadmap, Sphinx, and benchmark docs
+* M14.9 dependency guardrails: `samtools`, `fastcat`, `sambamba`, `seqtk`, and
+  `rasusa` remain benchmark-only external tools for wrappers, comparators,
+  fixtures, or oracle aids and are kept out of Bamana-native production hot
+  paths by dependency-boundary tests
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

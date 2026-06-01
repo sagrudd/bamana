@@ -185,6 +185,18 @@ The public contract commands remain explicit in the guide: `benchmark` owns
 governed profile execution, while `fastq` and `unmap` currently remain
 no-external-comparator-claim surfaces.
 
+## M14.9 Benchmark Dependency Guardrails
+
+M14.9 adds dependency-boundary tests for benchmark-only external tools and
+oracles. `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` may appear as
+wrappers, comparators, fixtures, or oracle aids, and may be referenced by
+governed benchmark orchestration in `src/commands/benchmark.rs`.
+
+They must not enter Bamana-native production hot paths for BAM, BGZF, FASTQ,
+sampling, ingest, index, region, mutation, remediation, or forensic behavior.
+`tests/contract/dependency_boundary.rs` enforces this boundary by scanning
+production Rust sources outside the benchmark runner.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -221,6 +233,9 @@ no-external-comparator-claim surfaces.
    with README, CLI, Sphinx, roadmap, current milestone, M14 roadmap, and
    taskmap pointers.
 9. M14.9 add dependency-boundary tests for benchmark-only tools and oracles.
+   Complete: dependency-boundary tests keep `samtools`, `fastcat`,
+   `sambamba`, `seqtk`, and `rasusa` confined to benchmark wrappers,
+   comparators, fixtures, oracle aids, and governed benchmark orchestration.
 10. M14.10 close the milestone with archived smoke evidence and residual risk
     notes.
 

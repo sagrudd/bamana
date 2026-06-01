@@ -153,6 +153,20 @@ adds a separate CRAM benchmark contract. M13.9 explicitly records no CRAM
 command timing rows, no CRAI parser benchmark, no CRAM random-access benchmark,
 no CRAM indexed-query evidence, and no CRAM comparator-parity claim.
 
+## Milestone 14 Benchmark-Only Tool Boundary
+
+M14.9 keeps benchmark-only external tools out of Bamana-native production hot
+paths. `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` may be used as
+wrappers, comparators, fixtures, or oracle aids, but they must not define
+production BAM, BGZF, FASTQ, sampling, ingest, index, region, mutation,
+remediation, or forensic behavior.
+
+The explicit production exception is `src/commands/benchmark.rs`, which may
+reference external tools as governed benchmark profile metadata and
+containerized orchestration. That exception does not permit command-specific
+native paths to shell out to external tools. The boundary is enforced in
+`tests/contract/dependency_boundary.rs`.
+
 ## Milestone 9 Index And Random-Access Oracle Boundary
 
 The Milestone 9 BAM index and random-access set is `index`, `check_index`,

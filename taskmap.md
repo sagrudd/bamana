@@ -6340,16 +6340,31 @@ Completion evidence:
 
 ### M14.9 Add Benchmark Dependency Guardrails
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
-* add dependency-boundary tests for benchmark-only tools and oracles.
+* added dependency-boundary tests for benchmark-only tools and oracles.
 
 Acceptance:
 
 * external benchmark tools remain wrappers, comparators, fixtures, or oracle
   aids and do not enter Bamana-native production hot paths.
+
+Completion evidence:
+
+* added `tests/contract/dependency_boundary.rs` coverage that explicitly guards
+  `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` as benchmark-only
+  external tools;
+* confined production Rust references to `src/commands/benchmark.rs`, where
+  external tool names are governed benchmark profile metadata and orchestration
+  rather than native hot-path implementations;
+* documented the boundary in dependency policy, testing-oracle guidance,
+  benchmark evidence guidance, README, CLI docs, Sphinx docs, roadmap, current
+  milestone, and the M14 roadmap;
+* preserved the Bamana-native production hot-path requirement for BAM, BGZF,
+  FASTQ, sampling, ingest, index, region, mutation, remediation, and forensic
+  behavior.
 
 ### M14.10 Close Milestone 14
 

@@ -94,6 +94,20 @@ modules, region modules, and `scanner_microbench` must stay free of direct
 `noodles` imports. Benchmark evidence remains synthetic BAM-only and cannot be
 used as CRAM indexed-query or CRAM comparator-parity evidence.
 
+## Benchmark-Only External Tools
+
+M14.9 defines `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` as
+benchmark-only external tools. They may appear in benchmark wrappers,
+comparator catalogs, fixture generation, fixture validation, and explicitly
+labelled oracle aids. They must not become production engines for
+Bamana-native production hot paths.
+
+The public `benchmark` command may reference these tools only as governed
+profile metadata and containerized benchmark orchestration from
+`src/commands/benchmark.rs`. All other Bamana-native production hot paths must
+remain free of direct benchmark-only external tool calls or embedded command
+paths. This boundary is enforced by `tests/contract/dependency_boundary.rs`.
+
 ## Dependency Review Rule
 
 Any new dependency added to hot-path code must justify:

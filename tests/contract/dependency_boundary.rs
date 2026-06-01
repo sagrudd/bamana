@@ -6,6 +6,9 @@ use std::{
 use super::{docs_dir, read_utf8, repo_root};
 
 const ALLOWED_PRODUCTION_NOODLES_FILES: &[&str] = &["src/ingest/cram.rs"];
+const BENCHMARK_ONLY_EXTERNAL_TOOLS: &[&str] =
+    &["samtools", "fastcat", "sambamba", "seqtk", "rasusa"];
+const ALLOWED_PRODUCTION_BENCHMARK_TOOL_REFERENCE_FILES: &[&str] = &["src/commands/benchmark.rs"];
 
 const M5_PROOF_COMMAND_HOT_PATHS: &[(&str, &[&str])] = &[
     (
@@ -927,6 +930,92 @@ fn m13_cram_guardrail_paths_keep_noodles_confined_to_cram_ingest() {
 }
 
 #[test]
+fn m14_benchmark_only_external_tools_stay_out_of_native_hot_paths() {
+    assert_eq!(
+        BENCHMARK_ONLY_EXTERNAL_TOOLS,
+        ["samtools", "fastcat", "sambamba", "seqtk", "rasusa"],
+        "M14.9 must explicitly name the benchmark-only external comparator tools"
+    );
+
+    let src_dir = repo_root().join("src");
+    let mut violations = Vec::new();
+
+    for path in rust_sources(&src_dir) {
+        let relative = path
+            .strip_prefix(repo_root())
+            .unwrap_or_else(|error| panic!("{} is not under repo root: {error}", path.display()))
+            .to_string_lossy()
+            .replace('\\', "/");
+        if ALLOWED_PRODUCTION_BENCHMARK_TOOL_REFERENCE_FILES.contains(&relative.as_str()) {
+            continue;
+        }
+
+        for (line_number, line) in read_utf8(&path).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || trimmed.starts_with("//!") {
+                continue;
+            }
+
+            if contains_benchmark_tool_reference(trimmed) {
+                violations.push(format!("{relative}:{}: {line}", line_number + 1));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "benchmark-only external comparator tools must stay out of Bamana-native production hot paths; only {:?} may reference them:\n{}",
+        ALLOWED_PRODUCTION_BENCHMARK_TOOL_REFERENCE_FILES,
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn m14_benchmark_only_external_tool_boundary_is_documented() {
+    let dependency_policy = read_utf8(&docs_dir().join("dependency-policy.md"));
+    let oracle_policy = read_utf8(&docs_dir().join("testing-oracles.md"));
+    let public_evidence_guide = read_utf8(
+        &repo_root()
+            .join("benchmarks")
+            .join("public_evidence_guide.md"),
+    );
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let taskmap = read_utf8(&repo_root().join("taskmap.md"));
+    let combined = [
+        dependency_policy.as_str(),
+        oracle_policy.as_str(),
+        public_evidence_guide.as_str(),
+        m14.as_str(),
+        taskmap.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.9",
+        "benchmark-only external tools",
+        "samtools",
+        "fastcat",
+        "sambamba",
+        "seqtk",
+        "rasusa",
+        "wrappers, comparators, fixtures, or oracle aids",
+        "src/commands/benchmark.rs",
+        "Bamana-native production hot paths",
+        "tests/contract/dependency_boundary.rs",
+        "do not enter Bamana-native production hot paths",
+    ] {
+        assert!(
+            combined.contains(required),
+            "M14.9 benchmark-only dependency boundary is missing documentation token: {required}"
+        );
+    }
+}
+
+#[test]
 fn fastq_hot_paths_do_not_import_external_bio_parser_crates() {
     let protected_paths = [
         "src/fastq/mod.rs",
@@ -1104,6 +1193,12 @@ fn contains_external_bio_parser_reference(line: &str) -> bool {
         || line.contains("needletail::")
         || line.contains("seq_io::")
         || line.contains("rust_htslib::")
+}
+
+fn contains_benchmark_tool_reference(line: &str) -> bool {
+    BENCHMARK_ONLY_EXTERNAL_TOOLS
+        .iter()
+        .any(|tool| line.contains(tool))
 }
 
 fn rust_sources(dir: &Path) -> Vec<PathBuf> {
