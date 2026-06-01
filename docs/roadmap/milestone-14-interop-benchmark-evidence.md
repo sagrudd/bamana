@@ -122,6 +122,27 @@ present. M14.4 does not add fixture generation scripts, benchmark profiles, or
 comparator claims; later M14 tasks must attach checksums, generated artifacts,
 and archived outputs before new release-facing benchmark evidence is promoted.
 
+## M14.5 Aligned Comparator Profiles
+
+M14.5 adds the governed aligned comparator profile catalog at
+`benchmarks/comparator_profiles.json`, with schema coverage in
+`benchmarks/comparator_profiles.schema.json`. The catalog currently records
+only the measured public profiles whose semantics are aligned enough for
+profile-specific evidence:
+
+* `fastq_ingress`: Bamana `consume --mode unmapped` for FASTQ.GZ input versus
+  `fastcat fastq | samtools import`;
+* `fastq_gz_enumerate`: Bamana `enumerate --input` for FASTQ.GZ input versus
+  `gzip -cd | awk` line counting.
+
+Each profile records the benchmark runner, Bamana path, comparator path, result
+artifacts, semantic equivalence assumptions, unsupported mismatch cases, and
+release claim boundary. The public `benchmark` JSON payload now exposes
+`semantic_equivalence_assumptions` and `unsupported_mismatch_cases` for the
+selected profile. M14.5 does not promote `fastq`, `unmap`, CRAM behavior,
+workflow-matrix scaffold rows, or unmeasured command modes to comparator
+claims.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -140,6 +161,10 @@ and archived outputs before new release-facing benchmark evidence is promoted.
    metadata and example inputs document source, generation, semantic-scope, and
    review-boundary fields.
 5. M14.5 add measured comparator profiles only where semantics are aligned.
+   Complete: `benchmarks/comparator_profiles.json` records `fastq_ingress`
+   and `fastq_gz_enumerate` with explicit semantic assumptions, unsupported
+   mismatch cases, result artifacts, and release claim boundaries, and the
+   public `benchmark` JSON contract exposes those fields.
 6. M14.6 document unsupported comparator cases and semantic mismatch reasons.
 7. M14.7 add CI or local harness checks for benchmark schema stability.
 8. M14.8 update benchmark docs, README, CLI docs, roadmap, and Sphinx docs.

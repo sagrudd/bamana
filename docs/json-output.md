@@ -40,6 +40,12 @@ Breaking output changes require:
 * contract-test update
 * release-note disclosure
 
+The public `benchmark` command is governed by
+`spec/jsonschema/benchmark.schema.json`. M14.5 adds
+`semantic_equivalence_assumptions` and `unsupported_mismatch_cases` to the
+benchmark payload for aligned measured comparator profiles, matching
+`benchmarks/comparator_profiles.json`.
+
 See:
 
 * [spec/contracts/versioning.md](/Users/stephen/Projects/bamana/spec/contracts/versioning.md)

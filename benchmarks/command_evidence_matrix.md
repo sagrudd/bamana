@@ -3,6 +3,9 @@
 M14.2 defines the current benchmark and comparator evidence level for each
 public Bamana command. This matrix is a scope control document: it records
 where evidence exists and where Bamana makes no external comparator claim.
+M14.5 adds `benchmarks/comparator_profiles.json` as the aligned measured
+profile catalog for public-profile comparator rows; it does not change any
+no-claim command rows.
 
 Evidence levels:
 

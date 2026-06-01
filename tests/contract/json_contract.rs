@@ -4534,6 +4534,201 @@ fn milestone_14_4_records_fixture_provenance_metadata() {
 }
 
 #[test]
+fn milestone_14_5_records_aligned_comparator_profiles() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmarks_readme = read_utf8(&super::repo_root().join("benchmarks").join("README.md"));
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let evidence_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("command_evidence_matrix.md"),
+    );
+    let profile_catalog_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("comparator_profiles.json"),
+    );
+    let profile_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("comparator_profiles.schema.json"),
+    );
+    let benchmark_schema_text = read_utf8(&schema_path_for_command("benchmark"));
+    let benchmark_example_text = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("examples")
+            .join("benchmark.success.json"),
+    );
+    let benchmark_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("benchmark.rs"),
+    );
+    let cli_contract = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("cli")
+            .join("commands.md"),
+    );
+
+    let profile_catalog: Value = serde_json::from_str(&profile_catalog_text).unwrap();
+    let profile_schema: Value = serde_json::from_str(&profile_schema_text).unwrap();
+    let benchmark_schema: Value = serde_json::from_str(&benchmark_schema_text).unwrap();
+    let benchmark_example: Value = serde_json::from_str(&benchmark_example_text).unwrap();
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        evidence_matrix.as_str(),
+        profile_catalog_text.as_str(),
+        profile_schema_text.as_str(),
+        benchmark_schema_text.as_str(),
+        benchmark_example_text.as_str(),
+        benchmark_source.as_str(),
+        cli_contract.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.5",
+        "benchmarks/comparator_profiles.json",
+        "benchmarks/comparator_profiles.schema.json",
+        "measured_public_profile",
+        "public_profile_comparator",
+        "fastq_ingress",
+        "fastq_gz_enumerate",
+        "run_fastq_ingress_benchmark.sh",
+        "run_fastq_gz_enumerate_benchmark.sh",
+        "semantic_equivalence_assumptions",
+        "unsupported_mismatch_cases",
+        "release_claim_boundary",
+        "result_artifacts",
+        "fastcat fastq | samtools import",
+        "gzip -cd | awk line counting",
+        "byte-identical BAM output is not required",
+        "malformed-input behavior",
+        "does not promote `fastq`, `unmap`, CRAM behavior",
+        "workflow-matrix scaffold rows",
+        "unmeasured command modes",
+        "broad comparator parity",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.5 aligned comparator profile evidence is missing: {required}"
+        );
+    }
+
+    let profiles = profile_catalog["profiles"]
+        .as_array()
+        .expect("comparator profile catalog must contain profiles");
+    assert_eq!(
+        profiles.len(),
+        2,
+        "M14.5 should catalog only the two measured public profiles"
+    );
+    for profile_id in ["fastq_ingress", "fastq_gz_enumerate"] {
+        let profile = profiles
+            .iter()
+            .find(|value| value["profile"] == profile_id)
+            .unwrap_or_else(|| panic!("missing M14.5 profile {profile_id}"));
+        assert_eq!(
+            profile["status"], "measured_public_profile",
+            "{profile_id} must be a measured public profile"
+        );
+        for field in [
+            "benchmark_runner",
+            "bamana_path",
+            "comparator_path",
+            "result_artifacts",
+            "semantic_equivalence_assumptions",
+            "unsupported_mismatch_cases",
+            "release_claim_boundary",
+        ] {
+            assert!(
+                profile.get(field).is_some(),
+                "{profile_id} is missing {field}"
+            );
+        }
+        assert!(
+            profile["semantic_equivalence_assumptions"]
+                .as_array()
+                .unwrap()
+                .len()
+                >= 2,
+            "{profile_id} must record semantic equivalence assumptions"
+        );
+        assert!(
+            profile["unsupported_mismatch_cases"]
+                .as_array()
+                .unwrap()
+                .len()
+                >= 1,
+            "{profile_id} must record unsupported mismatch cases"
+        );
+    }
+
+    let profile_required = profile_schema["$defs"]["profile"]["required"]
+        .as_array()
+        .expect("profile schema required list must be an array");
+    for field in [
+        "semantic_equivalence_assumptions",
+        "unsupported_mismatch_cases",
+        "release_claim_boundary",
+        "result_artifacts",
+    ] {
+        assert!(
+            profile_required.iter().any(|value| value == field),
+            "comparator profile schema must require {field}"
+        );
+    }
+
+    let benchmark_properties = benchmark_schema["$defs"]["data"]["properties"]
+        .as_object()
+        .expect("benchmark data schema properties must be an object");
+    for field in [
+        "semantic_equivalence_assumptions",
+        "unsupported_mismatch_cases",
+    ] {
+        assert!(
+            benchmark_properties.contains_key(field),
+            "benchmark JSON schema does not expose {field}"
+        );
+        assert!(
+            benchmark_example["data"][field].as_array().unwrap().len() >= 1,
+            "benchmark success example does not populate {field}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

@@ -496,6 +496,13 @@ review boundary, checksum policy, and reproducibility notes before they are
 used for release-facing benchmark evidence. The validator checks the block
 when it is present.
 
+M14.5 adds a governed aligned comparator profile catalog at
+[benchmarks/comparator_profiles.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.json).
+The public `benchmark` JSON payload now includes
+`semantic_equivalence_assumptions` and `unsupported_mismatch_cases` for
+`fastq_ingress` and `fastq_gz_enumerate`, making the aligned comparator claim
+specific to each measured runner rather than a broad parity statement.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent
@@ -562,3 +569,5 @@ selected profile, captures logs and machine-readable outputs, and renders the
 requested report. Benchmark-profile operator documentation for
 `bamana benchmark --profile ...` lives under
 [sphinx/index.rst](/Users/stephen/Projects/bamana/docs/sphinx/index.rst).
+Its JSON payload includes `semantic_equivalence_assumptions` and
+`unsupported_mismatch_cases` for aligned measured comparator profiles.

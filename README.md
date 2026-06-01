@@ -179,6 +179,10 @@ The canonical BAM baseline is `samtools`. `fastcat` is included explicitly for
 ONT-style ingestion and concatenation comparisons. The benchmark framework is
 designed for real large user-supplied BAM and FASTQ.GZ files and records
 unsupported or partial comparisons explicitly instead of silently dropping them.
+Aligned measured public comparator profiles are cataloged in
+[benchmarks/comparator_profiles.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.json),
+and the `benchmark` JSON payload reports the selected profile's semantic
+equivalence assumptions and unsupported mismatch cases.
 
 ## Example Invocations
 
@@ -828,6 +832,17 @@ environment, expected semantic scope, review boundary, checksum policy, and
 reproducibility notes. `benchmarks/bin/validate_inputs.py` validates the block
 when present. This does not add fixture generation scripts, materialize new
 benchmark fixtures, or promote comparator claims.
+
+M14.5 records the aligned public comparator profile catalog in
+[benchmarks/comparator_profiles.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.json),
+governed by
+[benchmarks/comparator_profiles.schema.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.schema.json).
+The measured public profiles remain `fastq_ingress` and
+`fastq_gz_enumerate`. Each profile now names
+`semantic_equivalence_assumptions` and `unsupported_mismatch_cases` in the
+public `benchmark` JSON payload so release-facing evidence is tied to the exact
+runner, input, container image, thread count, and archived artifacts rather
+than broad comparator parity.
 
 ## Specification Layer
 

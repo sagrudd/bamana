@@ -52,6 +52,14 @@ and FASTQ.GZ inputs. Remaining current gaps are:
 
 This is deliberate. The benchmark layer records partial or unsupported
 comparisons explicitly instead of pretending the tools are directly equivalent.
+M14.5 records the aligned measured public comparator profiles in
+[comparator_profiles.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.json),
+with schema coverage in
+[comparator_profiles.schema.json](/Users/stephen/Projects/bamana/benchmarks/comparator_profiles.schema.json).
+Only `fastq_ingress` and `fastq_gz_enumerate` are currently cataloged as
+measured public comparator profiles, and each entry names semantic equivalence
+assumptions, unsupported mismatch cases, result artifacts, and the release
+claim boundary.
 
 ## Readiness For Tomorrow
 

@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "profiles": [
+    {
+      "profile": "fastq_ingress",
+      "status": "measured_public_profile",
+      "command_family": "public_profile",
+      "evidence_level": "public_profile_comparator",
+      "benchmark_runner": "benchmarks/bin/run_fastq_ingress_benchmark.sh",
+      "bamana_path": "bamana consume --mode unmapped",
+      "comparator_path": "fastcat fastq | samtools import",
+      "result_artifacts": [
+        "raw benchmark JSON rows",
+        "aggregated tidy CSV rows",
+        "support matrix CSV",
+        "PDF report"
+      ],
+      "semantic_equivalence_assumptions": [
+        "Input is a single valid FASTQ.GZ stream of reads that can be represented as unmapped BAM records.",
+        "The comparison is limited to elapsed execution of Bamana unmapped ingestion versus fastcat FASTQ decoding plus samtools import.",
+        "Both paths are expected to emit unmapped BAM records for the same source read collection; byte-identical BAM output is not required."
+      ],
+      "unsupported_mismatch_cases": [
+        "Basecalling, mapping, alignment-state preservation, read-group policy equivalence, and biological equivalence are out of scope.",
+        "Mixed input directories, CRAM/SAM inputs, mapped BAM inputs, malformed FASTQ recovery, and output-byte identity are not comparator claims."
+      ],
+      "release_claim_boundary": "Release-facing claims may cite only FASTQ.GZ-to-unmapped-BAM ingestion timing for this runner, input, container image, thread count, and archived artifacts."
+    },
+    {
+      "profile": "fastq_gz_enumerate",
+      "status": "measured_public_profile",
+      "command_family": "public_profile",
+      "evidence_level": "public_profile_comparator",
+      "benchmark_runner": "benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh",
+      "bamana_path": "bamana enumerate --input",
+      "comparator_path": "gzip -cd | awk line counting",
+      "result_artifacts": [
+        "raw benchmark JSON rows",
+        "aggregated tidy CSV rows",
+        "support matrix CSV",
+        "PDF report"
+      ],
+      "semantic_equivalence_assumptions": [
+        "Input is a valid FASTQ.GZ stream whose record count is represented by complete four-line FASTQ records.",
+        "The comparison is limited to Bamana FASTQ.GZ record enumeration versus gzip decompression followed by line counting.",
+        "Both paths are expected to report the same record count for well-formed FASTQ.GZ input; parser diagnostics and malformed-input behavior are not part of the aligned claim."
+      ],
+      "unsupported_mismatch_cases": [
+        "FASTQ validation depth, quality-score interpretation, malformed record recovery, FASTA/BAM/SAM enumeration, and biological equivalence are out of scope.",
+        "Indexed FASTQ.GZ sidecar creation is a Bamana implementation detail and is not treated as comparator behavior."
+      ],
+      "release_claim_boundary": "Release-facing claims may cite only FASTQ.GZ record-count timing for this runner, input, container image, thread count, and archived artifacts."
+    }
+  ]
+}

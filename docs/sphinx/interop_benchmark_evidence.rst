@@ -127,3 +127,18 @@ kind, source description, source URI, ``derived_from``, generation command,
 generation environment, expected semantic scope, review boundary, checksum
 policy, and reproducibility notes. This keeps future benchmark evidence tied to
 auditable fixture origins before release-facing comparator claims are promoted.
+
+M14.5 Aligned Comparator Profiles
+---------------------------------
+
+M14.5 records the aligned public comparator profile catalog in
+``benchmarks/comparator_profiles.json``, governed by
+``benchmarks/comparator_profiles.schema.json``. The measured public profiles
+remain ``fastq_ingress`` and ``fastq_gz_enumerate``.
+
+Each catalog entry records the benchmark runner, Bamana path, comparator path,
+result artifacts, semantic equivalence assumptions, unsupported mismatch cases,
+and release claim boundary. The public ``benchmark`` JSON payload also exposes
+``semantic_equivalence_assumptions`` and ``unsupported_mismatch_cases`` so
+automation can distinguish an aligned measured profile from broad comparator
+parity.

@@ -36,6 +36,8 @@ pub struct BenchmarkPayload {
     pub container_image: String,
     pub bamana_binary: String,
     pub tool_versions_tsv: String,
+    pub semantic_equivalence_assumptions: Vec<String>,
+    pub unsupported_mismatch_cases: Vec<String>,
     pub steps: Vec<BenchmarkStep>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub notes: Vec<String>,
@@ -79,7 +81,7 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
     let bamana_binary = repo_root.join("target").join("release").join("bamana");
 
     let profile = profile_id(request.profile);
-    let (bamana_output, comparator_output, runner_script, runner_notes) =
+    let (bamana_output, comparator_output, runner_script, runner_notes, profile_scope) =
         profile_outputs_and_runner(request, &current_dir, &report, &workdir)?;
 
     if !request.force {
@@ -224,6 +226,16 @@ fn run_impl(request: &BenchmarkRequest) -> Result<BenchmarkPayload, AppError> {
         container_image: request.container_image.clone(),
         bamana_binary: bamana_binary.display().to_string(),
         tool_versions_tsv: tool_versions_tsv.display().to_string(),
+        semantic_equivalence_assumptions: profile_scope
+            .semantic_equivalence_assumptions
+            .iter()
+            .map(|value| (*value).to_string())
+            .collect(),
+        unsupported_mismatch_cases: profile_scope
+            .unsupported_mismatch_cases
+            .iter()
+            .map(|value| (*value).to_string())
+            .collect(),
         steps: vec![
             BenchmarkStep {
                 name: "build_bamana".to_string(),
@@ -290,7 +302,16 @@ fn profile_outputs_and_runner(
     current_dir: &Path,
     report: &Path,
     workdir: &Path,
-) -> Result<(PathBuf, PathBuf, &'static str, Vec<String>), AppError> {
+) -> Result<
+    (
+        PathBuf,
+        PathBuf,
+        &'static str,
+        Vec<String>,
+        BenchmarkProfileScope,
+    ),
+    AppError,
+> {
     match request.profile {
         BenchmarkProfile::FastqIngress => {
             let bam = request
@@ -313,6 +334,7 @@ fn profile_outputs_and_runner(
                     "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
                     "The FASTQ input directory is bind-mounted read-write so adjacent FASTQ.GZI sidecars created by Bamana can persist on the host.".to_string(),
                 ],
+                profile_scope(request.profile),
             ))
         }
         BenchmarkProfile::FastqGzEnumerate => {
@@ -327,8 +349,42 @@ fn profile_outputs_and_runner(
                     "The PDF report is rendered from R Markdown inside the benchmark container.".to_string(),
                     "The FASTQ input directory is bind-mounted read-write so adjacent FASTQ.GZI sidecars created by Bamana can persist on the host.".to_string(),
                 ],
+                profile_scope(request.profile),
             ))
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct BenchmarkProfileScope {
+    semantic_equivalence_assumptions: &'static [&'static str],
+    unsupported_mismatch_cases: &'static [&'static str],
+}
+
+fn profile_scope(profile: BenchmarkProfile) -> BenchmarkProfileScope {
+    match profile {
+        BenchmarkProfile::FastqIngress => BenchmarkProfileScope {
+            semantic_equivalence_assumptions: &[
+                "Input is a single valid FASTQ.GZ stream of reads that can be represented as unmapped BAM records.",
+                "The comparison is limited to elapsed execution of Bamana unmapped ingestion versus fastcat FASTQ decoding plus samtools import.",
+                "Both paths are expected to emit unmapped BAM records for the same source read collection; byte-identical BAM output is not required.",
+            ],
+            unsupported_mismatch_cases: &[
+                "Basecalling, mapping, alignment-state preservation, read-group policy equivalence, and biological equivalence are out of scope.",
+                "Mixed input directories, CRAM/SAM inputs, mapped BAM inputs, malformed FASTQ recovery, and output-byte identity are not comparator claims.",
+            ],
+        },
+        BenchmarkProfile::FastqGzEnumerate => BenchmarkProfileScope {
+            semantic_equivalence_assumptions: &[
+                "Input is a valid FASTQ.GZ stream whose record count is represented by complete four-line FASTQ records.",
+                "The comparison is limited to Bamana FASTQ.GZ record enumeration versus gzip decompression followed by line counting.",
+                "Both paths are expected to report the same record count for well-formed FASTQ.GZ input; parser diagnostics and malformed-input behavior are not part of the aligned claim.",
+            ],
+            unsupported_mismatch_cases: &[
+                "FASTQ validation depth, quality-score interpretation, malformed record recovery, FASTA/BAM/SAM enumeration, and biological equivalence are out of scope.",
+                "Indexed FASTQ.GZ sidecar creation is a Bamana implementation detail and is not treated as comparator behavior.",
+            ],
+        },
     }
 }
 

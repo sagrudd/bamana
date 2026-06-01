@@ -107,6 +107,12 @@ Benchmark interpretation notes:
   generation environment, expected semantic scope, review boundary, checksum
   policy, and reproducibility notes before they are used for release-facing
   benchmark claims.
+* M14.5 adds `benchmarks/comparator_profiles.json` and
+  `benchmarks/comparator_profiles.schema.json` for aligned measured public
+  comparator profiles. `fastq_ingress` and `fastq_gz_enumerate` now have
+  explicit semantic equivalence assumptions, unsupported mismatch cases, result
+  artifacts, and release claim boundaries, and the public `benchmark` JSON
+  payload exposes those assumptions.
 
 First analysis slice:
 

@@ -330,6 +330,11 @@ This order is retained because it matches the dependency chain of the runtime:
   generation environment, expected semantic scope, review boundary, checksum
   policy, and reproducibility notes, with example manifest entries and local
   validator checks in place
+* M14.5 aligned comparator profiles: `benchmarks/comparator_profiles.json`,
+  governed by `benchmarks/comparator_profiles.schema.json`, records
+  `fastq_ingress` and `fastq_gz_enumerate` as measured public comparator
+  profiles with explicit semantic equivalence assumptions, unsupported
+  mismatch cases, result artifacts, and release claim boundaries
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

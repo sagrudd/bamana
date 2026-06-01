@@ -6218,7 +6218,7 @@ Completion evidence:
 
 ### M14.5 Add Aligned Comparator Profiles
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6228,6 +6228,24 @@ Acceptance:
 
 * every new comparator profile names its semantic equivalence assumptions and
   its unsupported mismatch cases.
+
+Completion evidence:
+
+* added `benchmarks/comparator_profiles.json` as the governed aligned
+  comparator profile catalog;
+* added `benchmarks/comparator_profiles.schema.json` to require each measured
+  public profile to declare its runner, Bamana path, comparator path, result
+  artifacts, semantic equivalence assumptions, unsupported mismatch cases, and
+  release claim boundary;
+* recorded `fastq_ingress` and `fastq_gz_enumerate` as the only aligned
+  measured public comparator profiles;
+* extended the public `benchmark` JSON payload and schema with
+  `semantic_equivalence_assumptions` and `unsupported_mismatch_cases`;
+* documented that M14.5 does not promote `fastq`, `unmap`, CRAM behavior,
+  workflow-matrix scaffold rows, or unmeasured command modes to comparator
+  claims;
+* updated README, CLI docs, Sphinx, roadmap, M14 roadmap, taskmap, public CLI
+  contracts, JSON schema, example output, and contract coverage.
 
 ### M14.6 Document Comparator Mismatches
 

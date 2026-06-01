@@ -262,7 +262,11 @@ Current milestone:
   input manifests so generated, derived, selected, or comparator fixtures can
   record source, generation command, semantic scope, review boundary, checksum
   policy, and reproducibility notes before release-facing evidence is
-  promoted.
+  promoted. M14.5 adds `benchmarks/comparator_profiles.json`, governed by
+  `benchmarks/comparator_profiles.schema.json`, and makes the public
+  `benchmark` JSON payload expose `semantic_equivalence_assumptions` and
+  `unsupported_mismatch_cases` for the aligned `fastq_ingress` and
+  `fastq_gz_enumerate` comparator profiles.
 
 ## Completed Backbone
 

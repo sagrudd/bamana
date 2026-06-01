@@ -44,7 +44,14 @@ claim.
 Key output concepts:
 `profile`, `fastq`, `bamana_output`, `comparator_output`, `report_pdf`,
 `workdir`, `raw_results_dir`, `aggregated_dir`, `metadata_dir`, `logs_dir`,
-`steps`, `notes`.
+`semantic_equivalence_assumptions`, `unsupported_mismatch_cases`, `steps`,
+`notes`.
+
+Comparator profile boundary:
+The aligned public comparator catalog is
+`benchmarks/comparator_profiles.json`. Each measured public profile must name
+the assumptions under which the profile can be compared and the mismatch cases
+that remain unsupported.
 
 ## `identify`
 
