@@ -60,9 +60,18 @@ Each manifest entry should provide:
 * staging policy hints
 * allowed scenarios
 * provenance notes such as source owner and sensitivity level
+* fixture provenance metadata when the input is generated, derived, selected,
+  or used as comparator evidence
 
 The governing schema is
 [manifest.schema.json](/Users/stephen/Projects/bamana/benchmarks/inputs/manifest.schema.json).
+M14.4 adds the governed `fixture_provenance` object documented in
+[fixture_provenance.md](/Users/stephen/Projects/bamana/benchmarks/inputs/fixture_provenance.md).
+It records source kind, source description, source URI, `derived_from`,
+generation command, generation environment, expected semantic scope, review
+boundary, checksum policy, and reproducibility notes. The metadata is required
+for new generated, derived, or comparator fixtures before release-facing
+benchmark claims are promoted.
 
 Ready-to-edit params examples live in
 [../params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples).

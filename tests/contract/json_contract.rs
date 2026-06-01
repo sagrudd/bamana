@@ -4350,6 +4350,190 @@ fn milestone_14_3_extends_benchmark_result_schemas_for_post_m10_families() {
 }
 
 #[test]
+fn milestone_14_4_records_fixture_provenance_metadata() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let inputs_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("inputs")
+            .join("README.md"),
+    );
+    let provenance_doc = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("inputs")
+            .join("fixture_provenance.md"),
+    );
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let manifest_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("inputs")
+            .join("manifest.schema.json"),
+    );
+    let example_manifest_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("inputs")
+            .join("example_manifest.json"),
+    );
+    let validator = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("bin")
+            .join("validate_inputs.py"),
+    );
+
+    let manifest_schema: Value = serde_json::from_str(&manifest_schema_text).unwrap();
+    let example_manifest: Value = serde_json::from_str(&example_manifest_text).unwrap();
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        inputs_readme.as_str(),
+        provenance_doc.as_str(),
+        results_readme.as_str(),
+        manifest_schema_text.as_str(),
+        example_manifest_text.as_str(),
+        validator.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.4",
+        "fixture_provenance",
+        "benchmarks/inputs/fixture_provenance.md",
+        "source_kind",
+        "source_description",
+        "source_uri",
+        "derived_from",
+        "generation_command",
+        "generation_environment",
+        "expected_semantic_scope",
+        "review_boundary",
+        "checksum_policy",
+        "reproducibility_notes",
+        "external_dataset",
+        "synthetic_fixture",
+        "derived_fixture",
+        "materialized_subset",
+        "planned",
+        "generated, derived, selected, or comparator fixtures",
+        "release-facing benchmark claims",
+        "does not add fixture generation scripts",
+        "does not materialize new benchmark fixtures",
+        "comparator claims",
+        "validate_inputs.py",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.4 fixture provenance evidence is missing: {required}"
+        );
+    }
+
+    let fixture_provenance = &manifest_schema["$defs"]["fixtureProvenance"];
+    assert!(
+        fixture_provenance.is_object(),
+        "benchmark manifest schema is missing fixtureProvenance definition"
+    );
+    let required_fields = fixture_provenance["required"]
+        .as_array()
+        .expect("fixtureProvenance required list must be an array");
+    for field in [
+        "source_kind",
+        "source_description",
+        "source_uri",
+        "derived_from",
+        "generation_command",
+        "generation_environment",
+        "expected_semantic_scope",
+        "review_boundary",
+        "checksum_policy",
+        "reproducibility_notes",
+    ] {
+        assert!(
+            required_fields.iter().any(|value| value == field),
+            "fixtureProvenance does not require {field}"
+        );
+    }
+    assert!(
+        manifest_schema["$defs"]["input"]["properties"]
+            .as_object()
+            .unwrap()
+            .contains_key("fixture_provenance"),
+        "benchmark input schema does not expose fixture_provenance on inputs"
+    );
+
+    let inputs = example_manifest["inputs"]
+        .as_array()
+        .expect("example benchmark manifest inputs must be an array");
+    assert!(
+        !inputs.is_empty(),
+        "example benchmark manifest has no inputs"
+    );
+    for input in inputs {
+        let id = input["id"].as_str().unwrap_or("<unknown>");
+        let provenance = input
+            .get("fixture_provenance")
+            .unwrap_or_else(|| panic!("{id} is missing fixture_provenance"));
+        for field in [
+            "source_kind",
+            "source_description",
+            "source_uri",
+            "derived_from",
+            "generation_command",
+            "generation_environment",
+            "expected_semantic_scope",
+            "review_boundary",
+            "checksum_policy",
+            "reproducibility_notes",
+        ] {
+            assert!(
+                provenance.get(field).is_some(),
+                "{id} fixture_provenance is missing {field}"
+            );
+        }
+    }
+
+    for validator_token in [
+        "ALLOWED_PROVENANCE_KINDS",
+        "REQUIRED_PROVENANCE_FIELDS",
+        "fixture_provenance must be an object",
+        "fixture_provenance.derived_from must be an array",
+        "fixture_provenance.{field} must be non-empty text",
+    ] {
+        assert!(
+            validator.contains(validator_token),
+            "validate_inputs.py is missing M14.4 provenance check: {validator_token}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

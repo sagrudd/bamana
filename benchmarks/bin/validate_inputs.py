@@ -18,6 +18,25 @@ ALLOWED_SCENARIOS = {
     "subsample_only",
 }
 ALLOWED_STAGING_MODES = {"direct", "copy", "hardlink", "symlink", "scratch_copy"}
+ALLOWED_PROVENANCE_KINDS = {
+    "external_dataset",
+    "synthetic_fixture",
+    "derived_fixture",
+    "materialized_subset",
+    "planned",
+}
+REQUIRED_PROVENANCE_FIELDS = {
+    "source_kind",
+    "source_description",
+    "source_uri",
+    "derived_from",
+    "generation_command",
+    "generation_environment",
+    "expected_semantic_scope",
+    "review_boundary",
+    "checksum_policy",
+    "reproducibility_notes",
+}
 
 
 def main() -> int:
@@ -110,6 +129,41 @@ def main() -> int:
             mode = staging_policy.get("mode")
             if mode not in ALLOWED_STAGING_MODES:
                 failures.append(f"{entry_id}: unsupported staging mode '{mode}'")
+
+        provenance = entry.get("fixture_provenance")
+        if provenance is not None:
+            if not isinstance(provenance, dict):
+                failures.append(f"{entry_id}: fixture_provenance must be an object")
+            else:
+                missing = sorted(REQUIRED_PROVENANCE_FIELDS - provenance.keys())
+                if missing:
+                    failures.append(
+                        f"{entry_id}: fixture_provenance missing fields: {', '.join(missing)}"
+                    )
+                source_kind = provenance.get("source_kind")
+                if source_kind not in ALLOWED_PROVENANCE_KINDS:
+                    failures.append(
+                        f"{entry_id}: unsupported fixture_provenance source_kind '{source_kind}'"
+                    )
+                derived_from = provenance.get("derived_from")
+                if not isinstance(derived_from, list):
+                    failures.append(
+                        f"{entry_id}: fixture_provenance.derived_from must be an array"
+                    )
+                for field in [
+                    "source_description",
+                    "generation_command",
+                    "generation_environment",
+                    "expected_semantic_scope",
+                    "review_boundary",
+                    "checksum_policy",
+                    "reproducibility_notes",
+                ]:
+                    value = provenance.get(field)
+                    if not isinstance(value, str) or not value.strip():
+                        failures.append(
+                            f"{entry_id}: fixture_provenance.{field} must be non-empty text"
+                        )
 
     if failures:
         print("benchmark input manifest validation failed:", file=sys.stderr)

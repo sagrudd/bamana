@@ -105,6 +105,23 @@ evidence families while preserving the M14.2 boundary: local smoke evidence is
 not broad comparator parity, biological equivalence, CRAM indexed-query
 evidence, CSI random-access traversal, or replacement output-index evidence.
 
+## M14.4 Fixture Provenance Metadata
+
+M14.4 adds reproducible fixture provenance metadata for benchmark inputs and
+future comparator fixtures without materializing new fixtures or changing
+runtime benchmark behavior. The governed schema is
+`benchmarks/inputs/manifest.schema.json`, the example is
+`benchmarks/inputs/example_manifest.json`, and the human-readable contract is
+`benchmarks/inputs/fixture_provenance.md`.
+
+The `fixture_provenance` object records source kind, source description,
+source URI, `derived_from`, generation command, generation environment,
+expected semantic scope, review boundary, checksum policy, and reproducibility
+notes. `benchmarks/bin/validate_inputs.py` validates the block when it is
+present. M14.4 does not add fixture generation scripts, benchmark profiles, or
+comparator claims; later M14 tasks must attach checksums, generated artifacts,
+and archived outputs before new release-facing benchmark evidence is promoted.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -119,6 +136,9 @@ evidence, CSI random-access traversal, or replacement output-index evidence.
    Complete: raw, tidy, and scanner microbenchmark schemas now carry optional
    command-family and evidence-level fields plus a scanner timing taxonomy.
 4. M14.4 add reproducible fixture generation and fixture provenance metadata.
+   Complete: benchmark input manifests now support governed fixture provenance
+   metadata and example inputs document source, generation, semantic-scope, and
+   review-boundary fields.
 5. M14.5 add measured comparator profiles only where semantics are aligned.
 6. M14.6 document unsupported comparator cases and semantic mismatch reasons.
 7. M14.7 add CI or local harness checks for benchmark schema stability.

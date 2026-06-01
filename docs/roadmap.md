@@ -325,6 +325,11 @@ This order is retained because it matches the dependency chain of the runtime:
   remediation, forensics, transform/ingest, inspection, and index timing rows;
   header and FASTQ microbenchmark schemas record mutation and FASTQ command
   timing families without changing runtime behavior
+* M14.4 fixture provenance: benchmark input manifests now support
+  `fixture_provenance` metadata for source kind, generation command,
+  generation environment, expected semantic scope, review boundary, checksum
+  policy, and reproducibility notes, with example manifest entries and local
+  validator checks in place
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

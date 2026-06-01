@@ -112,3 +112,18 @@ schema records the ``header``/``mutation`` split for ``verify``, ``header``,
 ``fastq`` family for FASTQ command timings. These annotations are schema
 metadata and optional command-timing fields; they do not add benchmark
 profiles, fixture generation, comparator claims, or command behavior.
+
+M14.4 Fixture Provenance Metadata
+---------------------------------
+
+M14.4 defines benchmark input fixture provenance metadata without materializing
+new fixtures or changing runtime benchmark behavior. The governed shape is the
+``fixture_provenance`` object in
+``benchmarks/inputs/manifest.schema.json`` and the human-readable contract is
+``benchmarks/inputs/fixture_provenance.md``.
+
+Each generated, derived, selected, or comparator fixture should record source
+kind, source description, source URI, ``derived_from``, generation command,
+generation environment, expected semantic scope, review boundary, checksum
+policy, and reproducibility notes. This keeps future benchmark evidence tied to
+auditable fixture origins before release-facing comparator claims are promoted.

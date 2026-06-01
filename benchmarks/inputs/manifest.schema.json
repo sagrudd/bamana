@@ -61,6 +61,46 @@
         { "type": "null" }
       ]
     },
+    "fixtureProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_description",
+        "source_uri",
+        "derived_from",
+        "generation_command",
+        "generation_environment",
+        "expected_semantic_scope",
+        "review_boundary",
+        "checksum_policy",
+        "reproducibility_notes"
+      ],
+      "properties": {
+        "source_kind": {
+          "type": "string",
+          "enum": [
+            "external_dataset",
+            "synthetic_fixture",
+            "derived_fixture",
+            "materialized_subset",
+            "planned"
+          ]
+        },
+        "source_description": { "type": "string", "minLength": 1 },
+        "source_uri": { "type": ["string", "null"] },
+        "derived_from": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "generation_command": { "type": "string", "minLength": 1 },
+        "generation_environment": { "type": "string", "minLength": 1 },
+        "expected_semantic_scope": { "type": "string", "minLength": 1 },
+        "review_boundary": { "type": "string", "minLength": 1 },
+        "checksum_policy": { "type": "string", "minLength": 1 },
+        "reproducibility_notes": { "type": "string", "minLength": 1 }
+      }
+    },
     "stagingPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -114,6 +154,7 @@
         "storage_context": { "type": ["string", "null"] },
         "human_genome_equivalent": { "type": ["boolean", "null"] },
         "read_layout": { "type": ["string", "null"] },
+        "fixture_provenance": { "$ref": "#/$defs/fixtureProvenance" },
         "scenario_materialization": { "type": ["string", "null"] },
         "reuse_materialized_inputs": { "type": ["boolean", "null"] },
         "include_staging_in_timing": { "type": ["boolean", "null"] },

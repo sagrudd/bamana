@@ -100,6 +100,13 @@ Benchmark interpretation notes:
   `annotate_rg`, while `fastq_microbench.schema.json` records FASTQ command
   timing rows. Existing emitted rows remain valid because these fields are
   optional.
+* M14.4 adds benchmark input fixture provenance metadata under
+  `benchmarks/inputs/manifest.schema.json`. New generated, derived, selected,
+  or comparator fixtures should carry `fixture_provenance` with source kind,
+  source description, source URI, `derived_from`, generation command,
+  generation environment, expected semantic scope, review boundary, checksum
+  policy, and reproducibility notes before they are used for release-facing
+  benchmark claims.
 
 First analysis slice:
 

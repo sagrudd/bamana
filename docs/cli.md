@@ -489,6 +489,13 @@ selected-region, CSI fallback, remediation, forensics, transform/ingest,
 inspection, and index evidence. Header and FASTQ microbenchmark schemas record
 mutation and FASTQ timing families.
 
+M14.4 adds `fixture_provenance` metadata to benchmark input manifests. New
+generated, derived, selected, or comparator fixtures should record their source
+kind, generation command, generation environment, expected semantic scope,
+review boundary, checksum policy, and reproducibility notes before they are
+used for release-facing benchmark evidence. The validator checks the block
+when it is present.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

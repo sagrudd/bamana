@@ -258,7 +258,11 @@ Current milestone:
   scaffold-only workflow rows remain no-claim surfaces. M14.3 extends raw,
   tidy, and scanner microbenchmark schemas with optional command-family and
   evidence-level fields for post-M10 command families without changing runtime
-  behavior.
+  behavior. M14.4 adds governed `fixture_provenance` metadata to benchmark
+  input manifests so generated, derived, selected, or comparator fixtures can
+  record source, generation command, semantic scope, review boundary, checksum
+  policy, and reproducibility notes before release-facing evidence is
+  promoted.
 
 ## Completed Backbone
 

@@ -820,6 +820,15 @@ remediation, forensics, transform/ingest, inspection, and index command
 families. Header and FASTQ microbenchmark schemas record mutation and FASTQ
 timing families.
 
+M14.4 adds reproducible fixture provenance metadata for benchmark inputs.
+`benchmarks/inputs/manifest.schema.json` now supports `fixture_provenance`,
+and `benchmarks/inputs/example_manifest.json` shows source kind, source
+description, source URI, `derived_from`, generation command, generation
+environment, expected semantic scope, review boundary, checksum policy, and
+reproducibility notes. `benchmarks/bin/validate_inputs.py` validates the block
+when present. This does not add fixture generation scripts, materialize new
+benchmark fixtures, or promote comparator claims.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

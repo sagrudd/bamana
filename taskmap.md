@@ -6188,7 +6188,7 @@ Completion evidence:
 
 ### M14.4 Add Fixture Provenance Metadata
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6198,6 +6198,23 @@ Acceptance:
 
 * benchmark and comparator fixtures identify their source, generation command,
   expected semantic scope, and review boundary.
+
+Completion evidence:
+
+* added governed `fixture_provenance` metadata to
+  `benchmarks/inputs/manifest.schema.json`;
+* updated `benchmarks/inputs/example_manifest.json` with source kind, source
+  description, source URI, `derived_from`, generation command, generation
+  environment, expected semantic scope, review boundary, checksum policy, and
+  reproducibility notes;
+* added validator checks in `benchmarks/bin/validate_inputs.py`;
+* added `benchmarks/inputs/fixture_provenance.md` as the human-readable
+  provenance contract;
+* documented that M14.4 does not materialize fixtures, add generation scripts,
+  or promote comparator claims;
+* updated README, CLI docs, benchmark input docs, benchmark result docs,
+  Sphinx, roadmap, current milestone, M14 roadmap, taskmap, and contract
+  coverage.
 
 ### M14.5 Add Aligned Comparator Profiles
 
