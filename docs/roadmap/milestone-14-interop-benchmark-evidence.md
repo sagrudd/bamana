@@ -172,6 +172,19 @@ It covers benchmark params, input manifests, raw/tidy result schemas,
 microbenchmark result schemas, tool registry schemas, and comparator-profile
 schemas.
 
+## M14.8 Public Documentation Refresh
+
+M14.8 adds `benchmarks/public_evidence_guide.md` as the public documentation
+index for benchmark evidence. The guide distinguishes public benchmark
+profiles, repository-local smoke hooks, scaffolded comparator evidence, and
+`no_external_comparator_claim` surfaces. It links the command evidence matrix,
+aligned comparator profile catalog, mismatch register, and schema stability
+manifest so readers can find the governed source for each evidence class.
+
+The public contract commands remain explicit in the guide: `benchmark` owns
+governed profile execution, while `fastq` and `unmap` currently remain
+no-external-comparator-claim surfaces.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -203,6 +216,10 @@ schemas.
    schema inventory in `benchmarks/schema_stability_manifest.json` and is
    covered by contract tests.
 8. M14.8 update benchmark docs, README, CLI docs, roadmap, and Sphinx docs.
+   Complete: `benchmarks/public_evidence_guide.md` now consolidates public
+   profile, smoke hook, scaffolded comparator, and no-claim interpretation,
+   with README, CLI, Sphinx, roadmap, current milestone, M14 roadmap, and
+   taskmap pointers.
 9. M14.9 add dependency-boundary tests for benchmark-only tools and oracles.
 10. M14.10 close the milestone with archived smoke evidence and residual risk
     notes.

@@ -171,3 +171,22 @@ pointers.
 The harness catches benchmark schema additions, removals, renames, unexpected
 ``$id`` changes, missing version metadata, and missing M14 result/profile
 metadata before benchmark evidence can drift silently.
+
+M14.8 Public Documentation Index
+--------------------------------
+
+M14.8 adds ``benchmarks/public_evidence_guide.md`` as the public documentation
+index for benchmark evidence. The guide separates:
+
+* public benchmark profiles;
+* repository-local smoke hooks;
+* scaffolded comparator evidence; and
+* ``no_external_comparator_claim`` surfaces.
+
+The guide points readers to ``benchmarks/command_evidence_matrix.md``,
+``benchmarks/comparator_profiles.json``,
+``benchmarks/comparator_mismatches.md``, and
+``benchmarks/schema_stability_manifest.json``. It also keeps the public
+contract commands explicit: ``benchmark`` owns governed profile execution,
+while ``fastq`` and ``unmap`` currently remain no-external-comparator-claim
+surfaces.

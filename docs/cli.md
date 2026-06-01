@@ -517,6 +517,11 @@ M14.7 adds local benchmark schema stability checks with
 are added, removed, renamed, have unexpected `$id` values, lose version
 metadata, or drop required stability pointers.
 
+M14.8 adds `benchmarks/public_evidence_guide.md` as the benchmark evidence
+documentation index. It separates public benchmark profiles, local smoke hooks,
+scaffolded comparator evidence, and `no_external_comparator_claim` surfaces so
+operators do not infer a comparator claim from smoke or scaffold rows.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

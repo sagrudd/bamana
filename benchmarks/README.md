@@ -75,6 +75,11 @@ The harness reads
 requires every `benchmarks/**/*.schema.json` file to be listed, pins each
 schema `$id`, checks version metadata, and verifies required stability
 pointers for result, input, tool, and comparator-profile contracts.
+M14.8 adds
+[public_evidence_guide.md](/Users/stephen/Projects/bamana/benchmarks/public_evidence_guide.md)
+as the public documentation index for benchmark evidence. It distinguishes
+public benchmark profiles, local smoke hooks, scaffolded comparator evidence,
+and `no_external_comparator_claim` surfaces in one place.
 
 ## Readiness For Tomorrow
 
@@ -118,6 +123,7 @@ one.
 * [input-policy.md](/Users/stephen/Projects/bamana/benchmarks/input-policy.md): source-versus-derived input governance
 * [staging.md](/Users/stephen/Projects/bamana/benchmarks/staging.md): staging and reuse policy
 * [cleanup.md](/Users/stephen/Projects/bamana/benchmarks/cleanup.md): cleanup and retention rules
+* [public_evidence_guide.md](/Users/stephen/Projects/bamana/benchmarks/public_evidence_guide.md): public profile, smoke hook, comparator evidence, and no-claim interpretation guide
 * [inputs/](/Users/stephen/Projects/bamana/benchmarks/inputs): manifest schema, example manifest, and operator guidance
 * [params.schema.json](/Users/stephen/Projects/bamana/benchmarks/params.schema.json): benchmark parameter schema
 * [params.examples/](/Users/stephen/Projects/bamana/benchmarks/params.examples): ready-to-edit example Nextflow params files

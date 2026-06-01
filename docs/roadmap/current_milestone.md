@@ -273,7 +273,10 @@ Current milestone:
   `benchmarks/bin/check_schema_stability.py` and
   `benchmarks/schema_stability_manifest.json` so benchmark schema additions,
   removals, `$id` drift, version metadata loss, and required metadata loss are
-  caught by local verification and contract tests.
+  caught by local verification and contract tests. M14.8 adds
+  `benchmarks/public_evidence_guide.md` as the public documentation index that
+  separates benchmark profiles, smoke hooks, scaffolded comparator evidence,
+  and no-external-comparator-claim surfaces.
 
 ## Completed Backbone
 

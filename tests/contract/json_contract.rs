@@ -4992,6 +4992,111 @@ fn milestone_14_7_checks_benchmark_schema_stability() {
 }
 
 #[test]
+fn milestone_14_8_refreshes_benchmark_public_docs() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmarks_readme = read_utf8(&super::repo_root().join("benchmarks").join("README.md"));
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let guide = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("public_evidence_guide.md"),
+    );
+    let evidence_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("command_evidence_matrix.md"),
+    );
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        guide.as_str(),
+        evidence_matrix.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.8",
+        "benchmarks/public_evidence_guide.md",
+        "Public Benchmark Evidence Guide",
+        "public benchmark profiles",
+        "smoke hooks",
+        "scaffolded comparator evidence",
+        "no_external_comparator_claim",
+        "public_profile_comparator",
+        "local_smoke",
+        "scenario_matrix_comparator_scaffold",
+        "fastq_ingress",
+        "fastq_gz_enumerate",
+        "bgzf_microbench",
+        "header_microbench",
+        "scanner_microbench",
+        "fastq_microbench",
+        "benchmarks/command_evidence_matrix.md",
+        "benchmarks/comparator_profiles.json",
+        "benchmarks/comparator_mismatches.md",
+        "benchmarks/schema_stability_manifest.json",
+        "benchmark` owns governed profile execution",
+        "`fastq` currently has no external comparator claim",
+        "`unmap` currently has no external comparator claim",
+        "Promotion Rule",
+        "fixture provenance and checksums",
+        "explicit semantic equivalence assumptions",
+        "explicit unsupported mismatch cases",
+        "schema and example coverage",
+        "README, CLI docs, Sphinx docs, roadmap, and taskmap",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.8 public documentation refresh is missing: {required}"
+        );
+    }
+
+    for doc in [
+        readme.as_str(),
+        cli_docs.as_str(),
+        m14_sphinx.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        taskmap.as_str(),
+    ] {
+        assert!(
+            doc.contains("benchmarks/public_evidence_guide.md"),
+            "M14.8 documentation pointer missing from one public doc"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

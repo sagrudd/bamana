@@ -6308,7 +6308,7 @@ Completion evidence:
 
 ### M14.8 Refresh Benchmark Documentation
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6318,6 +6318,25 @@ Acceptance:
 
 * public docs distinguish public benchmark profiles, smoke hooks, comparator
   evidence, and no-claim surfaces.
+
+Completion evidence:
+
+* added `benchmarks/public_evidence_guide.md` as the public benchmark evidence
+  documentation index;
+* documented evidence classes for `public_profile_comparator`, `local_smoke`,
+  `scenario_matrix_comparator_scaffold`, and `no_external_comparator_claim`;
+* documented that `fastq_ingress` and `fastq_gz_enumerate` are the only
+  current public benchmark profiles;
+* documented `bgzf_microbench`, `header_microbench`, `scanner_microbench`, and
+  `fastq_microbench` as repository-local smoke hooks;
+* documented the command evidence matrix, comparator profile catalog,
+  comparator mismatch register, and schema stability manifest as the governed
+  sources for interpreting benchmark evidence;
+* preserved the public contract boundary that `benchmark` owns governed
+  profile execution while `fastq` and `unmap` remain
+  no-external-comparator-claim surfaces;
+* updated README, CLI docs, benchmark docs, result docs, Sphinx, roadmap,
+  current milestone, M14 roadmap, taskmap, and contract coverage.
 
 ### M14.9 Add Benchmark Dependency Guardrails
 

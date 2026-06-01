@@ -342,6 +342,10 @@ This order is retained because it matches the dependency chain of the runtime:
   validates `benchmarks/schema_stability_manifest.json` so every benchmark
   schema path, `$id`, version pointer, and required stability metadata is
   checked locally and by contract tests
+* M14.8 documentation refresh: `benchmarks/public_evidence_guide.md`
+  consolidates public profile, smoke hook, scaffolded comparator, and
+  no-external-comparator-claim interpretation across README, CLI docs,
+  roadmap, Sphinx, and benchmark docs
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

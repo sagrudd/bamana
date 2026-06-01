@@ -859,6 +859,12 @@ M14.7 adds benchmark schema stability checks through
 and required metadata so benchmark schema changes are caught during contract
 verification rather than drifting silently.
 
+M14.8 adds the public benchmark evidence guide at
+[benchmarks/public_evidence_guide.md](/Users/stephen/Projects/bamana/benchmarks/public_evidence_guide.md).
+It is the consolidated documentation index for public benchmark profiles,
+local smoke hooks, scaffolded comparator evidence, and
+`no_external_comparator_claim` surfaces.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

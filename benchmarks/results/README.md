@@ -124,6 +124,9 @@ Benchmark interpretation notes:
   benchmark schema path, `$id`, contract surface, version pointer, and required
   stability metadata so benchmark schema changes fail verification unless the
   manifest and docs are updated deliberately.
+* M14.8 adds `benchmarks/public_evidence_guide.md` as the public documentation
+  index for interpreting benchmark results as public-profile comparator,
+  local-smoke, scaffolded-comparator, or no-external-comparator-claim evidence.
 
 First analysis slice:
 
