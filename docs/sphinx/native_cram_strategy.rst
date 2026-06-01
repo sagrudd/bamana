@@ -1,14 +1,14 @@
 Native CRAM Strategy And Compatibility Boundary
 ===============================================
 
-Milestone 13 is active as of 2026-06-01. It follows the completed Milestone 12
+Milestone 13 is complete as of 2026-06-01. It follows the completed Milestone 12
 extended index compatibility milestone and does not reopen BAM, BGZF, FASTQ,
 or index contracts.
 
 Activation Baseline
 -------------------
 
-M13.1 activates the native CRAM strategy milestone without changing CLI
+M13.1 activated the native CRAM strategy milestone without changing CLI
 behavior. The current baseline is deliberately conservative:
 
 * CRAM support is compatibility-oriented and concentrated in
@@ -255,6 +255,33 @@ benchmark guardrails:
   cover CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
   indexed-query evidence, CRAM compatibility throughput, or CRAM comparator
   parity.
+
+Closeout
+--------
+
+Milestone 13 is complete as of 2026-06-01. M13.1 through M13.10 completed the
+native CRAM strategy and compatibility-boundary checkpoint without promoting a
+native CRAM substrate or expanding CRAM indexed-query behavior.
+
+Closeout verification passed:
+
+* ``cargo test``;
+* ``cargo test --test contract``;
+* ``sphinx-build -b html docs/sphinx docs/sphinx/_build/html``;
+* ``cargo fmt --check``;
+* ``git diff --check``;
+* ``cargo build --bin bamana --bin scanner_microbench``;
+* ``target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1310-scanner-small.json``.
+
+Scanner smoke evidence confirmed 28 command timing rows, no CRAM command
+timing rows, and the M13.9 CRAM benchmark guardrail note.
+
+Residual risk remains explicit and deferred for native CRAM parsing, native
+CRAM writing, CRAI parsing, CRAI creation, indexed CRAM queries, CRAM region
+input, CRAM random-access traversal, cache-backed CRAM decoding, derived
+CRAM/BAM compatibility fixtures, no-external-reference CRAM fixtures, CRAM
+compatibility throughput claims, CRAM comparator parity, and broad external
+tool parity.
 
 Non-Goals
 ---------

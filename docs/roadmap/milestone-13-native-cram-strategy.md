@@ -1,6 +1,6 @@
 # Milestone 13: Native CRAM Strategy And Compatibility Boundary
 
-Status: active as of 2026-06-01. Milestone 13 is the first explicit
+Status: complete as of 2026-06-01. Milestone 13 was the first explicit
 post-M12 checkpoint for CRAM strategy. It follows the completed M12 extended
 index compatibility milestone and does not reopen BAM, BGZF, FASTQ, or index
 contracts.
@@ -247,6 +247,33 @@ benchmark guardrails:
   indexed-query evidence, CRAM compatibility throughput, or CRAM comparator
   parity.
 
+## M13.10 Closeout
+
+Milestone 13 is complete as of 2026-06-01. M13.1 through M13.10 completed the
+native CRAM strategy and compatibility-boundary checkpoint without promoting a
+native CRAM substrate or expanding CRAM indexed-query behavior.
+
+Closeout verification passed:
+
+* `cargo test`;
+* `cargo test --test contract`;
+* `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+* `cargo fmt --check`;
+* `git diff --check`;
+* `cargo build --bin bamana --bin scanner_microbench`;
+* `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1310-scanner-small.json`.
+
+Scanner smoke evidence confirmed 28 command timing rows, no CRAM command
+timing rows, and the M13.9 CRAM benchmark guardrail note in the emitted
+result.
+
+Residual risk remains explicit and deferred for native CRAM parsing, native
+CRAM writing, CRAI parsing, CRAI creation, indexed CRAM queries, CRAM region
+input, CRAM random-access traversal, cache-backed CRAM decoding, derived
+CRAM/BAM compatibility fixtures, no-external-reference CRAM fixtures, CRAM
+compatibility throughput claims, CRAM comparator parity, and broad external
+tool parity.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -273,6 +300,8 @@ benchmark guardrails:
    dependency tests and benchmark docs/schema now guard the compatibility-only
    CRAM boundary.
 10. M13.10 close the milestone with full verification and residual risk notes.
+    Complete: full verification and scanner smoke evidence passed; residual
+    CRAM risk remains explicitly deferred.
 
 ## Non-Goals
 

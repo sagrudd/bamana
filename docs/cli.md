@@ -348,8 +348,8 @@ random-access traversal, CSI writing, large-reference CSI support, native CRAM
 indexed queries, replacement output-index creation, and broad comparator parity
 explicitly deferred.
 
-Milestone 13 is active for native CRAM strategy and compatibility-boundary
-decisions. M13.1 records the current CRAM baseline without changing CLI
+Milestone 13 is complete for native CRAM strategy and compatibility-boundary
+decisions. M13.1 recorded the current CRAM baseline without changing CLI
 behavior: CRAM support is compatibility-oriented and concentrated in
 `src/ingest/cram.rs`; direct production `noodles_*` imports remain allowed only
 in that documented boundary; `consume` is the only current public CRAM-facing
@@ -439,6 +439,20 @@ BAM benchmark: it emits no CRAM command timing rows, its `consume` timing is
 BAM alignment ingest only, and it is not evidence for CRAI parsing, CRAM region
 input, CRAM random-access traversal, CRAM indexed-query behavior, CRAM
 compatibility throughput, or CRAM comparator parity.
+
+Milestone 13 is complete as of 2026-06-01. M13.10 closeout verification passed
+with `cargo test`, `cargo test --test contract`,
+`sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+`cargo fmt --check`, `git diff --check`,
+`cargo build --bin bamana --bin scanner_microbench`, and
+`target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1310-scanner-small.json`.
+The scanner smoke emitted 28 command timing rows, no CRAM command timing rows,
+and the M13.9 CRAM benchmark guardrail note. Residual risk remains explicit
+for native CRAM parsing, native CRAM writing, CRAI parsing, CRAI creation,
+indexed CRAM queries, CRAM region input, CRAM random-access traversal,
+cache-backed CRAM decoding, derived CRAM/BAM compatibility fixtures,
+no-external-reference CRAM fixtures, CRAM compatibility throughput claims, CRAM
+comparator parity, and broad external tool parity.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

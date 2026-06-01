@@ -19,10 +19,12 @@ M11.10 completed on 2026-05-28. **Milestone 12: Extended Index
 Compatibility** is complete as of 2026-05-28. It was activated by M12.1 only
 after the Milestone 11 closeout evidence was recorded and closed after M12.1
 through M12.10 completed on 2026-05-28.
-**Milestone 13: Native CRAM Strategy And Compatibility Boundary** is active
+**Milestone 13: Native CRAM Strategy And Compatibility Boundary** is complete
 as of 2026-06-01. It was activated by M13.1 only after Milestone 12 closeout
-evidence was recorded.
-Status: active as of 2026-06-01 for Milestone 13.
+evidence was recorded and closed after M13.1 through M13.10 completed on
+2026-06-01.
+Status: complete as of 2026-06-01 for Milestone 13. Milestone 14 remains
+planned until M14.1 activates it explicitly.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
@@ -72,6 +74,20 @@ alignment ingest only. Benchmark evidence from this slice is not evidence for
 CRAI parsing, CRAM region input, CRAM random-access traversal, CRAM
 indexed-query behavior, CRAM compatibility throughput, or CRAM comparator
 parity.
+
+M13.10 closes the milestone with full verification and residual risk notes.
+Closeout verification passed with `cargo test`, `cargo test --test contract`,
+`sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+`cargo fmt --check`, `git diff --check`,
+`cargo build --bin bamana --bin scanner_microbench`, and
+`target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1310-scanner-small.json`.
+The closeout scanner smoke emitted 28 command timing rows, no CRAM command
+timing rows, and the M13.9 CRAM benchmark guardrail note. Residual risk remains
+explicit for native CRAM parsing, native CRAM writing, CRAI parsing, CRAI
+creation, indexed CRAM queries, CRAM region input, CRAM random-access
+traversal, cache-backed CRAM decoding, derived CRAM/BAM compatibility fixtures,
+no-external-reference CRAM fixtures, CRAM compatibility throughput claims, CRAM
+comparator parity, and broad external tool parity.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -217,10 +233,10 @@ Latest closed milestone:
 
 Current milestone:
 
-* **Milestone 13: Native CRAM Strategy And Compatibility Boundary** is active
+* **Milestone 13: Native CRAM Strategy And Compatibility Boundary** is complete
   as of 2026-06-01. M13 follows the completed M12 extended index compatibility
   milestone and does not reopen BAM, BGZF, FASTQ, or index contracts. M13.1
-  activates the scope and records the current CRAM baseline: CRAM support is
+  activated the scope and recorded the current CRAM baseline: CRAM support is
   compatibility-oriented and concentrated in `src/ingest/cram.rs`; direct
   production `noodles_*` imports remain allowed only in that documented
   boundary; `consume` is the only current public CRAM-facing path; CRAM is

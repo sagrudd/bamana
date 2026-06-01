@@ -2051,7 +2051,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 13: Native CRAM Strategy And Compatibility Boundary",
-            "status: active",
+            "status: complete",
             "roadmap/milestone-13-native-cram-strategy.md",
         ),
         (
@@ -2952,8 +2952,11 @@ fn milestone_13_activation_baseline_records_cram_strategy_scope() {
     ] {
         assert!(
             text.contains("Milestone 13 is active")
+                || text.contains("Milestone 13 is complete")
                 || text.contains("status: active")
+                || text.contains("status: complete")
                 || text.contains("Status: active as of 2026-06-01")
+                || text.contains("Status: complete as of 2026-06-01")
                 || text.contains("Status: active."),
             "{name} does not record Milestone 13 activation"
         );
@@ -3711,6 +3714,84 @@ fn milestone_13_9_adds_cram_dependency_and_benchmark_guardrails() {
         assert!(
             !command.to_ascii_lowercase().contains("cram"),
             "M13.9 benchmark guardrail forbids CRAM command timing rows, found {command}"
+        );
+    }
+}
+
+#[test]
+fn milestone_13_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M13 roadmap", &m13),
+        ("M13 Sphinx", &m13_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 13 is complete")
+                || text.contains("status: complete")
+                || text.contains("Status: complete as of 2026-06-01")
+                || text.contains("Status: complete."),
+            "{name} does not record Milestone 13 completion"
+        );
+    }
+
+    for required in [
+        "M13.10",
+        "M13.1 through M13.10",
+        "2026-06-01",
+        "compatibility-boundary checkpoint",
+        "native CRAM substrate",
+        "CRAM indexed-query behavior",
+        "cargo test",
+        "cargo test --test contract",
+        "sphinx-build -b html docs/sphinx docs/sphinx/_build/html",
+        "cargo fmt --check",
+        "git diff --check",
+        "cargo build --bin bamana --bin scanner_microbench",
+        "scanner_microbench --profile small --iterations 1 --bamana-bin",
+        "/tmp/bamana-m1310-scanner-small.json",
+        "28 command timing rows",
+        "no CRAM command timing rows",
+        "M13.9 CRAM benchmark guardrail note",
+        "native CRAM parsing",
+        "native CRAM writing",
+        "CRAI parsing",
+        "CRAI creation",
+        "indexed CRAM queries",
+        "CRAM region input",
+        "CRAM random-access traversal",
+        "cache-backed CRAM decoding",
+        "derived CRAM/BAM compatibility fixtures",
+        "no-external-reference CRAM fixtures",
+        "CRAM compatibility throughput claims",
+        "CRAM comparator parity",
+        "broad external tool parity",
+        "Milestone 14 remains planned until M14.1",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M13 closeout evidence is missing: {required}"
         );
     }
 }

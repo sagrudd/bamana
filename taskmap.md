@@ -5715,7 +5715,7 @@ Completion evidence:
 
 ## Milestone 13: Native CRAM Strategy And Compatibility Boundary
 
-Status: active as of 2026-06-01.
+Status: complete as of 2026-06-01.
 
 Goal:
 
@@ -5760,7 +5760,8 @@ Tasks:
 
 Acceptance:
 
-* roadmap and current milestone docs record Milestone 13 as active;
+* roadmap and current milestone docs record Milestone 13 as active at
+  activation time;
 * README, CLI docs, Sphinx, and taskmap describe the M13.1 CRAM baseline;
 * contract coverage protects the activation text and baseline audit.
 
@@ -6036,8 +6037,33 @@ Completion evidence:
 
 ### M13.10 Close Milestone 13
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * run full verification and record residual risk notes.
+
+Acceptance:
+
+* M13.1 through M13.10 are complete;
+* full verification passes;
+* roadmap, README, CLI docs, Sphinx, and taskmap record the closeout and
+  residual risk;
+* Milestone 14 remains planned until M14.1 explicitly activates it.
+
+Completion evidence:
+
+* recorded Milestone 13 as complete as of 2026-06-01;
+* closeout verification passed with `cargo test`, `cargo test --test
+  contract`, Sphinx HTML documentation, `cargo fmt --check`, `git diff
+  --check`, and `cargo build --bin bamana --bin scanner_microbench`;
+* scanner smoke evidence passed with
+  `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1310-scanner-small.json`;
+* scanner smoke evidence confirmed 28 command timing rows, no CRAM command
+  timing rows, and the M13.9 CRAM benchmark guardrail note;
+* residual risk remains explicit for native CRAM parsing, native CRAM writing,
+  CRAI parsing, CRAI creation, indexed CRAM queries, CRAM region input, CRAM
+  random-access traversal, cache-backed CRAM decoding, derived CRAM/BAM
+  compatibility fixtures, no-external-reference CRAM fixtures, CRAM
+  compatibility throughput claims, CRAM comparator parity, and broad external
+  tool parity.

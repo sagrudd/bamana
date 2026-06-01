@@ -220,7 +220,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 
-* status: active
+* status: complete as of 2026-06-01
 * detail: [roadmap/milestone-13-native-cram-strategy.md](roadmap/milestone-13-native-cram-strategy.md)
 * goal: decide and document the next CRAM compatibility boundary, including
   whether any native CRAM substrate is promoted or explicitly deferred
@@ -288,6 +288,15 @@ This order is retained because it matches the dependency chain of the runtime:
   BAM-only, emits no CRAM command timing rows, and is not evidence for CRAI
   parsing, CRAM region input, CRAM random-access traversal, CRAM indexed-query
   behavior, CRAM compatibility throughput, or CRAM comparator parity
+* M13.10 closeout: M13.1 through M13.10 completed on 2026-06-01 with full
+  tests, contract tests, Sphinx, formatting checks, diff checks, binary builds,
+  and scanner smoke evidence passing; the scanner smoke emitted 28 command
+  timing rows, no CRAM command timing rows, and the M13.9 CRAM benchmark
+  guardrail note; residual risk remains explicit for native CRAM
+  parsing/writing, CRAI parsing/creation, indexed CRAM queries, CRAM region
+  input, CRAM random-access traversal, cache-backed decoding, derived CRAM/BAM
+  fixtures, no-external-reference CRAM fixtures, CRAM compatibility throughput
+  claims, CRAM comparator parity, and broad external tool parity
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 
