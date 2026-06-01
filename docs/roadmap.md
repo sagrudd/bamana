@@ -220,12 +220,21 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 13: Native CRAM Strategy And Compatibility Boundary
 
-* status: planned
+* status: active
 * detail: [roadmap/milestone-13-native-cram-strategy.md](roadmap/milestone-13-native-cram-strategy.md)
 * goal: decide and document the next CRAM compatibility boundary, including
   whether any native CRAM substrate is promoted or explicitly deferred
 * commands enabled first: `consume` and CRAM-facing inspection paths only if
   the native/reference-policy contract is frozen
+* M13.1 activation baseline: current CRAM behavior is conservative
+  compatibility only, concentrated in `src/ingest/cram.rs`; `consume` supports
+  alignment-mode CRAM normalization through the explicit `--reference-policy`
+  contract, default `strict` requires `--reference <fasta>` with adjacent
+  `.fai`, `allow-cache` and `--reference-cache` remain unimplemented,
+  `allow-embedded` and `auto-conservative` only attempt no-external-reference
+  decode, CRAI/indexed CRAM queries and native CRAM parsing/writing remain
+  deferred, and direct production `noodles_*` imports remain allowed only in
+  the documented CRAM compatibility boundary
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

@@ -5712,3 +5712,140 @@ Completion evidence:
   random-access traversal, CSI writing, large-reference CSI support, native
   CRAM indexed queries, replacement output-index creation, and broad comparator
   parity.
+
+## Milestone 13: Native CRAM Strategy And Compatibility Boundary
+
+Status: active as of 2026-06-01.
+
+Goal:
+
+* decide whether Bamana promotes any native CRAM substrate, keeps CRAM as a
+  documented compatibility boundary, moves CRAM behind a narrower optional
+  compatibility feature, or explicitly defers CRAM ingestion from the
+  native-core package.
+
+Current baseline:
+
+* M13 follows the completed M12 extended index compatibility milestone and
+  does not reopen BAM, BGZF, FASTQ, or index contracts;
+* CRAM support is compatibility-oriented and concentrated in
+  `src/ingest/cram.rs`;
+* direct production `noodles_*` imports remain allowed only in the documented
+  CRAM compatibility boundary;
+* `consume` is the only current public CRAM-facing command path;
+* CRAM is accepted only in alignment mode and normalized to BAM before
+  downstream Bamana-native handling;
+* the default `strict` reference policy requires `--reference <fasta>` with an
+  adjacent `.fai`;
+* explicit FASTA takes precedence over `--reference-cache`;
+* `allow-cache` and cache-backed decoding remain unimplemented;
+* `allow-embedded` and `auto-conservative` may attempt no-external-reference
+  decode, but dry runs validate only policy shape and actual
+  reference-dependent decode failures remain `reference_required`;
+* CRAI handling, indexed CRAM queries, native CRAM parsing, native CRAM
+  writing, cache-backed decoding, and broad comparator parity remain deferred;
+* source SAM and explicit FASTA provenance fixtures are present, while derived
+  CRAM/BAM binaries and no-external-reference fixtures remain planned or
+  deferred until reproducible generation is documented.
+
+### M13.1 Activate Scope And Audit Current CRAM Behavior
+
+Status: complete.
+
+Tasks:
+
+* activate Milestone 13 after the M12 closeout;
+* audit current CRAM ingestion and reference-policy behavior;
+* record current dependency, fixture, and non-goal boundaries.
+
+Acceptance:
+
+* roadmap and current milestone docs record Milestone 13 as active;
+* README, CLI docs, Sphinx, and taskmap describe the M13.1 CRAM baseline;
+* contract coverage protects the activation text and baseline audit.
+
+Completion evidence:
+
+* updated roadmap, current milestone, M13 roadmap, README, CLI docs, Sphinx,
+  and taskmap with the M13.1 baseline;
+* added Sphinx `native_cram_strategy` technical note;
+* added contract coverage for M13.1 activation and CRAM baseline evidence.
+
+### M13.2 Decide Native CRAM Direction
+
+Status: pending.
+
+Tasks:
+
+* decide whether CRAM remains compatibility-only, receives a staged
+  Bamana-native implementation, moves behind a narrower optional feature, or is
+  explicitly deferred from the native-core package.
+
+### M13.3 Freeze Reference And Cache Policy Semantics
+
+Status: pending.
+
+Tasks:
+
+* freeze explicit FASTA, embedded-reference, reference-cache, and
+  auto-conservative semantics.
+
+### M13.4 Define CRAM Indexed Query Position
+
+Status: pending.
+
+Tasks:
+
+* define whether CRAI and indexed CRAM queries are unsupported, transitional,
+  or native work.
+
+### M13.5 Add CRAM Fixtures And Oracle Boundaries
+
+Status: pending.
+
+Tasks:
+
+* materialize or explicitly defer the CRAM fixture set and oracle boundaries
+  chosen by M13.2-M13.4.
+
+### M13.6 Implement Chosen CRAM Behavior
+
+Status: pending.
+
+Tasks:
+
+* implement only the chosen CRAM behavior with documented dependency
+  boundaries.
+
+### M13.7 Update CRAM-Facing Command Contracts
+
+Status: pending.
+
+Tasks:
+
+* update `consume` and inspection command contracts where CRAM behavior
+  changes.
+
+### M13.8 Update Public Docs And Schemas
+
+Status: pending.
+
+Tasks:
+
+* update schemas, examples, README, CLI docs, Sphinx docs, and roadmap notes.
+
+### M13.9 Add CRAM Guardrails
+
+Status: pending.
+
+Tasks:
+
+* add CRAM dependency-boundary and benchmark guardrails.
+
+### M13.10 Close Milestone 13
+
+Status: pending.
+
+Tasks:
+
+* run full verification and record residual risk notes.

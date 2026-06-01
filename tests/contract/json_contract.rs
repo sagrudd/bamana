@@ -2051,7 +2051,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 13: Native CRAM Strategy And Compatibility Boundary",
-            "status: planned",
+            "status: active",
             "roadmap/milestone-13-native-cram-strategy.md",
         ),
         (
@@ -2905,6 +2905,116 @@ fn milestone_12_closeout_docs_are_consistent() {
                 || m12_sphinx.contains(required)
                 || taskmap.contains(required),
             "M12 closeout evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
+fn milestone_13_activation_baseline_records_cram_strategy_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cram_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("ingest")
+            .join("cram.rs"),
+    );
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+    let cargo = read_utf8(&super::repo_root().join("Cargo.toml"));
+    let dependency_policy = read_utf8(&docs_dir().join("dependency-policy.md"));
+    let noodles_demotion = read_utf8(&docs_dir().join("migration").join("noodles-demotion.md"));
+    let fixture_plan = read_utf8(
+        &super::repo_root()
+            .join("tests")
+            .join("fixtures")
+            .join("plans")
+            .join("cram-fixtures.md"),
+    );
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M13 roadmap", &m13),
+        ("M13 Sphinx", &m13_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 13 is active")
+                || text.contains("status: active")
+                || text.contains("Status: active as of 2026-06-01")
+                || text.contains("Status: active."),
+            "{name} does not record Milestone 13 activation"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("native_cram_strategy"),
+        "Sphinx index does not include the M13 CRAM strategy technical note"
+    );
+
+    for required in [
+        "M13.1",
+        "Native CRAM Strategy And Compatibility Boundary",
+        "does not reopen BAM, BGZF, FASTQ, or index contracts",
+        "src/ingest/cram.rs",
+        "compatibility-oriented",
+        "direct production `noodles_*` imports",
+        "cram-compat",
+        "noodles-cram",
+        "noodles-bam",
+        "noodles-fasta",
+        "noodles-sam",
+        "consume",
+        "alignment mode",
+        "normalized to BAM",
+        "strict",
+        "--reference <fasta>",
+        "adjacent `.fai`",
+        "--reference-cache",
+        "allow-cache",
+        "allow-embedded",
+        "auto-conservative",
+        "reference_required",
+        "temporary BAM",
+        "Bamana-native BAM reader",
+        "CRAI handling",
+        "indexed CRAM queries",
+        "native CRAM parsing",
+        "native CRAM writing",
+        "cache-backed decoding",
+        "broad comparator parity",
+        "source SAM",
+        "explicit FASTA",
+        "derived CRAM/BAM binaries",
+        "no-external-reference fixtures",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || cram_source.contains(required)
+                || cli_source.contains(required)
+                || cargo.contains(required)
+                || dependency_policy.contains(required)
+                || noodles_demotion.contains(required)
+                || fixture_plan.contains(required),
+            "M13.1 CRAM baseline evidence is missing: {required}"
         );
     }
 }

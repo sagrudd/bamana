@@ -348,6 +348,20 @@ random-access traversal, CSI writing, large-reference CSI support, native CRAM
 indexed queries, replacement output-index creation, and broad comparator parity
 explicitly deferred.
 
+Milestone 13 is active for native CRAM strategy and compatibility-boundary
+decisions. M13.1 records the current CRAM baseline without changing CLI
+behavior: CRAM support is compatibility-oriented and concentrated in
+`src/ingest/cram.rs`; direct production `noodles_*` imports remain allowed only
+in that documented boundary; `consume` is the only current public CRAM-facing
+command path; CRAM is accepted only in alignment mode and normalized to BAM
+before downstream Bamana-native handling. The default `strict` reference policy
+requires `--reference <fasta>` with an adjacent `.fai`, explicit FASTA takes
+precedence over `--reference-cache`, `allow-cache` and cache-backed decoding
+remain unimplemented, and `allow-embedded` plus `auto-conservative` only
+attempt no-external-reference decode. CRAI handling, indexed CRAM queries,
+native CRAM parsing, native CRAM writing, cache-backed decoding, and broad
+comparator parity remain deferred.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

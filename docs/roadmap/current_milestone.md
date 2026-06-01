@@ -19,7 +19,10 @@ M11.10 completed on 2026-05-28. **Milestone 12: Extended Index
 Compatibility** is complete as of 2026-05-28. It was activated by M12.1 only
 after the Milestone 11 closeout evidence was recorded and closed after M12.1
 through M12.10 completed on 2026-05-28.
-Status: complete as of 2026-05-28 for Milestone 12.
+**Milestone 13: Native CRAM Strategy And Compatibility Boundary** is active
+as of 2026-06-01. It was activated by M13.1 only after Milestone 12 closeout
+evidence was recorded.
+Status: active as of 2026-06-01 for Milestone 13.
 
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
@@ -51,7 +54,8 @@ See:
 Previous closed milestone:
 
 * **Milestone 11: Public Indexed Region Selection And Region Files** is
-  complete as of 2026-05-28. M11 does not reopen Milestone 10. M11.1 freezes the
+  complete as of 2026-05-28. Milestone 11 is complete as of 2026-05-28. M11
+  does not reopen Milestone 10. M11.1 freezes the
   selection surface decision as a new planned public `select_region` command,
   rather than extending `check_map`, `summary`, or `subsample`. M11 must specify
   selected-record region output and region-file input before implementation:
@@ -161,6 +165,29 @@ Latest closed milestone:
   planning, CSI random-access traversal, CSI writing, large-reference CSI
   support, native CRAM indexed queries, replacement output-index creation, and
   broad comparator parity remain explicitly deferred.
+
+Current milestone:
+
+* **Milestone 13: Native CRAM Strategy And Compatibility Boundary** is active
+  as of 2026-06-01. M13 follows the completed M12 extended index compatibility
+  milestone and does not reopen BAM, BGZF, FASTQ, or index contracts. M13.1
+  activates the scope and records the current CRAM baseline: CRAM support is
+  compatibility-oriented and concentrated in `src/ingest/cram.rs`; direct
+  production `noodles_*` imports remain allowed only in that documented
+  boundary; `consume` is the only current public CRAM-facing path; CRAM is
+  accepted only in alignment mode and normalized to BAM before downstream
+  Bamana-native handling; the default `strict` reference policy requires
+  `--reference <fasta>` with adjacent `.fai`; explicit FASTA takes precedence
+  over `--reference-cache`; `allow-cache` and cache-backed decoding remain
+  unimplemented; `allow-embedded` and `auto-conservative` may attempt
+  no-external-reference decode, but dry runs only validate policy shape and
+  actual reference-dependent decode failures remain `reference_required`; CRAI
+  handling, indexed CRAM queries, native CRAM parsing, native CRAM writing,
+  cache-backed decoding, and broad comparator parity remain deferred. M13.1
+  also records that the fixture plan is still partly reserved: source SAM and
+  explicit FASTA provenance are present, while derived CRAM/BAM binaries and
+  no-external-reference fixtures remain planned or deferred until reproducible
+  generation is documented.
 
 ## Completed Backbone
 
