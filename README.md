@@ -810,6 +810,16 @@ fixtures, semantic assumptions, and schema coverage promote them. `identify`,
 `fastq`, `unmap`, CRAM consume behavior, unmeasured command modes, and
 scaffold-only rows remain `no_external_comparator_claim` surfaces.
 
+M14.3 extends benchmark result schemas without changing runtime benchmark
+behavior. `benchmarks/results/result.schema.json` and
+`benchmarks/results/benchmark_row.schema.json` now allow optional
+`command_family`, `evidence_level`, `evidence_source`, and `comparator_scope`
+fields, while `benchmarks/results/scanner_microbench.schema.json` records the
+post-M10 timing taxonomy for indexed-region, selected-region, CSI fallback,
+remediation, forensics, transform/ingest, inspection, and index command
+families. Header and FASTQ microbenchmark schemas record mutation and FASTQ
+timing families.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

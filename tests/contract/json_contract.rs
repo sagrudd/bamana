@@ -4133,6 +4133,223 @@ fn milestone_14_2_records_command_comparator_evidence_matrix() {
 }
 
 #[test]
+fn milestone_14_3_extends_benchmark_result_schemas_for_post_m10_families() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let tidy_contract = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("tidy_result_contract.md"),
+    );
+    let raw_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("result.schema.json"),
+    );
+    let tidy_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("benchmark_row.schema.json"),
+    );
+    let scanner_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("scanner_microbench.schema.json"),
+    );
+    let header_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("header_microbench.schema.json"),
+    );
+    let fastq_schema_text = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("fastq_microbench.schema.json"),
+    );
+
+    let raw_schema: Value = serde_json::from_str(&raw_schema_text).unwrap();
+    let tidy_schema: Value = serde_json::from_str(&tidy_schema_text).unwrap();
+    let scanner_schema: Value = serde_json::from_str(&scanner_schema_text).unwrap();
+    let header_schema: Value = serde_json::from_str(&header_schema_text).unwrap();
+    let fastq_schema: Value = serde_json::from_str(&fastq_schema_text).unwrap();
+
+    let public_docs = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmark_results.as_str(),
+        tidy_contract.as_str(),
+    ]
+    .join("\n");
+    let schema_text = [
+        raw_schema_text.as_str(),
+        tidy_schema_text.as_str(),
+        scanner_schema_text.as_str(),
+        header_schema_text.as_str(),
+        fastq_schema_text.as_str(),
+    ]
+    .join("\n");
+    let all_text = format!("{public_docs}\n{schema_text}");
+
+    for required in [
+        "M14.3",
+        "command_family",
+        "evidence_level",
+        "evidence_source",
+        "comparator_scope",
+        "post-M10 command family taxonomy",
+        "indexed_region",
+        "selected_region",
+        "csi_fallback",
+        "mutation",
+        "remediation",
+        "forensics",
+        "transform_ingest",
+        "inspection",
+        "index",
+        "header",
+        "fastq",
+        "public_profile",
+        "no_claim",
+        "public_profile_comparator",
+        "scenario_matrix_comparator_scaffold",
+        "local_smoke",
+        "no_external_comparator_claim",
+        "runtime_behavior",
+        "unchanged",
+        "does not change runtime behavior",
+        "add benchmark profiles",
+        "fixture generation",
+        "comparator claims",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.3 schema extension evidence is missing: {required}"
+        );
+    }
+
+    for schema in [&raw_schema, &tidy_schema] {
+        let properties = schema["properties"]
+            .as_object()
+            .expect("benchmark result schema properties must be an object");
+        for field in [
+            "command_family",
+            "evidence_level",
+            "evidence_source",
+            "comparator_scope",
+        ] {
+            assert!(
+                properties.contains_key(field),
+                "raw/tidy result schema is missing optional field {field}"
+            );
+        }
+        let required = schema["required"]
+            .as_array()
+            .expect("benchmark result required list must be an array");
+        for optional in [
+            "command_family",
+            "evidence_level",
+            "evidence_source",
+            "comparator_scope",
+        ] {
+            assert!(
+                !required.iter().any(|value| value == optional),
+                "M14.3 field {optional} must remain optional"
+            );
+        }
+    }
+
+    for family in [
+        "indexed_region",
+        "selected_region",
+        "csi_fallback",
+        "remediation",
+        "forensics",
+        "transform_ingest",
+        "inspection",
+        "index",
+    ] {
+        assert!(
+            scanner_schema["x-bamana-m14-post-m10-command-families"]["families"]
+                .as_object()
+                .unwrap()
+                .contains_key(family),
+            "scanner schema is missing M14.3 family {family}"
+        );
+    }
+
+    for command in [
+        "check_map_region_scan_fallback",
+        "summary_region_scan_fallback",
+        "select_region_scan_fallback",
+        "check_index_csi_detect_only",
+        "check_map_region_csi_fallback",
+        "summary_region_csi_fallback",
+        "select_region_csi_fallback",
+        "select_region_indexed_output",
+        "deduplicate",
+        "inspect_duplication",
+        "forensic_inspect",
+    ] {
+        assert!(
+            scanner_schema_text.contains(command),
+            "scanner schema is missing post-M10 command timing row {command}"
+        );
+    }
+
+    assert!(
+        header_schema["x-bamana-m14-post-m10-command-families"]["families"]["mutation"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "reheader")
+            && header_schema["x-bamana-m14-post-m10-command-families"]["families"]["mutation"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|value| value == "annotate_rg"),
+        "header schema does not record mutation command timing family"
+    );
+    assert!(
+        fastq_schema["x-bamana-m14-post-m10-command-families"]["families"]["fastq"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "subsample_fastq_gz"),
+        "fastq schema does not record FASTQ command timing family"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

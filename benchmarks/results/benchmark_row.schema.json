@@ -4,6 +4,33 @@
   "title": "Bamana Benchmark Tidy Result Row",
   "description": "Flat, aggregation-ready tidy row contract derived from raw per-run benchmark JSON and consumed by the R aggregation and plotting layer.",
   "x-bamana-benchmark-contract-version": "1.0.0",
+  "x-bamana-m14-result-schema-extension": {
+    "task": "M14.3",
+    "scope": "optional command evidence fields for post-M10 command families",
+    "runtime_behavior": "unchanged",
+    "command_families": [
+      "public_profile",
+      "bgzf",
+      "header",
+      "fastq",
+      "inspection",
+      "transform_ingest",
+      "index",
+      "indexed_region",
+      "selected_region",
+      "csi_fallback",
+      "mutation",
+      "remediation",
+      "forensics",
+      "no_claim"
+    ],
+    "evidence_levels": [
+      "public_profile_comparator",
+      "scenario_matrix_comparator_scaffold",
+      "local_smoke",
+      "no_external_comparator_claim"
+    ]
+  },
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -51,6 +78,10 @@
       ]
     },
     "workflow_variant": { "type": "string" },
+    "command_family": { "$ref": "#/$defs/command_family" },
+    "evidence_level": { "$ref": "#/$defs/evidence_level" },
+    "evidence_source": { "type": "string" },
+    "comparator_scope": { "type": "string" },
     "tool": {
       "type": "string",
       "enum": ["bamana", "samtools", "sambamba", "seqtk", "rasusa", "fastcat"]
@@ -129,5 +160,35 @@
     "notes": { "type": "string" },
     "started_at": { "type": ["string", "null"] },
     "finished_at": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "command_family": {
+      "type": "string",
+      "enum": [
+        "public_profile",
+        "bgzf",
+        "header",
+        "fastq",
+        "inspection",
+        "transform_ingest",
+        "index",
+        "indexed_region",
+        "selected_region",
+        "csi_fallback",
+        "mutation",
+        "remediation",
+        "forensics",
+        "no_claim"
+      ]
+    },
+    "evidence_level": {
+      "type": "string",
+      "enum": [
+        "public_profile_comparator",
+        "scenario_matrix_comparator_scaffold",
+        "local_smoke",
+        "no_external_comparator_claim"
+      ]
+    }
   }
 }

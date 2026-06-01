@@ -6156,7 +6156,7 @@ Completion evidence:
 
 ### M14.3 Extend Benchmark Result Schemas
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -6167,6 +6167,24 @@ Acceptance:
 * benchmark schemas can represent indexed-region, selected-region, CSI
   fallback, mutation, remediation, and forensic smoke rows without ad hoc
   fields.
+
+Completion evidence:
+
+* extended `benchmarks/results/result.schema.json` and
+  `benchmarks/results/benchmark_row.schema.json` with optional
+  `command_family`, `evidence_level`, `evidence_source`, and
+  `comparator_scope` fields;
+* added M14.3 schema metadata and optional command-timing fields to
+  `benchmarks/results/scanner_microbench.schema.json`,
+  `benchmarks/results/header_microbench.schema.json`, and
+  `benchmarks/results/fastq_microbench.schema.json`;
+* recorded scanner timing families for `indexed_region`, `selected_region`,
+  `csi_fallback`, `remediation`, `forensics`, `transform_ingest`,
+  `inspection`, and `index`, plus header/mutation and FASTQ timing families;
+* documented that M14.3 does not change runtime behavior, add benchmark
+  profiles, add fixture generation, or promote comparator claims;
+* updated README, CLI docs, benchmark result docs, tidy result docs, Sphinx,
+  roadmap, current milestone, M14 roadmap, taskmap, and contract coverage.
 
 ### M14.4 Add Fixture Provenance Metadata
 

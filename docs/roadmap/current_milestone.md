@@ -255,7 +255,10 @@ Current milestone:
   `fastq_gz_enumerate` and FASTQ.GZ unmapped `consume` through
   `fastq_ingress` are current public-profile comparator evidence. `identify`,
   `fastq`, `unmap`, CRAM consume behavior, unmeasured command modes, and
-  scaffold-only workflow rows remain no-claim surfaces.
+  scaffold-only workflow rows remain no-claim surfaces. M14.3 extends raw,
+  tidy, and scanner microbenchmark schemas with optional command-family and
+  evidence-level fields for post-M10 command families without changing runtime
+  behavior.
 
 ## Completed Backbone
 

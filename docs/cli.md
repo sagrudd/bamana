@@ -481,6 +481,14 @@ release-facing comparator parity. `identify`, `fastq`, `unmap`, CRAM consume
 behavior, unmeasured command modes, and scaffold-only rows remain
 `no_external_comparator_claim` surfaces.
 
+M14.3 extends benchmark result schemas without changing runtime benchmark
+behavior. Raw and tidy benchmark rows may now carry optional `command_family`,
+`evidence_level`, `evidence_source`, and `comparator_scope` fields. The scanner
+microbenchmark schema records post-M10 timing families for indexed-region,
+selected-region, CSI fallback, remediation, forensics, transform/ingest,
+inspection, and index evidence. Header and FASTQ microbenchmark schemas record
+mutation and FASTQ timing families.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

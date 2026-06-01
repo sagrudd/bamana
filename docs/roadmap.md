@@ -318,6 +318,13 @@ This order is retained because it matches the dependency chain of the runtime:
   scenario-matrix comparator scaffold, or no external comparator claim; only
   `fastq_gz_enumerate` for FASTQ.GZ `enumerate` and `fastq_ingress` for
   FASTQ.GZ unmapped `consume` are current public-profile comparator evidence
+* M14.3 schema extension: raw and tidy benchmark result schemas now allow
+  optional `command_family`, `evidence_level`, `evidence_source`, and
+  `comparator_scope` fields, and the scanner microbenchmark schema records
+  post-M10 families for indexed-region, selected-region, CSI fallback,
+  remediation, forensics, transform/ingest, inspection, and index timing rows;
+  header and FASTQ microbenchmark schemas record mutation and FASTQ command
+  timing families without changing runtime behavior
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

@@ -89,6 +89,17 @@ Benchmark interpretation notes:
   scaffold-only workflow-matrix rows remain no external comparator claim
   surfaces until later M14 tasks promote them with command-specific fixtures,
   semantic assumptions, and schema coverage.
+* M14.3 extends result schemas without changing runtime benchmark behavior.
+  `result.schema.json` and `benchmark_row.schema.json` now allow optional
+  `command_family`, `evidence_level`, `evidence_source`, and
+  `comparator_scope` fields. `scanner_microbench.schema.json` records the
+  post-M10 command family taxonomy for `indexed_region`, `selected_region`,
+  `csi_fallback`, `remediation`, `forensics`, `transform_ingest`,
+  `inspection`, and `index` command timing rows. `header_microbench.schema.json`
+  records the header/mutation split for `verify`, `header`, `reheader`, and
+  `annotate_rg`, while `fastq_microbench.schema.json` records FASTQ command
+  timing rows. Existing emitted rows remain valid because these fields are
+  optional.
 
 First analysis slice:
 

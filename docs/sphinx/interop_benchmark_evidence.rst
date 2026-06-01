@@ -88,3 +88,27 @@ The public contract commands ``benchmark``, ``fastq``, and ``unmap`` remain
 explicitly governed: ``benchmark`` owns profile execution and reporting,
 ``fastq`` currently has no benchmark hook or comparator claim, and ``unmap``
 currently has no benchmark hook or comparator claim.
+
+M14.3 Result Schema Extension
+-----------------------------
+
+M14.3 extends benchmark result schemas for post-M10 command families without
+changing runtime benchmark behavior. Existing emitted result files remain
+valid.
+
+The raw result schema ``benchmarks/results/result.schema.json`` and tidy row
+schema ``benchmarks/results/benchmark_row.schema.json`` now allow optional
+``command_family``, ``evidence_level``, ``evidence_source``, and
+``comparator_scope`` fields. These fields let future aggregation attach the
+M14.2 evidence matrix directly to raw and tidy rows.
+
+The scanner microbenchmark schema
+``benchmarks/results/scanner_microbench.schema.json`` records the post-M10
+command family taxonomy for ``indexed_region``, ``selected_region``,
+``csi_fallback``, ``remediation``, ``forensics``, ``transform_ingest``,
+``inspection``, and ``index`` command timing rows. The header microbenchmark
+schema records the ``header``/``mutation`` split for ``verify``, ``header``,
+``reheader``, and ``annotate_rg``. The FASTQ microbenchmark schema records the
+``fastq`` family for FASTQ command timings. These annotations are schema
+metadata and optional command-timing fields; they do not add benchmark
+profiles, fixture generation, comparator claims, or command behavior.

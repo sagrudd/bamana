@@ -85,6 +85,26 @@ and scaffold-only workflow rows remain `no_external_comparator_claim` surfaces
 until later M14 tasks add command-specific fixtures, semantic assumptions, and
 schema coverage.
 
+## M14.3 Benchmark Result Schema Extension
+
+M14.3 extends benchmark result schemas for post-M10 command families without
+changing runtime behavior or adding benchmark profiles. The raw result schema
+`benchmarks/results/result.schema.json` and tidy row schema
+`benchmarks/results/benchmark_row.schema.json` now allow optional
+`command_family`, `evidence_level`, `evidence_source`, and `comparator_scope`
+fields. Existing result rows remain valid because the fields are optional.
+
+`benchmarks/results/scanner_microbench.schema.json` now records a post-M10
+command-family taxonomy for `indexed_region`, `selected_region`,
+`csi_fallback`, `remediation`, `forensics`, `transform_ingest`, `inspection`,
+and `index` timing rows. `benchmarks/results/header_microbench.schema.json`
+records the `header`/`mutation` split for `verify`, `header`, `reheader`, and
+`annotate_rg`, and `benchmarks/results/fastq_microbench.schema.json` records
+the `fastq` timing family. This schema metadata maps existing timing rows to
+evidence families while preserving the M14.2 boundary: local smoke evidence is
+not broad comparator parity, biological equivalence, CRAM indexed-query
+evidence, CSI random-access traversal, or replacement output-index evidence.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -96,6 +116,8 @@ schema coverage.
    Complete: command-level evidence matrix added with public-profile
    comparator, local-smoke, scaffolded-comparator, and no-claim classifications.
 3. M14.3 extend benchmark result schemas for post-M10 command families.
+   Complete: raw, tidy, and scanner microbenchmark schemas now carry optional
+   command-family and evidence-level fields plus a scanner timing taxonomy.
 4. M14.4 add reproducible fixture generation and fixture provenance metadata.
 5. M14.5 add measured comparator profiles only where semantics are aligned.
 6. M14.6 document unsupported comparator cases and semantic mismatch reasons.

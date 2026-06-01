@@ -104,6 +104,10 @@ interpretation, for example:
 * `storage_context`
 * `container_image`
 * `command_line`
+* `command_family`
+* `evidence_level`
+* `evidence_source`
+* `comparator_scope`
 
 ## Column Semantics
 
@@ -114,6 +118,17 @@ interpretation, for example:
 * `workflow_variant`: exact tool-specific execution path from the tool registry
 * `tool` and `tool_version`: comparator identity and discovered version as
   reported by the wrapper contract
+* `command_family`: optional M14.3 command-family classification such as
+  `indexed_region`, `selected_region`, `csi_fallback`, `mutation`,
+  `remediation`, `forensics`, `transform_ingest`, `inspection`, `index`,
+  `fastq`, `header`, `bgzf`, `public_profile`, or `no_claim`
+* `evidence_level`: optional M14.3 evidence classification matching the
+  command evidence matrix: `public_profile_comparator`,
+  `scenario_matrix_comparator_scaffold`, `local_smoke`, or
+  `no_external_comparator_claim`
+* `evidence_source` and `comparator_scope`: optional text fields that name the
+  benchmark hook or public profile and the bounded comparator or no-claim
+  scope
 
 ### Input Provenance
 
