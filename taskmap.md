@@ -5837,12 +5837,38 @@ Completion evidence:
 
 ### M13.4 Define CRAM Indexed Query Position
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * define whether CRAI and indexed CRAM queries are unsupported, transitional,
   or native work.
+
+Acceptance:
+
+* CRAI and indexed CRAM queries are documented as unsupported/deferred for
+  Milestone 13;
+* the decision explicitly states that indexed CRAM queries are not
+  transitional behavior and not native work in M13;
+* `consume`, `check_map --region`, `summary --region`, `select_region`, and
+  `index` contract boundaries are documented;
+* JSON outputs are documented as exposing no JSON CRAI evidence or CRAM
+  indexed-query fields in this slice.
+
+Completion evidence:
+
+* froze CRAI and indexed CRAM queries as unsupported/deferred for M13.4;
+* documented that adjacent `.crai` sidecars are not discovered, parsed,
+  planned, or used;
+* documented that `consume` remains sequential CRAM normalization governed by
+  `consume.reference`, does not use CRAI, and performs no random-access
+  traversal;
+* documented that `check_map --region`, `summary --region`, and
+  `select_region` do not accept CRAM region input;
+* documented that `index` does not create CRAI and that JSON outputs expose no
+  JSON CRAI evidence;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, current
+  milestone, M13 roadmap, Sphinx, taskmap, and contract coverage.
 
 ### M13.5 Add CRAM Fixtures And Oracle Boundaries
 

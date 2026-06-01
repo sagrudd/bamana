@@ -144,6 +144,22 @@ CRAM reference policy:
   populated, or used for fallback in this slice
 * Bamana does not silently guess CRAM reference behavior
 
+CRAM indexed query policy:
+
+* M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred, not
+  transitional behavior and not native work in Milestone 13
+* adjacent `.crai` sidecars are not discovered, parsed, planned, or used by
+  public commands
+* `consume` remains sequential CRAM normalization governed by
+  `consume.reference`; it does not use CRAI and performs no random-access
+  traversal
+* `check_map --region`, `summary --region`, and `select_region` do not accept
+  CRAM region input
+* `index` does not create CRAI and BAM/CSI indexing behavior remains separate
+  from CRAM indexing
+* JSON outputs expose no JSON CRAI evidence and no CRAM indexed-query fields
+  until a future milestone defines a staged promotion plan
+
 Directory traversal rules:
 
 * file paths are considered directly

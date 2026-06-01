@@ -384,6 +384,16 @@ and `auto-conservative --reference-cache` return `unimplemented`, and
 `--reference-cache` is recorded but not searched, populated, or used for
 fallback in this slice.
 
+M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
+Milestone 13. They are not transitional behavior and not native work in this
+milestone. CRAI files and adjacent `.crai` sidecars are not discovered, parsed,
+planned, or used; `consume` remains sequential CRAM normalization governed by
+`consume.reference`, does not use CRAI, and performs no random-access
+traversal. `check_map --region`, `summary --region`, and `select_region` do
+not accept CRAM region input, `index` does not create CRAI, JSON outputs expose
+no JSON CRAI evidence, and any future milestone must add a staged plan before
+promoting indexed CRAM queries.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

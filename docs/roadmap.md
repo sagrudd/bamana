@@ -248,6 +248,14 @@ This order is retained because it matches the dependency chain of the runtime:
   and `auto-conservative --reference-cache` return `unimplemented`; and
   `--reference-cache` is recorded but not searched, populated, or used for
   fallback in this slice
+* M13.4 CRAM indexed query position: CRAI and indexed CRAM queries are
+  unsupported/deferred for Milestone 13, not transitional behavior and not
+  native work; `.crai` sidecars are not discovered, parsed, planned, or used;
+  `consume` remains sequential CRAM normalization with no random-access
+  traversal; `check_map --region`, `summary --region`, and `select_region` do
+  not accept CRAM region input; `index` does not create CRAI; JSON outputs
+  expose no JSON CRAI evidence; and any future milestone must add a staged plan
+  before promoting indexed CRAM queries
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

@@ -24,6 +24,15 @@ as of 2026-06-01. It was activated by M13.1 only after Milestone 12 closeout
 evidence was recorded.
 Status: active as of 2026-06-01 for Milestone 13.
 
+M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
+Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
+sidecars are not discovered, parsed, planned, or used; `consume` remains
+sequential CRAM normalization with no random-access traversal; region commands
+such as `check_map --region`, `summary --region`, and `select_region` do not
+accept CRAM region input; `index` does not create CRAI; JSON outputs expose no
+JSON CRAI evidence; and any future milestone must add a staged plan before
+indexed CRAM queries are promoted.
+
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6

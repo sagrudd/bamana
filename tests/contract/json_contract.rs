@@ -3183,6 +3183,62 @@ fn milestone_13_3_freezes_cram_reference_and_cache_policy() {
 }
 
 #[test]
+fn milestone_13_4_freezes_cram_indexed_queries_as_unsupported() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+
+    for required in [
+        "M13.4",
+        "CRAM Indexed Query Position",
+        "unsupported/deferred",
+        "not transitional behavior",
+        "not native work",
+        "CRAI",
+        ".crai",
+        "not discovered, parsed, planned, or used",
+        "consume",
+        "sequential CRAM normalization",
+        "consume.reference",
+        "does not use CRAI",
+        "no random-access traversal",
+        "check_map --region",
+        "summary --region",
+        "select_region",
+        "do not accept CRAM region input",
+        "index",
+        "does not create CRAI",
+        "no JSON CRAI evidence",
+        "CRAM indexed-query fields",
+        "future milestone",
+        "staged plan",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required),
+            "M13.4 CRAM indexed-query position evidence is missing: {required}"
+        );
+    }
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

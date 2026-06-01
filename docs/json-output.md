@@ -444,6 +444,14 @@ no-external-reference decode attempts, while dry runs leave `source_used` and
 `--reference-cache` is recorded but not searched, populated, or used for
 fallback in this slice.
 
+M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred. `consume`
+remains sequential CRAM normalization governed by `consume.reference`; it does
+not use CRAI, does not inspect adjacent `.crai` sidecars, and performs no
+random-access traversal. `check_map --region`, `summary --region`, and
+`select_region` do not accept CRAM region input, `index` does not create CRAI,
+and JSON outputs expose no JSON CRAI evidence or CRAM indexed-query fields
+until a future milestone defines a staged promotion plan.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

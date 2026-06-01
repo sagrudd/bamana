@@ -107,6 +107,31 @@ These rules are governed by the `consume.reference` JSON object:
 `cram_inputs_present`, optional `source_used`, and optional
 `decode_without_external_reference`.
 
+## M13.4 CRAM Indexed Query Position
+
+M13.4 freezes CRAI and indexed CRAM queries as **unsupported/deferred** for
+Milestone 13. They are not transitional behavior and not native work in this
+milestone.
+
+The contract is deliberately narrow:
+
+* CRAI files and adjacent `.crai` sidecars are not discovered, parsed, planned,
+  or used by public commands in M13.
+* `consume` remains a sequential CRAM normalization path governed by
+  `consume.reference`; it does not use CRAI and performs no random-access
+  traversal.
+* `check_map --region`, `summary --region`, and `select_region` do not accept
+  CRAM region input and remain scoped to the existing BAM/BAI native
+  random-access and scan-fallback contracts.
+* `index` does not create CRAI. `index --format csi` and BAM index behavior
+  remain separate from CRAM indexing.
+* JSON outputs expose no JSON CRAI evidence and no CRAM indexed-query fields in
+  this slice.
+* Any future milestone that promotes indexed CRAM queries must introduce an
+  explicit staged plan for fixtures, native or compatibility dependency
+  boundaries, CLI contracts, schemas, examples, benchmarks, and regression
+  tests before behavior changes.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -116,7 +141,7 @@ These rules are governed by the `consume.reference` JSON object:
 3. M13.3 freeze reference discovery, explicit FASTA, embedded-reference, and
    cache policy semantics. Complete.
 4. M13.4 define whether CRAM indexed queries are unsupported, transitional, or
-   native work.
+   native work. Complete: unsupported/deferred.
 5. M13.5 add CRAM fixtures and oracle boundaries for the chosen decision.
 6. M13.6 implement only the chosen CRAM behavior with documented dependency
    boundaries.
