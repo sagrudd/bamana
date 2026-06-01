@@ -1,6 +1,6 @@
 # Milestone 14: Interoperability And Benchmark Evidence
 
-Status: active as of 2026-06-01. Milestone 14 turns benchmark and
+Status: complete as of 2026-06-01. Milestone 14 turns benchmark and
 interoperability claims into governed evidence.
 
 ## Goal
@@ -197,6 +197,41 @@ sampling, ingest, index, region, mutation, remediation, or forensic behavior.
 `tests/contract/dependency_boundary.rs` enforces this boundary by scanning
 production Rust sources outside the benchmark runner.
 
+## M14.10 Closeout
+
+Milestone 14 is complete as of 2026-06-01. M14.1 through M14.10 completed the
+interoperability and benchmark evidence checkpoint without converting smoke
+timings into release performance promises, broad comparator parity, biological
+equivalence, CRAM comparator claims, or external-tool authority.
+
+Closeout verification passed:
+
+* `cargo test`;
+* `cargo test --test contract`;
+* `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`;
+* `cargo fmt --check`;
+* `git diff --check`;
+* `python3 benchmarks/bin/validate_inputs.py --manifest benchmarks/inputs/example_manifest.json --skip-file-checks`;
+* `python3 benchmarks/bin/check_schema_stability.py`;
+* `cargo build --bin bamana --bin bgzf_microbench --bin header_microbench --bin scanner_microbench --bin fastq_microbench`;
+* `target/debug/bgzf_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1410-bgzf-small.json`;
+* `target/debug/header_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1410-header-small.json`;
+* `target/debug/scanner_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1410-scanner-small.json`;
+* `target/debug/fastq_microbench --profile small --iterations 1 --bamana-bin target/debug/bamana --out /tmp/bamana-m1410-fastq-small.json`.
+
+Archived smoke evidence confirmed 2 BGZF command timing rows, 4 header command
+timing rows, 28 scanner command timing rows, and 4 FASTQ command timing rows.
+The scanner smoke retained the M13.9 CRAM benchmark guardrail note, and the
+M14.9 dependency-boundary tests kept benchmark-only external tools out of
+Bamana-native production hot paths.
+
+Residual risk remains explicit and deferred for broad comparator parity,
+biological equivalence, release performance promises, CRAM comparator claims,
+external-tool authority, scaffold-only workflow rows, unmeasured `fastq`,
+`unmap`, and `identify` comparator claims, command-specific fixture generation,
+generated fixture retention, broad external tool parity, and future release
+packaging/CI hardening.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
@@ -238,6 +273,9 @@ production Rust sources outside the benchmark runner.
    comparators, fixtures, oracle aids, and governed benchmark orchestration.
 10. M14.10 close the milestone with archived smoke evidence and residual risk
     notes.
+    Complete: full verification and four-hook benchmark smoke evidence passed;
+    residual benchmark, comparator, fixture, and external-tool risks remain
+    explicitly deferred before Milestone 15 begins.
 
 ## Non-Goals
 

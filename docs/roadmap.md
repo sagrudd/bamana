@@ -300,7 +300,7 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 
-* status: active as of 2026-06-01
+* status: complete as of 2026-06-01
 * detail: [roadmap/milestone-14-interop-benchmark-evidence.md](roadmap/milestone-14-interop-benchmark-evidence.md)
 * goal: turn comparator, benchmark, fixture, and reproducibility evidence into
   governed claims without implying broad parity where it has not been measured
@@ -350,6 +350,18 @@ This order is retained because it matches the dependency chain of the runtime:
   `rasusa` remain benchmark-only external tools for wrappers, comparators,
   fixtures, or oracle aids and are kept out of Bamana-native production hot
   paths by dependency-boundary tests
+* M14.10 closeout: M14.1 through M14.10 completed on 2026-06-01 with full
+  Rust, contract, documentation, schema-stability, manifest-validation, and
+  four-hook benchmark smoke verification. Archived smoke evidence was written
+  to `/tmp/bamana-m1410-bgzf-small.json`,
+  `/tmp/bamana-m1410-header-small.json`,
+  `/tmp/bamana-m1410-scanner-small.json`, and
+  `/tmp/bamana-m1410-fastq-small.json`; those smoke outputs recorded 2 BGZF,
+  4 header, 28 scanner, and 4 FASTQ command timing rows. Residual risk remains
+  explicit for broad comparator parity, biological equivalence, release
+  performance promises, CRAM comparator claims, external-tool authority,
+  scaffold-only workflow rows, unmeasured `fastq`, `unmap`, and `identify`
+  comparator claims, and future command-specific fixture generation.
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

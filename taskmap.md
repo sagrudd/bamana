@@ -6070,7 +6070,7 @@ Completion evidence:
 
 ## Milestone 14: Interoperability And Benchmark Evidence
 
-Status: active as of 2026-06-01.
+Status: complete as of 2026-06-01.
 
 Goal:
 
@@ -6368,11 +6368,11 @@ Completion evidence:
 
 ### M14.10 Close Milestone 14
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
-* close the milestone with archived smoke evidence and residual risk notes.
+* closed the milestone with archived smoke evidence and residual risk notes.
 
 Acceptance:
 
@@ -6380,3 +6380,25 @@ Acceptance:
 * verification is recorded;
 * residual benchmark, comparator, fixture, and external-tool risks remain
   explicit before Milestone 15 begins.
+
+Completion evidence:
+
+* completed M14.1 through M14.10 on 2026-06-01;
+* ran full closeout verification: `cargo test`, `cargo test --test contract`,
+  `sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+  `cargo fmt --check`, `git diff --check`, benchmark input manifest
+  validation, benchmark schema-stability checks, and benchmark binary builds;
+* archived smoke evidence under `/tmp/bamana-m1410-bgzf-small.json`,
+  `/tmp/bamana-m1410-header-small.json`,
+  `/tmp/bamana-m1410-scanner-small.json`, and
+  `/tmp/bamana-m1410-fastq-small.json`;
+* smoke evidence recorded 2 BGZF command timing rows, 4 header command timing
+  rows, 28 scanner command timing rows, and 4 FASTQ command timing rows;
+* kept the M13.9 CRAM benchmark guardrail note and the M14.9
+  benchmark-only external tool dependency boundary visible in closeout docs;
+* residual risk remains explicit for broad comparator parity, biological
+  equivalence, release performance promises, CRAM comparator claims,
+  external-tool authority, scaffold-only workflow rows, unmeasured `fastq`,
+  `unmap`, and `identify` comparator claims, command-specific fixture
+  generation, generated fixture retention, broad external tool parity, and
+  future release packaging/CI hardening before Milestone 15.

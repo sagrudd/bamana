@@ -80,6 +80,12 @@ M14.8 adds
 as the public documentation index for benchmark evidence. It distinguishes
 public benchmark profiles, local smoke hooks, scaffolded comparator evidence,
 and `no_external_comparator_claim` surfaces in one place.
+M14.10 closes Milestone 14 with repository-local smoke evidence archived at
+`/tmp/bamana-m1410-bgzf-small.json`, `/tmp/bamana-m1410-header-small.json`,
+`/tmp/bamana-m1410-scanner-small.json`, and
+`/tmp/bamana-m1410-fastq-small.json`. Those smoke outputs recorded 2 BGZF, 4
+header, 28 scanner, and 4 FASTQ command timing rows and remain regression
+guardrails rather than release performance promises or broad comparator parity.
 
 ## Readiness For Tomorrow
 

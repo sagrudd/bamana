@@ -127,6 +127,15 @@ Benchmark interpretation notes:
 * M14.8 adds `benchmarks/public_evidence_guide.md` as the public documentation
   index for interpreting benchmark results as public-profile comparator,
   local-smoke, scaffolded-comparator, or no-external-comparator-claim evidence.
+* M14.10 closes Milestone 14 with archived repository-local smoke evidence at
+  `/tmp/bamana-m1410-bgzf-small.json`,
+  `/tmp/bamana-m1410-header-small.json`,
+  `/tmp/bamana-m1410-scanner-small.json`, and
+  `/tmp/bamana-m1410-fastq-small.json`. Those smoke outputs recorded 2 BGZF,
+  4 header, 28 scanner, and 4 FASTQ command timing rows. They remain smoke
+  evidence only and do not create broad comparator parity, biological
+  equivalence, release performance promises, CRAM comparator claims, or
+  external-tool authority.
 
 First analysis slice:
 

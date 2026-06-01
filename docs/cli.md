@@ -454,7 +454,7 @@ cache-backed CRAM decoding, derived CRAM/BAM compatibility fixtures,
 no-external-reference CRAM fixtures, CRAM compatibility throughput claims, CRAM
 comparator parity, and broad external tool parity.
 
-Milestone 14 is active as of 2026-06-01. M14.1 activates the interoperability
+Milestone 14 was activated on 2026-06-01. M14.1 activated the interoperability
 and benchmark evidence milestone as an audit-only baseline without adding
 benchmark profiles, comparator claims, schemas, or command behavior. The public
 `benchmark` command currently exposes `fastq_ingress` through
@@ -527,6 +527,22 @@ M14.9 adds benchmark dependency guardrails. `samtools`, `fastcat`, `sambamba`,
 comparators, fixtures, or oracle aids. Aside from governed profile
 orchestration in `src/commands/benchmark.rs`, Bamana-native production hot
 paths must not call or embed those tools.
+
+Milestone 14 is complete as of 2026-06-01. M14.10 closeout verification passed
+with `cargo test`, `cargo test --test contract`,
+`sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+`cargo fmt --check`, `git diff --check`, benchmark manifest validation,
+benchmark schema-stability checks, and four repository-local benchmark smoke
+hooks. Archived smoke evidence was written to
+`/tmp/bamana-m1410-bgzf-small.json`, `/tmp/bamana-m1410-header-small.json`,
+`/tmp/bamana-m1410-scanner-small.json`, and
+`/tmp/bamana-m1410-fastq-small.json`; those outputs recorded 2 BGZF, 4 header,
+28 scanner, and 4 FASTQ command timing rows. Residual risk remains explicit for
+broad comparator parity, biological equivalence, release performance promises,
+CRAM comparator claims, external-tool authority, scaffold-only workflow rows,
+unmeasured `fastq`, `unmap`, and `identify` comparator claims,
+command-specific fixture generation, generated fixture retention, broad
+external tool parity, and future release packaging/CI hardening.
 
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single

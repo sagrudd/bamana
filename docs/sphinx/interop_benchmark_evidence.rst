@@ -1,7 +1,7 @@
 Interoperability And Benchmark Evidence
 =======================================
 
-Milestone 14 is active as of 2026-06-01. M14.1 activates the interoperability
+Milestone 14 was activated on 2026-06-01. M14.1 activated the interoperability
 and benchmark evidence milestone after Milestone 13 closeout. This activation
 is an audit-only baseline: it does not add benchmark profiles, comparator
 claims, schemas, or command behavior.
@@ -203,3 +203,34 @@ referenced by the governed benchmark profile runner in
 Those tools must not become production engines for BAM, BGZF, FASTQ, sampling,
 ingest, index, region, mutation, remediation, or forensic command paths. The
 boundary is enforced by ``tests/contract/dependency_boundary.rs``.
+
+M14.10 Closeout
+---------------
+
+Milestone 14 is complete as of 2026-06-01. M14.1 through M14.10 completed the
+interoperability and benchmark evidence checkpoint without converting smoke
+timings into release performance promises, broad comparator parity, biological
+equivalence, CRAM comparator claims, or external-tool authority.
+
+Closeout verification passed with ``cargo test``, ``cargo test --test
+contract``, ``sphinx-build -b html docs/sphinx docs/sphinx/_build/html``,
+``cargo fmt --check``, ``git diff --check``, benchmark manifest validation,
+benchmark schema-stability checks, and four repository-local benchmark smoke
+hooks.
+
+Archived smoke evidence was written to
+``/tmp/bamana-m1410-bgzf-small.json``,
+``/tmp/bamana-m1410-header-small.json``,
+``/tmp/bamana-m1410-scanner-small.json``, and
+``/tmp/bamana-m1410-fastq-small.json``. Those smoke outputs recorded 2 BGZF
+command timing rows, 4 header command timing rows, 28 scanner command timing
+rows, and 4 FASTQ command timing rows. The scanner smoke retained the M13.9
+CRAM benchmark guardrail note, and the M14.9 dependency-boundary tests kept
+benchmark-only external tools out of Bamana-native production hot paths.
+
+Residual risk remains explicit and deferred for broad comparator parity,
+biological equivalence, release performance promises, CRAM comparator claims,
+external-tool authority, scaffold-only workflow rows, unmeasured ``fastq``,
+``unmap``, and ``identify`` comparator claims, command-specific fixture
+generation, generated fixture retention, broad external tool parity, and
+future release packaging/CI hardening.

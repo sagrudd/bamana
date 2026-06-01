@@ -2056,7 +2056,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 14: Interoperability And Benchmark Evidence",
-            "status: active",
+            "status: complete",
             "roadmap/milestone-14-interop-benchmark-evidence.md",
         ),
         (
@@ -3857,8 +3857,11 @@ fn milestone_14_activation_baseline_records_benchmark_evidence_scope() {
     ] {
         assert!(
             text.contains("Milestone 14 is active")
+                || text.contains("Milestone 14 is complete")
                 || text.contains("Status: active as of 2026-06-01")
-                || text.contains("status: active"),
+                || text.contains("Status: complete as of 2026-06-01")
+                || text.contains("status: active")
+                || text.contains("status: complete"),
             "{name} does not record Milestone 14 activation"
         );
         assert!(
@@ -5092,6 +5095,111 @@ fn milestone_14_8_refreshes_benchmark_public_docs() {
         assert!(
             doc.contains("benchmarks/public_evidence_guide.md"),
             "M14.8 documentation pointer missing from one public doc"
+        );
+    }
+}
+
+#[test]
+fn milestone_14_closeout_docs_are_consistent() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let benchmarks_readme = read_utf8(&super::repo_root().join("benchmarks").join("README.md"));
+    let results_readme = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let guide = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("public_evidence_guide.md"),
+    );
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli_docs),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M14 roadmap", &m14),
+        ("M14 Sphinx", &m14_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 14 is complete")
+                || text.contains("status: complete")
+                || text.contains("Status: complete as of 2026-06-01")
+                || text.contains("Status: complete."),
+            "{name} does not record Milestone 14 completion"
+        );
+    }
+
+    let all_text = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+        benchmarks_readme.as_str(),
+        results_readme.as_str(),
+        guide.as_str(),
+    ]
+    .join("\n");
+
+    for required in [
+        "M14.10",
+        "M14.1 through M14.10",
+        "2026-06-01",
+        "interoperability and benchmark evidence checkpoint",
+        "cargo test",
+        "cargo test --test contract",
+        "sphinx-build -b html docs/sphinx docs/sphinx/_build/html",
+        "cargo fmt --check",
+        "git diff --check",
+        "python3 benchmarks/bin/validate_inputs.py --manifest benchmarks/inputs/example_manifest.json --skip-file-checks",
+        "python3 benchmarks/bin/check_schema_stability.py",
+        "cargo build --bin bamana --bin bgzf_microbench --bin header_microbench --bin scanner_microbench --bin fastq_microbench",
+        "/tmp/bamana-m1410-bgzf-small.json",
+        "/tmp/bamana-m1410-header-small.json",
+        "/tmp/bamana-m1410-scanner-small.json",
+        "/tmp/bamana-m1410-fastq-small.json",
+        "2 BGZF command timing rows",
+        "4 header command timing rows",
+        "28 scanner command timing rows",
+        "4 FASTQ command timing rows",
+        "M13.9 CRAM benchmark guardrail note",
+        "M14.9 dependency-boundary tests",
+        "broad comparator parity",
+        "biological equivalence",
+        "release performance promises",
+        "CRAM comparator claims",
+        "external-tool authority",
+        "scaffold-only workflow rows",
+        "unmeasured `fastq`, `unmap`, and `identify` comparator claims",
+        "command-specific fixture generation",
+        "generated fixture retention",
+        "broad external tool parity",
+        "future release packaging/CI hardening",
+        "Milestone 15",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14 closeout evidence is missing: {required}"
         );
     }
 }

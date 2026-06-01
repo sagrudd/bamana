@@ -786,7 +786,7 @@ traversal, cache-backed CRAM decoding, derived CRAM/BAM compatibility fixtures,
 no-external-reference CRAM fixtures, CRAM compatibility throughput claims, CRAM
 comparator parity, and broad external tool parity.
 
-Milestone 14 is active as of 2026-06-01. M14.1 activates the
+Milestone 14 was activated on 2026-06-01. M14.1 activated the
 interoperability and benchmark evidence milestone as an audit-only baseline:
 it does not add benchmark profiles, comparator claims, schemas, or command
 behavior. The current public `benchmark` command profiles are `fastq_ingress`,
@@ -870,6 +870,22 @@ M14.9 adds benchmark dependency guardrails: `samtools`, `fastcat`, `sambamba`,
 wrappers, comparators, fixtures, or oracle aids, with governed benchmark
 orchestration in `src/commands/benchmark.rs`, but they must not enter
 Bamana-native production hot paths.
+
+Milestone 14 is complete as of 2026-06-01. M14.10 closeout verification passed
+with `cargo test`, `cargo test --test contract`,
+`sphinx-build -b html docs/sphinx docs/sphinx/_build/html`,
+`cargo fmt --check`, `git diff --check`, benchmark manifest validation,
+benchmark schema-stability checks, and four repository-local benchmark smoke
+hooks. Archived smoke evidence was written to
+`/tmp/bamana-m1410-bgzf-small.json`, `/tmp/bamana-m1410-header-small.json`,
+`/tmp/bamana-m1410-scanner-small.json`, and
+`/tmp/bamana-m1410-fastq-small.json`; those outputs recorded 2 BGZF, 4 header,
+28 scanner, and 4 FASTQ command timing rows. Residual risk remains explicit for
+broad comparator parity, biological equivalence, release performance promises,
+CRAM comparator claims, external-tool authority, scaffold-only workflow rows,
+unmeasured `fastq`, `unmap`, and `identify` comparator claims,
+command-specific fixture generation, generated fixture retention, broad
+external tool parity, and future release packaging/CI hardening.
 
 ## Specification Layer
 

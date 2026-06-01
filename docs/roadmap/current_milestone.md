@@ -24,10 +24,12 @@ as of 2026-06-01. It was activated by M13.1 only after Milestone 12 closeout
 evidence was recorded and closed after M13.1 through M13.10 completed on
 2026-06-01.
 Milestone 13 is complete as of 2026-06-01.
-**Milestone 14: Interoperability And Benchmark Evidence** is active as of
+**Milestone 14: Interoperability And Benchmark Evidence** is complete as of
 2026-06-01. It was activated by M14.1 only after Milestone 13 closeout
-evidence was recorded.
-Status: active as of 2026-06-01 for Milestone 14.
+evidence was recorded and closed after M14.1 through M14.10 completed on
+2026-06-01.
+Status: complete as of 2026-06-01 for Milestone 14. Milestone 15 remains
+planned.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
@@ -236,8 +238,8 @@ Latest closed milestone:
 
 Current milestone:
 
-* **Milestone 14: Interoperability And Benchmark Evidence** is active as of
-  2026-06-01. M14.1 activates the scope after Milestone 13 closeout and audits
+* **Milestone 14: Interoperability And Benchmark Evidence** is complete as of
+  2026-06-01. M14.1 activated the scope after Milestone 13 closeout and audits
   the current benchmark evidence surface without adding benchmark profiles,
   comparator claims, schemas, or command behavior. Public `benchmark` profiles
   are `fastq_ingress` and `fastq_gz_enumerate`. Repository-local smoke hooks
@@ -280,6 +282,20 @@ Current milestone:
   tests so `samtools`, `fastcat`, `sambamba`, `seqtk`, and `rasusa` stay
   confined to benchmark wrappers, comparators, fixtures, oracle aids, or the
   governed benchmark runner rather than Bamana-native production hot paths.
+  M14.10 closes the milestone with `cargo test`, `cargo test --test contract`,
+  Sphinx, format, diff, manifest-validation, schema-stability, and four
+  benchmark smoke hooks passing. Archived smoke evidence was written to
+  `/tmp/bamana-m1410-bgzf-small.json`,
+  `/tmp/bamana-m1410-header-small.json`,
+  `/tmp/bamana-m1410-scanner-small.json`, and
+  `/tmp/bamana-m1410-fastq-small.json`; those outputs recorded 2 BGZF, 4
+  header, 28 scanner, and 4 FASTQ command timing rows. Residual risk remains
+  explicit for broad comparator parity, biological equivalence, release
+  performance promises, CRAM comparator claims, external-tool authority,
+  scaffold-only workflow rows, unmeasured `fastq`, `unmap`, and `identify`
+  comparator claims, command-specific fixture generation, generated fixture
+  retention, broad external tool parity, and future release packaging/CI
+  hardening before Milestone 15.
 
 ## Completed Backbone
 

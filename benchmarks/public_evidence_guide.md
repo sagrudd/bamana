@@ -68,6 +68,20 @@ fixtures, or oracle aids. They do not enter Bamana-native production hot paths,
 and their presence in benchmark evidence does not authorize production command
 implementations to shell out to those tools.
 
+## Milestone 14 Closeout Evidence
+
+M14.10 closes Milestone 14 with four repository-local smoke outputs:
+
+* `/tmp/bamana-m1410-bgzf-small.json`: 2 BGZF command timing rows;
+* `/tmp/bamana-m1410-header-small.json`: 4 header command timing rows;
+* `/tmp/bamana-m1410-scanner-small.json`: 28 scanner command timing rows;
+* `/tmp/bamana-m1410-fastq-small.json`: 4 FASTQ command timing rows.
+
+These smoke outputs are regression guardrails. They do not create broad
+comparator parity, biological equivalence, release performance promises, CRAM
+comparator claims, external-tool authority, or unmeasured `fastq`, `unmap`, and
+`identify` comparator claims.
+
 ## Promotion Rule
 
 A new comparator claim needs all of the following before it can move from
