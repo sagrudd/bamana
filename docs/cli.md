@@ -413,6 +413,16 @@ with reason `cram_index_sidecar_deferred`, and direct `.crai` requests fail
 before probing as `unsupported_format`. No CRAI parsing, indexed CRAM
 traversal, native CRAM parser, or native CRAM writer is introduced.
 
+M13.7 refreshes the CRAM-facing public contracts for that behavior. `consume`
+is the only command with changed CRAM-facing behavior: the consume schema
+documents `cram_index_sidecar_deferred`, and the canonical examples
+`spec/examples/consume.success.crai_sidecar_skipped.json` and
+`spec/examples/consume.failure.crai_sidecar_direct.json` govern directory
+sidecar skip and direct `.crai` rejection respectively. Inspection and region
+commands do not gain CRAM behavior: `check_map --region`, `summary --region`,
+`select_region`, `check_index`, and `index` retain their existing BAM/BAI/CSI
+contracts and expose no CRAM indexed-query fields.
+
 `consume` now uses the thread count for raw-read import. `FASTQ.GZ` inputs are
 parallelized across files when multiple gzip inputs are present, and a single
 indexed `FASTQ.GZ` input uses worker-batch conversion guided by the adjacent

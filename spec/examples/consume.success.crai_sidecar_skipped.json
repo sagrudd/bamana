@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "alignment",
+    "dry_run": true,
+    "inputs": {
+      "requested_paths": [
+        "run_folder"
+      ],
+      "directories_scanned": 1,
+      "files_discovered": 1,
+      "files_consumed": 1,
+      "files_skipped": 1,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {
+        "CRAM": 1
+      },
+      "consumed_files": [
+        {
+          "path": "run_folder/sample.cram",
+          "detected_format": "CRAM",
+          "consumed": true,
+          "reason": null
+        }
+      ],
+      "skipped_files": [
+        {
+          "path": "run_folder/sample.cram.crai",
+          "detected_format": "UNSUPPORTED",
+          "consumed": false,
+          "reason": "cram_index_sidecar_deferred"
+        }
+      ],
+      "rejected_files": []
+    },
+    "reference": {
+      "policy": "allow-embedded",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": true
+    },
+    "output": {
+      "path": "combined.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "none",
+      "mapped_state": "mapped_or_mixed"
+    },
+    "header": {
+      "strategy": "first_compatible_alignment_header",
+      "reference_compatibility": "pending_compatibility_check",
+      "sample": null,
+      "read_group": null,
+      "platform": null
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": [
+      "Dry-run validated the allow-embedded policy shape but cannot prove decode success without executing the CRAM reader.",
+      "Directory traversal is lexical by normalized path string; directories are scanned top-level only unless --recursive is supplied, and symlinks are not followed in this slice.",
+      "CRAM ingestion is governed by the allow-embedded reference policy; Bamana does not silently guess CRAM reference behavior.",
+      "Dry-run mode performed deterministic discovery, classification, and policy enforcement without writing a BAM output."
+    ]
+  },
+  "error": null
+}

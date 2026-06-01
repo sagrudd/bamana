@@ -30,7 +30,10 @@
         "path": { "type": "string" },
         "detected_format": { "type": "string" },
         "consumed": { "type": "boolean" },
-        "reason": { "type": ["string", "null"] }
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Machine-readable consume discovery reason. M13.7 governs cram_index_sidecar_deferred for directory-discovered .crai sidecars; direct .crai requests fail with unsupported_format before discovery payload population."
+        }
       }
     },
     "data": {

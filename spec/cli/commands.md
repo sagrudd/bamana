@@ -162,6 +162,14 @@ CRAM indexed query policy:
 * M13.6 enforces the boundary in discovery: directory traversal skips `.crai`
   sidecars before probing with reason `cram_index_sidecar_deferred`, and direct
   `.crai` requests fail before probing as `unsupported_format`
+* M13.7 governs those outcomes in
+  `spec/examples/consume.success.crai_sidecar_skipped.json`,
+  `spec/examples/consume.failure.crai_sidecar_direct.json`, and
+  `spec/jsonschema/consume.schema.json`
+* Inspection and region commands do not gain CRAM behavior in this slice:
+  `check_map --region`, `summary --region`, `select_region`, `check_index`,
+  and `index` retain their existing BAM/BAI/CSI contracts and expose no CRAM
+  indexed-query fields
 
 Directory traversal rules:
 

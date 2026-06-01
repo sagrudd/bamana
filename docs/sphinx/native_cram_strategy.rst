@@ -188,6 +188,28 @@ guard against accidental indexed-CRAM expansion:
 * Direct production ``noodles_*`` imports remain confined to
   ``src/ingest/cram.rs``.
 
+CRAM-Facing Contract Refresh
+----------------------------
+
+M13.7 updates the governed command contracts for the M13.6 behavior without
+expanding CRAM support:
+
+* ``consume`` is the only command with changed CRAM-facing behavior in this
+  slice.
+* ``spec/jsonschema/consume.schema.json`` documents
+  ``cram_index_sidecar_deferred`` as the directory-discovery skipped-file
+  reason for ``.crai`` sidecars and keeps direct ``.crai`` requests represented
+  as ``unsupported_format`` failures before discovery payload population.
+* ``spec/examples/consume.success.crai_sidecar_skipped.json`` is the canonical
+  directory-discovery example for a skipped ``.crai`` sidecar beside a CRAM
+  input.
+* ``spec/examples/consume.failure.crai_sidecar_direct.json`` is the canonical
+  direct-request failure example for a ``.crai`` input.
+* Inspection commands and region commands do not gain CRAM behavior in M13.7:
+  ``check_map --region``, ``summary --region``, ``select_region``,
+  ``check_index``, and ``index`` keep their existing BAM/BAI/CSI contracts and
+  expose no CRAM indexed-query fields.
+
 Non-Goals
 ---------
 

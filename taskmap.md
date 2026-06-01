@@ -5940,12 +5940,32 @@ Completion evidence:
 
 ### M13.7 Update CRAM-Facing Command Contracts
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
 * update `consume` and inspection command contracts where CRAM behavior
   changes.
+
+Acceptance:
+
+* the `consume` schema documents the M13.6 CRAI skip/reject contract;
+* canonical examples cover directory-discovered `.crai` sidecar skip and direct
+  `.crai` request rejection;
+* inspection and region command contracts explicitly remain unchanged for CRAM;
+* no CRAM indexed-query fields are added to any public JSON contract.
+
+Completion evidence:
+
+* updated `spec/jsonschema/consume.schema.json` with
+  `cram_index_sidecar_deferred` reason documentation;
+* added `spec/examples/consume.success.crai_sidecar_skipped.json`;
+* added `spec/examples/consume.failure.crai_sidecar_direct.json`;
+* documented that `check_map --region`, `summary --region`, `select_region`,
+  `check_index`, and `index` keep existing BAM/BAI/CSI contracts and expose no
+  CRAM indexed-query fields;
+* updated README, CLI docs, JSON-output docs, CLI contracts, roadmap, current
+  milestone, M13 roadmap, Sphinx, taskmap, and contract coverage.
 
 ### M13.8 Update Public Docs And Schemas
 

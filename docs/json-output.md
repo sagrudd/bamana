@@ -458,6 +458,16 @@ with reason `cram_index_sidecar_deferred`. Direct `.crai` requests fail before
 probing with `unsupported_format`. Neither path parses CRAI bytes, plans indexed
 CRAM traversal, or adds CRAM indexed-query fields to JSON.
 
+M13.7 governs the JSON contract for those outcomes. The consume schema
+documents `cram_index_sidecar_deferred`, and the canonical examples
+`consume.success.crai_sidecar_skipped.json` and
+`consume.failure.crai_sidecar_direct.json` show the two public shapes. A
+directory-discovered `.crai` sidecar appears in `discovery.skipped_files` with
+`detected_format: "UNSUPPORTED"` and reason `cram_index_sidecar_deferred`.
+A direct `.crai` request fails with `unsupported_format` before discovery
+payload population, so it does not create consumed, skipped, or rejected file
+entries.
+
 ## `annotate_rg`
 
 The `annotate_rg` payload is the record-level companion to `reheader`.

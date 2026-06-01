@@ -270,6 +270,11 @@ This order is retained because it matches the dependency chain of the runtime:
   `cram_index_sidecar_deferred`; direct `.crai` requests fail as
   `unsupported_format`; and no CRAI parsing, indexed CRAM traversal, native
   CRAM parser, or native CRAM writer is introduced
+* M13.7 CRAM-facing contract refresh: `consume` is the only command with
+  changed CRAM-facing behavior; the consume schema documents
+  `cram_index_sidecar_deferred`, canonical examples cover directory `.crai`
+  sidecar skip and direct `.crai` rejection, and inspection/region commands
+  keep existing BAM/BAI/CSI contracts without CRAM indexed-query fields
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 

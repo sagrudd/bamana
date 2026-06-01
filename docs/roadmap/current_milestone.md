@@ -47,6 +47,12 @@ discovery skips `.crai` sidecars with `cram_index_sidecar_deferred`; direct
 traversal is introduced; and direct production `noodles_*` imports remain
 confined to `src/ingest/cram.rs`.
 
+M13.7 refreshes the governed contracts for that behavior. `consume` owns the
+CRAM-facing contract change through schema documentation and canonical examples
+for directory `.crai` skip and direct `.crai` rejection. Inspection and region
+commands keep their existing BAM/BAI/CSI contracts and expose no CRAM
+indexed-query fields.
+
 Milestone 6 became active after **Milestone 5: Command Migration Off
 `noodles`** closed on 2026-05-20, and closed after M6.1 through M6.10
 completed on 2026-05-21. Milestone 7 became active only after that M6

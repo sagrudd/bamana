@@ -3441,6 +3441,91 @@ fn milestone_13_6_implements_chosen_cram_boundary_only() {
 }
 
 #[test]
+fn milestone_13_7_refreshes_cram_facing_contract_artifacts() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli = read_utf8(&docs_dir().join("cli.md"));
+    let json_output = read_utf8(&docs_dir().join("json-output.md"));
+    let cli_contract = read_utf8(&spec_dir().join("cli").join("commands.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m13 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-13-native-cram-strategy.md"),
+    );
+    let m13_sphinx = read_utf8(&docs_dir().join("sphinx").join("native_cram_strategy.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let consume_schema = read_utf8(&schema_path_for_command("consume"));
+    let sidecar_skip_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("consume.success.crai_sidecar_skipped.json"),
+    );
+    let direct_reject_example = read_utf8(
+        &spec_dir()
+            .join("examples")
+            .join("consume.failure.crai_sidecar_direct.json"),
+    );
+
+    for required in [
+        "M13.7",
+        "CRAM-Facing Contract Refresh",
+        "consume",
+        "only command with changed CRAM-facing behavior",
+        "spec/jsonschema/consume.schema.json",
+        "cram_index_sidecar_deferred",
+        "unsupported_format",
+        "spec/examples/consume.success.crai_sidecar_skipped.json",
+        "spec/examples/consume.failure.crai_sidecar_direct.json",
+        "directory-discovery example",
+        "direct-request failure example",
+        "discovery.skipped_files",
+        "detected_format: \"UNSUPPORTED\"",
+        "before discovery payload population",
+        "Inspection and region commands do not gain CRAM behavior",
+        "check_map --region",
+        "summary --region",
+        "select_region",
+        "check_index",
+        "index",
+        "existing BAM/BAI/CSI contracts",
+        "no CRAM indexed-query fields",
+    ] {
+        assert!(
+            readme.contains(required)
+                || cli.contains(required)
+                || json_output.contains(required)
+                || cli_contract.contains(required)
+                || roadmap.contains(required)
+                || current.contains(required)
+                || m13.contains(required)
+                || m13_sphinx.contains(required)
+                || taskmap.contains(required)
+                || consume_schema.contains(required)
+                || sidecar_skip_example.contains(required)
+                || direct_reject_example.contains(required),
+            "M13.7 CRAM-facing contract refresh evidence is missing: {required}"
+        );
+    }
+
+    assert!(
+        sidecar_skip_example.contains("\"reason\": \"cram_index_sidecar_deferred\"")
+            && sidecar_skip_example.contains("\"detected_format\": \"UNSUPPORTED\"")
+            && sidecar_skip_example.contains("\"files_skipped\": 1")
+            && sidecar_skip_example.contains("\"cram_inputs_present\": true"),
+        "M13.7 skipped-sidecar example does not govern directory CRAI skip shape"
+    );
+    assert!(
+        direct_reject_example.contains("\"code\": \"unsupported_format\"")
+            && direct_reject_example.contains("\"files_discovered\": 0")
+            && direct_reject_example.contains("\"files_skipped\": 0")
+            && direct_reject_example.contains("\"files_rejected\": 0")
+            && direct_reject_example.contains("sample.cram.crai"),
+        "M13.7 direct CRAI example does not govern direct rejection shape"
+    );
+}
+
+#[test]
 fn milestone_11_activation_baseline_records_selection_scope() {
     let readme = read_utf8(&super::repo_root().join("README.md"));
     let cli = read_utf8(&docs_dir().join("cli.md"));

@@ -183,6 +183,26 @@ guard against accidental indexed-CRAM expansion:
 * Direct production `noodles_*` imports remain confined to
   `src/ingest/cram.rs`.
 
+## M13.7 CRAM-Facing Contract Refresh
+
+M13.7 updates the governed command contracts for the M13.6 behavior without
+expanding CRAM support:
+
+* `consume` is the only command with changed CRAM-facing behavior in this
+  slice.
+* `spec/jsonschema/consume.schema.json` documents
+  `cram_index_sidecar_deferred` as the directory-discovery skipped-file reason
+  for `.crai` sidecars and keeps direct `.crai` requests represented as
+  `unsupported_format` failures before discovery payload population.
+* `spec/examples/consume.success.crai_sidecar_skipped.json` is the canonical
+  directory-discovery example for a skipped `.crai` sidecar beside a CRAM input.
+* `spec/examples/consume.failure.crai_sidecar_direct.json` is the canonical
+  direct-request failure example for a `.crai` input.
+* Inspection commands and region commands do not gain CRAM behavior in M13.7:
+  `check_map --region`, `summary --region`, `select_region`, `check_index`,
+  and `index` keep their existing BAM/BAI/CSI contracts and expose no CRAM
+  indexed-query fields.
+
 ## Ten-Task Outline
 
 1. M13.1 activate scope and audit current CRAM ingestion/reference-policy
@@ -200,7 +220,8 @@ guard against accidental indexed-CRAM expansion:
    boundaries. Complete: CRAI sidecars are actively skipped or rejected while
    CRAM remains consume-only compatibility normalization.
 7. M13.7 update `consume` and inspection command contracts where CRAM behavior
-   changes.
+   changes. Complete: consume schema/examples refreshed; inspection and region
+   command contracts remain unchanged for CRAM.
 8. M13.8 update schemas, examples, README, CLI docs, Sphinx docs, and roadmap
    notes.
 9. M13.9 add CRAM dependency-boundary and benchmark guardrails.

@@ -1,0 +1,65 @@
+{
+  "ok": false,
+  "command": "consume",
+  "path": null,
+  "data": {
+    "format": "BAM",
+    "mode": "alignment",
+    "dry_run": false,
+    "inputs": {
+      "requested_paths": [
+        "sample.cram.crai"
+      ],
+      "directories_scanned": 0,
+      "files_discovered": 0,
+      "files_consumed": 0,
+      "files_skipped": 0,
+      "files_rejected": 0
+    },
+    "discovery": {
+      "recursive": false,
+      "formats_detected": {},
+      "consumed_files": [],
+      "skipped_files": [],
+      "rejected_files": []
+    },
+    "reference": {
+      "policy": "strict",
+      "explicit_reference_provided": false,
+      "reference_cache_provided": false,
+      "cram_inputs_present": false
+    },
+    "output": {
+      "path": "sample.bam",
+      "written": false,
+      "records_written": null,
+      "sort_order": "none",
+      "mapped_state": "mapped_or_mixed"
+    },
+    "header": {
+      "strategy": "first_compatible_alignment_header",
+      "reference_compatibility": null,
+      "sample": null,
+      "read_group": null,
+      "platform": null
+    },
+    "index": {
+      "requested": false,
+      "created": false,
+      "kind": null
+    },
+    "checksum_verification": {
+      "requested": false,
+      "performed": false,
+      "mode": null,
+      "match": null
+    },
+    "notes": []
+  },
+  "error": {
+    "code": "unsupported_format",
+    "message": "Input format is unsupported for this command.",
+    "detail": "CRAI sidecars are unsupported/deferred in Milestone 13 and are not valid consume inputs.",
+    "hint": "Use a supported BAM, SAM, FASTQ, or FASTQ.GZ input for this command."
+  }
+}
