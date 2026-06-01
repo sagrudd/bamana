@@ -23,8 +23,11 @@ through M12.10 completed on 2026-05-28.
 as of 2026-06-01. It was activated by M13.1 only after Milestone 12 closeout
 evidence was recorded and closed after M13.1 through M13.10 completed on
 2026-06-01.
-Status: complete as of 2026-06-01 for Milestone 13. Milestone 14 remains
-planned until M14.1 activates it explicitly.
+Milestone 13 is complete as of 2026-06-01.
+**Milestone 14: Interoperability And Benchmark Evidence** is active as of
+2026-06-01. It was activated by M14.1 only after Milestone 13 closeout
+evidence was recorded.
+Status: active as of 2026-06-01 for Milestone 14.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
@@ -233,43 +236,19 @@ Latest closed milestone:
 
 Current milestone:
 
-* **Milestone 13: Native CRAM Strategy And Compatibility Boundary** is complete
-  as of 2026-06-01. M13 follows the completed M12 extended index compatibility
-  milestone and does not reopen BAM, BGZF, FASTQ, or index contracts. M13.1
-  activated the scope and recorded the current CRAM baseline: CRAM support is
-  compatibility-oriented and concentrated in `src/ingest/cram.rs`; direct
-  production `noodles_*` imports remain allowed only in that documented
-  boundary; `consume` is the only current public CRAM-facing path; CRAM is
-  accepted only in alignment mode and normalized to BAM before downstream
-  Bamana-native handling; the default `strict` reference policy requires
-  `--reference <fasta>` with adjacent `.fai`; explicit FASTA takes precedence
-  over `--reference-cache`; `allow-cache` and cache-backed decoding remain
-  unimplemented; `allow-embedded` and `auto-conservative` may attempt
-  no-external-reference decode, but dry runs only validate policy shape and
-  actual reference-dependent decode failures remain `reference_required`; CRAI
-  handling, indexed CRAM queries, native CRAM parsing, native CRAM writing,
-  cache-backed decoding, and broad comparator parity remain deferred. M13.1
-  also records that the fixture plan is still partly reserved: source SAM and
-  explicit FASTA provenance are present, while derived CRAM/BAM binaries and
-  no-external-reference fixtures remain planned or deferred until reproducible
-  generation is documented. M13.2 chooses compatibility-only continuation for
-  Milestone 13: no native CRAM substrate is promoted, CRAM ingestion stays in
-  the native-core package through the explicit transitional `cram-compat`
-  feature, direct production `noodles_*` imports remain confined to
-  `src/ingest/cram.rs`, and future native CRAM work must arrive as a separate
-  staged implementation plan with fixtures, contracts, dependency guardrails,
-  and benchmark evidence. CRAI/indexed CRAM queries, native CRAM parsing,
-  native CRAM writing, cache-backed decoding, and broad comparator parity
-  remain deferred unless a later M13 task explicitly changes that contract.
-  M13.3 freezes reference and cache policy semantics: `strict` requires
-  explicit indexed FASTA and otherwise fails with `reference_required`;
-  missing FASTA or missing `.fai` fails as `reference_not_found`; explicit
-  FASTA takes precedence over `--reference-cache`; `allow-embedded` and
-  cache-free `auto-conservative` only attempt no-external-reference decode;
-  dry runs validate policy shape without proving decode success; `allow-cache`
-  and `auto-conservative --reference-cache` return `unimplemented`; and
-  `--reference-cache` is recorded but not searched, populated, or used for
-  fallback in this slice.
+* **Milestone 14: Interoperability And Benchmark Evidence** is active as of
+  2026-06-01. M14.1 activates the scope after Milestone 13 closeout and audits
+  the current benchmark evidence surface without adding benchmark profiles,
+  comparator claims, schemas, or command behavior. Public `benchmark` profiles
+  are `fastq_ingress` and `fastq_gz_enumerate`. Repository-local smoke hooks
+  are `bgzf_microbench`, `header_microbench`, `scanner_microbench`, and
+  `fastq_microbench`. The broader benchmark framework has the Nextflow entry
+  point, parameter and input schemas, raw/tidy/support result schemas, wrapper
+  registry, workflow-variant matrix, and R aggregation/reporting scripts in
+  place. Existing smoke timings are regression guardrails, and existing
+  comparator rows are profile- and scenario-specific rather than broad
+  comparator parity, biological-equivalence, release-performance, CRAM
+  comparator, or external-tool authority claims.
 
 ## Completed Backbone
 

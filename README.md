@@ -782,6 +782,24 @@ traversal, cache-backed CRAM decoding, derived CRAM/BAM compatibility fixtures,
 no-external-reference CRAM fixtures, CRAM compatibility throughput claims, CRAM
 comparator parity, and broad external tool parity.
 
+Milestone 14 is active as of 2026-06-01. M14.1 activates the
+interoperability and benchmark evidence milestone as an audit-only baseline:
+it does not add benchmark profiles, comparator claims, schemas, or command
+behavior. The current public `benchmark` command profiles are `fastq_ingress`,
+rendered through `benchmarks/bin/run_fastq_ingress_benchmark.sh`, and
+`fastq_gz_enumerate`, rendered through
+`benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh`. Repository-local smoke
+hooks are `bgzf_microbench`, `header_microbench`, `scanner_microbench`, and
+`fastq_microbench`. The broader benchmark framework already includes
+`benchmarks/main.nf`, `benchmarks/params.schema.json`,
+`benchmarks/inputs/manifest.schema.json`, result schemas under
+`benchmarks/results/`, `benchmarks/tools/tool_registry.example.json`, and
+`benchmarks/tools/workflow_variant_matrix.md`. Existing smoke timings are
+regression guardrails, and existing comparator rows are profile- and
+scenario-specific rather than broad comparator parity, biological equivalence,
+release performance promises, CRAM comparator claims, or external-tool
+authority.
+
 ## Specification Layer
 
 The repository now carries a dedicated `spec/` tree for governed external

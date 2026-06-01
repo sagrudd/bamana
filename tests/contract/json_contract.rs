@@ -2056,7 +2056,7 @@ fn post_milestone_10_roadmap_records_m11_through_m15() {
         ),
         (
             "Milestone 14: Interoperability And Benchmark Evidence",
-            "status: planned",
+            "status: active",
             "roadmap/milestone-14-interop-benchmark-evidence.md",
         ),
         (
@@ -3781,7 +3781,7 @@ fn milestone_13_closeout_docs_are_consistent() {
         "CRAM compatibility throughput claims",
         "CRAM comparator parity",
         "broad external tool parity",
-        "Milestone 14 remains planned until M14.1",
+        "Milestone 14",
     ] {
         assert!(
             readme.contains(required)
@@ -3794,6 +3794,169 @@ fn milestone_13_closeout_docs_are_consistent() {
             "M13 closeout evidence is missing: {required}"
         );
     }
+}
+
+#[test]
+fn milestone_14_activation_baseline_records_benchmark_evidence_scope() {
+    let readme = read_utf8(&super::repo_root().join("README.md"));
+    let cli_docs = read_utf8(&docs_dir().join("cli.md"));
+    let roadmap = read_utf8(&docs_dir().join("roadmap.md"));
+    let current = read_utf8(&docs_dir().join("roadmap").join("current_milestone.md"));
+    let m14 = read_utf8(
+        &docs_dir()
+            .join("roadmap")
+            .join("milestone-14-interop-benchmark-evidence.md"),
+    );
+    let m14_sphinx = read_utf8(
+        &docs_dir()
+            .join("sphinx")
+            .join("interop_benchmark_evidence.rst"),
+    );
+    let sphinx_index = read_utf8(&docs_dir().join("sphinx").join("index.rst"));
+    let taskmap = read_utf8(&super::repo_root().join("taskmap.md"));
+    let cli_source = read_utf8(&super::repo_root().join("src").join("cli.rs"));
+    let benchmark_source = read_utf8(
+        &super::repo_root()
+            .join("src")
+            .join("commands")
+            .join("benchmark.rs"),
+    );
+    let benchmark_schema = read_utf8(
+        &super::repo_root()
+            .join("spec")
+            .join("jsonschema")
+            .join("benchmark.schema.json"),
+    );
+    let benchmark_results = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("results")
+            .join("README.md"),
+    );
+    let tool_registry = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("tools")
+            .join("tool_registry.example.json"),
+    );
+    let workflow_matrix = read_utf8(
+        &super::repo_root()
+            .join("benchmarks")
+            .join("tools")
+            .join("workflow_variant_matrix.md"),
+    );
+
+    for (name, text) in [
+        ("README", &readme),
+        ("CLI docs", &cli_docs),
+        ("roadmap", &roadmap),
+        ("current milestone", &current),
+        ("M14 roadmap", &m14),
+        ("M14 Sphinx", &m14_sphinx),
+        ("task map", &taskmap),
+    ] {
+        assert!(
+            text.contains("Milestone 14 is active")
+                || text.contains("Status: active as of 2026-06-01")
+                || text.contains("status: active"),
+            "{name} does not record Milestone 14 activation"
+        );
+        assert!(
+            text.contains("M14.1"),
+            "{name} does not record the M14.1 activation baseline"
+        );
+    }
+
+    assert!(
+        sphinx_index.contains("interop_benchmark_evidence"),
+        "Sphinx index does not include the M14 interoperability note"
+    );
+
+    let public_docs = [
+        readme.as_str(),
+        cli_docs.as_str(),
+        roadmap.as_str(),
+        current.as_str(),
+        m14.as_str(),
+        m14_sphinx.as_str(),
+        taskmap.as_str(),
+    ]
+    .join("\n");
+    let implementation_and_contracts = [
+        cli_source.as_str(),
+        benchmark_source.as_str(),
+        benchmark_schema.as_str(),
+        benchmark_results.as_str(),
+        tool_registry.as_str(),
+        workflow_matrix.as_str(),
+    ]
+    .join("\n");
+    let all_text = format!("{public_docs}\n{implementation_and_contracts}");
+
+    for required in [
+        "Interoperability And Benchmark Evidence",
+        "benchmark profiles",
+        "smoke hooks",
+        "fastq_ingress",
+        "fastq_gz_enumerate",
+        "run_fastq_ingress_benchmark.sh",
+        "run_fastq_gz_enumerate_benchmark.sh",
+        "bgzf_microbench",
+        "header_microbench",
+        "scanner_microbench",
+        "fastq_microbench",
+        "benchmarks/main.nf",
+        "benchmarks/params.schema.json",
+        "benchmarks/inputs/manifest.schema.json",
+        "benchmarks/results/result.schema.json",
+        "benchmarks/results/benchmark_row.schema.json",
+        "benchmarks/tools/tool_registry.example.json",
+        "benchmarks/tools/workflow_variant_matrix.md",
+        "Bamana",
+        "samtools",
+        "fastcat",
+        "sambamba",
+        "seqtk",
+        "rasusa",
+        "regression guardrails",
+        "profile- and scenario-specific",
+        "broad comparator parity",
+        "biological equivalence",
+        "release performance promises",
+        "CRAM comparator claims",
+        "external-tool authority",
+        "does not add benchmark profiles",
+        "comparator claims",
+        "schemas",
+        "command behavior",
+    ] {
+        assert!(
+            all_text.contains(required),
+            "M14.1 activation evidence is missing: {required}"
+        );
+    }
+
+    for forbidden_scope in ["new benchmark profiles", "new comparator claims"] {
+        assert!(
+            m14.contains(forbidden_scope) || current.contains(forbidden_scope),
+            "M14.1 does not explicitly avoid {forbidden_scope}"
+        );
+    }
+
+    assert!(
+        benchmark_schema.contains("\"fastq_ingress\"")
+            && benchmark_schema.contains("\"fastq_gz_enumerate\""),
+        "benchmark schema does not expose both public benchmark profiles"
+    );
+    assert!(
+        cli_source.contains("FastqIngress") && cli_source.contains("FastqGzEnumerate"),
+        "CLI profile enum does not expose both public benchmark variants"
+    );
+    assert!(
+        benchmark_source.contains("run_fastq_ingress_benchmark.sh")
+            && benchmark_source.contains("run_fastq_gz_enumerate_benchmark.sh"),
+        "benchmark command does not route both public profiles to wrapper scripts"
+    );
 }
 
 #[test]

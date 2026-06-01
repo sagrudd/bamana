@@ -1,7 +1,7 @@
 # Milestone 14: Interoperability And Benchmark Evidence
 
-Status: planned. Milestone 14 turns benchmark and interoperability claims into
-governed evidence.
+Status: active as of 2026-06-01. Milestone 14 turns benchmark and
+interoperability claims into governed evidence.
 
 ## Goal
 
@@ -10,9 +10,61 @@ support release-facing claims without implying broad parity where it has not
 been measured. This milestone should expand the `benchmark` command and
 repository-local smoke hooks in lockstep with public command contracts.
 
+## M14.1 Activation And Benchmark Evidence Audit
+
+M14.1 activates the interoperability and benchmark evidence milestone after
+Milestone 13 closeout. The activation is an audit-only step: it does not add
+new benchmark profiles, new comparator claims, schemas, or command behavior.
+
+Current public `benchmark` command profiles:
+
+* `fastq_ingress`: containerized FASTQ.GZ-to-unmapped-BAM benchmark comparing
+  Bamana against a fastcat-plus-samtools path, rendered through
+  `benchmarks/bin/run_fastq_ingress_benchmark.sh`;
+* `fastq_gz_enumerate`: containerized FASTQ.GZ record-count benchmark
+  comparing Bamana-native enumeration against gzip decompression plus line
+  counting, rendered through
+  `benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh`.
+
+Current repository-local microbenchmark smoke hooks:
+
+* `bgzf_microbench`: native BGZF throughput plus optional `check_eof` command
+  smoke timing;
+* `header_microbench`: native BAM header parsing/serialization plus optional
+  `verify`, `header`, `reheader`, and `annotate_rg` command timings;
+* `scanner_microbench`: native BAM scanner throughput plus governed
+  command-timing rows for inspection, transform/ingest, index, indexed-region,
+  selected-region, CSI fallback, mutation, remediation, and forensics smoke
+  paths;
+* `fastq_microbench`: native FASTQ/FASTQ.GZ parser and writer throughput plus
+  optional `subsample_fastq` and `subsample_fastq_gz` command timings.
+
+Current broader benchmark framework inventory:
+
+* Nextflow entry point: `benchmarks/main.nf`;
+* run parameter schema: `benchmarks/params.schema.json`;
+* input manifest schema: `benchmarks/inputs/manifest.schema.json`;
+* result schemas: `benchmarks/results/result.schema.json`,
+  `benchmarks/results/benchmark_row.schema.json`, and the four microbenchmark
+  result schemas;
+* wrapper registry and matrix:
+  `benchmarks/tools/tool_registry.example.json` and
+  `benchmarks/tools/workflow_variant_matrix.md`;
+* primary wrapper tools: Bamana, samtools, and fastcat, with sambamba, seqtk,
+  and rasusa represented for explicit support/unsupported handling.
+
+M14 starts from an evidence boundary rather than a parity claim. Existing smoke
+timings are regression guardrails. Existing comparator rows are profile- and
+scenario-specific. Broad comparator parity, biological equivalence, release
+performance promises, CRAM comparator claims, and external-tool authority
+remain out of scope until later M14 tasks pin command-specific evidence.
+
 ## Ten-Task Outline
 
 1. M14.1 activate scope and audit all benchmark profiles and smoke hooks.
+   Complete: activation baseline records public benchmark profiles,
+   repository-local smoke hooks, benchmark framework artifacts, and non-claim
+   boundaries.
 2. M14.2 define which public commands have comparator evidence, smoke evidence,
    or no external comparator claim.
 3. M14.3 extend benchmark result schemas for post-M10 command families.

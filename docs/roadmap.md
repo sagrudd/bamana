@@ -300,12 +300,19 @@ This order is retained because it matches the dependency chain of the runtime:
 
 ### Milestone 14: Interoperability And Benchmark Evidence
 
-* status: planned
+* status: active as of 2026-06-01
 * detail: [roadmap/milestone-14-interop-benchmark-evidence.md](roadmap/milestone-14-interop-benchmark-evidence.md)
 * goal: turn comparator, benchmark, fixture, and reproducibility evidence into
   governed claims without implying broad parity where it has not been measured
 * commands enabled first: `benchmark` profiles and command-level smoke evidence
   for governed public surfaces
+* M14.1 activation baseline: public `benchmark` profiles are
+  `fastq_ingress` and `fastq_gz_enumerate`; repository-local smoke hooks are
+  `bgzf_microbench`, `header_microbench`, `scanner_microbench`, and
+  `fastq_microbench`; Nextflow benchmark artifacts, result schemas, wrapper
+  registry, and support matrix docs are present; existing smoke timings are
+  regression guardrails and existing comparator rows are profile-specific, not
+  broad comparator parity or biological-equivalence claims
 
 ### Milestone 15: Release Hardening And Public Contract Freeze
 

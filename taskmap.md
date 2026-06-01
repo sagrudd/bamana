@@ -6067,3 +6067,181 @@ Completion evidence:
   compatibility fixtures, no-external-reference CRAM fixtures, CRAM
   compatibility throughput claims, CRAM comparator parity, and broad external
   tool parity.
+
+## Milestone 14: Interoperability And Benchmark Evidence
+
+Status: active as of 2026-06-01.
+
+Goal:
+
+* turn Bamana benchmark, comparator, wrapper, and fixture evidence into
+  governed public evidence without implying broad parity where Bamana has not
+  measured it.
+
+### M14.1 Activate Scope And Audit Benchmark Evidence
+
+Status: complete.
+
+Tasks:
+
+* activate Milestone 14 only after Milestone 13 closeout evidence is recorded;
+* audit current public `benchmark` command profiles;
+* audit repository-local microbenchmark smoke hooks;
+* audit benchmark framework schemas, wrappers, and matrix documentation;
+* record which evidence is a regression guardrail and which evidence is a
+  profile- and scenario-specific comparator result;
+* explicitly state that M14.1 does not add benchmark profiles, comparator
+  claims, schemas, or command behavior.
+
+Acceptance:
+
+* README, CLI docs, roadmap, current milestone, M14 roadmap, Sphinx, and this
+  taskmap record Milestone 14 as active as of 2026-06-01;
+* public `benchmark` profiles `fastq_ingress` and `fastq_gz_enumerate` are
+  named with their wrapper scripts
+  `benchmarks/bin/run_fastq_ingress_benchmark.sh` and
+  `benchmarks/bin/run_fastq_gz_enumerate_benchmark.sh`;
+* smoke hooks `bgzf_microbench`, `header_microbench`, `scanner_microbench`,
+  and `fastq_microbench` are listed as regression guardrails;
+* framework artifacts `benchmarks/main.nf`, `benchmarks/params.schema.json`,
+  `benchmarks/inputs/manifest.schema.json`,
+  `benchmarks/results/result.schema.json`,
+  `benchmarks/results/benchmark_row.schema.json`,
+  `benchmarks/tools/tool_registry.example.json`, and
+  `benchmarks/tools/workflow_variant_matrix.md` are recorded;
+* Bamana, samtools, fastcat, sambamba, seqtk, and rasusa are named as the
+  current wrapper-tool inventory;
+* broad comparator parity, biological equivalence, release performance
+  promises, CRAM comparator claims, and external-tool authority remain
+  explicitly out of scope until later M14 tasks.
+
+Completion evidence:
+
+* activated M14 in `docs/roadmap.md`,
+  `docs/roadmap/current_milestone.md`, and
+  `docs/roadmap/milestone-14-interop-benchmark-evidence.md`;
+* added the M14.1 benchmark evidence boundary to README, CLI docs, Sphinx, and
+  this taskmap;
+* added contract coverage for the M14.1 activation baseline.
+
+### M14.2 Define Command Comparator Evidence Matrix
+
+Status: pending.
+
+Tasks:
+
+* define which public commands have comparator evidence, smoke evidence, or no
+  external comparator claim.
+
+Acceptance:
+
+* each public command family has an explicit evidence level;
+* commands without semantic comparator coverage are documented as no-claim
+  surfaces rather than implied parity.
+
+### M14.3 Extend Benchmark Result Schemas
+
+Status: pending.
+
+Tasks:
+
+* extend benchmark result schemas for post-M10 command families.
+
+Acceptance:
+
+* benchmark schemas can represent indexed-region, selected-region, CSI
+  fallback, mutation, remediation, and forensic smoke rows without ad hoc
+  fields.
+
+### M14.4 Add Fixture Provenance Metadata
+
+Status: pending.
+
+Tasks:
+
+* add reproducible fixture generation and fixture provenance metadata.
+
+Acceptance:
+
+* benchmark and comparator fixtures identify their source, generation command,
+  expected semantic scope, and review boundary.
+
+### M14.5 Add Aligned Comparator Profiles
+
+Status: pending.
+
+Tasks:
+
+* add measured comparator profiles only where semantics are aligned.
+
+Acceptance:
+
+* every new comparator profile names its semantic equivalence assumptions and
+  its unsupported mismatch cases.
+
+### M14.6 Document Comparator Mismatches
+
+Status: pending.
+
+Tasks:
+
+* document unsupported comparator cases and semantic mismatch reasons.
+
+Acceptance:
+
+* unsupported comparator surfaces are visible in benchmark docs and cannot be
+  mistaken for missing implementation.
+
+### M14.7 Add Benchmark Schema Stability Checks
+
+Status: pending.
+
+Tasks:
+
+* add CI or local harness checks for benchmark schema stability.
+
+Acceptance:
+
+* benchmark schema changes are caught by contract or equivalent verification
+  before release-facing evidence changes.
+
+### M14.8 Refresh Benchmark Documentation
+
+Status: pending.
+
+Tasks:
+
+* update benchmark docs, README, CLI docs, roadmap, and Sphinx docs.
+
+Acceptance:
+
+* public docs distinguish public benchmark profiles, smoke hooks, comparator
+  evidence, and no-claim surfaces.
+
+### M14.9 Add Benchmark Dependency Guardrails
+
+Status: pending.
+
+Tasks:
+
+* add dependency-boundary tests for benchmark-only tools and oracles.
+
+Acceptance:
+
+* external benchmark tools remain wrappers, comparators, fixtures, or oracle
+  aids and do not enter Bamana-native production hot paths.
+
+### M14.10 Close Milestone 14
+
+Status: pending.
+
+Tasks:
+
+* close the milestone with archived smoke evidence and residual risk notes.
+
+Acceptance:
+
+* M14.1 through M14.10 are complete;
+* verification is recorded;
+* residual benchmark, comparator, fixture, and external-tool risks remain
+  explicit before Milestone 15 begins.
