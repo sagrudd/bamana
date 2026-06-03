@@ -25,6 +25,7 @@ do not prove. For example:
 * `annotate_rg` is record-level and may rewrite every BAM alignment record
 * `reheader` is header-only and does not imply record-level `RG:Z` tag mutation
 * `subsample` is now an implemented contract for deterministic or seeded-random BAM, FASTQ, and FASTQ.GZ subsampling
+* `filter` is now an implemented contract for BAM read-length, mean-quality, mapped-state, primary-state, and canonical linguistic-complexity filtering
 * `check_eof` is EOF-marker only
 * `summary` scans all records by default; positive `--sample-records` values
   request bounded evidence

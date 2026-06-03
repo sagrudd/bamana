@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/filter.schema.json",
+  "title": "Bamana Filter Response",
+  "description": "Contract for bamana filter JSON output.",
+  "x-bamana-command": "filter",
+  "x-bamana-contract-version": "0.1.0",
+  "$defs": {
+    "lengthFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": ["integer", "null"], "minimum": 0 },
+        "max": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "meanQualityFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max", "missing_quality_policy"],
+      "properties": {
+        "min": { "type": ["number", "null"], "minimum": 0 },
+        "max": { "type": ["number", "null"], "minimum": 0 },
+        "missing_quality_policy": {
+          "const": "drop_when_quality_filter_requested"
+        }
+      }
+    },
+    "complexityFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max",
+        "k_min",
+        "k_max",
+        "method",
+        "noncanonical_policy"
+      ],
+      "properties": {
+        "min": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "max": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "k_min": { "type": ["integer", "null"], "minimum": 1, "maximum": 64 },
+        "k_max": { "type": ["integer", "null"], "minimum": 1, "maximum": 64 },
+        "method": { "const": "canonical_linguistic_complexity" },
+        "noncanonical_policy": {
+          "type": "string",
+          "enum": ["drop", "fail"]
+        }
+      }
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mapped_only",
+        "unmapped_only",
+        "primary_only",
+        "length",
+        "mean_quality",
+        "complexity"
+      ],
+      "properties": {
+        "mapped_only": { "type": "boolean" },
+        "unmapped_only": { "type": "boolean" },
+        "primary_only": { "type": "boolean" },
+        "length": { "$ref": "#/$defs/lengthFilter" },
+        "mean_quality": { "$ref": "#/$defs/meanQualityFilter" },
+        "complexity": { "$ref": "#/$defs/complexityFilter" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records_examined",
+        "records_retained",
+        "records_removed",
+        "order_preserved",
+        "quality_records_evaluated",
+        "records_removed_missing_quality",
+        "complexity_records_evaluated",
+        "records_removed_noncanonical_complexity"
+      ],
+      "properties": {
+        "records_examined": { "type": "integer", "minimum": 0 },
+        "records_retained": { "type": "integer", "minimum": 0 },
+        "records_removed": { "type": "integer", "minimum": 0 },
+        "order_preserved": { "type": "boolean" },
+        "quality_records_evaluated": { "type": "integer", "minimum": 0 },
+        "records_removed_missing_quality": { "type": "integer", "minimum": 0 },
+        "complexity_records_evaluated": { "type": "integer", "minimum": 0 },
+        "records_removed_noncanonical_complexity": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "written", "overwritten", "records_written"],
+      "properties": {
+        "path": { "type": "string" },
+        "written": { "type": "boolean" },
+        "overwritten": { "type": "boolean" },
+        "records_written": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_dictionary_preserved",
+        "references_retained",
+        "raw_header_preserved"
+      ],
+      "properties": {
+        "reference_dictionary_preserved": { "type": "boolean" },
+        "references_retained": { "type": "integer", "minimum": 0 },
+        "raw_header_preserved": { "type": "boolean" }
+      }
+    },
+    "index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_index_created",
+        "adjacent_index_paths",
+        "preexisting_index_paths",
+        "removed_index_paths",
+        "invalidation_action",
+        "regeneration"
+      ],
+      "properties": {
+        "output_index_created": { "type": "boolean" },
+        "adjacent_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preexisting_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "removed_index_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "invalidation_action": {
+          "type": "string",
+          "enum": [
+            "would_leave_no_output_index",
+            "would_remove_existing_index_sidecars_on_apply",
+            "left_no_output_index",
+            "removed_existing_index_sidecars"
+          ]
+        },
+        "regeneration": { "type": "string" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "dry_run",
+        "input",
+        "filters",
+        "execution",
+        "output",
+        "header",
+        "index",
+        "notes"
+      ],
+      "properties": {
+        "format": { "const": "BAM" },
+        "dry_run": { "type": "boolean" },
+        "input": { "type": "string" },
+        "filters": { "$ref": "#/$defs/filters" },
+        "execution": { "$ref": "#/$defs/execution" },
+        "output": { "$ref": "#/$defs/output" },
+        "header": { "$ref": "#/$defs/header" },
+        "index": { "$ref": "#/$defs/index" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": true },
+        "command": { "const": "filter" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": { "$ref": "#/$defs/data" },
+        "error": { "type": "null" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "command", "path", "data", "error"],
+      "properties": {
+        "ok": { "const": false },
+        "command": { "const": "filter" },
+        "path": { "$ref": "./common/defs.schema.json#/$defs/pathOrNull" },
+        "analysis_wall_seconds": { "type": "number", "minimum": 0 },
+        "data": {
+          "oneOf": [{ "$ref": "#/$defs/data" }, { "type": "null" }]
+        },
+        "error": { "$ref": "./common/json_error.schema.json" }
+      }
+    }
+  ]
+}

@@ -12,11 +12,11 @@ use commands::{
     check_index::CheckIndexRequest, check_map::CheckMapRequest, check_sort::CheckSortRequest,
     check_tag::CheckTagRequest, checksum::ChecksumRequest, consume::ConsumeRequest,
     deduplicate::DeduplicateRequest, enumerate::EnumerateRequest, explode::ExplodeRequest,
-    fastq::FastqRequest, forensic_inspect::ForensicInspectRequest, header::HeaderRequest,
-    identify::IdentifyRequest, index::IndexRequest, inspect_duplication::InspectDuplicationRequest,
-    merge::MergeRequest, reheader::ReheaderRequest, select_region::SelectRegionRequest,
-    sort::SortRequest, subsample::SubsampleRequest, summary::SummaryRequest, unmap::UnmapRequest,
-    validate::ValidateRequest, verify::VerifyRequest,
+    fastq::FastqRequest, filter::FilterRequest, forensic_inspect::ForensicInspectRequest,
+    header::HeaderRequest, identify::IdentifyRequest, index::IndexRequest,
+    inspect_duplication::InspectDuplicationRequest, merge::MergeRequest, reheader::ReheaderRequest,
+    select_region::SelectRegionRequest, sort::SortRequest, subsample::SubsampleRequest,
+    summary::SummaryRequest, unmap::UnmapRequest, validate::ValidateRequest, verify::VerifyRequest,
 };
 use serde::Serialize;
 
@@ -74,6 +74,31 @@ fn main() -> ExitCode {
                 threads: args.threads,
                 force: args.force,
             })
+        }),
+        Commands::Filter(args) => emit_timed_response(cli.global.json_pretty, || {
+            let bam = args.bam;
+            CommandResponse::from_result(
+                "filter",
+                Some(bam.as_path()),
+                commands::filter::run(FilterRequest {
+                    bam: bam.clone(),
+                    out: args.out,
+                    min_length: args.min_length,
+                    max_length: args.max_length,
+                    min_mean_quality: args.min_mean_quality,
+                    max_mean_quality: args.max_mean_quality,
+                    min_complexity: args.min_complexity,
+                    max_complexity: args.max_complexity,
+                    complexity_k_min: args.complexity_k_min,
+                    complexity_k_max: args.complexity_k_max,
+                    complexity_noncanonical: args.complexity_noncanonical,
+                    mapped_only: args.mapped_only,
+                    unmapped_only: args.unmapped_only,
+                    primary_only: args.primary_only,
+                    dry_run: args.dry_run,
+                    force: args.force,
+                }),
+            )
         }),
         Commands::InspectDuplication(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;

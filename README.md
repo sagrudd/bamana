@@ -8,6 +8,7 @@ The current repository contains the first concrete CLI slice for:
 * `bamana identify <path>`
 * `bamana enumerate --input <file> [-j <threads>]`
 * `bamana subsample --input <file> --out <output>`
+* `bamana filter --bam <bamfile> --out <filtered.bam>`
 * `bamana inspect_duplication --input <file>`
 * `bamana deduplicate --input <file> --out <cleaned_output>`
 * `bamana forensic_inspect --input <file>`
@@ -64,6 +65,7 @@ The current semantics are intentionally narrow:
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
 * `enumerate` counts top-level records in a single BAM, SAM, FASTQ, FASTQ.GZ, or FASTA input using format-aware parsing, auto-materializes `FASTQ.GZI` sidecars for `FASTQ.GZ`, and then reuses the exact indexed total on later runs
 * `subsample` selects a subset of BAM, FASTQ, or FASTQ.GZ records under an explicit random or deterministic policy, preserves encounter order of retained records, and reports seed, identity basis, filter policy, and retained counts explicitly for production and benchmarking workflows
+* `filter` streams one BAM to a filtered BAM output using inclusive read-length, mean base-quality, mapped/unmapped, primary-alignment, and canonical linguistic-complexity predicates while preserving raw retained record bytes and input encounter order
 * `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology
 * `deduplicate` removes suspicious duplicated contiguous collection blocks conservatively according to an explicit remediation policy, with first-slice focus on adjacent repeated blocks and whole-file append signatures rather than molecular duplicate biology
 * `forensic_inspect` inspects BAM provenance anomalies and coercion hallmarks such as suspicious header/program/read-group mismatches, read-name regime shifts, abrupt metadata transitions, and duplicate-block signatures that remain parseable but operationally suspicious
@@ -117,6 +119,7 @@ limited to the canonical BGZF EOF marker.
 `unmap` does not imply biological remapping, realignment, or reference-independent validation of the source BAM.
 `benchmark` does not imply broad comparator parity; each profile reports the exact command paths and comparison scope it ran.
 `subsample` does not imply exact-count sampling, quality filtering, duplicate marking, provenance cleanup, or BAM index regeneration unless those behaviors are reported explicitly.
+`filter` does not imply sorting, pairing repair, plot generation, alignment-aware remapping, or BAM index regeneration.
 
 Milestone 10 is complete for native indexed-region workflow development. M10.2
 defines the internal region grammar as `reference` and `reference:start-end`,
@@ -191,6 +194,7 @@ cargo run -- identify example.bam
 cargo run -- enumerate --input reads.fastq.gz
 cargo run -- subsample --input input.bam --out input.subsampled.bam --fraction 0.1 --mode random --seed 12345
 cargo run -- subsample --input reads.fastq.gz --out reads.subsampled.fastq.gz --fraction 0.25 --mode deterministic --identity full_record
+cargo run -- filter --bam input.bam --out input.filtered.bam --min-length 1000 --max-length 50000 --min-mean-quality 10 --min-complexity 0.55 --complexity-k-min 1 --complexity-k-max 4 --mapped-only --primary-only
 cargo run -- inspect_duplication --input input.fastq.gz --full-scan
 cargo run -- inspect_duplication --input input.bam --identity qname_seq_qual_rg --min-block-size 100 --sample-records 250000
 cargo run -- deduplicate --input input.fastq.gz --out input.cleaned.fastq.gz --mode contiguous-block --dry-run
@@ -268,6 +272,21 @@ sampling, and any pre-existing BAM index must be treated as invalid for the
 subsampled output unless a future slice reports successful regeneration
 explicitly. This command is intended both for production downsampling workflows
 and for reproducible benchmarking on large user-supplied inputs.
+
+`filter` is Bamana's explicit BAM read-filtering command. It accepts one BGZF
+BAM via `--bam`, writes one BAM via `--out`, and retains records that satisfy
+all requested inclusive predicates. Current predicates include `--min-length`,
+`--max-length`, `--min-mean-quality`, `--max-mean-quality`, `--min-complexity`,
+`--max-complexity`, `--mapped-only`, `--unmapped-only`, and `--primary-only`.
+Mean quality is computed over non-missing BAM quality bytes; records with only
+missing qualities are dropped when a quality predicate is active. Linguistic
+complexity uses the EMBOSS-RS `complex` formula over canonical A/C/G/T k-mers,
+`sum(observed distinct k-mers) / sum(min(4^k, L-k+1))`, with no plot output.
+When complexity filtering sees non-canonical sequence symbols it drops the
+record by default or fails if `--complexity-noncanonical fail` is requested.
+Retained records preserve raw BAM record bytes and input encounter order; the
+raw input header and reference dictionary are preserved, and no output index is
+created.
 
 `inspect_duplication` is the collection-duplication and operator-error
 inspection command. It is intentionally distinct from ordinary PCR duplicate
@@ -902,8 +921,8 @@ external tool parity, and future release packaging/CI hardening.
 
 Milestone 15 is active as of 2026-06-01. M15.1 activates release hardening
 after Milestone 14 closeout without adding commands, changing behavior, changing
-JSON schemas, or promoting benchmark/comparator claims. The starting release
-boundary accepts the currently implemented and documented CLI commands:
+JSON schemas, or promoting benchmark/comparator claims. The M15.1 starting
+release boundary accepted the then-implemented and documented CLI commands:
 `benchmark`, `identify`, `enumerate`, `subsample`, `inspect_duplication`,
 `deduplicate`, `forensic_inspect`, `annotate_rg`, `consume`, `explode`,
 `fastq`, `checksum`, `merge`, `reheader`, `sort`, `select_region`, `unmap`,
@@ -913,6 +932,9 @@ and `unmap` remain named public contract commands. Acceptance is limited to
 current schemas, examples, CLI docs, Sphinx docs, roadmap notes, and contract
 tests; deferred surfaces remain outside the release boundary until later M15
 tasks explicitly freeze or exclude them.
+
+The subsequent `filter` command is now governed by its own schema, examples,
+CLI docs, Sphinx docs, and contract tests for BAM read-shaping output.
 
 ## Specification Layer
 

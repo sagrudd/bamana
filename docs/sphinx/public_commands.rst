@@ -55,6 +55,27 @@ command. It inserts, replaces, or conflict-checks per-record ``RG:Z`` tags and
 can coordinate that record-level rewrite with explicit ``@RG`` header policy.
 It is intentionally distinct from ``reheader``, which is header-only.
 
+filter
+------
+
+``bamana filter`` streams one BGZF BAM into one filtered BGZF BAM:
+
+.. code-block:: bash
+
+   bamana filter --bam input.bam --out filtered.bam --min-length 1000 --max-length 50000 --min-mean-quality 10 --min-complexity 0.55 --mapped-only --primary-only
+
+Predicates are inclusive and combine with logical AND. The current public
+surface supports read-length bounds, mean non-missing BAM base-quality bounds,
+canonical linguistic-complexity bounds, mapped/unmapped selection, and primary
+alignment selection. Retained records preserve raw BAM record bytes and input
+encounter order.
+
+Linguistic complexity uses the EMBOSS-RS ``complex`` formula over canonical
+A/C/G/T k-mers and does not emit plots. Non-canonical bases are dropped by
+default when complexity filtering is active, or can fail the command with
+``--complexity-noncanonical fail``. ``filter`` does not create an output index;
+use ``bamana index --input <filtered.bam>`` when an index is required.
+
 select_region
 -------------
 

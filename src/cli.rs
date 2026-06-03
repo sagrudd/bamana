@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use serde::Serialize;
 
 use crate::bam::checksum::{ChecksumAlgorithm, ChecksumMode};
 use crate::bam::merge::MergeMode;
@@ -46,6 +47,8 @@ pub enum Commands {
     Enumerate(EnumerateArgs),
     /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
     Subsample(SubsampleArgs),
+    /// Filter BAM records by read length, mean base quality, mapping state, and linguistic complexity.
+    Filter(FilterArgs),
     /// Inspect suspicious collection-duplication and operator-error signatures.
     #[command(name = "inspect_duplication")]
     InspectDuplication(InspectDuplicationArgs),
@@ -194,6 +197,71 @@ pub struct SubsampleArgs {
     /// Overwrite an existing output path.
     #[arg(long = "force")]
     pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct FilterArgs {
+    /// Input BAM file to filter.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Output BAM path for retained records.
+    #[arg(long = "out")]
+    pub out: PathBuf,
+    /// Retain reads with sequence length greater than or equal to this value.
+    #[arg(long = "min-length")]
+    pub min_length: Option<usize>,
+    /// Retain reads with sequence length less than or equal to this value.
+    #[arg(long = "max-length")]
+    pub max_length: Option<usize>,
+    /// Retain reads with mean non-missing BAM base quality greater than or equal to this value.
+    #[arg(long = "min-mean-quality")]
+    pub min_mean_quality: Option<f64>,
+    /// Retain reads with mean non-missing BAM base quality less than or equal to this value.
+    #[arg(long = "max-mean-quality")]
+    pub max_mean_quality: Option<f64>,
+    /// Retain reads with canonical linguistic complexity greater than or equal to this value.
+    #[arg(long = "min-complexity")]
+    pub min_complexity: Option<f64>,
+    /// Retain reads with canonical linguistic complexity less than or equal to this value.
+    #[arg(long = "max-complexity")]
+    pub max_complexity: Option<f64>,
+    /// Inclusive minimum k-mer size for linguistic complexity when a complexity threshold is active.
+    #[arg(long = "complexity-k-min", default_value_t = 1)]
+    pub complexity_k_min: usize,
+    /// Inclusive maximum k-mer size for linguistic complexity when a complexity threshold is active.
+    #[arg(long = "complexity-k-max", default_value_t = 4)]
+    pub complexity_k_max: usize,
+    /// Policy for reads with non-canonical bases when a complexity threshold is active.
+    #[arg(
+        long = "complexity-noncanonical",
+        value_enum,
+        default_value_t = FilterComplexityNonCanonicalPolicy::Drop
+    )]
+    pub complexity_noncanonical: FilterComplexityNonCanonicalPolicy,
+    /// Retain mapped records only.
+    #[arg(long = "mapped-only")]
+    pub mapped_only: bool,
+    /// Retain unmapped records only.
+    #[arg(long = "unmapped-only")]
+    pub unmapped_only: bool,
+    /// Retain primary alignments only.
+    #[arg(long = "primary-only")]
+    pub primary_only: bool,
+    /// Plan and count only; do not write output.
+    #[arg(long = "dry-run")]
+    pub dry_run: bool,
+    /// Overwrite an existing output path.
+    #[arg(long = "force")]
+    pub force: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum FilterComplexityNonCanonicalPolicy {
+    /// Drop reads with non-canonical bases when complexity filtering is active.
+    Drop,
+    /// Fail the command when a complexity-filtered read contains a non-canonical base.
+    Fail,
 }
 
 #[derive(Debug, Args)]

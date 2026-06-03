@@ -288,6 +288,80 @@ coverage-based or otherwise not directly fractional.
 Key output concepts:
 `format`, `selection`, `execution`, `output`, `index`, `filters`, `notes`.
 
+## `filter`
+
+Synopsis:
+`bamana filter --bam <input.bam> --out <filtered.bam> [--min-length <N>] [--max-length <N>] [--min-mean-quality <Q>] [--max-mean-quality <Q>] [--min-complexity <C>] [--max-complexity <C>] [--complexity-k-min <K>] [--complexity-k-max <K>] [--complexity-noncanonical <drop|fail>] [--mapped-only|--unmapped-only] [--primary-only] [--dry-run] [--force]`
+
+Semantics:
+Filters one BGZF BAM input into one BGZF BAM output by retaining records that
+satisfy all requested predicates. The command is a streaming, source-order
+selection path for shaping BAM read collections by read length, mean BAM base
+quality, mapping state, primary-alignment state, and nucleotide linguistic
+complexity.
+
+Current input support:
+
+* `BAM`
+
+Current filter semantics:
+
+* `--min-length`: retain reads with sequence length greater than or equal to
+  the requested value
+* `--max-length`: retain reads with sequence length less than or equal to the
+  requested value
+* `--min-mean-quality`: retain reads with mean non-missing BAM base quality
+  greater than or equal to the requested value
+* `--max-mean-quality`: retain reads with mean non-missing BAM base quality
+  less than or equal to the requested value
+* `--min-complexity`: retain reads with canonical linguistic complexity greater
+  than or equal to the requested value
+* `--max-complexity`: retain reads with canonical linguistic complexity less
+  than or equal to the requested value
+* `--mapped-only`: retain mapped records only
+* `--unmapped-only`: retain unmapped records only
+* `--primary-only`: retain primary alignments only
+
+Quality semantics:
+Mean quality is computed from BAM quality bytes directly, excluding missing
+`0xff` values. Records with no non-missing quality bytes are dropped when a
+quality predicate is active.
+
+Complexity semantics:
+Linguistic complexity uses the EMBOSS-RS `complex` formula over canonical
+A/C/G/T k-mers:
+`sum(observed distinct k-mers) / sum(min(4^k, L-k+1))`.
+The k-mer range is controlled by `--complexity-k-min` and
+`--complexity-k-max`, which default to `1` and `4`. Complexity thresholds must
+be in `[0, 1]`. The first native scorer supports `k <= 64`.
+Non-canonical sequence symbols are dropped by default under
+`--complexity-noncanonical drop`; `--complexity-noncanonical fail` converts
+the first such record into a command failure. No plots or plot contracts are
+generated.
+
+Output-order and header semantics:
+
+* retained records preserve input encounter order
+* retained records preserve raw BAM record bytes
+* the raw input header and reference dictionary are preserved
+* no implicit sorting is performed
+* no output index is created; use `bamana index --input <filtered.bam>` when an
+  index is required
+
+Does prove:
+Only the explicit filter predicates, retained/removed counts, output path,
+header preservation policy, output index invalidation policy, and dry-run/write
+state reported in JSON.
+
+Does not prove:
+It is not read correction, pair repair, duplicate marking, remapping,
+biological validation, plot generation, or comparator parity with tools whose
+filtering also performs scoring/ranking/downsampling.
+
+Key output concepts:
+`format`, `dry_run`, `input`, `filters`, `execution`, `output`, `header`,
+`index`, `notes`.
+
 ## `inspect_duplication`
 
 Synopsis:

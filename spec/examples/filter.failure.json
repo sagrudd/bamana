@@ -1,0 +1,13 @@
+{
+  "ok": false,
+  "command": "filter",
+  "path": "input.bam",
+  "analysis_wall_seconds": 0.000711,
+  "data": null,
+  "error": {
+    "code": "invalid_filter_request",
+    "message": "Requested filter options are not valid.",
+    "detail": "--mapped-only and --unmapped-only are mutually exclusive.",
+    "hint": "Use compatible threshold bounds, a distinct output path, and at most one mapped-state filter."
+  }
+}

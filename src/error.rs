@@ -38,6 +38,8 @@ pub enum AppError {
     InvalidSubsampleMode { path: PathBuf, detail: String },
     #[error("requested subsample fraction is invalid: {path}")]
     InvalidFraction { path: PathBuf, detail: String },
+    #[error("requested filter options are invalid: {path}")]
+    InvalidFilterRequest { path: PathBuf, detail: String },
     #[error("requested target record count is invalid: {path}")]
     InvalidTargetRecords { path: PathBuf, detail: String },
     #[error("requested forensic inspection scope is invalid: {path}")]
@@ -163,6 +165,7 @@ impl AppError {
             Self::InvalidDeduplicateMode { .. } => "invalid_deduplicate_mode",
             Self::InvalidSubsampleMode { .. } => "invalid_subsample_mode",
             Self::InvalidFraction { .. } => "invalid_fraction",
+            Self::InvalidFilterRequest { .. } => "invalid_filter_request",
             Self::InvalidTargetRecords { .. } => "invalid_target_records",
             Self::InvalidForensicScope { .. } => "invalid_forensic_scope",
             Self::InvalidRecord { .. } => "invalid_record",
@@ -236,6 +239,9 @@ impl AppError {
             }
             Self::InvalidFraction { .. } => {
                 "The requested subsampling fraction is invalid.".to_string()
+            }
+            Self::InvalidFilterRequest { .. } => {
+                "Requested filter options are not valid.".to_string()
             }
             Self::InvalidTargetRecords { .. } => {
                 "The requested target record count is invalid.".to_string()
@@ -345,6 +351,7 @@ impl AppError {
             Self::InvalidDeduplicateMode { detail, .. } => Some(detail.clone()),
             Self::InvalidSubsampleMode { detail, .. } => Some(detail.clone()),
             Self::InvalidFraction { detail, .. } => Some(detail.clone()),
+            Self::InvalidFilterRequest { detail, .. } => Some(detail.clone()),
             Self::InvalidTargetRecords { detail, .. } => Some(detail.clone()),
             Self::InvalidForensicScope { detail, .. } => Some(detail.clone()),
             Self::InvalidRecord { detail, .. } => Some(detail.clone()),
@@ -437,6 +444,10 @@ impl AppError {
             ),
             Self::InvalidFraction { .. } => Some(
                 "Provide --fraction with a value greater than 0 and less than or equal to 1, such as 0.1 or 0.25."
+                    .to_string(),
+            ),
+            Self::InvalidFilterRequest { .. } => Some(
+                "Use compatible threshold bounds, a distinct output path, and at most one mapped-state filter."
                     .to_string(),
             ),
             Self::InvalidTargetRecords { .. } => Some(

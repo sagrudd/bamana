@@ -11,6 +11,7 @@ pub mod deduplicate;
 pub mod enumerate;
 pub mod explode;
 pub mod fastq;
+pub mod filter;
 pub mod forensic_inspect;
 pub mod header;
 pub mod identify;

@@ -1,0 +1,72 @@
+{
+  "ok": true,
+  "command": "filter",
+  "path": "input.bam",
+  "analysis_wall_seconds": 2.104,
+  "data": {
+    "format": "BAM",
+    "dry_run": false,
+    "input": "input.bam",
+    "filters": {
+      "mapped_only": true,
+      "unmapped_only": false,
+      "primary_only": true,
+      "length": {
+        "min": 1000,
+        "max": 50000
+      },
+      "mean_quality": {
+        "min": 10.0,
+        "max": null,
+        "missing_quality_policy": "drop_when_quality_filter_requested"
+      },
+      "complexity": {
+        "min": 0.55,
+        "max": null,
+        "k_min": 1,
+        "k_max": 4,
+        "method": "canonical_linguistic_complexity",
+        "noncanonical_policy": "drop"
+      }
+    },
+    "execution": {
+      "records_examined": 250000,
+      "records_retained": 187420,
+      "records_removed": 62580,
+      "order_preserved": true,
+      "quality_records_evaluated": 210000,
+      "records_removed_missing_quality": 0,
+      "complexity_records_evaluated": 195100,
+      "records_removed_noncanonical_complexity": 42
+    },
+    "output": {
+      "path": "input.filtered.bam",
+      "written": true,
+      "overwritten": false,
+      "records_written": 187420
+    },
+    "header": {
+      "reference_dictionary_preserved": true,
+      "references_retained": 25,
+      "raw_header_preserved": true
+    },
+    "index": {
+      "output_index_created": false,
+      "adjacent_index_paths": [
+        "input.filtered.bam.bai",
+        "input.filtered.bam.csi"
+      ],
+      "preexisting_index_paths": [],
+      "removed_index_paths": [],
+      "invalidation_action": "left_no_output_index",
+      "regeneration": "bamana index --input input.filtered.bam"
+    },
+    "notes": [
+      "Filtered BAM output preserves raw alignment record bytes for retained records.",
+      "Retained record order follows input encounter order.",
+      "filter does not create an output BAM index; run bamana index on the filtered BAM when an index is required.",
+      "Linguistic complexity uses canonical A/C/G/T k-mer diversity with the EMBOSS-RS complex formula and no plot generation."
+    ]
+  },
+  "error": null
+}

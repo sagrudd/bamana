@@ -553,6 +553,36 @@ repeatable benchmarks and that deterministic mode is suitable for stable
 exact-repeatability checks across repeated runs of the same build and
 configuration.
 
+## `filter`
+
+The `filter` payload reports BAM read-shaping predicates and execution counts
+for a streaming retained-record output.
+
+Key concepts:
+
+* `filters.length` records inclusive minimum and maximum read-length bounds
+* `filters.mean_quality` records inclusive mean non-missing BAM base-quality
+  bounds and the missing-quality policy
+* `filters.complexity` records inclusive complexity bounds, k-mer range,
+  canonical linguistic-complexity method, and non-canonical base policy
+* `filters.mapped_only`, `filters.unmapped_only`, and `filters.primary_only`
+  report BAM state filters
+* `execution` reports examined, retained, removed, quality-evaluated,
+  missing-quality-removed, complexity-evaluated, and noncanonical-complexity
+  removed counts
+* `output` distinguishes dry-run counting from written BAM output and reports
+  records written
+* `header` reports preservation of the raw input header and reference
+  dictionary
+* `index` reports that no output index was created, names adjacent output
+  sidecars, records removed stale sidecars during forced writes, and gives the
+  regeneration command
+
+The complexity method is the EMBOSS-RS `complex` formula over canonical
+A/C/G/T k-mers:
+`sum(observed distinct k-mers) / sum(min(4^k, L-k+1))`.
+The command does not emit plot data.
+
 ## `inspect_duplication`
 
 The `inspect_duplication` payload is evidence-driven and operator-error
