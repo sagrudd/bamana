@@ -26,6 +26,13 @@ pub struct BamRecordVirtualOffsets {
     pub end: VirtualOffset,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SummaryBamRecord {
+    pub ref_id: i32,
+    pub flags: u16,
+    pub mapping_quality: u8,
+}
+
 #[derive(Debug, Clone)]
 pub struct PositionedBamRecord<'a> {
     pub record: BamRecordView<'a>,
@@ -68,6 +75,109 @@ impl BamScanner {
         Ok(self
             .next_record_with_virtual_offsets()?
             .map(|positioned| positioned.record))
+    }
+
+    pub fn next_summary_record(&mut self) -> Result<Option<SummaryBamRecord>, AppError> {
+        let Some(block_size) = self.reader.read_optional_i32_le()? else {
+            return Ok(None);
+        };
+
+        if block_size < 0 {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: format!("BAM record block size {block_size} was negative."),
+            });
+        }
+
+        if block_size < BAM_CORE_SIZE {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: format!(
+                    "BAM record block size {block_size} is smaller than the 32-byte core alignment section."
+                ),
+            });
+        }
+
+        let block_size = block_size as usize;
+        let core = self.reader.read_exact_vec_with_context(
+            BAM_CORE_SIZE as usize,
+            "BAM stream ended while reading an alignment record core section.",
+        )?;
+        let ref_id = read_i32_le(&core, 0, &self.path)?;
+        let bin_mq_nl = read_u32_le(&core, 8, &self.path)?;
+        let flag_nc = read_u32_le(&core, 12, &self.path)?;
+        let sequence_len = read_i32_le(&core, 16, &self.path)?;
+
+        if sequence_len < 0 {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: "BAM record sequence length was negative.".to_string(),
+            });
+        }
+
+        let remaining = block_size - BAM_CORE_SIZE as usize;
+        let l_read_name = (bin_mq_nl & 0xff) as usize;
+        if l_read_name == 0 {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: "BAM record read name length was zero.".to_string(),
+            });
+        }
+
+        let n_cigar_op = (flag_nc & 0xffff) as usize;
+        let cigar_bytes = n_cigar_op
+            .checked_mul(4)
+            .ok_or_else(|| AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: "BAM record CIGAR byte count overflowed usize.".to_string(),
+            })?;
+        let sequence_len = sequence_len as usize;
+        let sequence_bytes = sequence_len.div_ceil(2);
+        let quality_bytes = sequence_len;
+        let consumed_after_core = l_read_name
+            .checked_add(cigar_bytes)
+            .and_then(|value| value.checked_add(sequence_bytes))
+            .and_then(|value| value.checked_add(quality_bytes))
+            .ok_or_else(|| AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: "BAM record variable-length section overflowed usize.".to_string(),
+            })?;
+
+        if consumed_after_core > remaining {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: format!(
+                    "BAM record declared block size {block_size} but needs at least {consumed_after_core} bytes after the core section."
+                ),
+            });
+        }
+
+        let read_name_bytes = self.reader.read_exact_vec_with_context(
+            l_read_name,
+            "BAM stream ended while reading an alignment record read name.",
+        )?;
+        let Some((&0, read_name_without_nul)) = read_name_bytes.split_last() else {
+            return Err(AppError::InvalidRecord {
+                path: self.path.clone(),
+                detail: "BAM record read name was not NUL-terminated.".to_string(),
+            });
+        };
+        std::str::from_utf8(read_name_without_nul).map_err(|error| AppError::InvalidRecord {
+            path: self.path.clone(),
+            detail: format!("BAM record read name is not valid UTF-8: {error}"),
+        })?;
+
+        self.reader.discard_exact_with_context(
+            remaining - l_read_name,
+            "BAM stream ended while skipping an alignment record variable payload.",
+        )?;
+        self.records_read += 1;
+
+        Ok(Some(SummaryBamRecord {
+            ref_id,
+            flags: (flag_nc >> 16) as u16,
+            mapping_quality: ((bin_mq_nl >> 8) & 0xff) as u8,
+        }))
     }
 
     pub fn next_record_with_virtual_offsets(
@@ -191,6 +301,32 @@ impl BamScanner {
     }
 }
 
+fn read_i32_le(raw: &[u8], offset: usize, path: &Path) -> Result<i32, AppError> {
+    let bytes = read_4(raw, offset, path)?;
+    Ok(i32::from_le_bytes(bytes))
+}
+
+fn read_u32_le(raw: &[u8], offset: usize, path: &Path) -> Result<u32, AppError> {
+    let bytes = read_4(raw, offset, path)?;
+    Ok(u32::from_le_bytes(bytes))
+}
+
+fn read_4(raw: &[u8], offset: usize, path: &Path) -> Result<[u8; 4], AppError> {
+    let end = offset
+        .checked_add(4)
+        .ok_or_else(|| AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: "BAM record fixed-field offset overflowed usize.".to_string(),
+        })?;
+    let bytes = raw
+        .get(offset..end)
+        .ok_or_else(|| AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: "BAM record ended before the core fields were available.".to_string(),
+        })?;
+    Ok(bytes.try_into().expect("slice length checked above"))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -292,6 +428,39 @@ mod tests {
         assert!(
             scanner
                 .next_record()
+                .expect("scan should succeed")
+                .is_none()
+        );
+        assert_eq!(scanner.records_read(), 2);
+        std::fs::remove_file(path).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn scans_summary_records_without_materializing_full_views() {
+        let first = build_light_record(0, 5, "read1", 0x41);
+        let second = build_light_record(-1, -1, "read2", 0x4 | 0x80);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[first, second],
+        );
+        let path = write_temp_file("scanner-summary-records", "bam", &bytes);
+
+        let mut scanner = BamScanner::open(&path).expect("scanner should open");
+        let first = scanner
+            .next_summary_record()
+            .expect("scan should succeed")
+            .expect("first record should exist");
+        let second = scanner
+            .next_summary_record()
+            .expect("scan should succeed")
+            .expect("second record should exist");
+
+        assert_eq!((first.ref_id, first.flags), (0, 0x41));
+        assert_eq!((second.ref_id, second.flags), (-1, 0x4 | 0x80));
+        assert!(
+            scanner
+                .next_summary_record()
                 .expect("scan should succeed")
                 .is_none()
         );

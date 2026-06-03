@@ -123,6 +123,35 @@ impl BamReader {
         Ok(buffer)
     }
 
+    pub(crate) fn discard_exact_with_context(
+        &mut self,
+        len: usize,
+        detail: &'static str,
+    ) -> Result<(), AppError> {
+        match &mut self.backend {
+            BamReaderBackend::NativeBgzf(reader) => reader.discard(len).map_err(|error| {
+                if matches!(error, AppError::TruncatedFile { .. }) {
+                    AppError::TruncatedFile {
+                        path: self.path.clone(),
+                        detail: detail.to_string(),
+                    }
+                } else {
+                    error
+                }
+            }),
+            BamReaderBackend::Gzip(_) => {
+                let mut remaining = len;
+                let mut buffer = [0_u8; 8192];
+                while remaining > 0 {
+                    let chunk = remaining.min(buffer.len());
+                    self.read_exact_into_with_context(&mut buffer[..chunk], detail)?;
+                    remaining -= chunk;
+                }
+                Ok(())
+            }
+        }
+    }
+
     fn read_exact_into(&mut self, buffer: &mut [u8]) -> Result<(), AppError> {
         self.read_exact_into_with_context(
             buffer,

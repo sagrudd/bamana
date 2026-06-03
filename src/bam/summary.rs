@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use crate::bam::{record::BamRecordView, records::LightAlignmentRecord};
+use crate::bam::{record::BamRecordView, records::LightAlignmentRecord, scan::SummaryBamRecord};
 
 #[derive(Debug, Clone, Default)]
 pub struct SummarySnapshot {
@@ -61,22 +61,20 @@ impl SummaryAccumulator {
         });
     }
 
+    pub fn observe_summary_record(&mut self, record: SummaryBamRecord) {
+        self.observe_fields(ObservedSummaryRecord::from_raw_fields(
+            record.ref_id,
+            record.flags,
+            record.mapping_quality,
+        ));
+    }
+
     pub fn observe_view(&mut self, record: &BamRecordView<'_>) {
-        let flags = record.flag_summary();
-        self.observe_fields(ObservedSummaryRecord {
-            ref_id: record.ref_id(),
-            mapping_quality: record.mapping_quality(),
-            is_unmapped: flags.is_unmapped,
-            is_paired: flags.is_paired,
-            is_proper_pair: flags.is_proper_pair,
-            is_reverse: flags.is_reverse,
-            is_secondary: flags.is_secondary,
-            is_supplementary: flags.is_supplementary,
-            is_qc_fail: flags.is_qc_fail,
-            is_duplicate: flags.is_duplicate,
-            is_read1: flags.is_read1,
-            is_read2: flags.is_read2,
-        });
+        self.observe_fields(ObservedSummaryRecord::from_raw_fields(
+            record.ref_id(),
+            record.flags(),
+            record.mapping_quality(),
+        ));
     }
 
     fn observe_fields(&mut self, record: ObservedSummaryRecord) {
@@ -171,6 +169,25 @@ struct ObservedSummaryRecord {
     is_duplicate: bool,
     is_read1: bool,
     is_read2: bool,
+}
+
+impl ObservedSummaryRecord {
+    fn from_raw_fields(ref_id: i32, flags: u16, mapping_quality: u8) -> Self {
+        Self {
+            ref_id,
+            mapping_quality,
+            is_unmapped: flags & 0x4 != 0,
+            is_paired: flags & 0x1 != 0,
+            is_proper_pair: flags & 0x2 != 0,
+            is_reverse: flags & 0x10 != 0,
+            is_secondary: flags & 0x100 != 0,
+            is_supplementary: flags & 0x800 != 0,
+            is_qc_fail: flags & 0x200 != 0,
+            is_duplicate: flags & 0x400 != 0,
+            is_read1: flags & 0x40 != 0,
+            is_read2: flags & 0x80 != 0,
+        }
+    }
 }
 
 #[cfg(test)]

@@ -641,11 +641,11 @@ fn scan_summary_records(
     let mut reached_eof = false;
     let mut scanned_records = 0;
 
-    while accumulator.snapshot().records_examined < record_limit {
-        match scanner.next_record() {
+    while scanned_records < record_limit {
+        match scanner.next_summary_record() {
             Ok(Some(record)) => {
                 scanned_records += 1;
-                accumulator.observe_view(&record);
+                accumulator.observe_summary_record(record);
             }
             Ok(None) => {
                 reached_eof = true;

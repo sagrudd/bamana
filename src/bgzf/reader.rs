@@ -58,6 +58,29 @@ impl NativeBgzfReader {
         Ok(count)
     }
 
+    pub fn discard(&mut self, mut len: usize) -> Result<(), AppError> {
+        while len > 0 {
+            while self.offset >= self.payload.len() {
+                if self.eof {
+                    return Err(AppError::TruncatedFile {
+                        path: self.path.clone(),
+                        detail:
+                            "BGZF stream ended before the expected discarded bytes were available."
+                                .to_string(),
+                    });
+                }
+                self.load_next_payload()?;
+            }
+
+            let available = self.payload.len() - self.offset;
+            let count = available.min(len);
+            self.offset += count;
+            len -= count;
+        }
+
+        Ok(())
+    }
+
     pub fn virtual_offset(&self) -> Result<VirtualOffset, AppError> {
         if !self.has_current_block {
             return Ok(VirtualOffset::ZERO);
@@ -202,15 +225,20 @@ fn virtual_offset_error(path: &Path, error: VirtualOffsetError) -> AppError {
 }
 
 fn read_first_bgzf_payload(path: &Path) -> Result<Vec<u8>, AppError> {
-    let member = read_bgzf_payloads(path)?
-        .into_iter()
-        .next()
-        .ok_or_else(|| AppError::TruncatedFile {
-            path: path.to_path_buf(),
-            detail: "File did not contain a readable BGZF member before EOF.".to_string(),
-        })?;
+    let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+    let member = read_bgzf_member(&mut file, path)?.ok_or_else(|| AppError::TruncatedFile {
+        path: path.to_path_buf(),
+        detail: "File did not contain a readable BGZF member before EOF.".to_string(),
+    })?;
 
-    Ok(member)
+    if member.bytes == BGZF_EOF_MARKER {
+        return Err(AppError::TruncatedFile {
+            path: path.to_path_buf(),
+            detail: "File contained a BGZF EOF marker before any payload member.".to_string(),
+        });
+    }
+
+    decompress_member(&member.bytes, path)
 }
 
 #[cfg(test)]
@@ -560,6 +588,21 @@ mod tests {
         bytes.extend_from_slice(&member(b"second member is not inspected"));
         bytes.extend_from_slice(&BGZF_EOF_MARKER);
         let path = write_temp_file("bam-magic", &bytes);
+
+        let starts_with_bam_magic =
+            first_member_starts_with_bam_magic(&path).expect("first member should inflate");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert!(starts_with_bam_magic);
+    }
+
+    #[test]
+    fn bam_magic_probe_does_not_inflate_later_members() {
+        let mut second = member(b"later member");
+        second.truncate(second.len() - 5);
+        let mut bytes = member(b"BAM\x01payload");
+        bytes.extend_from_slice(&second);
+        let path = write_temp_file("bam-magic-ignores-later-members", &bytes);
 
         let starts_with_bam_magic =
             first_member_starts_with_bam_magic(&path).expect("first member should inflate");
