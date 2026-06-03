@@ -481,11 +481,7 @@ fn run_region_summary(
             execution: RegionExecution::ScanFallback,
             index_path: None,
             fallback_mode: Some("native_scan_required"),
-            scan_records_limit: Some(if request.full_scan {
-                usize::MAX
-            } else {
-                request.sample_records.max(1)
-            }),
+            scan_records_limit: Some(summary_record_limit_usize(&request)),
             chunks_traversed: None,
             raw_records_seen: None,
             duplicate_records_suppressed: None,
@@ -732,11 +728,7 @@ fn scan_summary_records(
 ) -> Result<ScanResult, String> {
     let mut accumulator = SummaryAccumulator::new(request.include_mapq_hist);
     let mut live_progress = request.live_progress.then(LiveProgressReporter::new);
-    let record_limit = if request.full_scan {
-        u64::MAX
-    } else {
-        request.sample_records.max(1) as u64
-    };
+    let record_limit = summary_record_limit_u64(request);
     let mut reached_eof = false;
     let mut scanned_records = 0;
     let mut stopped_at_incomplete_tail = false;
@@ -807,11 +799,7 @@ fn scan_region_summary_records(
     regions: &[NormalizedRegion],
 ) -> Result<ScanResult, String> {
     let mut accumulator = SummaryAccumulator::new(request.include_mapq_hist);
-    let record_limit = if request.full_scan {
-        u64::MAX
-    } else {
-        request.sample_records.max(1) as u64
-    };
+    let record_limit = summary_record_limit_u64(request);
     let mut reached_eof = false;
     let mut scanned_records = 0;
 
@@ -844,6 +832,22 @@ fn scan_region_summary_records(
         scanned_records,
         stopped_at_incomplete_tail: false,
     })
+}
+
+fn summary_record_limit_u64(request: &SummaryRequest) -> u64 {
+    if request.full_scan || request.sample_records == 0 {
+        u64::MAX
+    } else {
+        request.sample_records as u64
+    }
+}
+
+fn summary_record_limit_usize(request: &SummaryRequest) -> usize {
+    if request.full_scan || request.sample_records == 0 {
+        usize::MAX
+    } else {
+        request.sample_records
+    }
 }
 
 fn scan_result_from_region_records(
@@ -1411,6 +1415,46 @@ mod tests {
                 .expect("semantic note should be present")
                 .contains("bounded scan")
         );
+    }
+
+    #[test]
+    fn zero_sample_records_scans_all_records() {
+        let bam_path = write_temp_file(
+            "summary-zero-sample-records",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[
+                    build_light_record(0, 10, "read1", 0),
+                    build_light_record(-1, -1, "read2", 4),
+                ],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 0,
+            full_scan: false,
+            prefer_index: false,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        assert!(matches!(payload.mode, SummaryMode::FullScan));
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert_eq!(evidence.records_scanned, 2);
+        assert!(evidence.full_file_scanned);
+        let counts = payload.counts.expect("counts should be present");
+        assert_eq!(counts.records_examined, 2);
+        assert_eq!(counts.records_total_known, Some(2));
     }
 
     #[test]

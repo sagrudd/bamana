@@ -988,6 +988,9 @@ signals, and bounded or full record scans. Optional index-derived totals are
 used only from a selected BAI sidecar that is not timestamp-stale, passes the
 implemented structural checks, and contains complete mapped/unmapped metadata.
 Generated and discovered BAI sidecars follow the same validation path.
+`--sample-records` defaults to `0`; for `summary`, `0` means no record limit
+and scans all records until EOF or an allowed incomplete growing-file boundary.
+Positive `--sample-records <N>` values request bounded scan evidence.
 `--live-progress` is a whole-file native scan status surface: it writes a
 single carriage-return-updated line to stderr about every 0.5 seconds while
 scanning, containing parsed reads, mean BAM base quality over non-missing

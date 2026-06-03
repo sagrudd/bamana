@@ -100,6 +100,10 @@ index-derived results describe usable BAI mapped/unmapped metadata; scan-derived
 results describe only the examined alignment records. For `summary`, bounded
 output reports observed operational metrics only; full-file totals require
 `evidence.full_file_scanned: true` and are not BAM structural validation.
+`summary --sample-records` defaults to `0`, which means no record limit and
+therefore scans all records unless the scan stops at a growing-file boundary
+under `--allow-incomplete`; set a positive value to request bounded summary
+evidence.
 `summary --live-progress` emits a single carriage-return-updated stderr status
 line about every 0.5 seconds during whole-file native scans, with parsed reads,
 mean BAM base quality over non-missing quality bytes, mean read length, and

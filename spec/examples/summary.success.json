@@ -4,12 +4,12 @@
   "path": "example.bam",
   "data": {
     "format": "BAM",
-    "mode": "bounded_scan",
+    "mode": "full_scan",
     "evidence": {
       "header_used": true,
       "index_used": false,
-      "records_scanned": 100000,
-      "full_file_scanned": false
+      "records_scanned": 125000,
+      "full_file_scanned": true
     },
     "header": {
       "references_defined": 25,
@@ -18,12 +18,12 @@
       "group_order": null
     },
     "counts": {
-      "records_examined": 100000,
-      "records_total_known": null,
-      "mapped_records": 99812,
-      "unmapped_records": 188
+      "records_examined": 125000,
+      "records_total_known": 125000,
+      "mapped_records": 124765,
+      "unmapped_records": 235
     },
-    "fractions_observed": {
+    "fractions": {
       "fraction_mapped": 0.99812
     },
     "mapq": {
@@ -34,13 +34,13 @@
     },
     "mapping": {
       "status": "mapped",
-      "references_with_mapped_reads_observed": 24
+      "references_with_mapped_reads": 24
     },
     "anomalies": {
       "contradictory_mapping_state_records": 0
     },
-    "confidence": "medium",
-    "semantic_note": "Summary metrics are derived from a bounded scan of alignment records and may not represent full-file totals."
+    "confidence": "high",
+    "semantic_note": "Summary metrics are derived from a full alignment-record scan but are not a substitute for full BAM structural validation."
   },
   "error": null
 }

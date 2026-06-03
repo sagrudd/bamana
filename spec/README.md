@@ -26,7 +26,8 @@ do not prove. For example:
 * `reheader` is header-only and does not imply record-level `RG:Z` tag mutation
 * `subsample` is now an implemented contract for deterministic or seeded-random BAM, FASTQ, and FASTQ.GZ subsampling
 * `check_eof` is EOF-marker only
-* `summary` may be bounded or full-scan depending on mode
+* `summary` scans all records by default; positive `--sample-records` values
+  request bounded evidence
 * `sort` and `merge` do not imply content preservation unless checksum
   verification is explicitly reported
 * `validate` does not imply biological or reference-level correctness

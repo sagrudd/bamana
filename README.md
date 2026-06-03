@@ -78,7 +78,7 @@ The current semantics are intentionally narrow:
 * `check_index` inspects adjacent BAM indices for presence, type, BAI structural validity, CSI header status, timestamp-based staleness, and apparent usability
 * `index` creates native BAI sidecars for coordinate-sorted BAM inputs, still defers CSI writing, and creates sampled `FASTQ.GZI` sidecars for `FASTQ.GZ` inputs with dense planner checkpoints, cumulative record totals, and approximate parallel explode metadata stored at each checkpoint
 * `explode` splits one `BAM`, `SAM`, or `FASTQ.GZ` input into contiguous shards while preserving the original encounter order of reads or alignments within each shard; BAM shards preserve the parsed header and use scanner-backed records through the native BGZF writer, while the `FASTQ.GZ` path auto-creates or reuses adjacent `FASTQ.GZI` metadata, aligns shard boundaries to available index cutpoints, and allows shard sizes to vary so every sequence lands in exactly one shard without extra reordering work
-* `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and bounded or full record scans
+* `summary` provides a fast operational BAM overview from header metadata, optional index-derived totals, and all-record or bounded record scans
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
@@ -364,9 +364,12 @@ checkpoint pairs, so enumerate can reuse an exact indexed record total,
 explode can derive dense contiguous shard plans, and consume can size parallel
 worker batches from the same sidecar.
 
-`summary` combines BAM header metadata with a bounded scan by default and
-switches to full-file totals only when EOF is actually reached or `--full-scan`
-is used. When a usable BAI is available and `--prefer-index` is enabled,
+`summary` combines BAM header metadata with an all-record native scan by default
+because `--sample-records` defaults to `0`, meaning no record limit. Set a
+positive `--sample-records <N>` to request bounded evidence, or use
+`--full-scan` as an explicit full-scan request. Full-file totals are reported
+only when EOF is actually reached. When a usable BAI is available and
+`--prefer-index` is enabled,
 index-derived mapped/unmapped totals are reported separately from scan-derived
 record-category counts so the evidence source stays explicit. Stale,
 unsupported, malformed, or incomplete BAI sidecars fall back to native scanner

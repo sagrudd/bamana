@@ -134,12 +134,14 @@ evidence. BAI metadata is reported in ``index_derived`` and reference
 mapped/unmapped fields, but it remains separate from scan-derived counts and
 flag categories.
 
-Bounded summaries report ``mode=bounded_scan`` and place fractions in
-``fractions_observed``. ``counts.records_total_known`` and full-file fractions
-are emitted only when scanner traversal reaches EOF cleanly. Header-only BAM
-bodies are valid operational evidence with zero scanned records and low
-confidence. Malformed record traversal returns an indeterminate failure payload
-rather than a partial summary.
+``summary`` defaults to an all-record native scan: ``--sample-records`` defaults
+to ``0``, and ``0`` means no record limit. Positive ``--sample-records <N>``
+values request bounded summaries, which report ``mode=bounded_scan`` and place
+fractions in ``fractions_observed``. ``counts.records_total_known`` and
+full-file fractions are emitted only when scanner traversal reaches EOF cleanly.
+Header-only BAM bodies are valid operational evidence with zero scanned records
+and low confidence. Malformed record traversal returns an indeterminate failure
+payload rather than a partial summary.
 
 For BAMs still being written, whole-file ``summary`` scans can use
 ``--live-progress`` to emit a single carriage-return-updated stderr status line

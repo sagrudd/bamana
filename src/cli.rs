@@ -754,8 +754,8 @@ pub struct SummaryArgs {
     /// BAM file to summarise.
     #[arg(long = "bam")]
     pub bam: PathBuf,
-    /// Maximum number of alignment records to inspect in bounded-scan mode.
-    #[arg(long = "sample-records", default_value_t = 100_000)]
+    /// Maximum number of alignment records to inspect; 0 scans all records.
+    #[arg(long = "sample-records", default_value_t = 0)]
     pub sample_records: usize,
     /// Scan the full alignment stream.
     #[arg(long = "full-scan")]
