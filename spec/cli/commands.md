@@ -980,7 +980,7 @@ Key output concepts:
 ## `summary`
 
 Current synopsis:
-`bamana summary --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--include-mapq-hist] [--include-flags] [--region <REGION> ...]`
+`bamana summary --bam <bamfile> [--sample-records <N>] [--full-scan] [--prefer-index] [--include-mapq-hist] [--include-flags] [--live-progress] [--allow-incomplete] [--region <REGION> ...]`
 
 Semantics:
 Produces a fast operational BAM overview from header metadata, optional index
@@ -988,12 +988,25 @@ signals, and bounded or full record scans. Optional index-derived totals are
 used only from a selected BAI sidecar that is not timestamp-stale, passes the
 implemented structural checks, and contains complete mapped/unmapped metadata.
 Generated and discovered BAI sidecars follow the same validation path.
+`--live-progress` is a whole-file native scan status surface: it writes a
+single carriage-return-updated line to stderr about every 0.5 seconds while
+scanning, containing parsed reads, mean BAM base quality over non-missing
+quality bytes, mean read length, and elapsed time. JSON output remains on
+stdout and is not interleaved with progress. `--allow-incomplete` is also
+whole-file native scan behavior; it lets the scan stop cleanly at a missing EOF
+marker, incomplete trailing BGZF member, or incomplete trailing BAM record, and
+the payload describes only complete records parsed before that boundary. These
+growing-file flags are invalid with `--region`; for BAMs still being written,
+callers should normally omit `--prefer-index` so evidence comes from the native
+scan.
 
 Does prove:
 Only the metrics that correspond to the reported evidence mode. Bounded scan
 metrics describe examined records; index-derived totals remain separate from
 scan-derived counts. Stale, unsupported, malformed, or incomplete sidecars
-fall back to native scanner evidence.
+fall back to native scanner evidence. With `--allow-incomplete`, complete-prefix
+scan metrics are valid up to the first incomplete trailing BGZF member or BAM
+record and `evidence.full_file_scanned` remains false.
 
 Does not prove:
 Full-file totals when the command explicitly reports bounded scan evidence, or
@@ -1016,6 +1029,8 @@ M10 region contract:
   intervals
 * whole-file BAI totals are intentionally omitted from region-scoped summary
   `index_derived`; the index is used only to find records
+* `--live-progress` and `--allow-incomplete` are not region-scoped behavior and
+  must fail with `unsupported_input_for_command` when combined with `--region`
 * region files remain deferred and must fail precisely until a later task
   promotes them
 

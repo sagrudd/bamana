@@ -1,4 +1,9 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    io::{self, Write},
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 use serde::Serialize;
 
@@ -13,7 +18,7 @@ use crate::{
         region::{NormalizedRegion, NormalizedRegionSet, normalize_region_strings},
         region_plan::plan_bai_region_chunks,
         region_traversal::{RegionMatchedRecord, traverse_planned_region_chunks},
-        scan::BamScanner,
+        scan::{BamScanner, LiveSummaryBamRecord, SummaryBamRecord},
         summary::{SummaryAccumulator, SummarySnapshot},
     },
     error::AppError,
@@ -30,6 +35,8 @@ pub struct SummaryRequest {
     pub include_mapq_hist: bool,
     pub include_flags: bool,
     pub regions: Vec<String>,
+    pub live_progress: bool,
+    pub allow_incomplete: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -283,6 +290,17 @@ pub fn run(request: SummaryRequest) -> CommandResponse<SummaryPayload> {
     };
 
     if !request.regions.is_empty() {
+        if request.live_progress || request.allow_incomplete {
+            return CommandResponse::failure(
+                "summary",
+                Some(request.bam.as_path()),
+                AppError::UnsupportedInputForCommand {
+                    path: request.bam.clone(),
+                    detail: "summary --live-progress and --allow-incomplete are only supported for whole-file scan evidence; remove --region to inspect a growing BAM."
+                        .to_string(),
+                },
+            );
+        }
         let regions = match normalize_region_strings(
             &request.regions,
             &scanner.header().header.references,
@@ -614,6 +632,7 @@ struct ScanResult {
     snapshot: SummarySnapshot,
     reached_eof: bool,
     scanned_records: u64,
+    stopped_at_incomplete_tail: bool,
 }
 
 struct RegionScopeOptions {
@@ -628,11 +647,86 @@ struct RegionScopeOptions {
     note: String,
 }
 
+enum EitherSummaryRecord {
+    Basic(SummaryBamRecord),
+    Live(LiveSummaryBamRecord),
+}
+
+struct LiveProgressReporter {
+    started_at: Instant,
+    last_emit: Instant,
+    sequence_bases: u128,
+    quality_sum: u128,
+    quality_count: u128,
+}
+
+impl LiveProgressReporter {
+    fn new() -> Self {
+        let now = Instant::now();
+        Self {
+            started_at: now,
+            last_emit: now - Duration::from_millis(500),
+            sequence_bases: 0,
+            quality_sum: 0,
+            quality_count: 0,
+        }
+    }
+
+    fn observe(
+        &mut self,
+        reads_parsed: u64,
+        sequence_len: usize,
+        quality_sum: u64,
+        quality_count: u64,
+    ) {
+        self.sequence_bases += sequence_len as u128;
+        self.quality_sum += quality_sum as u128;
+        self.quality_count += quality_count as u128;
+        if self.last_emit.elapsed() >= Duration::from_millis(500) {
+            self.emit(reads_parsed, false, false);
+        }
+    }
+
+    fn finish(&mut self, reads_parsed: u64, stopped_at_incomplete_tail: bool) {
+        self.emit(reads_parsed, stopped_at_incomplete_tail, true);
+    }
+
+    fn emit(&mut self, reads_parsed: u64, stopped_at_incomplete_tail: bool, final_emit: bool) {
+        self.last_emit = Instant::now();
+        let elapsed = self.started_at.elapsed().as_secs_f64();
+        let mean_length = if reads_parsed > 0 {
+            format!("{:.1}", self.sequence_bases as f64 / reads_parsed as f64)
+        } else {
+            "NA".to_string()
+        };
+        let mean_q = if self.quality_count > 0 {
+            format!("{:.2}", self.quality_sum as f64 / self.quality_count as f64)
+        } else {
+            "NA".to_string()
+        };
+        let status = if stopped_at_incomplete_tail {
+            "incomplete_tail"
+        } else if final_emit {
+            "complete"
+        } else {
+            "scanning"
+        };
+        eprint!(
+            "\rstatus={status} reads_parsed={reads_parsed} mean_q={mean_q} mean_length={mean_length} elapsed={elapsed:.1}s"
+        );
+        let _ = io::stderr().flush();
+        if final_emit {
+            eprintln!();
+        }
+    }
+}
+
 fn scan_summary_records(
     scanner: &mut BamScanner,
     request: &SummaryRequest,
 ) -> Result<ScanResult, String> {
     let mut accumulator = SummaryAccumulator::new(request.include_mapq_hist);
+    let mut live_progress = request.live_progress.then(LiveProgressReporter::new);
     let record_limit = if request.full_scan {
         u64::MAX
     } else {
@@ -640,18 +734,47 @@ fn scan_summary_records(
     };
     let mut reached_eof = false;
     let mut scanned_records = 0;
+    let mut stopped_at_incomplete_tail = false;
 
     while scanned_records < record_limit {
-        match scanner.next_summary_record() {
+        let next_record = if live_progress.is_some() {
+            scanner
+                .next_live_summary_record()
+                .map(|record| record.map(EitherSummaryRecord::Live))
+        } else {
+            scanner
+                .next_summary_record()
+                .map(|record| record.map(EitherSummaryRecord::Basic))
+        };
+        match next_record {
             Ok(Some(record)) => {
                 scanned_records += 1;
-                accumulator.observe_summary_record(record);
+                match record {
+                    EitherSummaryRecord::Basic(record) => {
+                        accumulator.observe_summary_record(record);
+                    }
+                    EitherSummaryRecord::Live(record) => {
+                        accumulator.observe_summary_record(record.summary);
+                        if let Some(reporter) = live_progress.as_mut() {
+                            reporter.observe(
+                                scanned_records,
+                                record.sequence_len,
+                                record.quality_sum,
+                                record.quality_count,
+                            );
+                        }
+                    }
+                }
             }
             Ok(None) => {
                 reached_eof = true;
                 break;
             }
             Err(AppError::TruncatedFile { .. }) => {
+                if request.allow_incomplete {
+                    stopped_at_incomplete_tail = true;
+                    break;
+                }
                 return Err(
                     "Alignment stream was truncated before a stable summary could be completed."
                         .to_string(),
@@ -661,11 +784,15 @@ fn scan_summary_records(
             Err(error) => return Err(error.to_string()),
         }
     }
+    if let Some(reporter) = live_progress.as_mut() {
+        reporter.finish(scanned_records, stopped_at_incomplete_tail);
+    }
 
     Ok(ScanResult {
         snapshot: accumulator.snapshot(),
         reached_eof,
         scanned_records,
+        stopped_at_incomplete_tail,
     })
 }
 
@@ -710,6 +837,7 @@ fn scan_region_summary_records(
         snapshot: accumulator.snapshot(),
         reached_eof,
         scanned_records,
+        stopped_at_incomplete_tail: false,
     })
 }
 
@@ -731,6 +859,7 @@ fn scan_result_from_region_records(
         snapshot: accumulator.snapshot(),
         reached_eof: false,
         scanned_records: records.len() as u64,
+        stopped_at_incomplete_tail: false,
     })
 }
 
@@ -741,7 +870,7 @@ fn build_payload(
     scan_result: ScanResult,
     request: &SummaryRequest,
 ) -> SummaryPayload {
-    let full_file_scanned = scan_result.reached_eof;
+    let full_file_scanned = scan_result.reached_eof && !scan_result.stopped_at_incomplete_tail;
     let mode = if full_file_scanned {
         SummaryMode::FullScan
     } else {
@@ -834,6 +963,13 @@ fn build_payload(
     let semantic_note = match index_note {
         Some(note) => format!("{base_semantic_note} {note}"),
         None => base_semantic_note,
+    };
+    let semantic_note = if scan_result.stopped_at_incomplete_tail {
+        format!(
+            "{semantic_note} Scan stopped at an incomplete trailing BGZF member or BAM record; reported metrics describe the complete records parsed before the growing-file boundary."
+        )
+    } else {
+        semantic_note
     };
 
     SummaryPayload {
@@ -1194,6 +1330,8 @@ mod tests {
             include_mapq_hist: true,
             include_flags: true,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1240,6 +1378,8 @@ mod tests {
             include_mapq_hist: true,
             include_flags: true,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1269,6 +1409,53 @@ mod tests {
     }
 
     #[test]
+    fn allow_incomplete_summary_reports_complete_prefix() {
+        let mut bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:1000\n",
+            &[("chr1", 1000)],
+            &[build_light_record(0, 10, "read1", 0)],
+        );
+        bytes.truncate(bytes.len() - BGZF_EOF_MARKER.len());
+        let mut trailing_member = build_bgzf_member(b"partially-written-tail");
+        trailing_member.truncate(12);
+        bytes.extend_from_slice(&trailing_member);
+        let bam_path = write_temp_file("summary-growing-prefix", "bam", &bytes);
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: true,
+            prefer_index: false,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(response.ok);
+        let payload = response.data.expect("summary payload should be present");
+        let evidence = payload.evidence.expect("evidence should be present");
+        assert_eq!(evidence.records_scanned, 1);
+        assert!(!evidence.full_file_scanned);
+        assert_eq!(
+            payload
+                .counts
+                .expect("counts should be present")
+                .records_examined,
+            1
+        );
+        assert!(
+            payload
+                .semantic_note
+                .expect("semantic note should be present")
+                .contains("incomplete trailing")
+        );
+    }
+
+    #[test]
     fn full_summary_reports_scanner_eof() {
         let bam_path = write_temp_file(
             "summary-scanner-full",
@@ -1291,6 +1478,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1339,6 +1528,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1396,6 +1587,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1453,6 +1646,8 @@ mod tests {
             include_mapq_hist: true,
             include_flags: true,
             regions: region_values(&["chr1:6-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1525,6 +1720,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["chr1:6-9", "chr1:8-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1572,6 +1769,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["chr1:6-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1624,6 +1823,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["chr1:6-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1683,6 +1884,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["missing:1-10"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1714,6 +1917,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["chr1:10-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1722,6 +1927,39 @@ mod tests {
         assert_eq!(
             response.error.expect("error should be present").code,
             "invalid_region"
+        );
+    }
+
+    #[test]
+    fn region_summary_rejects_growing_file_flags() {
+        let bam_path = write_temp_file(
+            "summary-region-growing-flags",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:1000\n",
+                &[("chr1", 1000)],
+                &[build_light_record(0, 5, "read1", 0)],
+            ),
+        );
+
+        let response = run(SummaryRequest {
+            bam: bam_path.clone(),
+            sample_records: 10,
+            full_scan: false,
+            prefer_index: true,
+            include_mapq_hist: false,
+            include_flags: false,
+            regions: region_values(&["chr1:1-10"]),
+            live_progress: true,
+            allow_incomplete: true,
+        });
+
+        fs::remove_file(&bam_path).expect("bam fixture should be removable");
+
+        assert!(!response.ok);
+        assert_eq!(
+            response.error.expect("error should be present").code,
+            "unsupported_input_for_command"
         );
     }
 
@@ -1755,6 +1993,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1804,6 +2044,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: region_values(&["chr1:6-9"]),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");
@@ -1858,6 +2100,8 @@ mod tests {
             include_mapq_hist: false,
             include_flags: false,
             regions: Vec::new(),
+            live_progress: false,
+            allow_incomplete: false,
         });
 
         fs::remove_file(&bam_path).expect("bam fixture should be removable");

@@ -327,6 +327,8 @@ fn main() -> ExitCode {
                 include_mapq_hist: args.include_mapq_hist,
                 include_flags: args.include_flags,
                 regions: args.regions,
+                live_progress: args.live_progress,
+                allow_incomplete: args.allow_incomplete,
             })
         }),
         Commands::Validate(args) => emit_timed_response(cli.global.json_pretty, || {

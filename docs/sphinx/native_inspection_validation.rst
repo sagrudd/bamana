@@ -141,6 +141,15 @@ bodies are valid operational evidence with zero scanned records and low
 confidence. Malformed record traversal returns an indeterminate failure payload
 rather than a partial summary.
 
+For BAMs still being written, whole-file ``summary`` scans can use
+``--live-progress`` to emit a single carriage-return-updated stderr status line
+about every 0.5 seconds. The line reports parsed reads, mean BAM base quality
+over non-missing quality bytes, and mean read length. ``--allow-incomplete``
+lets the scan stop at a missing EOF marker, incomplete trailing BGZF member, or
+incomplete trailing BAM record and report complete-prefix evidence only;
+``evidence.full_file_scanned`` remains false in that case. These flags apply to
+whole-file native scan evidence and are not accepted with ``--region``.
+
 ``summary`` is not full BAM structural validation. It is a fast operational
 overview; use ``validate`` for structural record validation and interpret
 bounded summaries as sampled evidence only.

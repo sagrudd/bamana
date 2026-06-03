@@ -769,6 +769,12 @@ pub struct SummaryArgs {
     /// Include a detailed flag-category section in the output.
     #[arg(long = "include-flags")]
     pub include_flags: bool,
+    /// Emit one-line carriage-return progress metrics to stderr while scanning.
+    #[arg(long = "live-progress")]
+    pub live_progress: bool,
+    /// Stop cleanly at an incomplete trailing BGZF member or BAM record.
+    #[arg(long = "allow-incomplete")]
+    pub allow_incomplete: bool,
     /// Restrict summary evidence to one M10 region string. May be repeated.
     #[arg(long = "region")]
     pub regions: Vec<String>,

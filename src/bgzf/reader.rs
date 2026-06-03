@@ -288,6 +288,7 @@ struct ParallelBgzfInflator {
     next_sequence_to_return: u64,
     next_worker: usize,
     eof: bool,
+    read_error: Option<AppError>,
     max_in_flight: usize,
 }
 
@@ -333,6 +334,7 @@ impl ParallelBgzfInflator {
             next_sequence_to_return: 0,
             next_worker: 0,
             eof: false,
+            read_error: None,
             max_in_flight,
         }
     }
@@ -345,6 +347,7 @@ impl ParallelBgzfInflator {
         self.next_sequence_to_return = 0;
         self.next_worker = 0;
         self.eof = false;
+        self.read_error = None;
     }
 
     fn next_payload(&mut self, file: &mut File) -> Result<Option<InflatedBgzfMember>, AppError> {
@@ -364,6 +367,9 @@ impl ParallelBgzfInflator {
             }
 
             if self.eof && self.in_flight == 0 {
+                if let Some(error) = self.read_error.take() {
+                    return Err(error);
+                }
                 return Ok(None);
             }
 
@@ -379,9 +385,17 @@ impl ParallelBgzfInflator {
 
     fn fill_pipeline(&mut self, file: &mut File) -> Result<(), AppError> {
         while !self.eof && self.in_flight < self.max_in_flight {
-            let Some(member) = read_bgzf_member(file, &self.path)? else {
-                self.eof = true;
-                break;
+            let member = match read_bgzf_member(file, &self.path) {
+                Ok(Some(member)) => member,
+                Ok(None) => {
+                    self.eof = true;
+                    break;
+                }
+                Err(error) => {
+                    self.eof = true;
+                    self.read_error = Some(error);
+                    break;
+                }
             };
 
             if member.bytes == BGZF_EOF_MARKER {

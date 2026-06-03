@@ -223,6 +223,7 @@ cargo run -- index --input reads.fastq.gz --format gzi --out reads.fastq.gzi
 cargo run -- summary --bam example.bam
 cargo run -- summary --bam example.bam --sample-records 250000 --include-mapq-hist --include-flags
 cargo run -- summary --bam example.bam --full-scan --prefer-index
+cargo run -- summary --bam growing.bam --full-scan --live-progress --allow-incomplete
 cargo run -- summary --bam example.bam --region chr1:100-200 --include-flags
 cargo run -- check_tag --tag NM --bam example.bam
 cargo run -- check_tag --tag RG --require-type Z --bam example.bam --count-hits
@@ -370,6 +371,15 @@ index-derived mapped/unmapped totals are reported separately from scan-derived
 record-category counts so the evidence source stays explicit. Stale,
 unsupported, malformed, or incomplete BAI sidecars fall back to native scanner
 evidence and are explained in the semantic note.
+
+For BAM files that are still being written, `summary --full-scan
+--live-progress --allow-incomplete` scans complete records from the current
+file prefix, tolerates a missing EOF marker or incomplete trailing BGZF
+member/record, and reports carriage-return progress on stderr about every 0.5
+seconds. Omit `--prefer-index` for this growing-file mode so evidence comes
+from the native scan. The progress line includes parsed reads, mean BAM base
+quality over non-missing quality bytes, and mean read length; JSON output on
+stdout remains unchanged.
 
 `check_tag` traverses BAM auxiliary fields just deeply enough to establish tag
 presence, optional type-constrained presence, or full-scan absence. In bounded

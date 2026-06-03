@@ -159,7 +159,7 @@ impl BamReader {
         )
     }
 
-    fn read_exact_into_with_context(
+    pub(crate) fn read_exact_into_with_context(
         &mut self,
         buffer: &mut [u8],
         detail: &'static str,

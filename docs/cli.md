@@ -100,6 +100,14 @@ index-derived results describe usable BAI mapped/unmapped metadata; scan-derived
 results describe only the examined alignment records. For `summary`, bounded
 output reports observed operational metrics only; full-file totals require
 `evidence.full_file_scanned: true` and are not BAM structural validation.
+`summary --live-progress` emits a single carriage-return-updated stderr status
+line about every 0.5 seconds during whole-file native scans, with parsed reads,
+mean BAM base quality over non-missing quality bytes, and mean read length.
+`summary --allow-incomplete` lets whole-file native scans stop cleanly at a
+missing EOF marker, incomplete trailing BGZF member, or incomplete trailing BAM
+record, reporting only complete records parsed before that growing-file
+boundary. These flags are not region-scoped behavior; use them without
+`--region`, normally omitting `--prefer-index` for a BAM still being written.
 `check_tag` reports scanner-owned auxiliary traversal evidence only: bounded
 non-observation is not full-file absence, duplicate tags are counted at the
 record level, and unsupported aux shapes are structured traversal failures.
