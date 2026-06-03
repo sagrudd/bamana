@@ -1,7 +1,10 @@
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{ErrorKind, Read, Seek, SeekFrom},
-    path::Path,
+    path::{Path, PathBuf},
+    sync::mpsc,
+    thread,
 };
 
 use flate2::read::GzDecoder;
@@ -15,6 +18,7 @@ use crate::{
 pub struct NativeBgzfReader {
     path: std::path::PathBuf,
     file: File,
+    inflator: ParallelBgzfInflator,
     payload: Vec<u8>,
     offset: usize,
     eof: bool,
@@ -30,6 +34,7 @@ impl NativeBgzfReader {
         Ok(Self {
             path: path.to_path_buf(),
             file,
+            inflator: ParallelBgzfInflator::new(path),
             payload: Vec::new(),
             offset: 0,
             eof: false,
@@ -99,6 +104,7 @@ impl NativeBgzfReader {
         self.file
             .seek(SeekFrom::Start(offset.compressed_block_offset()))
             .map_err(|error| AppError::from_io(&self.path, error))?;
+        self.inflator.reset();
         self.payload.clear();
         self.offset = 0;
         self.eof = false;
@@ -145,7 +151,7 @@ impl NativeBgzfReader {
 
     fn load_next_payload(&mut self) -> Result<(), AppError> {
         loop {
-            let Some(member) = read_bgzf_member(&mut self.file, &self.path)? else {
+            let Some(member) = self.inflator.next_payload(&mut self.file)? else {
                 self.eof = true;
                 self.payload.clear();
                 self.offset = 0;
@@ -153,18 +159,10 @@ impl NativeBgzfReader {
                 return Ok(());
             };
 
-            if member.bytes == BGZF_EOF_MARKER {
-                self.eof = true;
-                self.payload.clear();
-                self.offset = 0;
-                self.has_current_block = false;
-                return Ok(());
-            }
-
             self.current_block_start = member.compressed_offset;
-            self.current_block_end = member.compressed_offset + member.bytes.len() as u64;
+            self.current_block_end = member.compressed_offset + member.compressed_len as u64;
             self.has_current_block = true;
-            self.payload = decompress_member(&member.bytes, &self.path)?;
+            self.payload = member.payload;
             self.offset = 0;
 
             if !self.payload.is_empty() {
@@ -205,13 +203,11 @@ pub fn first_member_starts_with_bam_magic(path: &Path) -> Result<bool, AppError>
 
 pub fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
     let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
+    let mut inflator = ParallelBgzfInflator::new(path);
     let mut payloads = Vec::new();
 
-    while let Some(member) = read_bgzf_member(&mut file, path)? {
-        if member.bytes == BGZF_EOF_MARKER {
-            break;
-        }
-        payloads.push(decompress_member(&member.bytes, path)?);
+    while let Some(member) = inflator.next_payload(&mut file)? {
+        payloads.push(member.payload);
     }
 
     Ok(payloads)
@@ -254,6 +250,172 @@ fn read_first_bgzf_member_payload(path: &Path) -> Result<Vec<u8>, AppError> {
 struct BgzfMember {
     compressed_offset: u64,
     bytes: Vec<u8>,
+}
+
+struct InflatedBgzfMember {
+    compressed_offset: u64,
+    compressed_len: usize,
+    payload: Vec<u8>,
+}
+
+struct InflateJob {
+    generation: u64,
+    sequence: u64,
+    compressed_offset: u64,
+    bytes: Vec<u8>,
+}
+
+struct InflateResult {
+    generation: u64,
+    sequence: u64,
+    compressed_offset: u64,
+    compressed_len: usize,
+    payload: Result<Vec<u8>, AppError>,
+}
+
+struct InflateWorker {
+    sender: mpsc::Sender<InflateJob>,
+}
+
+struct ParallelBgzfInflator {
+    path: PathBuf,
+    workers: Vec<InflateWorker>,
+    result_rx: mpsc::Receiver<InflateResult>,
+    pending: BTreeMap<u64, InflateResult>,
+    generation: u64,
+    in_flight: usize,
+    next_sequence_to_send: u64,
+    next_sequence_to_return: u64,
+    next_worker: usize,
+    eof: bool,
+    max_in_flight: usize,
+}
+
+impl ParallelBgzfInflator {
+    fn new(path: &Path) -> Self {
+        let worker_count = parallel_bgzf_worker_count();
+        let max_in_flight = worker_count;
+        let path = path.to_path_buf();
+        let (result_tx, result_rx) = mpsc::channel();
+        let mut workers = Vec::with_capacity(worker_count);
+
+        for _ in 0..worker_count {
+            let (job_tx, job_rx) = mpsc::channel::<InflateJob>();
+            let result_tx = result_tx.clone();
+            let path_for_worker = path.clone();
+            thread::spawn(move || {
+                while let Ok(job) = job_rx.recv() {
+                    let compressed_len = job.bytes.len();
+                    let payload = decompress_member(&job.bytes, &path_for_worker);
+                    let result = InflateResult {
+                        generation: job.generation,
+                        sequence: job.sequence,
+                        compressed_offset: job.compressed_offset,
+                        compressed_len,
+                        payload,
+                    };
+                    if result_tx.send(result).is_err() {
+                        break;
+                    }
+                }
+            });
+            workers.push(InflateWorker { sender: job_tx });
+        }
+
+        Self {
+            path,
+            workers,
+            result_rx,
+            pending: BTreeMap::new(),
+            generation: 0,
+            in_flight: 0,
+            next_sequence_to_send: 0,
+            next_sequence_to_return: 0,
+            next_worker: 0,
+            eof: false,
+            max_in_flight,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
+        self.pending.clear();
+        self.in_flight = 0;
+        self.next_sequence_to_send = 0;
+        self.next_sequence_to_return = 0;
+        self.next_worker = 0;
+        self.eof = false;
+    }
+
+    fn next_payload(&mut self, file: &mut File) -> Result<Option<InflatedBgzfMember>, AppError> {
+        loop {
+            self.fill_pipeline(file)?;
+
+            if let Some(result) = self.pending.remove(&self.next_sequence_to_return) {
+                self.next_sequence_to_return += 1;
+                self.in_flight -= 1;
+                return result.payload.map(|payload| {
+                    Some(InflatedBgzfMember {
+                        compressed_offset: result.compressed_offset,
+                        compressed_len: result.compressed_len,
+                        payload,
+                    })
+                });
+            }
+
+            if self.eof && self.in_flight == 0 {
+                return Ok(None);
+            }
+
+            let result = self.result_rx.recv().map_err(|error| AppError::Internal {
+                message: format!("BGZF inflation worker pool stopped unexpectedly: {error}"),
+            })?;
+            if result.generation != self.generation {
+                continue;
+            }
+            self.pending.insert(result.sequence, result);
+        }
+    }
+
+    fn fill_pipeline(&mut self, file: &mut File) -> Result<(), AppError> {
+        while !self.eof && self.in_flight < self.max_in_flight {
+            let Some(member) = read_bgzf_member(file, &self.path)? else {
+                self.eof = true;
+                break;
+            };
+
+            if member.bytes == BGZF_EOF_MARKER {
+                self.eof = true;
+                break;
+            }
+
+            let sequence = self.next_sequence_to_send;
+            self.next_sequence_to_send += 1;
+            let worker_index = self.next_worker;
+            self.next_worker = (self.next_worker + 1) % self.workers.len();
+            self.workers[worker_index]
+                .sender
+                .send(InflateJob {
+                    generation: self.generation,
+                    sequence,
+                    compressed_offset: member.compressed_offset,
+                    bytes: member.bytes,
+                })
+                .map_err(|error| AppError::Internal {
+                    message: format!("BGZF inflation worker stopped unexpectedly: {error}"),
+                })?;
+            self.in_flight += 1;
+        }
+
+        Ok(())
+    }
+}
+
+fn parallel_bgzf_worker_count() -> usize {
+    thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(10)
+        .max(10)
 }
 
 fn read_bgzf_member(file: &mut File, path: &Path) -> Result<Option<BgzfMember>, AppError> {
@@ -653,5 +815,50 @@ mod tests {
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_eq!(payloads, vec![b"payload before eof".to_vec()]);
+    }
+
+    #[test]
+    fn parallel_payload_reader_preserves_member_order() {
+        let mut expected = Vec::new();
+        let mut bytes = Vec::new();
+        for index in 0..48 {
+            let payload = format!("payload-{index:02}");
+            expected.push(payload.as_bytes().to_vec());
+            bytes.extend_from_slice(&member(payload.as_bytes()));
+        }
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("parallel-payload-order", &bytes);
+
+        let payloads = read_bgzf_payloads(&path).expect("payloads should read");
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(payloads, expected);
+    }
+
+    #[test]
+    fn native_reader_parallel_inflation_preserves_stream_order() {
+        let mut expected = Vec::new();
+        let mut bytes = Vec::new();
+        for index in 0..48 {
+            let payload = format!("payload-{index:02};");
+            expected.extend_from_slice(payload.as_bytes());
+            bytes.extend_from_slice(&member(payload.as_bytes()));
+        }
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let path = write_temp_file("parallel-reader-order", &bytes);
+
+        let mut reader = NativeBgzfReader::open(&path).expect("reader should open");
+        let mut observed = Vec::new();
+        let mut buffer = [0_u8; 17];
+        loop {
+            let count = reader.read(&mut buffer).expect("read should succeed");
+            if count == 0 {
+                break;
+            }
+            observed.extend_from_slice(&buffer[..count]);
+        }
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(observed, expected);
     }
 }
