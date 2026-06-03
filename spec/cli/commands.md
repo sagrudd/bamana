@@ -991,8 +991,9 @@ Generated and discovered BAI sidecars follow the same validation path.
 `--live-progress` is a whole-file native scan status surface: it writes a
 single carriage-return-updated line to stderr about every 0.5 seconds while
 scanning, containing parsed reads, mean BAM base quality over non-missing
-quality bytes, mean read length, and elapsed time. JSON output remains on
-stdout and is not interleaved with progress. `--allow-incomplete` is also
+quality bytes, mean read length, cumulative reads per second, and elapsed time.
+JSON output remains on stdout and is not interleaved with progress.
+`--allow-incomplete` is also
 whole-file native scan behavior; it lets the scan stop cleanly at a missing EOF
 marker, incomplete trailing BGZF member, or incomplete trailing BAM record, and
 the payload describes only complete records parsed before that boundary. These

@@ -102,7 +102,8 @@ output reports observed operational metrics only; full-file totals require
 `evidence.full_file_scanned: true` and are not BAM structural validation.
 `summary --live-progress` emits a single carriage-return-updated stderr status
 line about every 0.5 seconds during whole-file native scans, with parsed reads,
-mean BAM base quality over non-missing quality bytes, and mean read length.
+mean BAM base quality over non-missing quality bytes, mean read length, and
+cumulative reads per second.
 `summary --allow-incomplete` lets whole-file native scans stop cleanly at a
 missing EOF marker, incomplete trailing BGZF member, or incomplete trailing BAM
 record, reporting only complete records parsed before that growing-file

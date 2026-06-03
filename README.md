@@ -378,8 +378,8 @@ file prefix, tolerates a missing EOF marker or incomplete trailing BGZF
 member/record, and reports carriage-return progress on stderr about every 0.5
 seconds. Omit `--prefer-index` for this growing-file mode so evidence comes
 from the native scan. The progress line includes parsed reads, mean BAM base
-quality over non-missing quality bytes, and mean read length; JSON output on
-stdout remains unchanged.
+quality over non-missing quality bytes, mean read length, and cumulative reads
+per second; JSON output on stdout remains unchanged.
 
 `check_tag` traverses BAM auxiliary fields just deeply enough to establish tag
 presence, optional type-constrained presence, or full-scan absence. In bounded

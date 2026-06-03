@@ -704,6 +704,11 @@ impl LiveProgressReporter {
         } else {
             "NA".to_string()
         };
+        let reads_per_second = if elapsed > 0.0 {
+            format!("{:.1}", reads_parsed as f64 / elapsed)
+        } else {
+            "NA".to_string()
+        };
         let status = if stopped_at_incomplete_tail {
             "incomplete_tail"
         } else if final_emit {
@@ -712,7 +717,7 @@ impl LiveProgressReporter {
             "scanning"
         };
         eprint!(
-            "\rstatus={status} reads_parsed={reads_parsed} mean_q={mean_q} mean_length={mean_length} elapsed={elapsed:.1}s"
+            "\rstatus={status} reads_parsed={reads_parsed} reads_per_second={reads_per_second} mean_q={mean_q} mean_length={mean_length} elapsed={elapsed:.1}s"
         );
         let _ = io::stderr().flush();
         if final_emit {
