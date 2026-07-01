@@ -38,6 +38,11 @@ Documentation updates must include the relevant subset of:
 * benchmark documentation under `benchmarks/` when benchmark behavior changes;
 * roadmap and task-map files when milestone scope changes.
 
+Root planning files are part of the public maintenance contract. Keep
+`MILESTONES.md`, `TODO.md`, `ROADMAP.md`, and the Sphinx roadmap pages aligned
+whenever release scope, public command maturity, benchmark readiness, or
+cross-repository obligations change.
+
 ## Public Contract Commands
 
 `benchmark`, `fastq`, and `unmap` are public contract commands. They must be
@@ -50,3 +55,11 @@ Bamana's performance-critical BAM, BGZF, FASTQ, sampling, ingest, and forensic
 hot paths must remain Bamana-native unless a documented transitional exception
 exists. `noodles` usage must remain isolated to CRAM compatibility, tests,
 fixtures, compatibility checks, or oracle-style validation.
+
+## Cross-Repository Obligations
+
+Bamana is a required maintained Mnemosyne resource for Platage biological I/O.
+When Platage needs FASTQ, FASTA, BGZF/gzip, ingest, sampling, or format
+capabilities, implement the reusable behavior in Bamana first where that
+preserves Bamana's public contracts and semantic versioning. Do not copy Bamana
+logic into Platage as a shortcut.
