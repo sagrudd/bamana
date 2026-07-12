@@ -31,6 +31,23 @@ Each command has:
 Consumers should treat the schema and canonical examples together as the output
 contract.
 
+## `records`
+
+The `records` payload is the governed AlleleAnchor boundary for normalized BAM.
+It requires explicit input/reference object IDs, FASTA and FAI digests, and the
+exact Bamana commit. The default filter retains primary mapped, non-duplicate,
+non-QC-fail records and reports excluded records with stable reasons. Each
+retained row includes zero-based half-open `reference_start`/
+`reference_end`, CIGAR, sequence, Phred qualities, raw flags, and typed plus
+raw auxiliary tags. Missing qualities fail rather than being converted to a
+misleading score. `--max-records` bounds the scan and its reported counts.
+
+`records` consumes native BAM only. SAM and CRAM must be normalized by
+`consume --mode alignment` under the strict indexed-reference policy first;
+the command does not add indexed CRAM behavior or interpret modified-base
+tags. Reference object identity and digest verification remain the caller's
+responsibility before evidence emission.
+
 ## Stability Rules
 
 Breaking output changes require:

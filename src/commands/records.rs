@@ -327,11 +327,18 @@ fn to_alignment_record(
                 detail,
             }
         })?;
-    let qualities = decode_bam_qualities(record.quality_bytes())
-        .map_err(|detail| AppError::InvalidRecord {
+    let quality_text =
+        decode_bam_qualities(record.quality_bytes()).map_err(|detail| AppError::InvalidRecord {
             path: input_path.to_path_buf(),
             detail,
-        })?
+        })?;
+    if quality_text == "*" {
+        return Err(AppError::InvalidRecord {
+            path: input_path.to_path_buf(),
+            detail: "missing BAM qualities cannot be emitted as per-base evidence.".to_string(),
+        });
+    }
+    let qualities = quality_text
         .bytes()
         .map(|quality| quality.saturating_sub(b'!'))
         .collect();
@@ -645,6 +652,26 @@ mod tests {
         assert_eq!(
             response.error.expect("structured failure").code,
             "parse_uncertainty"
+        );
+        std::fs::remove_file(path).expect("fixture should be removed");
+    }
+
+    #[test]
+    fn records_command_rejects_missing_qualities() {
+        let mut missing = record("missing", 0, &[]);
+        let quality_start = 4 + 32 + "missing".len() + 1 + 4 + 4;
+        missing[quality_start..quality_start + 8].fill(0xff);
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr20\tLN:32\n",
+            &[("chr20", 32)],
+            &[missing],
+        );
+        let path = write_temp_file("records-missing-quality", "bam", &bytes);
+        let response = run(request(path.clone(), 0));
+        assert!(response.data.is_none());
+        assert_eq!(
+            response.error.expect("structured failure").code,
+            "invalid_record"
         );
         std::fs::remove_file(path).expect("fixture should be removed");
     }
