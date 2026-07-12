@@ -18,6 +18,7 @@ pub mod identify;
 pub mod index;
 pub mod inspect_duplication;
 pub mod merge;
+pub mod records;
 pub mod reheader;
 pub mod select_region;
 pub mod sort;

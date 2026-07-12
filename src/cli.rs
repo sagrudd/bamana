@@ -45,6 +45,8 @@ pub enum Commands {
     Identify(IdentifyArgs),
     /// Count top-level records in a supported bioinformatics file.
     Enumerate(EnumerateArgs),
+    /// Emit filtered alignment records as a provenance-bound JSON stream.
+    Records(RecordsArgs),
     /// Subsample BAM or FASTQ inputs with explicit deterministic or random policy.
     Subsample(SubsampleArgs),
     /// Filter BAM records by read length, mean base quality, mapping state, and linguistic complexity.
@@ -153,6 +155,61 @@ pub struct EnumerateArgs {
     /// Maximum worker threads for indexed FASTQ.GZ enumeration or future parallel implementations. Defaults to all available cores.
     #[arg(short = 'j', long = "threads", default_value_t = 0)]
     pub threads: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct RecordsArgs {
+    /// Input normalized BAM file.
+    #[arg(long = "bam")]
+    pub bam: PathBuf,
+    /// Stable object ID for the input alignment object.
+    #[arg(long = "input-object-id")]
+    pub input_object_id: String,
+    /// Reference assembly identity recorded with the response.
+    #[arg(long = "reference-assembly")]
+    pub reference_assembly: String,
+    /// Stable object ID for the reference FASTA.
+    #[arg(long = "reference-object-id")]
+    pub reference_object_id: String,
+    /// SHA-256 digest of the reference FASTA bytes.
+    #[arg(long = "reference-sha256")]
+    pub reference_sha256: String,
+    /// SHA-256 digest of the reference FASTA index bytes.
+    #[arg(long = "reference-fai-sha256")]
+    pub reference_fai_sha256: String,
+    /// Execution mode recorded in provenance.
+    #[arg(long = "execution-mode", default_value = "host_binary")]
+    pub execution_mode: String,
+    /// Exact Bamana source commit recorded in provenance.
+    #[arg(long = "bamana-git-commit")]
+    pub bamana_git_commit: String,
+    /// Container image name when execution-mode is container.
+    #[arg(long = "container-image")]
+    pub container_image: Option<String>,
+    /// Container image digest when execution-mode is container.
+    #[arg(long = "container-digest")]
+    pub container_digest: Option<String>,
+    /// Retain unmapped records instead of rejecting them.
+    #[arg(long = "include-unmapped")]
+    pub include_unmapped: bool,
+    /// Retain secondary alignments instead of rejecting them.
+    #[arg(long = "include-secondary")]
+    pub include_secondary: bool,
+    /// Retain supplementary alignments instead of rejecting them.
+    #[arg(long = "include-supplementary")]
+    pub include_supplementary: bool,
+    /// Retain duplicate alignments instead of rejecting them.
+    #[arg(long = "include-duplicate")]
+    pub include_duplicate: bool,
+    /// Retain QC-fail alignments instead of rejecting them.
+    #[arg(long = "include-qcfail")]
+    pub include_qcfail: bool,
+    /// Minimum MAPQ for retained mapped records.
+    #[arg(long = "min-mapq", default_value_t = 0)]
+    pub min_mapq: u8,
+    /// Stop after this many input records; zero scans the complete file.
+    #[arg(long = "max-records", default_value_t = 0)]
+    pub max_records: usize,
 }
 
 #[derive(Debug, Args)]

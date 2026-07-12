@@ -53,6 +53,15 @@ parsing rather than filename heuristics. For `FASTQ.GZ`, the first enumerate
 run now materializes a sibling `FASTQ.GZI` sidecar and later enumerate runs
 reuse the exact record total stored in that sidecar.
 
+`records` is the governed AlleleAnchor adapter surface for normalized BAM. It
+requires input/reference object IDs, FASTA and FAI digests, and the exact
+Bamana commit. It emits primary mapped records by default, preserves raw flags,
+CIGAR, sequence/quality, typed and raw auxiliary tags, and records explicit
+rejection reasons for duplicate, non-primary, QC-fail, unmapped, or low-MAPQ
+records. It accepts `--max-records` for bounded local validation. SAM and CRAM
+must be normalized by `consume --mode alignment` first; this command does not
+add indexed CRAM behavior.
+
 `index` is now format-aware. It still validates BAM inputs and reports honest
 BAI/CSI writer limitations, but it also creates sampled `FASTQ.GZI` sidecars
 for `FASTQ.GZ` inputs via `--input`. The default `FASTQ.GZI` rule now places

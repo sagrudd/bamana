@@ -14,9 +14,10 @@ use commands::{
     deduplicate::DeduplicateRequest, enumerate::EnumerateRequest, explode::ExplodeRequest,
     fastq::FastqRequest, filter::FilterRequest, forensic_inspect::ForensicInspectRequest,
     header::HeaderRequest, identify::IdentifyRequest, index::IndexRequest,
-    inspect_duplication::InspectDuplicationRequest, merge::MergeRequest, reheader::ReheaderRequest,
-    select_region::SelectRegionRequest, sort::SortRequest, subsample::SubsampleRequest,
-    summary::SummaryRequest, unmap::UnmapRequest, validate::ValidateRequest, verify::VerifyRequest,
+    inspect_duplication::InspectDuplicationRequest, merge::MergeRequest, records::RecordsRequest,
+    reheader::ReheaderRequest, select_region::SelectRegionRequest, sort::SortRequest,
+    subsample::SubsampleRequest, summary::SummaryRequest, unmap::UnmapRequest,
+    validate::ValidateRequest, verify::VerifyRequest,
 };
 use serde::Serialize;
 
@@ -56,6 +57,27 @@ fn main() -> ExitCode {
             commands::enumerate::run(EnumerateRequest {
                 input: input.clone(),
                 threads: args.threads,
+            })
+        }),
+        Commands::Records(args) => emit_timed_response(cli.global.json_pretty, || {
+            commands::records::run(RecordsRequest {
+                bam: args.bam,
+                input_object_id: args.input_object_id,
+                reference_assembly: args.reference_assembly,
+                reference_object_id: args.reference_object_id,
+                reference_sha256: args.reference_sha256,
+                reference_fai_sha256: args.reference_fai_sha256,
+                execution_mode: args.execution_mode,
+                bamana_git_commit: args.bamana_git_commit,
+                container_image: args.container_image,
+                container_digest: args.container_digest,
+                include_unmapped: args.include_unmapped,
+                include_secondary: args.include_secondary,
+                include_supplementary: args.include_supplementary,
+                include_duplicate: args.include_duplicate,
+                include_qcfail: args.include_qcfail,
+                min_mapq: args.min_mapq,
+                max_records: args.max_records,
             })
         }),
         Commands::Subsample(args) => emit_timed_response(cli.global.json_pretty, || {

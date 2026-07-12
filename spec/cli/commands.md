@@ -106,6 +106,34 @@ support for directories, CRAM, BED, or GFF in this slice.
 Key output concepts:
 `detected_format`, `records`.
 
+## `records`
+
+Synopsis:
+`bamana records --bam <normalized.bam> --input-object-id <ID> --reference-assembly <ASSEMBLY> --reference-object-id <ID> --reference-sha256 <HEX> --reference-fai-sha256 <HEX> --bamana-git-commit <HEX> [--execution-mode <host_binary|container>] [--container-image <IMAGE> --container-digest <DIGEST>] [--include-unmapped] [--include-secondary] [--include-supplementary] [--include-duplicate] [--include-qcfail] [--min-mapq <N>] [--max-records <N>]`
+
+Semantics:
+Reads a normalized native BGZF BAM in encounter order and emits a bounded,
+provenance-bound JSON record payload for the AlleleAnchor adapter. Primary,
+mapped, non-duplicate, non-QC-fail records are retained by default. SAM and
+CRAM inputs must first pass through `consume --mode alignment`; this command
+does not introduce a second CRAM parser or indexed-query surface.
+
+The response records zero-based half-open coordinates (`reference_start` and
+`reference_end`), raw flags, CIGAR, sequence, Phred qualities, typed auxiliary
+tags, raw auxiliary payload bytes, and stable rejection reasons. A bounded
+`--max-records` scan reports only the records examined and never claims a
+whole-file total.
+
+Does prove:
+That the normalized BAM records in the examined scope were decoded and that
+the requested alignment filters and exact Bamana commit/reference digests were
+recorded.
+
+Does not prove:
+CRAM reference concordance by itself, marker/allele matching, methylation or
+chromatin interpretation, or biological correctness. The caller must verify
+the reference object and digest before invoking this command.
+
 ## `consume`
 
 Synopsis:

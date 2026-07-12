@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/records.schema.json",
+  "title": "Bamana Records Response",
+  "description": "Filtered normalized-BAM records for the AlleleAnchor adapter.",
+  "x-bamana-command": "records",
+  "x-bamana-contract-version": "1.0",
+  "$defs": {
+    "tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "type", "value", "raw_payload_hex"],
+      "properties": {
+        "tag": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]$"},
+        "type": {"type": "string", "minLength": 1},
+        "value": {},
+        "raw_payload_hex": {"type": "string", "pattern": "^[0-9a-f]*$"},
+        "array_subtype": {"type": ["string", "null"]}
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_id", "reference_name", "reference_start", "reference_end", "mapping_quality", "flags", "cigar", "sequence", "qualities", "auxiliary_tags"],
+      "properties": {
+        "read_id": {"type": "string", "minLength": 1},
+        "reference_name": {"type": "string", "minLength": 1},
+        "reference_start": {"type": "integer", "minimum": 0},
+        "reference_end": {"type": "integer", "minimum": 0},
+        "mapping_quality": {"type": "integer", "minimum": 0, "maximum": 255},
+        "flags": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "cigar": {"type": "string", "minLength": 1},
+        "sequence": {"type": "string", "minLength": 1},
+        "qualities": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 93}},
+        "auxiliary_tags": {"type": "array", "items": {"$ref": "#/$defs/tag"}}
+      }
+    },
+    "rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_id", "reason", "flags", "mapping_quality", "auxiliary_tags"],
+      "properties": {
+        "read_id": {"type": "string", "minLength": 1},
+        "reason": {"enum": ["unmapped", "non_primary", "duplicate", "qcfail", "low_mapq"]},
+        "flags": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "mapping_quality": {"type": "integer", "minimum": 0, "maximum": 255},
+        "auxiliary_tags": {"type": "array", "items": {"$ref": "#/$defs/tag"}}
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "operation", "ok", "input", "reference", "filters", "records", "rejections", "provenance", "error"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "operation": {"const": "aligned_records"},
+        "ok": {"const": true},
+        "input": {"type": "object", "additionalProperties": false, "required": ["object_id", "format"], "properties": {"object_id": {"type": "string", "minLength": 1}, "format": {"const": "bam"}}},
+        "reference": {"type": "object", "additionalProperties": false, "required": ["assembly", "object_id", "fasta_sha256", "fai_sha256", "source_used"], "properties": {"assembly": {"type": "string", "minLength": 1}, "object_id": {"type": "string", "minLength": 1}, "fasta_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "fai_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "source_used": {"const": "explicit_fasta"}}},
+        "filters": {"type": "object", "additionalProperties": false, "required": ["requested", "retained", "rejected"], "properties": {"requested": {"type": "integer", "minimum": 0}, "retained": {"type": "integer", "minimum": 0}, "rejected": {"type": "integer", "minimum": 0}}},
+        "records": {"type": "array", "items": {"$ref": "#/$defs/record"}},
+        "rejections": {"type": "array", "items": {"$ref": "#/$defs/rejection"}},
+        "provenance": {"type": "object", "additionalProperties": false, "required": ["bamana_version", "bamana_git_commit", "execution_mode", "command"], "properties": {"bamana_version": {"type": "string", "minLength": 1}, "bamana_git_commit": {"type": "string", "pattern": "^[0-9a-f]{7,64}$"}, "execution_mode": {"enum": ["host_binary", "container"]}, "container_image": {"type": ["string", "null"]}, "container_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}, "command": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}}}},
+        "error": {"type": "null"}
+      }
+    }
+  },
+  "oneOf": [
+    {"type": "object", "additionalProperties": false, "required": ["ok", "command", "path", "data", "error"], "properties": {"ok": {"const": true}, "command": {"const": "records"}, "path": {"$ref": "./common/defs.schema.json#/$defs/pathOrNull"}, "analysis_wall_seconds": {"type": "number", "minimum": 0}, "data": {"$ref": "#/$defs/data"}, "error": {"type": "null"}}},
+    {"type": "object", "additionalProperties": false, "required": ["ok", "command", "path", "data", "error"], "properties": {"ok": {"const": false}, "command": {"const": "records"}, "path": {"$ref": "./common/defs.schema.json#/$defs/pathOrNull"}, "analysis_wall_seconds": {"type": "number", "minimum": 0}, "data": {"type": ["null", "object"]}, "error": {"$ref": "./common/json_error.schema.json"}}}
+  ]
+}

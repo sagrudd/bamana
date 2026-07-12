@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "command": "records",
+  "path": "fixture.bam",
+  "data": null,
+  "error": {
+    "code": "invalid_filter_request",
+    "message": "Requested filter options are not valid.",
+    "detail": "container execution requires image and digest provenance.",
+    "hint": "Provide complete provenance or select host_binary execution."
+  }
+}

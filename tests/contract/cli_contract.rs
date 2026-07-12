@@ -13,6 +13,7 @@ fn cli_source_declares_stable_global_option_and_commands() {
         "Benchmark(BenchmarkArgs)",
         "Identify(IdentifyArgs)",
         "Enumerate(EnumerateArgs)",
+        "Records(RecordsArgs)",
         "Subsample(SubsampleArgs)",
         "Filter(FilterArgs)",
         "InspectDuplication(InspectDuplicationArgs)",
