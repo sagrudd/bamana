@@ -64,6 +64,7 @@ The current semantics are intentionally narrow:
 
 * `identify` determines the most likely file type quickly using extension hints, magic bytes, and shallow text heuristics
 * `enumerate` counts top-level records in a single BAM, SAM, FASTQ, FASTQ.GZ, or FASTA input using format-aware parsing, auto-materializes `FASTQ.GZI` sidecars for `FASTQ.GZ`, and then reuses the exact indexed total on later runs
+* `records` emits filtered normalized-BAM records as provenance-bound JSON; repeatable `--region reference:start-end` requests require a current BAI and use indexed traversal with no whole-file scan fallback
 * `subsample` selects a subset of BAM, FASTQ, or FASTQ.GZ records under an explicit random or deterministic policy, preserves encounter order of retained records, and reports seed, identity basis, filter policy, and retained counts explicitly for production and benchmarking workflows
 * `filter` streams one BAM to a filtered BAM output using inclusive read-length, mean base-quality, mapped/unmapped, primary-alignment, and canonical linguistic-complexity predicates while preserving raw retained record bytes and input encounter order
 * `inspect_duplication` inspects BAM, FASTQ, and FASTQ.GZ inputs for suspicious collection-duplication signatures such as exact repeated records and adjacent repeated blocks that are more consistent with operator error or provenance mishandling than with ordinary duplicate biology

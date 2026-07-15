@@ -162,6 +162,9 @@ pub struct RecordsArgs {
     /// Input normalized BAM file.
     #[arg(long = "bam")]
     pub bam: PathBuf,
+    /// Restrict output to an indexed 1-based closed region; repeatable.
+    #[arg(long = "region")]
+    pub regions: Vec<String>,
     /// Stable object ID for the input alignment object.
     #[arg(long = "input-object-id")]
     pub input_object_id: String,

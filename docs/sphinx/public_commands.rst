@@ -4,6 +4,27 @@ Public CLI Commands
 Bamana is a JSON-first CLI. Public commands must have governed command
 contracts, JSON schemas, canonical examples, and user-facing documentation.
 
+records
+-------
+
+``bamana records`` emits provenance-bound normalized alignment records for
+governed downstream consumers. Repeat ``--region`` for one-based closed
+intervals:
+
+.. code-block:: bash
+
+   bamana records --bam target.bam --region chr20:1001-2000 \
+     --input-object-id sha256:<bam> --reference-assembly CHM13v2.0 \
+     --reference-object-id sha256:<fasta> --reference-sha256 <fasta-sha256> \
+     --reference-fai-sha256 <fai-sha256> --bamana-git-commit <commit>
+
+Region mode requires a current BAI sidecar and uses native indexed traversal.
+Missing, stale, malformed, or unsupported indices fail closed: there is no
+whole-file scan fallback. Overlapping requests emit each physical record once
+in source virtual-offset order, and ``region_scope`` records normalized
+coordinates, index path, chunk counts, raw records examined, and duplicate
+suppression. ``--max-records`` bounds selected records after region matching.
+
 benchmark
 ---------
 

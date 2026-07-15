@@ -62,6 +62,7 @@ fn main() -> ExitCode {
         Commands::Records(args) => emit_timed_response(cli.global.json_pretty, || {
             commands::records::run(RecordsRequest {
                 bam: args.bam,
+                regions: args.regions,
                 input_object_id: args.input_object_id,
                 reference_assembly: args.reference_assembly,
                 reference_object_id: args.reference_object_id,

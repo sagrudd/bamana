@@ -19,6 +19,10 @@ and benchmark documents where that is more precise.
 
 ## 2. Platage I/O Dependency
 
+- [x] Add strict indexed-region selection to the governed `records` response
+      for AlleleAnchor held-out metric sharding; require a current BAI and
+      prohibit whole-file scan fallback.
+
 - [ ] Implement a Bamana-owned streaming FASTA record API suitable for Platage's
       `io::bamana_fasta` adapter.
 - [ ] Add FASTA API tests for multiline records, descriptions, empty records,

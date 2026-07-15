@@ -7,8 +7,15 @@ use serde_json::{Value, json};
 
 use crate::{
     bam::{
+        index::{
+            IndexKind, IndexResolution, bam_newer_than_index, parse_bai_index,
+            resolve_index_for_bam,
+        },
         record::BamRecordView,
         records::{decode_bam_qualities, decode_bam_sequence},
+        region::{NormalizedRegion, normalize_region_strings},
+        region_plan::plan_bai_region_chunks,
+        region_traversal::traverse_planned_region_chunks,
         scan::BamScanner,
         tags::{AuxField, traverse_record_aux_fields},
     },
@@ -20,6 +27,7 @@ use crate::{
 #[derive(Debug)]
 pub struct RecordsRequest {
     pub bam: PathBuf,
+    pub regions: Vec<String>,
     pub input_object_id: String,
     pub reference_assembly: String,
     pub reference_object_id: String,
@@ -46,10 +54,24 @@ pub struct RecordsPayload {
     pub input: InputInfo,
     pub reference: ReferenceInfo,
     pub filters: FilterInfo,
+    pub region_scope: Option<RecordsRegionScope>,
     pub records: Vec<AlignmentRecord>,
     pub rejections: Vec<RejectedRecord>,
     pub provenance: ProvenanceInfo,
     pub error: Option<RecordError>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RecordsRegionScope {
+    pub coordinate_base: &'static str,
+    pub interval_semantics: &'static str,
+    pub duplicate_policy: &'static str,
+    pub regions: Vec<NormalizedRegion>,
+    pub execution: &'static str,
+    pub index_path: String,
+    pub chunks_traversed: usize,
+    pub raw_records_seen: usize,
+    pub duplicate_records_suppressed: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -147,17 +169,76 @@ fn run_impl(request: &RecordsRequest) -> Result<RecordsPayload, AppError> {
     let mut records = Vec::new();
     let mut requested = 0_u64;
     let mut rejected = Vec::new();
-    while request.max_records == 0 || requested < request.max_records as u64 {
-        let Some(record) = scanner.next_record()? else {
-            break;
-        };
-        requested += 1;
-        if let Some(reason) = rejection_reason(&record, request) {
-            rejected.push(rejected_record(&record, reason, &input_path)?);
-            continue;
+    let region_scope = if request.regions.is_empty() {
+        while request.max_records == 0 || requested < request.max_records as u64 {
+            let Some(record) = scanner.next_record()? else {
+                break;
+            };
+            requested += 1;
+            collect_record(
+                &record,
+                request,
+                &header,
+                &input_path,
+                &mut records,
+                &mut rejected,
+            )?;
         }
-        records.push(to_alignment_record(&record, &header, &input_path)?);
-    }
+        None
+    } else {
+        let regions =
+            normalize_region_strings(&request.regions, &header.header.references, &request.bam)?;
+        let resolved = match resolve_index_for_bam(&request.bam) {
+            IndexResolution::Present(index) if index.kind == IndexKind::Bai => index,
+            _ => return Err(AppError::MissingIndex {
+                path: request.bam.clone(),
+                detail: Some(
+                    "records --region requires a usable BAI sidecar; scan fallback is prohibited"
+                        .to_string(),
+                ),
+            }),
+        };
+        if bam_newer_than_index(&request.bam, &resolved.path) == Some(true) {
+            return Err(AppError::MissingIndex {
+                path: resolved.path,
+                detail: Some("records --region rejected a stale BAI sidecar".to_string()),
+            });
+        }
+        let index = parse_bai_index(&resolved.path, header.header.references.len())?;
+        let plan = plan_bai_region_chunks(&regions, &index, &resolved.path, resolved.kind, false)?;
+        let traversal = traverse_planned_region_chunks(&request.bam, &regions, &plan)?;
+        for matched in &traversal.records {
+            if request.max_records != 0 && requested >= request.max_records as u64 {
+                break;
+            }
+            let record = BamRecordView::parse(&matched.raw_record).map_err(|error| {
+                AppError::InvalidRecord {
+                    path: request.bam.clone(),
+                    detail: error.detail().to_string(),
+                }
+            })?;
+            requested += 1;
+            collect_record(
+                &record,
+                request,
+                &header,
+                &input_path,
+                &mut records,
+                &mut rejected,
+            )?;
+        }
+        Some(RecordsRegionScope {
+            coordinate_base: regions.coordinate_base,
+            interval_semantics: regions.interval_semantics,
+            duplicate_policy: "deduplicate_physical_records_by_virtual_offset",
+            regions: regions.regions,
+            execution: "indexed",
+            index_path: resolved.path.to_string_lossy().to_string(),
+            chunks_traversed: traversal.chunks_traversed,
+            raw_records_seen: traversal.raw_records_seen,
+            duplicate_records_suppressed: traversal.duplicate_records_suppressed,
+        })
+    };
 
     Ok(RecordsPayload {
         schema_version: "1.0",
@@ -179,6 +260,7 @@ fn run_impl(request: &RecordsRequest) -> Result<RecordsPayload, AppError> {
             retained: records.len() as u64,
             rejected: rejected.len() as u64,
         },
+        region_scope,
         records,
         rejections: rejected,
         provenance: ProvenanceInfo {
@@ -191,6 +273,22 @@ fn run_impl(request: &RecordsRequest) -> Result<RecordsPayload, AppError> {
         },
         error: None,
     })
+}
+
+fn collect_record(
+    record: &BamRecordView<'_>,
+    request: &RecordsRequest,
+    header: &crate::bam::header::HeaderPayload,
+    input_path: &std::path::Path,
+    records: &mut Vec<AlignmentRecord>,
+    rejected: &mut Vec<RejectedRecord>,
+) -> Result<(), AppError> {
+    if let Some(reason) = rejection_reason(record, request) {
+        rejected.push(rejected_record(record, reason, input_path)?);
+    } else {
+        records.push(to_alignment_record(record, header, input_path)?);
+    }
+    Ok(())
 }
 
 fn validate_request(request: &RecordsRequest) -> Result<(), AppError> {
@@ -558,11 +656,15 @@ fn reference_span(bytes: &[u8]) -> Result<u32, String> {
 #[cfg(test)]
 mod tests {
     use super::{RecordsRequest, decode_cigar, reference_span, run};
-    use crate::bgzf::test_support::{build_bam_file_with_header_and_records, write_temp_file};
+    use crate::{
+        bam::index::{build_bai_index_from_bam, write_bai_index},
+        bgzf::test_support::{build_bam_file_with_header_and_records, write_temp_file},
+    };
 
     fn request(path: std::path::PathBuf, max_records: usize) -> RecordsRequest {
         RecordsRequest {
             bam: path,
+            regions: Vec::new(),
             input_object_id: "aaid:v1:object:fixture-bam".to_string(),
             reference_assembly: "CHM13v2.0".to_string(),
             reference_object_id: "aaid:v1:object:fixture-fasta".to_string(),
@@ -582,7 +684,7 @@ mod tests {
         }
     }
 
-    fn record(name: &str, flags: u16, aux: &[u8]) -> Vec<u8> {
+    fn record(name: &str, position: i32, flags: u16, aux: &[u8]) -> Vec<u8> {
         let mut variable = Vec::new();
         variable.extend_from_slice(name.as_bytes());
         variable.push(0);
@@ -594,7 +696,7 @@ mod tests {
         let mut output = Vec::new();
         output.extend_from_slice(&(block_size as i32).to_le_bytes());
         output.extend_from_slice(&0_i32.to_le_bytes());
-        output.extend_from_slice(&0_i32.to_le_bytes());
+        output.extend_from_slice(&position.to_le_bytes());
         output.extend_from_slice(&((60_u32 << 8) | (name.len() as u32 + 1)).to_le_bytes());
         output.extend_from_slice(&(((flags as u32) << 16) | 1).to_le_bytes());
         output.extend_from_slice(&8_i32.to_le_bytes());
@@ -611,7 +713,7 @@ mod tests {
         let bytes = build_bam_file_with_header_and_records(
             "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr20\tLN:32\tAS:CHM13v2.0\n",
             &[("chr20", 32)],
-            &[record("keep", 0, aux), record("drop", 0x400, aux)],
+            &[record("keep", 0, 0, aux), record("drop", 8, 0x400, aux)],
         );
         let path = write_temp_file("records-filter", "bam", &bytes);
         let response = run(request(path.clone(), 0));
@@ -630,7 +732,7 @@ mod tests {
         let bytes = build_bam_file_with_header_and_records(
             "@SQ\tSN:chr20\tLN:32\n",
             &[("chr20", 32)],
-            &[record("first", 0, &[]), record("second", 0, &[])],
+            &[record("first", 0, 0, &[]), record("second", 8, 0, &[])],
         );
         let path = write_temp_file("records-bound", "bam", &bytes);
         let payload = run(request(path.clone(), 1)).data.expect("payload");
@@ -644,7 +746,7 @@ mod tests {
         let bytes = build_bam_file_with_header_and_records(
             "@SQ\tSN:chr20\tLN:32\n",
             &[("chr20", 32)],
-            &[record("broken", 0, b"NMZnot-terminated")],
+            &[record("broken", 0, 0, b"NMZnot-terminated")],
         );
         let path = write_temp_file("records-malformed-aux", "bam", &bytes);
         let response = run(request(path.clone(), 0));
@@ -658,7 +760,7 @@ mod tests {
 
     #[test]
     fn records_command_rejects_missing_qualities() {
-        let mut missing = record("missing", 0, &[]);
+        let mut missing = record("missing", 0, 0, &[]);
         let quality_start = 4 + 32 + "missing".len() + 1 + 4 + 4;
         missing[quality_start..quality_start + 8].fill(0xff);
         let bytes = build_bam_file_with_header_and_records(
@@ -689,5 +791,31 @@ mod tests {
         .collect::<Vec<_>>();
         assert_eq!(decode_cigar(&cigar).unwrap(), "8M2I3D4N");
         assert_eq!(reference_span(&cigar).unwrap(), 15);
+    }
+
+    #[test]
+    fn records_command_selects_indexed_region_without_scan_fallback() {
+        let bytes = build_bam_file_with_header_and_records(
+            "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr20\tLN:100\n",
+            &[("chr20", 100)],
+            &[record("inside", 4, 0, &[]), record("outside", 50, 0, &[])],
+        );
+        let path = write_temp_file("records-region", "bam", &bytes);
+        let bai_path = std::path::PathBuf::from(format!("{}.bai", path.to_string_lossy()));
+        let index = build_bai_index_from_bam(&path).unwrap();
+        write_bai_index(&bai_path, &index).unwrap();
+        let mut request = request(path.clone(), 0);
+        request.regions = vec!["chr20:1-20".to_string()];
+        let payload = run(request).data.unwrap();
+        assert_eq!(payload.records.len(), 1);
+        assert_eq!(payload.records[0].read_id, "inside");
+        let scope = payload.region_scope.unwrap();
+        assert_eq!(scope.execution, "indexed");
+        assert_eq!(
+            scope.duplicate_policy,
+            "deduplicate_physical_records_by_virtual_offset"
+        );
+        std::fs::remove_file(path).unwrap();
+        std::fs::remove_file(bai_path).unwrap();
     }
 }

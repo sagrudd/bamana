@@ -10,6 +10,7 @@
     "input": {"object_id": "aaid:v1:object:fixture-bam", "format": "bam"},
     "reference": {"assembly": "CHM13v2.0", "object_id": "aaid:v1:object:fixture-fasta", "fasta_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fai_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_used": "explicit_fasta"},
     "filters": {"requested": 2, "retained": 1, "rejected": 1},
+    "region_scope": null,
     "records": [{"read_id": "r001", "reference_name": "chr20", "reference_start": 0, "reference_end": 8, "mapping_quality": 60, "flags": 0, "cigar": "8M", "sequence": "ACGTACGT", "qualities": [40,40,40,40,40,40,40,40], "auxiliary_tags": [{"tag": "NM", "type": "i", "value": 0, "raw_payload_hex": "00000000", "array_subtype": null}]}],
     "rejections": [{"read_id": "r002", "reason": "duplicate", "flags": 1024, "mapping_quality": 40, "auxiliary_tags": [{"tag": "MM", "type": "Z", "value": "C+m,0;", "raw_payload_hex": "432b6d2c303b00", "array_subtype": null}]}],
     "provenance": {"bamana_version": "0.1.0", "bamana_git_commit": "efd1d117b24a90a067d419383ac233350fed5d9a", "execution_mode": "host_binary", "container_image": null, "container_digest": null, "command": ["bamana", "records"]},
