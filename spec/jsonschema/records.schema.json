@@ -63,6 +63,24 @@
         "auxiliary_tags": {"type": "array", "items": {"$ref": "#/$defs/tag"}}
       }
     },
+    "stream_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "operation", "ok", "input", "reference", "filters", "region_scope", "stream", "rejection_counts", "provenance", "error"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "operation": {"const": "aligned_record_stream"},
+        "ok": {"const": true},
+        "input": {"type": "object", "additionalProperties": false, "required": ["object_id", "format"], "properties": {"object_id": {"type": "string", "minLength": 1}, "format": {"const": "bam"}}},
+        "reference": {"type": "object", "additionalProperties": false, "required": ["assembly", "object_id", "fasta_sha256", "fai_sha256", "source_used"], "properties": {"assembly": {"type": "string", "minLength": 1}, "object_id": {"type": "string", "minLength": 1}, "fasta_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "fai_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "source_used": {"const": "explicit_fasta"}}},
+        "filters": {"type": "object", "additionalProperties": false, "required": ["requested", "retained", "rejected"], "properties": {"requested": {"type": "integer", "minimum": 0}, "retained": {"type": "integer", "minimum": 0}, "rejected": {"type": "integer", "minimum": 0}}},
+        "region_scope": {"type":["object","null"],"additionalProperties":false,"required":["coordinate_base","interval_semantics","duplicate_policy","regions","execution","index_path","chunks_traversed","raw_records_seen","duplicate_records_suppressed"],"properties":{"coordinate_base":{"const":"input_1_based_closed_output_0_based_half_open"},"interval_semantics":{"type":"string","minLength":1},"duplicate_policy":{"const":"deduplicate_physical_records_by_virtual_offset"},"regions":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/normalized_region"}},"execution":{"const":"indexed_stream"},"index_path":{"type":"string","minLength":1},"chunks_traversed":{"type":"integer","minimum":0},"raw_records_seen":{"type":"integer","minimum":0},"duplicate_records_suppressed":{"type":"integer","minimum":0}}},
+        "stream": {"type": "object", "additionalProperties": false, "required": ["format", "path", "ordering", "record_kind_field"], "properties": {"format": {"const": "application/x-ndjson"}, "path": {"type": "string", "minLength": 1}, "ordering": {"const": "source_virtual_offset_order"}, "record_kind_field": {"const": "kind"}}},
+        "rejection_counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+        "provenance": {"type": "object", "additionalProperties": false, "required": ["bamana_version", "bamana_git_commit", "execution_mode", "command"], "properties": {"bamana_version": {"type": "string", "minLength": 1}, "bamana_git_commit": {"type": "string", "pattern": "^[0-9a-f]{7,64}$"}, "execution_mode": {"enum": ["host_binary", "container"]}, "container_image": {"type": ["string", "null"]}, "container_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}, "command": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}}}},
+        "error": {"type": "null"}
+      }
+    },
     "data": {
       "type": "object",
       "additionalProperties": false,
@@ -83,7 +101,7 @@
     }
   },
   "oneOf": [
-    {"type": "object", "additionalProperties": false, "required": ["ok", "command", "path", "data", "error"], "properties": {"ok": {"const": true}, "command": {"const": "records"}, "path": {"$ref": "./common/defs.schema.json#/$defs/pathOrNull"}, "analysis_wall_seconds": {"type": "number", "minimum": 0}, "data": {"$ref": "#/$defs/data"}, "error": {"type": "null"}}},
+    {"type": "object", "additionalProperties": false, "required": ["ok", "command", "path", "data", "error"], "properties": {"ok": {"const": true}, "command": {"const": "records"}, "path": {"$ref": "./common/defs.schema.json#/$defs/pathOrNull"}, "analysis_wall_seconds": {"type": "number", "minimum": 0}, "data": {"oneOf": [{"$ref": "#/$defs/data"}, {"$ref": "#/$defs/stream_data"}]}, "error": {"type": "null"}}},
     {"type": "object", "additionalProperties": false, "required": ["ok", "command", "path", "data", "error"], "properties": {"ok": {"const": false}, "command": {"const": "records"}, "path": {"$ref": "./common/defs.schema.json#/$defs/pathOrNull"}, "analysis_wall_seconds": {"type": "number", "minimum": 0}, "data": {"type": ["null", "object"]}, "error": {"$ref": "./common/json_error.schema.json"}}}
   ]
 }

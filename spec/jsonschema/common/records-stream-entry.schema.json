@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bamana.dev/spec/jsonschema/common/records-stream-entry.schema.json",
+  "title": "Bamana Records NDJSON Entry",
+  "description": "One independently parseable line emitted by records --stream-out.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {"const": "record"},
+        "data": {"$ref": "../records.schema.json#/$defs/record"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {"const": "rejection"},
+        "data": {"$ref": "../records.schema.json#/$defs/rejection"}
+      }
+    }
+  ]
+}

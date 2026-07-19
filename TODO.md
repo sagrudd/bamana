@@ -22,6 +22,11 @@ and benchmark documents where that is more precise.
 - [x] Add strict indexed-region selection to the governed `records` response
       for AlleleAnchor held-out metric sharding; require a current BAI and
       prohibit whole-file scan fallback.
+- [x] Add an atomic NDJSON output mode to `records` that traverses indexed BAM
+      chunks incrementally, retains only virtual-offset deduplication state,
+      records complete reference/filter/provenance metadata, and allows
+      AlleleAnchor to derive bounded-memory evidence without collecting a
+      chromosome or JSON envelope.
 
 - [ ] Implement a Bamana-owned streaming FASTA record API suitable for Platage's
       `io::bamana_fasta` adapter.

@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "command": "records",
+  "path": "fixture.bam",
+  "analysis_wall_seconds": 0.01,
+  "data": {
+    "schema_version": "1.0",
+    "operation": "aligned_record_stream",
+    "ok": true,
+    "input": {"object_id": "aaid:v1:object:fixture-bam", "format": "bam"},
+    "reference": {"assembly": "CHM13v2.0", "object_id": "aaid:v1:object:fixture-fasta", "fasta_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fai_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_used": "explicit_fasta"},
+    "filters": {"requested": 2, "retained": 1, "rejected": 1},
+    "region_scope": {"coordinate_base": "input_1_based_closed_output_0_based_half_open", "interval_semantics": "1-based closed", "duplicate_policy": "deduplicate_physical_records_by_virtual_offset", "regions": [{"original": "chr20:1-20", "reference_name": "chr20", "reference_index": 0, "reference_length": 100, "start_0_based": 0, "end_0_based_exclusive": 20, "start_1_based_inclusive": 1, "end_1_based_inclusive": 20, "input_kind": "explicit_interval"}], "execution": "indexed_stream", "index_path": "fixture.bam.bai", "chunks_traversed": 1, "raw_records_seen": 2, "duplicate_records_suppressed": 0},
+    "stream": {"format": "application/x-ndjson", "path": "fixture.records.ndjson", "ordering": "source_virtual_offset_order", "record_kind_field": "kind"},
+    "rejection_counts": {"duplicate": 1},
+    "provenance": {"bamana_version": "0.1.0", "bamana_git_commit": "c725454960f380d55a33aa8ae04852b92fec45c4", "execution_mode": "host_binary", "container_image": null, "container_digest": null, "command": ["bamana", "records"]},
+    "error": null
+  },
+  "error": null
+}

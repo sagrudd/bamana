@@ -213,6 +213,12 @@ pub struct RecordsArgs {
     /// Stop after this many input records; zero scans the complete file.
     #[arg(long = "max-records", default_value_t = 0)]
     pub max_records: usize,
+    /// Atomically write retained/rejected records as bounded-memory NDJSON.
+    #[arg(long = "stream-out")]
+    pub stream_out: Option<PathBuf>,
+    /// Replace an existing stream output atomically.
+    #[arg(long = "force", requires = "stream_out")]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]

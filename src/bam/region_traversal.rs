@@ -24,6 +24,13 @@ pub struct RegionTraversalResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegionTraversalStats {
+    pub chunks_traversed: usize,
+    pub raw_records_seen: usize,
+    pub duplicate_records_suppressed: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegionMatchedRecord {
     pub raw_record: Vec<u8>,
     pub virtual_offsets: BamRecordVirtualOffsets,
@@ -44,20 +51,47 @@ pub fn traverse_planned_region_chunks(
     regions: &NormalizedRegionSet,
     plan: &RegionChunkPlan,
 ) -> Result<RegionTraversalResult, AppError> {
+    let mut records = Vec::new();
+    let stats = visit_planned_region_records(bam_path, regions, plan, |record| {
+        records.push(record);
+        Ok(())
+    })?;
+    records.sort_by_key(|record| {
+        (
+            record.virtual_offsets.start.packed(),
+            record.virtual_offsets.end.packed(),
+        )
+    });
+    Ok(RegionTraversalResult {
+        bam_path: bam_path.to_path_buf(),
+        records,
+        chunks_traversed: stats.chunks_traversed,
+        raw_records_seen: stats.raw_records_seen,
+        duplicate_records_suppressed: stats.duplicate_records_suppressed,
+        fallback: RegionFallback::None,
+    })
+}
+
+pub fn visit_planned_region_records<F>(
+    bam_path: &Path,
+    regions: &NormalizedRegionSet,
+    plan: &RegionChunkPlan,
+    mut visit: F,
+) -> Result<RegionTraversalStats, AppError>
+where
+    F: FnMut(RegionMatchedRecord) -> Result<(), AppError>,
+{
     if plan.total_coalesced_chunks == 0 {
-        return Ok(RegionTraversalResult {
-            bam_path: bam_path.to_path_buf(),
-            records: Vec::new(),
+        return Ok(RegionTraversalStats {
             chunks_traversed: 0,
             raw_records_seen: 0,
             duplicate_records_suppressed: 0,
-            fallback: RegionFallback::None,
         });
     }
 
     let grouped_regions = group_regions_by_reference(regions);
     let mut scanner = BamScanner::open(bam_path)?;
-    let mut records_by_offset: BTreeMap<(u64, u64), RegionMatchedRecord> = BTreeMap::new();
+    let mut emitted_regions = BTreeMap::<(u64, u64), Vec<String>>::new();
     let mut chunks_traversed = 0;
     let mut raw_records_seen = 0;
     let mut duplicate_records_suppressed = 0;
@@ -69,10 +103,15 @@ pub fn traverse_planned_region_chunks(
 
         for chunk in &reference_plan.coalesced_chunks {
             chunks_traversed += 1;
-            let raw_records = scanner.raw_records_in_virtual_range(chunk.start, chunk.end)?;
-            raw_records_seen += raw_records.len();
-
-            for raw in raw_records {
+            scanner.seek_virtual_offset(chunk.start)?;
+            while let Some(raw) = scanner.next_raw_record_with_virtual_offsets()? {
+                if raw.virtual_offsets.start >= chunk.end {
+                    break;
+                }
+                if raw.virtual_offsets.end <= chunk.start {
+                    continue;
+                }
+                raw_records_seen += 1;
                 let view = BamRecordView::parse(&raw.raw_record).map_err(|error| {
                     AppError::InvalidRecord {
                         path: bam_path.to_path_buf(),
@@ -97,34 +136,38 @@ pub fn traverse_planned_region_chunks(
                     raw.virtual_offsets.start.packed(),
                     raw.virtual_offsets.end.packed(),
                 );
-                if let Some(existing) = records_by_offset.get_mut(&key) {
+                if let Some(existing) = emitted_regions.get_mut(&key) {
                     duplicate_records_suppressed += 1;
-                    merge_region_matches(&mut existing.matched_regions, matched_regions);
+                    merge_region_matches(existing, matched_regions);
                 } else {
-                    records_by_offset.insert(
-                        key,
-                        RegionMatchedRecord {
-                            raw_record: raw.raw_record,
-                            virtual_offsets: raw.virtual_offsets,
-                            reference_index,
-                            start_0_based: start,
-                            end_0_based_exclusive: end,
-                            matched_regions,
-                        },
-                    );
+                    emitted_regions.insert(key, matched_regions.clone());
+                    visit(RegionMatchedRecord {
+                        raw_record: raw.raw_record,
+                        virtual_offsets: raw.virtual_offsets,
+                        reference_index,
+                        start_0_based: start,
+                        end_0_based_exclusive: end,
+                        matched_regions,
+                    })?;
                 }
             }
         }
     }
 
-    Ok(RegionTraversalResult {
-        bam_path: bam_path.to_path_buf(),
-        records: records_by_offset.into_values().collect(),
+    Ok(RegionTraversalStats {
         chunks_traversed,
         raw_records_seen,
         duplicate_records_suppressed,
-        fallback: RegionFallback::None,
     })
+}
+
+fn merge_region_matches(existing: &mut Vec<String>, additional: Vec<String>) {
+    let mut seen = existing.iter().cloned().collect::<BTreeSet<_>>();
+    for region in additional {
+        if seen.insert(region.clone()) {
+            existing.push(region);
+        }
+    }
 }
 
 pub fn scan_fallback_required(path: &Path) -> RegionTraversalResult {
@@ -185,15 +228,6 @@ fn matching_regions<'a>(
         .iter()
         .filter(move |region| start < region.end_0_based_exclusive && end > region.start_0_based)
         .map(|region| region.original.clone())
-}
-
-fn merge_region_matches(existing: &mut Vec<String>, additional: Vec<String>) {
-    let mut seen = existing.iter().cloned().collect::<BTreeSet<_>>();
-    for region in additional {
-        if seen.insert(region.clone()) {
-            existing.push(region);
-        }
-    }
 }
 
 fn reference_span(cigar_bytes: &[u8], path: &Path) -> Result<u32, AppError> {

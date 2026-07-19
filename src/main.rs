@@ -59,8 +59,8 @@ fn main() -> ExitCode {
                 threads: args.threads,
             })
         }),
-        Commands::Records(args) => emit_timed_response(cli.global.json_pretty, || {
-            commands::records::run(RecordsRequest {
+        Commands::Records(args) => {
+            let request = RecordsRequest {
                 bam: args.bam,
                 regions: args.regions,
                 input_object_id: args.input_object_id,
@@ -79,8 +79,15 @@ fn main() -> ExitCode {
                 include_qcfail: args.include_qcfail,
                 min_mapq: args.min_mapq,
                 max_records: args.max_records,
-            })
-        }),
+            };
+            if let Some(output) = args.stream_out {
+                emit_timed_response(cli.global.json_pretty, || {
+                    commands::records_stream::run(request, output, args.force)
+                })
+            } else {
+                emit_timed_response(cli.global.json_pretty, || commands::records::run(request))
+            }
+        }
         Commands::Subsample(args) => emit_timed_response(cli.global.json_pretty, || {
             let input = args.input;
             commands::subsample::run(SubsampleRequest {

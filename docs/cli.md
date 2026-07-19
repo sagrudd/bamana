@@ -62,6 +62,14 @@ records. It accepts `--max-records` for bounded local validation. SAM and CRAM
 must be normalized by `consume --mode alignment` first; this command does not
 add indexed CRAM behavior.
 
+For large governed hand-offs, `records --stream-out <records.ndjson>` writes
+each retained record or rejection as one tagged NDJSON line while keeping the
+JSON command response to metadata and counts. The file is atomically promoted
+only after successful traversal; `--force` is required to replace it. Indexed
+region streams require a current BAI and never fall back to a whole-file scan.
+They preserve source virtual-offset order and retain only index traversal and
+virtual-offset deduplication state rather than a chromosome-sized response.
+
 `index` is now format-aware. It still validates BAM inputs and reports honest
 BAI/CSI writer limitations, but it also creates sampled `FASTQ.GZI` sidecars
 for `FASTQ.GZ` inputs via `--input`. The default `FASTQ.GZI` rule now places

@@ -109,7 +109,7 @@ Key output concepts:
 ## `records`
 
 Synopsis:
-`bamana records --bam <normalized.bam> --input-object-id <ID> --reference-assembly <ASSEMBLY> --reference-object-id <ID> --reference-sha256 <HEX> --reference-fai-sha256 <HEX> --bamana-git-commit <HEX> [--execution-mode <host_binary|container>] [--container-image <IMAGE> --container-digest <DIGEST>] [--include-unmapped] [--include-secondary] [--include-supplementary] [--include-duplicate] [--include-qcfail] [--min-mapq <N>] [--max-records <N>]`
+`bamana records --bam <normalized.bam> --input-object-id <ID> --reference-assembly <ASSEMBLY> --reference-object-id <ID> --reference-sha256 <HEX> --reference-fai-sha256 <HEX> --bamana-git-commit <HEX> [--execution-mode <host_binary|container>] [--container-image <IMAGE> --container-digest <DIGEST>] [--include-unmapped] [--include-secondary] [--include-supplementary] [--include-duplicate] [--include-qcfail] [--min-mapq <N>] [--max-records <N>] [--stream-out <records.ndjson> [--force]]`
 
 Semantics:
 Reads a normalized native BGZF BAM in encounter order and emits a bounded,
@@ -123,6 +123,15 @@ The response records zero-based half-open coordinates (`reference_start` and
 tags, raw auxiliary payload bytes, and stable rejection reasons. A bounded
 `--max-records` scan reports only the records examined and never claims a
 whole-file total.
+
+With `--stream-out`, retained records and rejections are written incrementally
+as tagged NDJSON entries (`kind` is `record` or `rejection`, and `data` carries
+the corresponding governed payload). The command response remains small and
+records counts, reference identity, filters, provenance, ordering, and the
+output basename. The output is published atomically; an existing output is
+rejected unless `--force` is explicit. Indexed regions require a current BAI,
+prohibit scan fallback, deduplicate physical records by virtual offset, and
+emit source virtual-offset order without collecting the record payloads.
 
 Does prove:
 That the normalized BAM records in the examined scope were decoded and that

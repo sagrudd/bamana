@@ -29,6 +29,7 @@ Build the site locally with:
    :caption: Public CLI Commands
 
    public_commands
+   records_stream
 
 .. toctree::
    :maxdepth: 2

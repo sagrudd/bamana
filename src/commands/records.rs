@@ -291,7 +291,7 @@ fn collect_record(
     Ok(())
 }
 
-fn validate_request(request: &RecordsRequest) -> Result<(), AppError> {
+pub(crate) fn validate_request(request: &RecordsRequest) -> Result<(), AppError> {
     let fields = [
         (request.input_object_id.as_str(), "input_object_id"),
         (request.reference_assembly.as_str(), "reference_assembly"),
@@ -374,7 +374,10 @@ fn validate_request(request: &RecordsRequest) -> Result<(), AppError> {
     Ok(())
 }
 
-fn rejection_reason(record: &BamRecordView<'_>, request: &RecordsRequest) -> Option<&'static str> {
+pub(crate) fn rejection_reason(
+    record: &BamRecordView<'_>,
+    request: &RecordsRequest,
+) -> Option<&'static str> {
     let flags = record.flag_summary();
     if !request.include_unmapped && flags.is_unmapped {
         return Some("unmapped");
@@ -397,7 +400,7 @@ fn rejection_reason(record: &BamRecordView<'_>, request: &RecordsRequest) -> Opt
     None
 }
 
-fn to_alignment_record(
+pub(crate) fn to_alignment_record(
     record: &BamRecordView<'_>,
     header: &crate::bam::header::HeaderPayload,
     input_path: &std::path::Path,
@@ -466,7 +469,7 @@ fn to_alignment_record(
     })
 }
 
-fn rejected_record(
+pub(crate) fn rejected_record(
     record: &BamRecordView<'_>,
     reason: &'static str,
     input_path: &std::path::Path,
