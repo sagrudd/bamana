@@ -482,7 +482,7 @@ fn validate_modification_tag_type(field: AuxField<'_>) -> Result<(), String> {
     let valid = match field.tag {
         [b'M', b'M'] => field.type_code == b'Z',
         [b'M', b'L'] => field.type_code == b'B' && field.payload.first() == Some(&b'C'),
-        [b'M', b'N'] => field.type_code == b'i',
+        [b'M', b'N'] => matches!(field.type_code, b'c' | b'C' | b's' | b'S' | b'i' | b'I'),
         _ => true,
     };
     if valid {
@@ -498,67 +498,95 @@ fn validate_modification_tag_type(field: AuxField<'_>) -> Result<(), String> {
 fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
     let tag = String::from_utf8(vec![field.tag[0], field.tag[1]])
         .map_err(|error| format!("BAM auxiliary tag name was not valid UTF-8: {error}"))?;
-    let value = match field.type_code {
-        b'A' => {
-            let value = *field
-                .payload
-                .first()
-                .ok_or_else(|| "Auxiliary A tag payload was empty.".to_string())?;
-            format!("A:{}", char::from(value))
-        }
-        b'c' => format!(
-            "c:{}",
-            i8::from_le_bytes([require_payload(field.payload, 1)?[0]])
-        ),
-        b'C' => format!("C:{}", require_payload(field.payload, 1)?[0]),
-        b's' => {
-            let bytes = require_payload(field.payload, 2)?;
-            format!("s:{}", i16::from_le_bytes([bytes[0], bytes[1]]))
-        }
-        b'S' => {
-            let bytes = require_payload(field.payload, 2)?;
-            format!("S:{}", u16::from_le_bytes([bytes[0], bytes[1]]))
-        }
-        b'i' => {
-            let bytes = require_payload(field.payload, 4)?;
-            format!(
-                "i:{}",
-                i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-            )
-        }
-        b'I' => {
-            let bytes = require_payload(field.payload, 4)?;
-            format!(
-                "I:{}",
-                u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-            )
-        }
-        b'f' => {
-            let bytes = require_payload(field.payload, 4)?;
-            format!(
-                "f:{}",
-                f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-            )
-        }
-        b'Z' | b'H' => {
-            let value = field.payload.strip_suffix(&[0]).ok_or_else(|| {
-                "Encountered a malformed NUL-terminated auxiliary string.".to_string()
-            })?;
-            let value = String::from_utf8(value.to_vec()).map_err(|error| {
-                format!("BAM auxiliary string tag was not valid UTF-8: {error}")
-            })?;
-            format!("{}:{}", field.type_code as char, value)
-        }
-        b'B' => format_b_array(field.payload)?,
-        other => {
-            return Err(format!(
-                "Encountered unsupported or malformed BAM auxiliary type code '{}'.",
-                other as char
-            ));
+    let value = if field.tag == [b'M', b'N'] {
+        format!("i:{}", integer_aux_value(field)?)
+    } else {
+        match field.type_code {
+            b'A' => {
+                let value = *field
+                    .payload
+                    .first()
+                    .ok_or_else(|| "Auxiliary A tag payload was empty.".to_string())?;
+                format!("A:{}", char::from(value))
+            }
+            b'c' => format!(
+                "c:{}",
+                i8::from_le_bytes([require_payload(field.payload, 1)?[0]])
+            ),
+            b'C' => format!("C:{}", require_payload(field.payload, 1)?[0]),
+            b's' => {
+                let bytes = require_payload(field.payload, 2)?;
+                format!("s:{}", i16::from_le_bytes([bytes[0], bytes[1]]))
+            }
+            b'S' => {
+                let bytes = require_payload(field.payload, 2)?;
+                format!("S:{}", u16::from_le_bytes([bytes[0], bytes[1]]))
+            }
+            b'i' => {
+                let bytes = require_payload(field.payload, 4)?;
+                format!(
+                    "i:{}",
+                    i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                )
+            }
+            b'I' => {
+                let bytes = require_payload(field.payload, 4)?;
+                format!(
+                    "I:{}",
+                    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                )
+            }
+            b'f' => {
+                let bytes = require_payload(field.payload, 4)?;
+                format!(
+                    "f:{}",
+                    f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                )
+            }
+            b'Z' | b'H' => {
+                let value = field.payload.strip_suffix(&[0]).ok_or_else(|| {
+                    "Encountered a malformed NUL-terminated auxiliary string.".to_string()
+                })?;
+                let value = String::from_utf8(value.to_vec()).map_err(|error| {
+                    format!("BAM auxiliary string tag was not valid UTF-8: {error}")
+                })?;
+                format!("{}:{}", field.type_code as char, value)
+            }
+            b'B' => format_b_array(field.payload)?,
+            other => {
+                return Err(format!(
+                    "Encountered unsupported or malformed BAM auxiliary type code '{}'.",
+                    other as char
+                ));
+            }
         }
     };
 
     Ok(format!("{tag}:{value}"))
+}
+
+fn integer_aux_value(field: AuxField<'_>) -> Result<i64, String> {
+    match field.type_code {
+        b'c' => Ok(i8::from_le_bytes([require_payload(field.payload, 1)?[0]]) as i64),
+        b'C' => Ok(require_payload(field.payload, 1)?[0] as i64),
+        b's' => {
+            let bytes = require_payload(field.payload, 2)?;
+            Ok(i16::from_le_bytes([bytes[0], bytes[1]]) as i64)
+        }
+        b'S' => {
+            let bytes = require_payload(field.payload, 2)?;
+            Ok(u16::from_le_bytes([bytes[0], bytes[1]]) as i64)
+        }
+        b'i' => {
+            let bytes = require_payload(field.payload, 4)?;
+            Ok(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i64)
+        }
+        b'I' => {
+            let bytes = require_payload(field.payload, 4)?;
+            Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i64)
+        }
+        _ => Err("Expected a BAM integer auxiliary field.".to_string()),
+    }
 }
 
 fn format_b_array(payload: &[u8]) -> Result<String, String> {
@@ -819,6 +847,24 @@ mod tests {
         let text = String::from_utf8(bytes).expect("fastq bytes should be utf8");
 
         assert!(text.starts_with("@modread MM:Z:C+m,0; ML:B:C,42,7 MN:i:2\n"));
+    }
+
+    #[test]
+    fn compact_mn_integer_is_emitted_as_canonical_sam_integer() {
+        let record = modification_record(vec![
+            b'M', b'M', b'Z', b'C', b'+', b'm', b',', b'0', b';', 0, b'M', b'L', b'B', b'C', 1, 0,
+            0, 0, 42, b'M', b'N', b'C', 100,
+        ]);
+        let mut bytes = Vec::new();
+
+        append_fastq_record(&mut bytes, &record, Path::new("input.bam"), true)
+            .expect("compact BAM integer should be accepted");
+
+        assert!(
+            String::from_utf8(bytes)
+                .unwrap()
+                .starts_with("@modread MM:Z:C+m,0; ML:B:C,42 MN:i:100\n")
+        );
     }
 
     #[test]

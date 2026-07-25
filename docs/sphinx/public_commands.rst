@@ -63,6 +63,8 @@ request the governed tag-safe mode explicitly:
 This mode serializes ``MM``, ``ML``, and ``MN`` as SAM-compatible FASTQ
 comment fields. The trio is atomic: a record containing only a subset fails
 the export, while a record containing none remains an untagged FASTQ record.
+All legal BAM integer widths for ``MN`` are accepted and serialized as the
+canonical SAM ``MN:i:<value>`` field.
 The JSON response reports ``records_with_modification_tags``. Downstream
 aligners must explicitly retain SAM-style FASTQ comments (for example,
 minimap2 ``-y``); the export alone does not prove restoration into the

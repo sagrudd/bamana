@@ -1476,13 +1476,16 @@ may differ slightly to keep the method fast.
 ## `fastq`
 
 Synopsis:
-`bamana fastq --bam <input.bam> [--out <output.fastq.gz>] [-j, --threads <N>] [--force]`
+`bamana fastq --bam <input.bam> [--out <output.fastq.gz>] [-j, --threads <N>] [--preserve-modification-tags] [--force]`
 
 Semantics:
 Exports one BAM as a single ordered `FASTQ.GZ` stream. Read names, sequences,
 and qualities are emitted in input encounter order. The output is written as an
 ordered stream of gzip members so decode and compression work can use multiple
 worker threads while preserving record order.
+Tag-safe mode requires the atomic MM/ML/MN trio and emits it as SAM-compatible
+FASTQ comments. Legal compact BAM integer widths for MN are normalized to the
+canonical SAM `MN:i:<value>` representation.
 
 Does prove:
 The reported BAM records were parsed and emitted to the reported FASTQ.GZ
@@ -1491,11 +1494,12 @@ output path in encounter order.
 Does not prove:
 Full BAM validation, pair repair, filtering, alignment preservation, or
 retention of BAM-only metadata. BAM header records, alignment fields, and
-auxiliary tags are not represented in FASTQ output.
+auxiliary tags other than the explicitly requested MM/ML/MN trio are not
+represented in FASTQ output.
 
 Key output concepts:
 `format`, `output`, `execution.records_read`, `execution.records_written`,
-`execution.threads_used`, `notes`.
+`execution.records_with_modification_tags`, `execution.threads_used`, `notes`.
 
 ## `unmap`
 

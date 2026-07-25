@@ -90,8 +90,11 @@ contiguous-range splitting in the current slice.
 `fastq` is the BAM-to-FASTQ.GZ export command. It accepts one BAM via `--bam`,
 writes a single ordered FASTQ.GZ stream, and reports records read, records
 written, and worker-thread usage. It preserves read names, sequences, and
-qualities in input encounter order; it does not preserve BAM header metadata,
-alignment fields, or auxiliary tags in the FASTQ output.
+qualities in input encounter order. Ordinary export omits auxiliary tags;
+``--preserve-modification-tags`` retains only a complete MM/ML/MN trio as
+SAM-compatible comments, canonicalizing any legal compact BAM ``MN`` integer
+to ``MN:i:<value>``. It does not preserve BAM header metadata, alignment
+fields, or other auxiliary tags in the FASTQ output.
 
 `unmap` rewrites one BAM as unmapped BAM. It removes reference dictionary state
 from the output header and strips reference-bound alignment state from each

@@ -463,7 +463,9 @@ threads. Ordinary export omits auxiliary tags. The explicit
 `--preserve-modification-tags` mode serializes the complete `MM`/`ML`/`MN`
 trio as SAM-compatible FASTQ comment fields for tag-aware remapping and fails
 closed if a record contains only part of that trio. Records containing none of
-the three remain valid untagged reads. FASTQ output cannot preserve BAM header
+the three remain valid untagged reads. Legal compact BAM integer encodings of
+``MN`` are normalized to the canonical SAM ``MN:i:<value>`` representation.
+FASTQ output cannot preserve BAM header
 records, reference dictionaries, alignment flags, or other auxiliary tags.
 
 `unmap` rewrites a BAM into an unmapped BAM by clearing reference-bound header
