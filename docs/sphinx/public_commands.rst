@@ -50,8 +50,9 @@ fastq
 
    bamana fastq --bam input.bam --out input.fastq.gz -j 8
 
-The command preserves read names, sequences, and qualities in input encounter
-order. Ordinary export omits BAM auxiliary tags. For modified-base remapping,
+The command preserves read names and restores sequences and qualities to
+original molecule orientation in input encounter order, including
+reverse-strand BAM records. Ordinary export omits BAM auxiliary tags. For modified-base remapping,
 request the governed tag-safe mode explicitly:
 
 .. code-block:: bash

@@ -357,18 +357,25 @@ fn append_fastq_record(
     input_path: &Path,
     preserve_modification_tags: bool,
 ) -> Result<bool, AppError> {
-    let sequence = decode_bam_sequence(&record.sequence_bytes, record.l_seq).map_err(|detail| {
+    let mut sequence =
+        decode_bam_sequence(&record.sequence_bytes, record.l_seq).map_err(|detail| {
+            AppError::ParseUncertainty {
+                path: input_path.to_path_buf(),
+                detail,
+            }
+        })?;
+    let mut quality = decode_bam_qualities(&record.quality_bytes).map_err(|detail| {
         AppError::ParseUncertainty {
             path: input_path.to_path_buf(),
             detail,
         }
     })?;
-    let quality = decode_bam_qualities(&record.quality_bytes).map_err(|detail| {
-        AppError::ParseUncertainty {
-            path: input_path.to_path_buf(),
-            detail,
+    if record.flags & 0x10 != 0 {
+        sequence = reverse_complement(&sequence, input_path)?;
+        if quality != "*" {
+            quality = quality.chars().rev().collect();
         }
-    })?;
+    }
 
     output.push(b'@');
     output.extend_from_slice(record.read_name.as_bytes());
@@ -387,6 +394,38 @@ fn append_fastq_record(
     }
     output.push(b'\n');
     Ok(has_modification_tags)
+}
+
+fn reverse_complement(sequence: &str, input_path: &Path) -> Result<String, AppError> {
+    sequence
+        .bytes()
+        .rev()
+        .map(|base| match base {
+            b'=' => Ok('='),
+            b'A' => Ok('T'),
+            b'C' => Ok('G'),
+            b'M' => Ok('K'),
+            b'G' => Ok('C'),
+            b'R' => Ok('Y'),
+            b'S' => Ok('S'),
+            b'V' => Ok('B'),
+            b'T' => Ok('A'),
+            b'W' => Ok('W'),
+            b'Y' => Ok('R'),
+            b'H' => Ok('D'),
+            b'K' => Ok('M'),
+            b'D' => Ok('H'),
+            b'B' => Ok('V'),
+            b'N' => Ok('N'),
+            other => Err(AppError::ParseUncertainty {
+                path: input_path.to_path_buf(),
+                detail: format!(
+                    "BAM reverse-strand sequence contained unsupported base code '{}'.",
+                    char::from(other)
+                ),
+            }),
+        })
+        .collect()
 }
 
 fn append_methylation_header_tags(
@@ -809,6 +848,24 @@ mod tests {
             .expect_err("partial tag trio must fail closed");
 
         assert!(error.to_string().contains("auxiliary fields"));
+    }
+
+    #[test]
+    fn reverse_strand_export_restores_original_sequence_and_quality_orientation() {
+        let mut record = modification_record(Vec::new());
+        record.flags = 0x10;
+        record.l_seq = 5;
+        record.sequence_bytes = encode_bam_sequence("ACGTM").expect("seq should encode");
+        record.quality_bytes = encode_bam_qualities("!#$%&").expect("qual should encode");
+        let mut bytes = Vec::new();
+
+        append_fastq_record(&mut bytes, &record, Path::new("input.bam"), false)
+            .expect("reverse-strand record should export");
+
+        assert_eq!(
+            String::from_utf8(bytes).unwrap(),
+            "@modread\nKACGT\n+\n&%$#!\n"
+        );
     }
 
     fn modification_record(aux_bytes: Vec<u8>) -> RecordLayout {

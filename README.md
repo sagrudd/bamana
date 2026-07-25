@@ -456,7 +456,8 @@ order-insensitive multiset checksum of the combined inputs against the merged
 output.
 
 `fastq` exports BAM alignment records as an ordered `FASTQ.GZ` stream. It emits
-read names, sequences, and qualities in input encounter order and uses
+read names, original molecule-orientation sequences and qualities in input
+encounter order and uses
 concatenated gzip members so decode and compression work can run across worker
 threads. Ordinary export omits auxiliary tags. The explicit
 `--preserve-modification-tags` mode serializes the complete `MM`/`ML`/`MN`
