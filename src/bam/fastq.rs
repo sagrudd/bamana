@@ -27,6 +27,7 @@ pub struct FastqExportOptions {
     pub input_path: PathBuf,
     pub output_path: PathBuf,
     pub threads: usize,
+    pub preserve_modification_tags: bool,
     pub force: bool,
 }
 
@@ -35,6 +36,7 @@ pub struct FastqExportExecution {
     pub overwritten: bool,
     pub records_read: u64,
     pub records_written: u64,
+    pub records_with_modification_tags: u64,
     pub threads_used: usize,
     pub notes: Vec<String>,
 }
@@ -49,6 +51,7 @@ struct BatchJob {
 struct BatchResult {
     index: usize,
     record_count: u64,
+    modification_tagged_record_count: u64,
     compressed: Result<Vec<u8>, AppError>,
 }
 
@@ -75,7 +78,7 @@ pub fn export_bam_to_fastq_gz(
         let _ = fs::remove_file(&temp_path);
     }
 
-    let write_result = (|| -> Result<(u64, u64), AppError> {
+    let write_result = (|| -> Result<(u64, u64, u64), AppError> {
         let mut reader = BamReader::open(&options.input_path)?;
         let _header = crate::bam::header::parse_bam_header_from_reader(&mut reader)?;
         let mut writer =
@@ -91,6 +94,7 @@ pub fn export_bam_to_fastq_gz(
         let shared_rx = Arc::new(Mutex::new(job_rx));
 
         let mut handles = Vec::with_capacity(threads_used);
+        let preserve_modification_tags = options.preserve_modification_tags;
         for _ in 0..threads_used {
             let job_rx = Arc::clone(&shared_rx);
             let result_tx = result_tx.clone();
@@ -98,12 +102,16 @@ pub fn export_bam_to_fastq_gz(
             handles.push(thread::spawn(move || {
                 while let Some(job) = recv_job(&job_rx) {
                     let record_count = job.records.len() as u64;
-                    let compressed = compress_batch(job.records, &input_path);
+                    let compressed =
+                        compress_batch(job.records, &input_path, preserve_modification_tags);
+                    let modification_tagged_record_count =
+                        compressed.as_ref().map(|(_, count)| *count).unwrap_or(0);
                     if result_tx
                         .send(BatchResult {
                             index: job.index,
                             record_count,
-                            compressed,
+                            modification_tagged_record_count,
+                            compressed: compressed.map(|(bytes, _)| bytes),
                         })
                         .is_err()
                     {
@@ -118,6 +126,7 @@ pub fn export_bam_to_fastq_gz(
         let mut batches_sent = 0_usize;
         let mut records_read = 0_u64;
         let mut records_written = 0_u64;
+        let mut records_with_modification_tags = 0_u64;
         let mut current_batch = Vec::new();
         let mut current_batch_bytes = 0_usize;
         let mut pending = BTreeMap::new();
@@ -147,6 +156,7 @@ pub fn export_bam_to_fastq_gz(
                     &mut writer,
                     &mut next_to_write,
                     &mut records_written,
+                    &mut records_with_modification_tags,
                     &temp_path,
                 )?;
             }
@@ -169,6 +179,7 @@ pub fn export_bam_to_fastq_gz(
                     .to_string(),
             })?;
             pending.insert(result.index, (result.record_count, result.compressed));
+            records_with_modification_tags += result.modification_tagged_record_count;
             write_ready_batches(
                 &mut pending,
                 &mut writer,
@@ -189,10 +200,14 @@ pub fn export_bam_to_fastq_gz(
             })?;
         }
 
-        Ok((records_read, records_written))
+        Ok((
+            records_read,
+            records_written,
+            records_with_modification_tags,
+        ))
     })();
 
-    let (records_read, records_written) = match write_result {
+    let (records_read, records_written, records_with_modification_tags) = match write_result {
         Ok(counts) => counts,
         Err(error) => {
             let _ = fs::remove_file(&temp_path);
@@ -225,11 +240,18 @@ pub fn export_bam_to_fastq_gz(
     } else {
         notes.push("FASTQ export used a single worker thread because only one CPU core was available or requested.".to_string());
     }
+    if options.preserve_modification_tags {
+        notes.push(format!(
+            "Validated and preserved the atomic MM/ML/MN tag trio in FASTQ comments for {} records; records without any member of the trio remained untagged.",
+            records_with_modification_tags
+        ));
+    }
 
     Ok(FastqExportExecution {
         overwritten: preexisting_output && options.force,
         records_read,
         records_written,
+        records_with_modification_tags,
         threads_used,
         notes,
     })
@@ -266,9 +288,11 @@ fn drain_available_results(
     writer: &mut BufWriter<File>,
     next_to_write: &mut usize,
     records_written: &mut u64,
+    records_with_modification_tags: &mut u64,
     path: &Path,
 ) -> Result<(), AppError> {
     while let Ok(result) = result_rx.try_recv() {
+        *records_with_modification_tags += result.modification_tagged_record_count;
         pending.insert(result.index, (result.record_count, result.compressed));
     }
     write_ready_batches(pending, writer, next_to_write, records_written, path)
@@ -295,10 +319,22 @@ fn write_ready_batches(
     Ok(())
 }
 
-fn compress_batch(records: Vec<RecordLayout>, input_path: &Path) -> Result<Vec<u8>, AppError> {
+fn compress_batch(
+    records: Vec<RecordLayout>,
+    input_path: &Path,
+    preserve_modification_tags: bool,
+) -> Result<(Vec<u8>, u64), AppError> {
     let mut payload = Vec::new();
+    let mut tagged_records = 0_u64;
     for record in records {
-        append_fastq_record(&mut payload, &record, input_path)?;
+        if append_fastq_record(
+            &mut payload,
+            &record,
+            input_path,
+            preserve_modification_tags,
+        )? {
+            tagged_records += 1;
+        }
     }
 
     let mut encoder = GzBuilder::new().write(Vec::new(), Compression::fast());
@@ -308,17 +344,19 @@ fn compress_batch(records: Vec<RecordLayout>, input_path: &Path) -> Result<Vec<u
             path: input_path.to_path_buf(),
             message: error.to_string(),
         })?;
-    encoder.finish().map_err(|error| AppError::WriteError {
+    let compressed = encoder.finish().map_err(|error| AppError::WriteError {
         path: input_path.to_path_buf(),
         message: error.to_string(),
-    })
+    })?;
+    Ok((compressed, tagged_records))
 }
 
 fn append_fastq_record(
     output: &mut Vec<u8>,
     record: &RecordLayout,
     input_path: &Path,
-) -> Result<(), AppError> {
+    preserve_modification_tags: bool,
+) -> Result<bool, AppError> {
     let sequence = decode_bam_sequence(&record.sequence_bytes, record.l_seq).map_err(|detail| {
         AppError::ParseUncertainty {
             path: input_path.to_path_buf(),
@@ -334,7 +372,11 @@ fn append_fastq_record(
 
     output.push(b'@');
     output.extend_from_slice(record.read_name.as_bytes());
-    append_methylation_header_tags(output, &record.aux_bytes, input_path)?;
+    let has_modification_tags = if preserve_modification_tags {
+        append_methylation_header_tags(output, &record.aux_bytes, input_path)?
+    } else {
+        false
+    };
     output.push(b'\n');
     output.extend_from_slice(sequence.as_bytes());
     output.extend_from_slice(b"\n+\n");
@@ -344,17 +386,32 @@ fn append_fastq_record(
         output.extend_from_slice(quality.as_bytes());
     }
     output.push(b'\n');
-    Ok(())
+    Ok(has_modification_tags)
 }
 
 fn append_methylation_header_tags(
     output: &mut Vec<u8>,
     aux_bytes: &[u8],
     input_path: &Path,
-) -> Result<(), AppError> {
+) -> Result<bool, AppError> {
     let mut tags = Vec::new();
+    let mut seen = [false; 3];
     traverse_aux_fields(aux_bytes, |field| {
-        if matches!(field.tag, [b'M', b'M'] | [b'M', b'L'] | [b'M', b'N']) {
+        let index = match field.tag {
+            [b'M', b'M'] => Some(0),
+            [b'M', b'L'] => Some(1),
+            [b'M', b'N'] => Some(2),
+            _ => None,
+        };
+        if let Some(index) = index {
+            if seen[index] {
+                return Err(format!(
+                    "Record contains duplicate {} auxiliary tags.",
+                    String::from_utf8_lossy(&field.tag)
+                ));
+            }
+            validate_modification_tag_type(field)?;
+            seen[index] = true;
             tags.push(format_aux_field(field)?);
         }
         Ok(())
@@ -364,12 +421,39 @@ fn append_methylation_header_tags(
         detail,
     })?;
 
+    if seen.iter().any(|value| *value) && !seen.iter().all(|value| *value) {
+        return Err(AppError::TagParseUncertainty {
+            path: input_path.to_path_buf(),
+            detail: format!(
+                "Record requires MM, ML, and MN as an atomic modification-tag trio; observed MM={}, ML={}, MN={}.",
+                seen[0], seen[1], seen[2]
+            ),
+        });
+    }
+
     for tag in tags {
         output.push(b' ');
         output.extend_from_slice(tag.as_bytes());
     }
 
-    Ok(())
+    Ok(seen.iter().all(|value| *value))
+}
+
+fn validate_modification_tag_type(field: AuxField<'_>) -> Result<(), String> {
+    let valid = match field.tag {
+        [b'M', b'M'] => field.type_code == b'Z',
+        [b'M', b'L'] => field.type_code == b'B' && field.payload.first() == Some(&b'C'),
+        [b'M', b'N'] => field.type_code == b'i',
+        _ => true,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} has an invalid BAM auxiliary type for tag-safe FASTQ export.",
+            String::from_utf8_lossy(&field.tag)
+        ))
+    }
 }
 
 fn format_aux_field(field: AuxField<'_>) -> Result<String, String> {
@@ -616,6 +700,7 @@ mod tests {
             input_path: input.clone(),
             output_path: output.clone(),
             threads: 2,
+            preserve_modification_tags: false,
             force: true,
         })
         .expect("export should succeed");
@@ -658,7 +743,7 @@ mod tests {
         };
 
         let mut bytes = Vec::new();
-        append_fastq_record(&mut bytes, &record, Path::new("input.bam"))
+        append_fastq_record(&mut bytes, &record, Path::new("input.bam"), false)
             .expect("fastq append should succeed");
 
         let text = String::from_utf8(bytes).expect("fastq bytes should be utf8");
@@ -690,10 +775,60 @@ mod tests {
         };
 
         let mut bytes = Vec::new();
-        append_fastq_record(&mut bytes, &record, Path::new("input.bam"))
+        append_fastq_record(&mut bytes, &record, Path::new("input.bam"), true)
             .expect("fastq append should succeed");
         let text = String::from_utf8(bytes).expect("fastq bytes should be utf8");
 
         assert!(text.starts_with("@modread MM:Z:C+m,0; ML:B:C,42,7 MN:i:2\n"));
+    }
+
+    #[test]
+    fn default_fastq_export_does_not_leak_modification_tags() {
+        let record = modification_record(vec![
+            b'M', b'M', b'Z', b'C', b'+', b'm', b',', b'0', b';', 0, b'M', b'L', b'B', b'C', 1, 0,
+            0, 0, 42, b'M', b'N', b'i', 2, 0, 0, 0,
+        ]);
+        let mut bytes = Vec::new();
+
+        let tagged = append_fastq_record(&mut bytes, &record, Path::new("input.bam"), false)
+            .expect("ordinary export should succeed");
+
+        assert!(!tagged);
+        assert!(String::from_utf8(bytes).unwrap().starts_with("@modread\n"));
+    }
+
+    #[test]
+    fn tag_safe_export_rejects_partial_modification_tag_trio() {
+        let record = modification_record(vec![
+            b'M', b'M', b'Z', b'C', b'+', b'm', b',', b'0', b';', 0, b'M', b'L', b'B', b'C', 1, 0,
+            0, 0, 42,
+        ]);
+        let mut bytes = Vec::new();
+
+        let error = append_fastq_record(&mut bytes, &record, Path::new("input.bam"), true)
+            .expect_err("partial tag trio must fail closed");
+
+        assert!(error.to_string().contains("auxiliary fields"));
+    }
+
+    fn modification_record(aux_bytes: Vec<u8>) -> RecordLayout {
+        RecordLayout {
+            block_size: 0,
+            ref_id: -1,
+            pos: -1,
+            bin: 4680,
+            next_ref_id: -1,
+            next_pos: -1,
+            tlen: 0,
+            flags: 4,
+            mapping_quality: 0,
+            n_cigar_op: 0,
+            l_seq: 2,
+            read_name: "modread".to_string(),
+            cigar_bytes: Vec::new(),
+            sequence_bytes: encode_bam_sequence("AC").expect("seq should encode"),
+            quality_bytes: encode_bam_qualities("!!").expect("qual should encode"),
+            aux_bytes,
+        }
     }
 }

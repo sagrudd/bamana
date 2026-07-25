@@ -458,8 +458,12 @@ output.
 `fastq` exports BAM alignment records as an ordered `FASTQ.GZ` stream. It emits
 read names, sequences, and qualities in input encounter order and uses
 concatenated gzip members so decode and compression work can run across worker
-threads. FASTQ output cannot preserve BAM header records, reference
-dictionaries, alignment flags, or auxiliary tags.
+threads. Ordinary export omits auxiliary tags. The explicit
+`--preserve-modification-tags` mode serializes the complete `MM`/`ML`/`MN`
+trio as SAM-compatible FASTQ comment fields for tag-aware remapping and fails
+closed if a record contains only part of that trio. Records containing none of
+the three remain valid untagged reads. FASTQ output cannot preserve BAM header
+records, reference dictionaries, alignment flags, or other auxiliary tags.
 
 `unmap` rewrites a BAM into an unmapped BAM by clearing reference-bound header
 state and stripping alignment coordinates, CIGAR data, mate coordinates,

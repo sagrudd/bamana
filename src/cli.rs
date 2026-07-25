@@ -631,6 +631,9 @@ pub struct FastqArgs {
     /// Maximum worker threads for parallel decode/compression. Defaults to all available cores.
     #[arg(short = 'j', long = "threads", default_value_t = 0)]
     pub threads: usize,
+    /// Preserve MM/ML/MN in FASTQ comments, rejecting partial tag trios.
+    #[arg(long = "preserve-modification-tags")]
+    pub preserve_modification_tags: bool,
     /// Overwrite an existing output file.
     #[arg(long = "force")]
     pub force: bool,

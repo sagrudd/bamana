@@ -233,6 +233,7 @@ fn main() -> ExitCode {
                 bam: bam.clone(),
                 out: args.out,
                 threads: args.threads,
+                preserve_modification_tags: args.preserve_modification_tags,
                 force: args.force,
             })
         }),

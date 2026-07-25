@@ -12,6 +12,7 @@
       "properties": {
         "records_read": { "type": ["integer", "null"], "minimum": 0 },
         "records_written": { "type": ["integer", "null"], "minimum": 0 },
+        "records_with_modification_tags": { "type": ["integer", "null"], "minimum": 0 },
         "threads_used": { "type": ["integer", "null"], "minimum": 1 }
       }
     },

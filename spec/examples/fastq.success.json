@@ -13,6 +13,7 @@
     "execution": {
       "records_read": 240000,
       "records_written": 240000,
+      "records_with_modification_tags": 0,
       "threads_used": 8
     },
     "notes": [

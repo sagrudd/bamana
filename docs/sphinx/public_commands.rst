@@ -51,8 +51,22 @@ fastq
    bamana fastq --bam input.bam --out input.fastq.gz -j 8
 
 The command preserves read names, sequences, and qualities in input encounter
-order. BAM header records, alignment state, and auxiliary tags are not
-represented in FASTQ output.
+order. Ordinary export omits BAM auxiliary tags. For modified-base remapping,
+request the governed tag-safe mode explicitly:
+
+.. code-block:: bash
+
+   bamana fastq --bam modified.bam --out modified.fastq.gz -j 20 \
+     --preserve-modification-tags
+
+This mode serializes ``MM``, ``ML``, and ``MN`` as SAM-compatible FASTQ
+comment fields. The trio is atomic: a record containing only a subset fails
+the export, while a record containing none remains an untagged FASTQ record.
+The JSON response reports ``records_with_modification_tags``. Downstream
+aligners must explicitly retain SAM-style FASTQ comments (for example,
+minimap2 ``-y``); the export alone does not prove restoration into the
+remapped BAM. BAM headers, alignment state, and all other auxiliary tags are
+not represented.
 
 unmap
 -----

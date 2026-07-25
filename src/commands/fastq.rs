@@ -14,6 +14,7 @@ pub struct FastqRequest {
     pub bam: PathBuf,
     pub out: Option<PathBuf>,
     pub threads: usize,
+    pub preserve_modification_tags: bool,
     pub force: bool,
 }
 
@@ -39,6 +40,8 @@ pub struct FastqExecutionInfo {
     pub records_read: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub records_written: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub records_with_modification_tags: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub threads_used: Option<usize>,
 }
@@ -91,6 +94,7 @@ pub fn run(request: FastqRequest) -> CommandResponse<FastqPayload> {
         input_path: request.bam.clone(),
         output_path: output_path.clone(),
         threads: request.threads,
+        preserve_modification_tags: request.preserve_modification_tags,
         force: request.force,
     }) {
         Ok(execution) => {
@@ -98,6 +102,8 @@ pub fn run(request: FastqRequest) -> CommandResponse<FastqPayload> {
             payload.output.overwritten = Some(execution.overwritten);
             payload.execution.records_read = Some(execution.records_read);
             payload.execution.records_written = Some(execution.records_written);
+            payload.execution.records_with_modification_tags =
+                Some(execution.records_with_modification_tags);
             payload.execution.threads_used = Some(execution.threads_used);
             payload.notes.extend(execution.notes);
             CommandResponse::success("fastq", Some(request.bam.as_path()), payload)
@@ -122,6 +128,7 @@ fn base_payload(output_path: &Path) -> FastqPayload {
         execution: FastqExecutionInfo {
             records_read: None,
             records_written: None,
+            records_with_modification_tags: None,
             threads_used: None,
         },
         notes: Vec::new(),
