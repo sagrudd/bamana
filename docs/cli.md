@@ -160,7 +160,9 @@ whole-process RSS ceiling. Run writes and final ordered BGZF output use a
 bounded asynchronous producer/compressor pipeline while preserving one
 deterministic byte stream. At most two full BGZF blocks per worker are in
 flight and results are written in input sequence, so compression overlaps
-record production without unbounded memory or output reordering. `merge`
+record production without unbounded memory or output reordering. Full blocks
+carry 64,000 uncompressed bytes, leaving bounded room for worst-case DEFLATE
+and BGZF framing without a cross-block retry. `merge`
 remains in-memory.
 `checksum` reports
 explicit checksum domains, algorithms, filters, excluded tags, and whether the
