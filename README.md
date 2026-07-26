@@ -464,7 +464,7 @@ reordered by sequence before writing. This overlaps record production, block
 compression, and ordered output without unbounded buffering. Serial and
 parallel writers therefore produce identical bytes. The stable multiway merge
 remains single-threaded but no longer alternates with stop-the-world
-compression batches. Full pipeline blocks use a fixed 64,000-byte payload,
+compression batches. Full pipeline blocks use a fixed 60,000-byte payload,
 leaving enough space for worst-case DEFLATE and BGZF framing within the
 65,536-byte member limit without cross-block adaptive retries.
 

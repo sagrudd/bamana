@@ -161,7 +161,7 @@ bounded asynchronous producer/compressor pipeline while preserving one
 deterministic byte stream. At most two full BGZF blocks per worker are in
 flight and results are written in input sequence, so compression overlaps
 record production without unbounded memory or output reordering. Full blocks
-carry 64,000 uncompressed bytes, leaving bounded room for worst-case DEFLATE
+carry 60,000 uncompressed bytes, leaving bounded room for high-entropy DEFLATE
 and BGZF framing without a cross-block retry. `merge`
 remains in-memory.
 `checksum` reports

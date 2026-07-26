@@ -7,11 +7,11 @@ pub const BGZF_EOF_MARKER: [u8; 28] = [
 ];
 
 pub(crate) const BGZF_MAX_BLOCK_SIZE: usize = 65_536;
-// A fixed 64,000-byte payload leaves enough room for worst-case DEFLATE stored
-// block overhead plus the gzip/BGZF framing inside the 65,536-byte member cap.
-// That guarantee lets independent blocks be compressed concurrently without
-// an adaptive retry consuming bytes assigned to the following block.
-pub(crate) const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 64_000;
+// Keep enough headroom for DEFLATE level 1 to expand high-entropy payloads
+// while retaining the complete payload assigned to an independent compression
+// worker. This lets blocks be compressed concurrently without an adaptive
+// retry consuming bytes assigned to the following block.
+pub(crate) const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 60_000;
 pub(crate) const BGZF_BLOCK_REDUCTION_STEP: usize = 1024;
 
 pub fn is_gzip_signature(bytes: &[u8]) -> bool {

@@ -96,7 +96,8 @@ on failure. The target is a retained-record budget rather than a whole-process
 RSS ceiling. Ordered BGZF output uses a bounded asynchronous pipeline with at
 most two full blocks in flight per worker. Compression overlaps record
 production while sequence-numbered results preserve deterministic bytes; the
-fixed 64,000-byte full-block payload fits worst-case DEFLATE and BGZF framing
+fixed 60,000-byte full-block payload leaves bounded expansion room for
+high-entropy DEFLATE level 1 output and BGZF framing
 without cross-block retries. The stable multiway heap itself remains
 single-threaded. Natural queryname ordering remains explicitly deferred.
 ``scanner_microbench --bamana-bin`` includes a ``sort`` command smoke timing

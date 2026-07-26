@@ -512,4 +512,25 @@ mod tests {
         fs::remove_file(serial_path).expect("fixture should be removed");
         fs::remove_file(pipeline_path).expect("fixture should be removed");
     }
+
+    #[test]
+    fn pipelined_fast_compression_handles_high_entropy_full_blocks() {
+        let path = temp_path("level-one-high-entropy");
+        let payload = high_entropy_payload(BGZF_TARGET_UNCOMPRESSED_BLOCK * 9 + 311);
+        let mut writer = BgzfWriter::create_with_threads_and_level(&path, 6, 1)
+            .expect("pipeline writer should create");
+        for chunk in payload.chunks(1231) {
+            writer.write_all(chunk).expect("payload should write");
+        }
+        writer.finish().expect("pipeline writer should finish");
+        assert_eq!(
+            read_bgzf_payloads(&path)
+                .expect("pipeline output should read")
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>(),
+            payload
+        );
+        fs::remove_file(path).expect("fixture should be removed");
+    }
 }
