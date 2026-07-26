@@ -210,7 +210,9 @@ auxiliary column with spaces between its ``MM``, ``ML``, and ``MN`` fields.
 The native reader recognizes and separates only that complete set of
 project-owned methylation field shapes before typed BAM encoding. It does not
 split arbitrary auxiliary strings, so legal spaces inside ordinary ``Z``
-values are preserved.
+values are preserved. The same boundary accepts the tag-safe exporter's
+``ML:B:C,`` representation for an empty probability array and encodes it as a
+zero-element BAM ``C`` array.
 
 The command keeps policy decisions explicit: mixed alignment/raw inputs are
 rejected with per-file reasons, include/exclude glob filtering remains

@@ -348,7 +348,9 @@ the JSON output records the applied memory budget, compression level, and
 temporary-run count. The SAM reader also normalizes minimap2 ``-y`` transport
 of the project-owned ``MM``/``ML``/``MN`` FASTQ comment trio when minimap2
 emits those tags space-separated inside one SAM auxiliary column. Other
-string-valued SAM auxiliary fields retain embedded spaces.
+string-valued SAM auxiliary fields retain embedded spaces. An empty
+``ML:B:C,`` probability array emitted by the tag-safe FASTQ round trip is
+normalized to a zero-element BAM array.
 
 `annotate_rg` is the explicit per-record read-group tagging command. It scans
 every BAM alignment record, inspects existing `RG:Z:` aux tags, and either

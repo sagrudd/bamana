@@ -577,7 +577,10 @@ fn encode_array_aux(path: &Path, value: &str, aux: &mut Vec<u8>) -> Result<(), A
         })?;
     aux.push(subtype);
 
-    let values = parts.collect::<Vec<_>>();
+    let mut values = parts.collect::<Vec<_>>();
+    if values.len() == 1 && values[0].is_empty() {
+        values.clear();
+    }
     aux.extend_from_slice(&(values.len() as i32).to_le_bytes());
 
     for value in values {
@@ -694,6 +697,27 @@ mod tests {
         .expect("sam fixture should write");
 
         let parsed = read_sam_file(&path).expect("string auxiliary field should parse");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(parsed.records.len(), 1);
+    }
+
+    #[test]
+    fn parses_empty_ml_probability_array_from_tag_safe_fastq_round_trip() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-sam-empty-ml-{}.sam", std::process::id()));
+        fs::write(
+            &path,
+            concat!(
+                "@HD\tVN:1.6\tSO:unsorted\n",
+                "@SQ\tSN:chr1\tLN:10\n",
+                "read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\t!!!!\t",
+                "MN:i:4 MM:Z:C+m; ML:B:C,\n"
+            ),
+        )
+        .expect("sam fixture should write");
+
+        let parsed = read_sam_file(&path).expect("empty ML probability array should parse");
         fs::remove_file(path).expect("fixture should be removable");
 
         assert_eq!(parsed.records.len(), 1);
