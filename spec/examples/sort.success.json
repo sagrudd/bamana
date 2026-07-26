@@ -13,11 +13,13 @@
       "requested_order": "coordinate",
       "requested_sub_order": null,
       "produced_order": "coordinate",
-      "produced_sub_order": null
+      "produced_sub_order": null,
+      "primary_only": false
     },
     "records": {
       "records_read": 42180321,
-      "records_written": 42180321
+      "records_written": 42180321,
+      "records_filtered": 0
     },
     "index": {
       "requested": true,

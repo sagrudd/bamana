@@ -24,6 +24,7 @@ pub struct SortRequest {
     pub queryname_suborder: Option<QuerynameSubOrder>,
     pub threads: usize,
     pub memory_limit: Option<u64>,
+    pub primary_only: bool,
     pub create_index: bool,
     pub verify_checksum: bool,
     pub force: bool,
@@ -57,6 +58,7 @@ pub struct SortResultInfo {
     pub produced_order: Option<SortOrder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub produced_sub_order: Option<QuerynameSubOrder>,
+    pub primary_only: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -65,6 +67,8 @@ pub struct SortRecordCounts {
     pub records_read: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub records_written: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub records_filtered: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -137,6 +141,7 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         queryname_suborder: request.queryname_suborder,
         threads: request.threads,
         memory_limit: request.memory_limit,
+        primary_only: request.primary_only,
     }) {
         Ok(result) => result,
         Err(error) => {
@@ -153,12 +158,13 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
     payload.sort.produced_sub_order = sort_result.produced_sub_order;
     payload.records.records_read = Some(sort_result.records_read);
     payload.records.records_written = Some(sort_result.records_written);
+    payload.records.records_filtered = Some(sort_result.records_filtered);
     payload.notes.extend(sort_result.notes);
 
     update_index_reporting(&request, &mut payload);
 
     if request.verify_checksum {
-        match verify_canonical_checksum(&request.bam, &request.out) {
+        match verify_canonical_checksum(&request.bam, &request.out, request.primary_only) {
             Ok((input_digest, output_digest, matched)) => {
                 payload.checksum_verification = ChecksumVerificationInfo {
                     requested: true,
@@ -170,10 +176,13 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
                 };
 
                 if matched {
-                    payload.notes.push(
+                    payload.notes.push(if request.primary_only {
+                        "Canonical checksum verification confirmed primary-record content preservation under the order-insensitive checksum mode."
+                            .to_string()
+                    } else {
                         "Canonical checksum verification confirmed record-content preservation under the order-insensitive checksum mode."
-                            .to_string(),
-                    );
+                            .to_string()
+                    });
                 } else {
                     return CommandResponse::failure_with_data(
                         "sort",
@@ -217,10 +226,12 @@ fn base_payload(request: &SortRequest) -> SortPayload {
             requested_sub_order: request.queryname_suborder,
             produced_order: None,
             produced_sub_order: None,
+            primary_only: request.primary_only,
         },
         records: SortRecordCounts {
             records_read: None,
             records_written: None,
+            records_filtered: None,
         },
         index: SortIndexInfo {
             requested: request.create_index,
@@ -264,6 +275,7 @@ fn update_index_reporting(request: &SortRequest, payload: &mut SortPayload) {
 fn verify_canonical_checksum(
     input: &std::path::Path,
     output: &std::path::Path,
+    primary_only: bool,
 ) -> Result<(String, String, bool), AppError> {
     let options = ChecksumOptions {
         mode: ChecksumMode::CanonicalRecordOrder,
@@ -272,7 +284,7 @@ fn verify_canonical_checksum(
         excluded_tags: HashSet::new(),
         excluded_tag_strings: Vec::new(),
         filters: ChecksumFilters {
-            only_primary: false,
+            only_primary: primary_only,
             mapped_only: false,
         },
     };
@@ -352,6 +364,7 @@ mod tests {
             queryname_suborder: None,
             threads: 1,
             memory_limit: Some(1024),
+            primary_only: false,
             create_index: true,
             verify_checksum: true,
             force: true,
@@ -412,6 +425,7 @@ mod tests {
             queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
             threads: 1,
             memory_limit: None,
+            primary_only: false,
             create_index: true,
             verify_checksum: false,
             force: true,

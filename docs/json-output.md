@@ -370,11 +370,14 @@ Key concepts:
   emitted ordering contracts
 * `sort.queryname_suborder` records the queryname comparator family when
   queryname ordering is requested
-* `records.read` and `records.written` expose the transformation count surface
+* `sort.primary_only` records whether secondary and supplementary records were
+  removed during sorting
+* `records.records_read`, `records.records_written`, and
+  `records.records_filtered` expose the complete transformation count surface
 * `index` reports index intent and any deferred index behavior
 * `checksum_verification` reports whether canonical checksum verification was
   requested, completed, and matched
-* `notes` carry caveats such as in-memory first-slice execution
+* `notes` identify the in-memory or bounded external strategy and worker use
 
 The payload does not imply full BAM validity, external comparator parity,
 content preservation without a matching checksum verification result, or index

@@ -242,6 +242,7 @@ cargo run -- checksum --bam example.bam --mode payload --include-header --exclud
 cargo run -- checksum --bam example.bam --mode all
 cargo run -- sort --bam example.bam --out sorted.bam
 cargo run -- sort --bam example.bam --out qname.bam --order queryname --queryname-suborder lexicographical
+cargo run -- sort --bam example.bam --out primary.qname.bam --order queryname --memory-limit 8589934592 --primary-only --threads 8
 cargo run -- sort --bam example.bam --out sorted.bam --verify-checksum --create-index
 cargo run -- merge --bam shard1.bam shard2.bam --out merged.bam
 cargo run -- merge --bam a.bam b.bam --out merged.sorted.bam --sort --verify-checksum

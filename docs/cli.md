@@ -153,8 +153,12 @@ wave: `sort`, `merge`, `explode`, `checksum`, and `consume`. `sort` and
 `merge` report explicit ordering semantics, deferred index behavior, and
 checksum-verification state. `sort --memory-limit BYTES` performs a bounded
 external merge with parallel run ordering; without the option it retains its
-in-memory strategy. The target budget is not a whole-process RSS ceiling, and
-ordered BGZF output remains single-stream. `merge` remains in-memory.
+in-memory strategy. `sort --primary-only` fuses removal of secondary and
+supplementary alignments into either strategy and reports the discarded count,
+avoiding a full intermediate BAM before sorting. The target budget is not a
+whole-process RSS ceiling. Run writes and final ordered BGZF output use bounded
+parallel compression while preserving one deterministic byte stream. `merge`
+remains in-memory.
 `checksum` reports
 explicit checksum domains, algorithms, filters, excluded tags, and whether the
 reported domain is order-sensitive. `explode` reports shard boundaries and

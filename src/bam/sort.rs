@@ -43,6 +43,7 @@ pub struct SortExecutionOptions {
     pub queryname_suborder: Option<QuerynameSubOrder>,
     pub threads: usize,
     pub memory_limit: Option<u64>,
+    pub primary_only: bool,
 }
 
 #[derive(Debug)]
@@ -50,6 +51,7 @@ pub struct SortExecution {
     pub overwritten: bool,
     pub records_read: u64,
     pub records_written: u64,
+    pub records_filtered: u64,
     pub produced_order: SortOrder,
     pub produced_sub_order: Option<QuerynameSubOrder>,
     pub notes: Vec<String>,
@@ -119,11 +121,15 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
     let mut records = Vec::new();
     let mut ordinal = 0_u64;
     while let Some(record) = scanner.next_record()? {
+        let record_ordinal = ordinal;
+        ordinal += 1;
+        if options.primary_only && !record.flag_summary().is_primary() {
+            continue;
+        }
         records.push(SortableRecord {
             layout: record.to_record_layout(),
-            ordinal,
+            ordinal: record_ordinal,
         });
-        ordinal += 1;
     }
 
     if ordinal != scanner.records_read() {
@@ -178,6 +184,7 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         overwritten: preexisting_output && options.force,
         records_read: ordinal,
         records_written,
+        records_filtered: ordinal - records_written,
         produced_order: options.order,
         produced_sub_order: queryname_suborder,
         notes,
@@ -230,12 +237,21 @@ fn external_sort_bam(
     let mut records = Vec::new();
     let mut estimated_bytes = 0_u64;
     let mut ordinal = 0_u64;
+    let mut retained = 0_u64;
 
     while let Some(record) = scanner.next_record()? {
+        let record_ordinal = ordinal;
+        ordinal += 1;
+        if options.primary_only && !record.flag_summary().is_primary() {
+            continue;
+        }
         let layout = record.to_record_layout();
         estimated_bytes = estimated_bytes.saturating_add(estimated_record_bytes(&layout));
-        records.push(SortableRecord { layout, ordinal });
-        ordinal += 1;
+        records.push(SortableRecord {
+            layout,
+            ordinal: record_ordinal,
+        });
+        retained += 1;
 
         if estimated_bytes >= memory_limit {
             spill_run(
@@ -278,12 +294,12 @@ fn external_sort_bam(
     .inspect_err(|_| {
         let _ = fs::remove_file(&temp_path);
     })?;
-    if records_written != ordinal {
+    if records_written != retained {
         let _ = fs::remove_file(&temp_path);
         return Err(AppError::InvalidRecord {
             path: options.input_path.clone(),
             detail: format!(
-                "External sort read {ordinal} records but merged {records_written} records."
+                "External sort retained {retained} of {ordinal} records but merged {records_written} records."
             ),
         });
     }
@@ -296,6 +312,7 @@ fn external_sort_bam(
         overwritten: preexisting_output && options.force,
         records_read: ordinal,
         records_written,
+        records_filtered: ordinal - records_written,
         produced_order: options.order,
         produced_sub_order: queryname_suborder,
         notes: vec![
@@ -609,6 +626,7 @@ mod tests {
             queryname_suborder: None,
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect("sort should succeed");
 
@@ -655,6 +673,7 @@ mod tests {
             queryname_suborder: None,
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect("sort should succeed");
 
@@ -697,6 +716,7 @@ mod tests {
             queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect("sort should succeed");
 
@@ -746,6 +766,7 @@ mod tests {
             queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
             threads: 2,
             memory_limit: Some(1),
+            primary_only: false,
         })
         .expect("bounded external sort should succeed");
 
@@ -764,6 +785,7 @@ mod tests {
         );
         assert_eq!(result.records_read, 4);
         assert_eq!(result.records_written, 4);
+        assert_eq!(result.records_filtered, 0);
         assert!(
             result.notes[0].contains("4 temporary run(s)"),
             "one-byte budget should force one record per run"
@@ -809,6 +831,7 @@ mod tests {
             queryname_suborder: None,
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect_err("existing output should require force");
 
@@ -846,6 +869,7 @@ mod tests {
             queryname_suborder: None,
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect_err("directory output should fail at finalization");
 
@@ -881,12 +905,58 @@ mod tests {
             queryname_suborder: Some(QuerynameSubOrder::Natural),
             threads: 1,
             memory_limit: None,
+            primary_only: false,
         })
         .expect_err("natural queryname sort should be deferred");
 
         assert_eq!(error.to_json_error().code, "unimplemented");
 
         fs::remove_file(input).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn external_sort_can_filter_non_primary_records_without_an_intermediate_bam() {
+        let input = write_temp_file(
+            "sort-primary-only-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:unsorted\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 5, "secondary", 0x100),
+                    build_light_record(0, 3, "primary-b", 0),
+                    build_light_record(0, 1, "supplementary", 0x800),
+                    build_light_record(0, 2, "primary-a", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-primary-only-output-{}.bam",
+            std::process::id()
+        ));
+
+        let result = sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: true,
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 2,
+            memory_limit: Some(1),
+            primary_only: true,
+        })
+        .expect("fused primary-only external sort should succeed");
+
+        assert_eq!(result.records_read, 4);
+        assert_eq!(result.records_written, 2);
+        assert_eq!(result.records_filtered, 2);
+        assert_eq!(
+            record_names(&read_sorted_records(&output)),
+            vec!["primary-a", "primary-b"]
+        );
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
     }
 
     fn read_sorted_records(path: &std::path::Path) -> Vec<crate::bam::records::RecordLayout> {

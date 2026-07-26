@@ -301,6 +301,7 @@ fn main() -> ExitCode {
                 queryname_suborder: args.queryname_suborder,
                 threads: args.threads,
                 memory_limit: args.memory_limit,
+                primary_only: args.primary_only,
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
                 force: args.force,

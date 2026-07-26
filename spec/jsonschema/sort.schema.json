@@ -9,21 +9,23 @@
     "sortInfo": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["requested_order", "requested_sub_order", "produced_order", "produced_sub_order"],
+      "required": ["requested_order", "requested_sub_order", "produced_order", "produced_sub_order", "primary_only"],
       "properties": {
         "requested_order": { "$ref": "./common/defs.schema.json#/$defs/sortOrder" },
         "requested_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
         "produced_order": { "$ref": "./common/defs.schema.json#/$defs/sortOrder" },
-        "produced_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" }
+        "produced_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
+        "primary_only": { "type": "boolean" }
       }
     },
     "records": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["records_read", "records_written"],
+      "required": ["records_read", "records_written", "records_filtered"],
       "properties": {
         "records_read": { "type": ["integer", "null"], "minimum": 0 },
-        "records_written": { "type": ["integer", "null"], "minimum": 0 }
+        "records_written": { "type": ["integer", "null"], "minimum": 0 },
+        "records_filtered": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
     "data": {

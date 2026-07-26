@@ -784,6 +784,9 @@ pub struct SortArgs {
     /// Target record-memory budget; enables bounded external merge sorting.
     #[arg(long = "memory-limit")]
     pub memory_limit: Option<u64>,
+    /// Retain only primary alignments while sorting.
+    #[arg(long = "primary-only")]
+    pub primary_only: bool,
     /// Attempt to create an index when coordinate output is produced.
     #[arg(long = "create-index")]
     pub create_index: bool,
