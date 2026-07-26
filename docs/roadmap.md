@@ -444,6 +444,11 @@ until a fuller harness is added.
 
 ## Current Milestone
 
+The native performance lane now includes direct uncompressed SAM stdin into
+bounded external sorting. This reusable boundary applies parser backpressure,
+records memory and compression controls, and removes complete SAM and
+unsorted-BAM staging from remapping workflows.
+
 The currently active milestone is tracked in:
 
 * [roadmap/current_milestone.md](/Users/stephen/Projects/bamana/docs/roadmap/current_milestone.md)

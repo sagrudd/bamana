@@ -565,6 +565,12 @@ pub struct ConsumeArgs {
     /// Output sort policy after ingestion.
     #[arg(long = "sort", value_enum, default_value_t = ConsumeSortOrder::None)]
     pub sort: ConsumeSortOrder,
+    /// Retained-record budget for streamed SAM external sorting.
+    #[arg(long = "memory-limit")]
+    pub memory_limit: Option<u64>,
+    /// BGZF compression level for streamed SAM runs and final output (0-9).
+    #[arg(long = "compression-level", default_value_t = 6, value_parser = clap::value_parser!(u32).range(0..=9))]
+    pub compression_level: u32,
     /// Attempt to create an index when the output order is suitable.
     #[arg(long = "create-index")]
     pub create_index: bool,

@@ -23,6 +23,93 @@ pub struct ParsedSamFile {
     pub records: Vec<RecordLayout>,
 }
 
+pub struct SamRecordStream<R: BufRead> {
+    lines: std::io::Lines<R>,
+    path: std::path::PathBuf,
+    pending_record: Option<String>,
+    raw_header_text: String,
+    references: Vec<ReferenceRecord>,
+    ref_name_to_id: HashMap<String, i32>,
+}
+
+impl<R: BufRead> SamRecordStream<R> {
+    pub fn new(reader: R, path: &Path) -> Result<Self, AppError> {
+        let mut lines = reader.lines();
+        let mut header_lines = Vec::new();
+        let mut references = Vec::new();
+        let mut ref_name_to_id = HashMap::new();
+        let mut pending_record = None;
+        for line_result in lines.by_ref() {
+            let line = line_result.map_err(|error| AppError::from_io(path, error))?;
+            if line.is_empty() {
+                continue;
+            }
+            if !line.starts_with('@') {
+                pending_record = Some(line);
+                break;
+            }
+            if line.starts_with("@SQ") {
+                let reference = parse_sq_line(path, &line, references.len())?;
+                ref_name_to_id.insert(reference.name.clone(), reference.index as i32);
+                references.push(reference);
+            }
+            header_lines.push(line);
+        }
+        let raw_header_text = if header_lines.is_empty() {
+            String::new()
+        } else {
+            format!("{}\n", header_lines.join("\n"))
+        };
+        Ok(Self {
+            lines,
+            path: path.to_path_buf(),
+            pending_record,
+            raw_header_text,
+            references,
+            ref_name_to_id,
+        })
+    }
+
+    pub fn raw_header_text(&self) -> &str {
+        &self.raw_header_text
+    }
+
+    pub fn references(&self) -> &[ReferenceRecord] {
+        &self.references
+    }
+}
+
+impl<R: BufRead> Iterator for SamRecordStream<R> {
+    type Item = Result<RecordLayout, AppError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let line = match self.pending_record.take() {
+                Some(line) => line,
+                None => match self.lines.next()? {
+                    Ok(line) => line,
+                    Err(error) => return Some(Err(AppError::from_io(&self.path, error))),
+                },
+            };
+            if line.is_empty() {
+                continue;
+            }
+            if line.starts_with('@') {
+                return Some(Err(AppError::InvalidHeader {
+                    path: self.path.clone(),
+                    detail: "SAM header lines were encountered after alignment records began."
+                        .to_string(),
+                }));
+            }
+            return Some(parse_alignment_line(
+                &self.path,
+                &line,
+                &self.ref_name_to_id,
+            ));
+        }
+    }
+}
+
 pub fn read_sam_file(path: &Path) -> Result<ParsedSamFile, AppError> {
     let file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     read_sam_reader(BufReader::new(file), path)
@@ -43,46 +130,10 @@ pub fn count_sam_records_with_label(path: &Path, label: &Path) -> Result<u64, Ap
 }
 
 fn read_sam_reader<R: BufRead>(reader: R, path: &Path) -> Result<ParsedSamFile, AppError> {
-    let mut header_lines = Vec::new();
-    let mut records = Vec::new();
-    let mut seen_record = false;
-
-    let mut references = Vec::new();
-    let mut ref_name_to_id = HashMap::new();
-
-    for line_result in reader.lines() {
-        let line = line_result.map_err(|error| AppError::from_io(path, error))?;
-        if line.is_empty() {
-            continue;
-        }
-
-        if line.starts_with('@') {
-            if seen_record {
-                return Err(AppError::InvalidHeader {
-                    path: path.to_path_buf(),
-                    detail: "SAM header lines were encountered after alignment records began."
-                        .to_string(),
-                });
-            }
-            if line.starts_with("@SQ") {
-                let reference = parse_sq_line(path, &line, references.len())?;
-                ref_name_to_id.insert(reference.name.clone(), reference.index as i32);
-                references.push(reference);
-            }
-            header_lines.push(line);
-            continue;
-        }
-
-        seen_record = true;
-        records.push(parse_alignment_line(path, &line, &ref_name_to_id)?);
-    }
-
-    let raw_header_text = if header_lines.is_empty() {
-        String::new()
-    } else {
-        format!("{}\n", header_lines.join("\n"))
-    };
-
+    let stream = SamRecordStream::new(reader, path)?;
+    let raw_header_text = stream.raw_header_text().to_string();
+    let references = stream.references().to_vec();
+    let records = stream.collect::<Result<Vec<_>, _>>()?;
     Ok(ParsedSamFile {
         raw_header_text,
         references,

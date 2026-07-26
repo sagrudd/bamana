@@ -9,6 +9,8 @@ Current roadmap theme:
 * migrate commands onto that substrate in dependency order
 * measure each milestone with benchmark hooks
 * keep `noodles` isolated to compatibility and oracle roles
+* connect streaming SAM producers directly to bounded native sorting when
+  complete intermediate materialization adds no scientific value
 
 Current milestone:
 

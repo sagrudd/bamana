@@ -31,6 +31,8 @@ Acceptance criteria:
 - Production `noodles` use remains limited to documented CRAM compatibility,
   tests, fixtures, compatibility checks, or oracle validation.
 - Native BGZF/BAM/FASTQ paths have focused regression and benchmark coverage.
+- Direct uncompressed SAM producers can feed bounded external sorting without
+  staging a complete SAM or unsorted BAM.
 - Public command JSON contracts remain stable unless a versioned breaking
   change is explicitly approved.
 - File-size and module boundaries remain maintainable as new hot paths are

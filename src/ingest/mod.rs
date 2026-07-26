@@ -5,3 +5,4 @@ pub mod discovery;
 // Compatibility shim; the native FASTQ core now lives at crate::fastq.
 pub mod fastq;
 pub mod sam;
+pub mod sam_sort;

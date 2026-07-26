@@ -61,6 +61,10 @@ and benchmark documents where that is more precise.
 
 ## 5. Native Performance Core
 
+- [x] Stream one uncompressed SAM stdin directly into deterministic bounded
+      external sorting, with explicit memory/compression provenance, atomic
+      publication, temporary-run cleanup, and no complete SAM or unsorted-BAM
+      staging.
 - [x] Add deterministic bounded external BAM sorting for downstream
       whole-genome transforms, with a caller-selected record-memory budget,
       parallel stable run ordering, atomic publication, temporary-run cleanup,

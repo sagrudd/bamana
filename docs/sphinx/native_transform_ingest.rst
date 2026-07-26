@@ -178,6 +178,29 @@ parser, FASTQ and FASTQ.GZ unmapped ingest remain on the native FASTQ readers,
 and CRAM remains a documented compatibility path governed by explicit reference
 policy.
 
+Direct SAM stream sorting
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A single uncompressed SAM stdin may now be connected directly to Bamana's
+bounded external sorter. This removes both complete-stream intermediates from
+the common remapping path:
+
+.. code-block:: console
+
+   minimap2 -a reference.fa reads.fastq |
+     bamana consume --input - --out acceptor.name.bam --mode alignment \
+       --sort queryname --memory-limit 8589934592 \
+       --compression-level 1 --threads 19
+
+The direct path parses the SAM header once, rewrites its declared order,
+retains records only to the explicit byte budget, spills deterministic sorted
+runs, and publishes the stable merge atomically. Iterator backpressure bounds
+the parser at the sorter. The response records the memory budget, compression
+level, and temporary-run count. Other stdin forms retain discovery staging;
+the direct path rejects dry-run, mixed input, glob, CRAM-reference, synthetic
+read-group, index, and checksum options rather than silently changing their
+meaning.
+
 The command keeps policy decisions explicit: mixed alignment/raw inputs are
 rejected with per-file reasons, include/exclude glob filtering remains
 deferred, coordinate indexing after consume remains deferred, and checksum

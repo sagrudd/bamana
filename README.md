@@ -204,6 +204,8 @@ cargo run -- forensic_inspect --input input.bam --full-scan --inspect-tags
 cargo run -- consume --input run.fastq.gz --out reads.bam --mode unmapped --dry-run
 cargo run -- consume --input run.fastq.gz reads_dir --out reads.bam --mode unmapped --recursive
 cargo run -- consume --input a.sam b.bam --out combined.bam --mode alignment
+cargo run -- consume --input - --out acceptor.name.bam --mode alignment \
+  --sort queryname --memory-limit 8589934592 --compression-level 1 -j 19
 cargo run -- consume --input sample.cram --out sample.bam --mode alignment --reference ref.fa --reference-policy strict
 cargo run -- consume --input sample.cram extra.bam --out combined.bam --mode alignment --reference ref.fa
 cargo run -- annotate_rg --bam example.bam --rg-id rg001 --replace-existing --create-header-rg --out example.annotated.bam
@@ -339,6 +341,11 @@ behavior. The current Rust slice supports explicit indexed FASTA
 reference decode attempts under `allow-embedded` or `auto-conservative`.
 Cache-backed CRAM decoding, include/exclude glob filtering, consume-driven
 index creation, and checksum verification remain explicitly deferred.
+For a single uncompressed SAM stdin, supplying an explicit coordinate or
+queryname sort plus `--memory-limit` activates a direct bounded external-sort
+path. It does not stage the complete SAM or write and reread an unsorted BAM;
+the JSON output records the applied memory budget, compression level, and
+temporary-run count.
 
 `annotate_rg` is the explicit per-record read-group tagging command. It scans
 every BAM alignment record, inspects existing `RG:Z:` aux tags, and either

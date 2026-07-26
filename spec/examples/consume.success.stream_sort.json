@@ -1,5 +1,5 @@
 {
-  "ok": false,
+  "ok": true,
   "command": "consume",
   "path": null,
   "data": {
@@ -8,20 +8,27 @@
     "dry_run": false,
     "inputs": {
       "requested_paths": [
-        "sample.cram.crai"
+        "-"
       ],
       "directories_scanned": 0,
-      "files_discovered": 0,
-      "files_consumed": 0,
+      "files_discovered": 1,
+      "files_consumed": 1,
       "files_skipped": 0,
       "files_rejected": 0
     },
     "discovery": {
       "recursive": false,
-      "formats_detected": {},
-      "consumed_files": [],
-      "skipped_files": [],
-      "rejected_files": []
+      "formats_detected": {
+        "SAM": 1
+      },
+      "consumed_files": [
+        {
+          "path": "-",
+          "detected_format": "SAM",
+          "consumed": true,
+          "reason": null
+        }
+      ]
     },
     "reference": {
       "policy": "strict",
@@ -30,16 +37,18 @@
       "cram_inputs_present": false
     },
     "output": {
-      "path": "sample.bam",
-      "written": false,
-      "records_written": null,
-      "sort_order": "none",
-      "mapped_state": "mapped_or_mixed",
-      "compression_level": 6
+      "path": "acceptor.name.bam",
+      "written": true,
+      "records_written": 2,
+      "sort_order": "queryname",
+      "memory_limit": 8589934592,
+      "compression_level": 1,
+      "temporary_runs": 2,
+      "mapped_state": "mapped_or_mixed"
     },
     "header": {
-      "strategy": "first_compatible_alignment_header",
-      "reference_compatibility": null,
+      "strategy": "streamed_sam_header",
+      "reference_compatibility": "compatible",
       "sample": null,
       "read_group": null,
       "platform": null
@@ -55,12 +64,9 @@
       "mode": null,
       "match": null
     },
-    "notes": []
+    "notes": [
+      "Uncompressed SAM was parsed directly from stdin without staging a complete SAM or unsorted BAM."
+    ]
   },
-  "error": {
-    "code": "unsupported_format",
-    "message": "Input format is unsupported for this command.",
-    "detail": "CRAI sidecars are unsupported/deferred in Milestone 13 and are not valid consume inputs.",
-    "hint": "Use a supported BAM, SAM, FASTQ, or FASTQ.GZ input for this command."
-  }
+  "error": null
 }

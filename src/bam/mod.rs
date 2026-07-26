@@ -19,6 +19,7 @@ pub mod reheader;
 pub mod scan;
 pub mod sort;
 mod sort_integrity;
+pub mod stream_sort;
 pub mod summary;
 pub mod tags;
 pub mod unmap;

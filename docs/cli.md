@@ -635,6 +635,11 @@ support. CRAM is available only in alignment mode and is governed by an
 explicit `--reference-policy`; Bamana does not silently guess CRAM reference
 behavior. Its detailed contract is documented in
 [spec/cli/commands.md](/Users/stephen/Projects/bamana/spec/cli/commands.md).
+The specialized `--input - --mode alignment --sort
+<coordinate|queryname> --memory-limit <bytes>` form streams uncompressed SAM
+directly into bounded external sorting. It avoids complete SAM and unsorted-BAM
+staging, applies iterator backpressure, and reports the applied compression
+level and temporary-run count.
 
 `annotate_rg` is the record-level read-group annotation command. It rewrites
 alignment records to insert, replace, or normalize `RG:Z:` aux tags and can

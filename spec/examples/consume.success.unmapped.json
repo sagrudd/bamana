@@ -65,7 +65,8 @@
       "written": true,
       "records_written": 245812,
       "sort_order": "none",
-      "mapped_state": "unmapped"
+      "mapped_state": "unmapped",
+      "compression_level": 6
     },
     "header": {
       "strategy": "synthetic_unmapped_header",

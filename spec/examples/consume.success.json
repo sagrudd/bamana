@@ -45,7 +45,8 @@
       "written": true,
       "records_written": 2100000,
       "sort_order": "none",
-      "mapped_state": "mapped_or_mixed"
+      "mapped_state": "mapped_or_mixed",
+      "compression_level": 6
     },
     "header": {
       "strategy": "decoded_cram_header",

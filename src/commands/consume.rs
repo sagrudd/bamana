@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    io::BufRead,
+    path::{Path, PathBuf},
+};
 
 use serde::Serialize;
 
@@ -16,6 +20,7 @@ use crate::{
             DiscoveredFile, DiscoveryOptions, cleanup_staged_paths, discover_requested_paths,
             format_counts,
         },
+        sam_sort::{StreamingSamSortOptions, execute_streaming_sam_sort},
     },
     json::CommandResponse,
 };
@@ -29,6 +34,8 @@ pub struct ConsumeRequest {
     pub threads: usize,
     pub force: bool,
     pub sort: ConsumeSortOrder,
+    pub memory_limit: Option<u64>,
+    pub compression_level: u32,
     pub create_index: bool,
     pub verify_checksum: bool,
     pub dry_run: bool,
@@ -96,6 +103,11 @@ pub struct ConsumeOutputInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub records_written: Option<u64>,
     pub sort_order: ConsumeSortOrder,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory_limit: Option<u64>,
+    pub compression_level: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temporary_runs: Option<usize>,
     pub mapped_state: String,
 }
 
@@ -143,12 +155,29 @@ pub struct ConsumeChecksumVerificationInfo {
 }
 
 pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
+    if is_direct_sam_stream_request(&request) {
+        return run_direct_sam_stream(&request, std::io::stdin().lock());
+    }
     let (response, staged_paths) = run_impl(&request);
     cleanup_staged_paths(&staged_paths);
     response
 }
 
 fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<PathBuf>) {
+    if request.memory_limit.is_some() || request.compression_level != 6 {
+        return (
+            CommandResponse::failure_with_data(
+                "consume",
+                None,
+                Some(base_payload(request)),
+                AppError::InvalidConsumeRequest {
+                    path: request.out.clone(),
+                    detail: "--memory-limit and non-default --compression-level are supported only for one direct uncompressed SAM stdin input with --mode alignment and an explicit sort order.".to_string(),
+                },
+            ),
+            Vec::new(),
+        );
+    }
     if request.input.iter().any(|path| path == &request.out) {
         return (
             CommandResponse::failure_with_data(
@@ -358,6 +387,95 @@ fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<P
     )
 }
 
+fn is_direct_sam_stream_request(request: &ConsumeRequest) -> bool {
+    request.input.as_slice() == [Path::new("-")]
+        && request.mode == ConsumeMode::Alignment
+        && request.sort != ConsumeSortOrder::None
+        && request.memory_limit.is_some()
+}
+
+fn run_direct_sam_stream<R: BufRead>(
+    request: &ConsumeRequest,
+    reader: R,
+) -> CommandResponse<ConsumePayload> {
+    let mut payload = base_payload(request);
+    let invalid_detail = if request.dry_run {
+        Some("Direct SAM stream sorting cannot be dry-run because stdin must be consumed.")
+    } else if request.recursive
+        || !request.include_glob.is_empty()
+        || !request.exclude_glob.is_empty()
+    {
+        Some("Directory traversal and glob options are invalid for direct SAM stdin.")
+    } else if request.create_index {
+        Some("Index creation is not implemented for direct SAM stream sorting.")
+    } else if request.verify_checksum {
+        Some("Checksum verification is not implemented for direct SAM stream sorting.")
+    } else if request.reference.is_some()
+        || request.reference_cache.is_some()
+        || request.sample.is_some()
+        || request.read_group.is_some()
+        || request.platform.is_some()
+    {
+        Some("CRAM reference and synthetic read-group options are invalid for direct SAM stdin.")
+    } else {
+        None
+    };
+    if let Some(detail) = invalid_detail {
+        return CommandResponse::failure_with_data(
+            "consume",
+            None,
+            Some(payload),
+            AppError::InvalidConsumeRequest {
+                path: request.out.clone(),
+                detail: detail.to_string(),
+            },
+        );
+    }
+
+    payload.inputs.files_discovered = 1;
+    payload.inputs.files_consumed = 1;
+    payload
+        .discovery
+        .formats_detected
+        .insert("SAM".to_string(), 1);
+    payload.discovery.consumed_files.push(ConsumeInputFileInfo {
+        path: "-".to_string(),
+        detected_format: "SAM".to_string(),
+        consumed: true,
+        reason: None,
+    });
+    let execution = match execute_streaming_sam_sort(
+        reader,
+        Path::new("<stdin>"),
+        &StreamingSamSortOptions {
+            output_path: request.out.clone(),
+            force: request.force,
+            order: request.sort,
+            threads: request.threads,
+            memory_limit: request.memory_limit.unwrap_or_default(),
+            compression_level: request.compression_level,
+        },
+    ) {
+        Ok(execution) => execution,
+        Err(error) => {
+            return CommandResponse::failure_with_data("consume", None, Some(payload), error);
+        }
+    };
+
+    payload.output.written = true;
+    payload.output.records_written = Some(execution.records_written);
+    payload.output.temporary_runs = Some(execution.run_count);
+    payload.header.strategy = execution.header_strategy.to_string();
+    payload.header.reference_compatibility = Some(execution.reference_compatibility.to_string());
+    payload.notes.extend(execution.notes);
+    if execution.overwritten {
+        payload
+            .notes
+            .push("Existing output path was overwritten because --force was supplied.".to_string());
+    }
+    CommandResponse::success("consume", None, payload)
+}
+
 struct ClassifiedFiles {
     alignment: Vec<DiscoveredFile>,
     raw: Vec<DiscoveredFile>,
@@ -531,6 +649,9 @@ fn base_payload(request: &ConsumeRequest) -> ConsumePayload {
             written: false,
             records_written: None,
             sort_order: request.sort,
+            memory_limit: request.memory_limit,
+            compression_level: request.compression_level,
+            temporary_runs: None,
             mapped_state: mapped_state_for_mode(request.mode).to_string(),
         },
         header: ConsumeHeaderPolicyInfo {
@@ -613,9 +734,9 @@ fn push_stage1_notes(request: &ConsumeRequest, payload: &mut ConsumePayload) {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io::Cursor};
 
-    use super::{ConsumeRequest, run};
+    use super::{ConsumeRequest, run, run_direct_sam_stream};
     use crate::{
         formats::bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
@@ -635,6 +756,8 @@ mod tests {
             threads: 1,
             force: true,
             sort: ConsumeSortOrder::None,
+            memory_limit: None,
+            compression_level: 6,
             create_index: false,
             verify_checksum: false,
             dry_run: false,
@@ -647,6 +770,48 @@ mod tests {
             include_glob: Vec::new(),
             exclude_glob: Vec::new(),
         }
+    }
+
+    #[test]
+    fn direct_sam_stdin_reports_bounded_external_sort_provenance() {
+        let output = std::env::temp_dir().join(format!(
+            "bamana-consume-stream-sort-{}.bam",
+            std::process::id()
+        ));
+        let mut request = base_request(vec![std::path::PathBuf::from("-")], output.clone());
+        request.sort = ConsumeSortOrder::Queryname;
+        request.memory_limit = Some(1);
+        request.compression_level = 1;
+        request.threads = 2;
+        let sam = concat!(
+            "@HD\tVN:1.6\tSO:unsorted\n",
+            "@SQ\tSN:chr1\tLN:100\n",
+            "z\t0\tchr1\t2\t60\t2M\t*\t0\t0\tAC\t!!\n",
+            "a\t0\tchr1\t1\t60\t2M\t*\t0\t0\tGT\t!!\n",
+        );
+
+        let response = run_direct_sam_stream(&request, Cursor::new(sam));
+
+        assert!(response.ok);
+        let payload = response.data.expect("payload should be present");
+        assert!(payload.output.written);
+        assert_eq!(payload.output.records_written, Some(2));
+        assert_eq!(payload.output.temporary_runs, Some(2));
+        assert_eq!(payload.output.memory_limit, Some(1));
+        assert_eq!(payload.output.compression_level, 1);
+        assert_eq!(payload.header.strategy, "streamed_sam_header");
+        assert_eq!(
+            payload.header.reference_compatibility.as_deref(),
+            Some("compatible")
+        );
+        assert_eq!(payload.discovery.formats_detected.get("SAM"), Some(&1));
+        assert!(
+            payload
+                .notes
+                .iter()
+                .any(|note| note.contains("without staging"))
+        );
+        fs::remove_file(output).expect("output should remove");
     }
 
     #[test]

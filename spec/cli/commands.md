@@ -146,7 +146,7 @@ the reference object and digest before invoking this command.
 ## `consume`
 
 Synopsis:
-`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--create-index] [--verify-checksum] [--force] [--reference <FASTA>] [--reference-cache <PATH>] [--reference-policy <strict|allow-embedded|allow-cache|auto-conservative>] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
+`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--memory-limit <BYTES>] [--compression-level <0-9>] [--create-index] [--verify-checksum] [--force] [--reference <FASTA>] [--reference-cache <PATH>] [--reference-policy <strict|allow-embedded|allow-cache|auto-conservative>] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
 
 Semantics:
 Acts as Bamana’s input normalization gateway. It discovers files and
@@ -158,6 +158,24 @@ BAM alignment inputs are loaded through `BamScanner` and written through
 Bamana's native BGZF writer. SAM alignment inputs use the native SAM parser.
 FASTQ and FASTQ.GZ unmapped inputs use the native FASTQ readers. CRAM remains a
 compatibility path governed by explicit reference policy.
+
+One direct uncompressed SAM stdin can bypass discovery staging and flow into
+the bounded external sorter:
+
+```text
+minimap2 -a reference.fa reads.fastq |
+  bamana consume --input - --out acceptor.name.bam --mode alignment \
+    --sort queryname --memory-limit 8589934592 \
+    --compression-level 1 --threads 19
+```
+
+This specialized path requires an explicit coordinate or lexicographical
+queryname order and a positive record-memory budget. Parsing, deterministic run
+spill, and the stable multiway merge are connected by ordinary iterator
+backpressure, so neither a complete SAM nor an unsorted BAM is staged.
+`compression_level`, `memory_limit`, and `temporary_runs` are reported in
+`output`. Non-default compression and `--memory-limit` are rejected on other
+consume paths so provenance cannot claim controls that were not applied.
 
 Mixed-format policy:
 

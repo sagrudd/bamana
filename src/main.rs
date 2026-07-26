@@ -206,6 +206,8 @@ fn main() -> ExitCode {
                 threads: args.threads,
                 force: args.force,
                 sort: args.sort,
+                memory_limit: args.memory_limit,
+                compression_level: args.compression_level,
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
                 dry_run: args.dry_run,

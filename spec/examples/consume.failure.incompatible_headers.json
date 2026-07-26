@@ -53,7 +53,8 @@
       "written": false,
       "records_written": null,
       "sort_order": "none",
-      "mapped_state": "mapped_or_mixed"
+      "mapped_state": "mapped_or_mixed",
+      "compression_level": 6
     },
     "header": {
       "strategy": "first_compatible_alignment_header",
