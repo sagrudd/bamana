@@ -345,7 +345,10 @@ For a single uncompressed SAM stdin, supplying an explicit coordinate or
 queryname sort plus `--memory-limit` activates a direct bounded external-sort
 path. It does not stage the complete SAM or write and reread an unsorted BAM;
 the JSON output records the applied memory budget, compression level, and
-temporary-run count.
+temporary-run count. The SAM reader also normalizes minimap2 ``-y`` transport
+of the project-owned ``MM``/``ML``/``MN`` FASTQ comment trio when minimap2
+emits those tags space-separated inside one SAM auxiliary column. Other
+string-valued SAM auxiliary fields retain embedded spaces.
 
 `annotate_rg` is the explicit per-record read-group tagging command. It scans
 every BAM alignment record, inspects existing `RG:Z:` aux tags, and either

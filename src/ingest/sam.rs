@@ -455,34 +455,53 @@ fn cigar_opcode(character: char) -> Option<u8> {
 fn parse_aux_fields(path: &Path, fields: &[&str]) -> Result<Vec<u8>, AppError> {
     let mut aux = Vec::new();
     for field in fields {
-        let parts = field.splitn(3, ':').collect::<Vec<_>>();
-        if parts.len() != 3 {
-            return Err(AppError::InvalidRecord {
-                path: path.to_path_buf(),
-                detail: format!("SAM auxiliary field did not have TAG:TYPE:VALUE form: {field}"),
-            });
+        let whitespace_fields = field.split_ascii_whitespace().collect::<Vec<_>>();
+        if whitespace_fields.len() > 1
+            && whitespace_fields.iter().all(|candidate| {
+                candidate.starts_with("MM:Z:")
+                    || candidate.starts_with("ML:B:")
+                    || candidate.starts_with("MN:i:")
+                    || candidate.starts_with("MN:I:")
+            })
+        {
+            for candidate in whitespace_fields {
+                parse_aux_field(path, candidate, &mut aux)?;
+            }
+            continue;
         }
-        let tag = parts[0].as_bytes();
-        if tag.len() != 2 {
-            return Err(AppError::InvalidRecord {
-                path: path.to_path_buf(),
-                detail: format!("SAM auxiliary tag was not two characters: {}", parts[0]),
-            });
-        }
-        aux.extend_from_slice(tag);
-        let type_code =
-            parts[1]
-                .as_bytes()
-                .first()
-                .copied()
-                .ok_or_else(|| AppError::InvalidRecord {
-                    path: path.to_path_buf(),
-                    detail: format!("SAM auxiliary field was missing a type code: {field}"),
-                })?;
-        aux.push(type_code);
-        encode_aux_value(path, type_code, parts[2], &mut aux)?;
+        parse_aux_field(path, field, &mut aux)?;
     }
     Ok(aux)
+}
+
+fn parse_aux_field(path: &Path, field: &str, aux: &mut Vec<u8>) -> Result<(), AppError> {
+    let parts = field.splitn(3, ':').collect::<Vec<_>>();
+    if parts.len() != 3 {
+        return Err(AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: format!("SAM auxiliary field did not have TAG:TYPE:VALUE form: {field}"),
+        });
+    }
+    let tag = parts[0].as_bytes();
+    if tag.len() != 2 {
+        return Err(AppError::InvalidRecord {
+            path: path.to_path_buf(),
+            detail: format!("SAM auxiliary tag was not two characters: {}", parts[0]),
+        });
+    }
+    aux.extend_from_slice(tag);
+    let type_code =
+        parts[1]
+            .as_bytes()
+            .first()
+            .copied()
+            .ok_or_else(|| AppError::InvalidRecord {
+                path: path.to_path_buf(),
+                detail: format!("SAM auxiliary field was missing a type code: {field}"),
+            })?;
+    aux.push(type_code);
+    encode_aux_value(path, type_code, parts[2], aux)?;
+    Ok(())
 }
 
 fn encode_aux_value(
@@ -636,6 +655,48 @@ mod tests {
         assert_eq!(parsed.records[0].ref_id, 0);
         assert_eq!(parsed.records[0].pos, 0);
         assert_eq!(parsed.records[0].n_cigar_op, 1);
+    }
+
+    #[test]
+    fn parses_minimap2_methylation_comment_as_separate_aux_fields() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-sam-methyl-{}.sam", std::process::id()));
+        fs::write(
+            &path,
+            concat!(
+                "@HD\tVN:1.6\tSO:unsorted\n",
+                "@SQ\tSN:chr1\tLN:10\n",
+                "read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\t!!!!\t",
+                "MN:i:4 MM:Z:C+m,0; ML:B:C,42\n"
+            ),
+        )
+        .expect("sam fixture should write");
+
+        let parsed = read_sam_file(&path).expect("minimap2 methylation comment should parse");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(parsed.records.len(), 1);
+        assert_eq!(parsed.records[0].read_name, "read1");
+    }
+
+    #[test]
+    fn preserves_spaces_inside_standard_string_aux_fields() {
+        let path =
+            std::env::temp_dir().join(format!("bamana-sam-z-space-{}.sam", std::process::id()));
+        fs::write(
+            &path,
+            concat!(
+                "@HD\tVN:1.6\tSO:unsorted\n",
+                "@SQ\tSN:chr1\tLN:10\n",
+                "read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\t!!!!\tCO:Z:two words\n"
+            ),
+        )
+        .expect("sam fixture should write");
+
+        let parsed = read_sam_file(&path).expect("string auxiliary field should parse");
+        fs::remove_file(path).expect("fixture should be removable");
+
+        assert_eq!(parsed.records.len(), 1);
     }
 
     #[test]

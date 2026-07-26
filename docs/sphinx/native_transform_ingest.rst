@@ -205,6 +205,13 @@ the direct path rejects dry-run, mixed input, glob, CRAM-reference, synthetic
 read-group, index, and checksum options rather than silently changing their
 meaning.
 
+With minimap2 ``-y``, a tag-bearing FASTQ comment can be copied into one SAM
+auxiliary column with spaces between its ``MM``, ``ML``, and ``MN`` fields.
+The native reader recognizes and separates only that complete set of
+project-owned methylation field shapes before typed BAM encoding. It does not
+split arbitrary auxiliary strings, so legal spaces inside ordinary ``Z``
+values are preserved.
+
 The command keeps policy decisions explicit: mixed alignment/raw inputs are
 rejected with per-file reasons, include/exclude glob filtering remains
 deferred, coordinate indexing after consume remains deferred, and checksum
