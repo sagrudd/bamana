@@ -33,7 +33,8 @@
       "match": true
     },
     "notes": [
-      "Initial implementation uses an in-memory sort strategy.",
+      "Sort used a bounded external merge with 6 temporary run(s) and a 8589934592-byte target memory budget.",
+      "Run ordering used 20 worker thread(s); the stable multiway merge and ordered BGZF output remained deterministic.",
       "Index creation was requested, but BAI writing is not implemented in this slice."
     ]
   },

@@ -1,10 +1,12 @@
 use std::{
     cmp::Ordering,
+    collections::BinaryHeap,
     fs,
     path::{Path, PathBuf},
 };
 
 use clap::ValueEnum;
+use rayon::prelude::*;
 use serde::Serialize;
 
 use crate::{
@@ -103,6 +105,17 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         &parsed_header.header.references,
     )?;
 
+    if let Some(memory_limit) = options.memory_limit {
+        return external_sort_bam(
+            options,
+            queryname_suborder,
+            header_payload,
+            scanner,
+            memory_limit,
+            preexisting_output,
+        );
+    }
+
     let mut records = Vec::new();
     let mut ordinal = 0_u64;
     while let Some(record) = scanner.next_record()? {
@@ -121,7 +134,12 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         });
     }
 
-    sort_records(&mut records, options.order, queryname_suborder);
+    sort_records(
+        &mut records,
+        options.order,
+        queryname_suborder,
+        options.threads,
+    )?;
 
     let temp_path = temporary_output_path(&options.output_path);
     remove_stale_temp(&temp_path);
@@ -148,19 +166,13 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
 
     finalize_completed_output(&temp_path, &options.output_path, options.force)?;
 
-    let mut notes = vec!["Initial implementation uses an in-memory sort strategy.".to_string()];
-    if options.threads > 1 {
-        notes.push(format!(
-            "Thread count was set to {}, but this slice does not yet parallelize sorting or BGZF writing.",
-            options.threads
-        ));
-    }
-    if let Some(memory_limit) = options.memory_limit {
-        notes.push(format!(
-            "Memory limit {} bytes was accepted for future external-sort support and is not yet enforced by the current in-memory engine.",
-            memory_limit
-        ));
-    }
+    let notes = vec![
+        "Sort used the in-memory strategy because no memory limit was supplied.".to_string(),
+        format!(
+            "Record ordering used {} worker thread(s); BGZF output compression remains ordered and single-stream.",
+            options.threads.max(1)
+        ),
+    ];
 
     Ok(SortExecution {
         overwritten: preexisting_output && options.force,
@@ -176,15 +188,292 @@ fn sort_records(
     records: &mut [SortableRecord],
     order: SortOrder,
     queryname_suborder: Option<QuerynameSubOrder>,
-) {
-    match order {
-        SortOrder::Coordinate => records.sort_by(compare_coordinate_records),
+    threads: usize,
+) -> Result<(), AppError> {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads.max(1))
+        .build()
+        .map_err(|error| AppError::InvalidSortRequest {
+            path: PathBuf::from("<sort-worker-pool>"),
+            detail: format!("Could not create the requested sort worker pool: {error}"),
+        })?;
+    pool.install(|| match order {
+        SortOrder::Coordinate => records.par_sort_by(compare_coordinate_records),
         SortOrder::Queryname => match queryname_suborder {
             Some(QuerynameSubOrder::Lexicographical) | None => {
-                records.sort_by(compare_queryname_records)
+                records.par_sort_by(compare_queryname_records)
             }
             Some(QuerynameSubOrder::Natural) => {}
         },
+    });
+    Ok(())
+}
+
+fn external_sort_bam(
+    options: &SortExecutionOptions,
+    queryname_suborder: Option<QuerynameSubOrder>,
+    header_payload: Vec<u8>,
+    mut scanner: BamScanner,
+    memory_limit: u64,
+    preexisting_output: bool,
+) -> Result<SortExecution, AppError> {
+    if memory_limit == 0 {
+        return Err(AppError::InvalidSortRequest {
+            path: options.input_path.clone(),
+            detail: "Sort memory limit must be greater than zero.".to_string(),
+        });
+    }
+
+    let temp_path = temporary_output_path(&options.output_path);
+    remove_stale_temp(&temp_path);
+    let mut runs = TemporaryRuns::default();
+    let mut records = Vec::new();
+    let mut estimated_bytes = 0_u64;
+    let mut ordinal = 0_u64;
+
+    while let Some(record) = scanner.next_record()? {
+        let layout = record.to_record_layout();
+        estimated_bytes = estimated_bytes.saturating_add(estimated_record_bytes(&layout));
+        records.push(SortableRecord { layout, ordinal });
+        ordinal += 1;
+
+        if estimated_bytes >= memory_limit {
+            spill_run(
+                options,
+                queryname_suborder,
+                &header_payload,
+                &mut records,
+                &mut runs,
+            )?;
+            estimated_bytes = 0;
+        }
+    }
+
+    if ordinal != scanner.records_read() {
+        return Err(AppError::InvalidRecord {
+            path: options.input_path.clone(),
+            detail:
+                "External-sort scanner record count diverged from records materialized for sorting."
+                    .to_string(),
+        });
+    }
+    if !records.is_empty() {
+        spill_run(
+            options,
+            queryname_suborder,
+            &header_payload,
+            &mut records,
+            &mut runs,
+        )?;
+    }
+
+    let records_written = merge_runs(
+        &runs.paths,
+        &temp_path,
+        &header_payload,
+        options.order,
+        queryname_suborder,
+    )
+    .inspect_err(|_| {
+        let _ = fs::remove_file(&temp_path);
+    })?;
+    if records_written != ordinal {
+        let _ = fs::remove_file(&temp_path);
+        return Err(AppError::InvalidRecord {
+            path: options.input_path.clone(),
+            detail: format!(
+                "External sort read {ordinal} records but merged {records_written} records."
+            ),
+        });
+    }
+
+    finalize_completed_output(&temp_path, &options.output_path, options.force)?;
+    let run_count = runs.paths.len();
+    runs.remove_all();
+
+    Ok(SortExecution {
+        overwritten: preexisting_output && options.force,
+        records_read: ordinal,
+        records_written,
+        produced_order: options.order,
+        produced_sub_order: queryname_suborder,
+        notes: vec![
+            format!(
+                "Sort used a bounded external merge with {run_count} temporary run(s) and a {memory_limit}-byte target memory budget."
+            ),
+            format!(
+                "Run ordering used {} worker thread(s); the stable multiway merge and ordered BGZF output remained deterministic.",
+                options.threads.max(1)
+            ),
+        ],
+    })
+}
+
+fn estimated_record_bytes(layout: &RecordLayout) -> u64 {
+    const RECORD_OVERHEAD: u64 = 128;
+    (layout.block_size as u64)
+        .saturating_add(4)
+        .saturating_add(RECORD_OVERHEAD)
+}
+
+fn spill_run(
+    options: &SortExecutionOptions,
+    queryname_suborder: Option<QuerynameSubOrder>,
+    header_payload: &[u8],
+    records: &mut Vec<SortableRecord>,
+    runs: &mut TemporaryRuns,
+) -> Result<(), AppError> {
+    sort_records(records, options.order, queryname_suborder, options.threads)?;
+    let path = temporary_run_path(&options.output_path, runs.paths.len());
+    remove_stale_temp(&path);
+    let write_result = (|| -> Result<(), AppError> {
+        let mut writer = BgzfWriter::create(&path)?;
+        writer.write_all(header_payload)?;
+        for record in records.iter() {
+            writer.write_all(&serialize_record_layout(&record.layout))?;
+        }
+        writer.finish()
+    })();
+    if let Err(error) = write_result {
+        let _ = fs::remove_file(&path);
+        return Err(error);
+    }
+    runs.paths.push(path);
+    records.clear();
+    Ok(())
+}
+
+fn merge_runs(
+    run_paths: &[PathBuf],
+    output_path: &Path,
+    header_payload: &[u8],
+    order: SortOrder,
+    queryname_suborder: Option<QuerynameSubOrder>,
+) -> Result<u64, AppError> {
+    let mut scanners = run_paths
+        .iter()
+        .map(|path| BamScanner::open(path))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut heap = BinaryHeap::new();
+    for (run_index, scanner) in scanners.iter_mut().enumerate() {
+        if let Some(record) = scanner.next_record()? {
+            heap.push(MergeItem {
+                layout: record.to_record_layout(),
+                run_index,
+                sequence: 0,
+                order,
+                queryname_suborder,
+            });
+        }
+    }
+
+    let write_result = (|| -> Result<u64, AppError> {
+        let mut writer = BgzfWriter::create(output_path)?;
+        writer.write_all(header_payload)?;
+        let mut written = 0_u64;
+        while let Some(item) = heap.pop() {
+            writer.write_all(&serialize_record_layout(&item.layout))?;
+            written += 1;
+            let next_sequence = item.sequence + 1;
+            if let Some(record) = scanners[item.run_index].next_record()? {
+                heap.push(MergeItem {
+                    layout: record.to_record_layout(),
+                    run_index: item.run_index,
+                    sequence: next_sequence,
+                    order,
+                    queryname_suborder,
+                });
+            }
+        }
+        writer.finish()?;
+        Ok(written)
+    })();
+    if write_result.is_err() {
+        let _ = fs::remove_file(output_path);
+    }
+    write_result
+}
+
+#[derive(Debug)]
+struct MergeItem {
+    layout: RecordLayout,
+    run_index: usize,
+    sequence: u64,
+    order: SortOrder,
+    queryname_suborder: Option<QuerynameSubOrder>,
+}
+
+impl PartialEq for MergeItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl Eq for MergeItem {}
+
+impl PartialOrd for MergeItem {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for MergeItem {
+    fn cmp(&self, other: &Self) -> Ordering {
+        compare_layouts(
+            &other.layout,
+            &self.layout,
+            self.order,
+            self.queryname_suborder,
+        )
+        .then_with(|| other.run_index.cmp(&self.run_index))
+        .then_with(|| other.sequence.cmp(&self.sequence))
+    }
+}
+
+fn compare_layouts(
+    left: &RecordLayout,
+    right: &RecordLayout,
+    order: SortOrder,
+    queryname_suborder: Option<QuerynameSubOrder>,
+) -> Ordering {
+    match order {
+        SortOrder::Coordinate => compare_coordinate_layouts(left, 0, right, 0),
+        SortOrder::Queryname => match queryname_suborder {
+            Some(QuerynameSubOrder::Lexicographical) | None => {
+                compare_queryname_layouts(left, 0, right, 0)
+            }
+            Some(QuerynameSubOrder::Natural) => Ordering::Equal,
+        },
+    }
+}
+
+fn temporary_run_path(output: &Path, run_index: usize) -> PathBuf {
+    let stem = output
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("bamana-sort-output");
+    output.with_file_name(format!(
+        ".{stem}.bamana-sort-{}.run-{run_index:06}.bam",
+        std::process::id()
+    ))
+}
+
+#[derive(Default)]
+struct TemporaryRuns {
+    paths: Vec<PathBuf>,
+}
+
+impl TemporaryRuns {
+    fn remove_all(&mut self) {
+        for path in self.paths.drain(..) {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+impl Drop for TemporaryRuns {
+    fn drop(&mut self) {
+        self.remove_all();
     }
 }
 
@@ -421,6 +710,77 @@ mod tests {
         );
         let records = read_sorted_records(&output);
         assert_eq!(record_names(&records), vec!["read1", "read10", "read2"]);
+
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn external_queryname_sort_spills_and_stably_merges_bounded_runs() {
+        let input = write_temp_file(
+            "sort-external-queryname-input",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[
+                    build_light_record(0, 7, "read2", 0),
+                    build_light_record(0, 2, "read1", 0x10),
+                    build_light_record(0, 1, "read1", 0),
+                    build_light_record(0, 9, "read3", 0),
+                ],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-external-queryname-output-{}.bam",
+            std::process::id()
+        ));
+
+        let result = sort_bam(&SortExecutionOptions {
+            input_path: input.clone(),
+            output_path: output.clone(),
+            force: true,
+            order: SortOrder::Queryname,
+            queryname_suborder: Some(QuerynameSubOrder::Lexicographical),
+            threads: 2,
+            memory_limit: Some(1),
+        })
+        .expect("bounded external sort should succeed");
+
+        let records = read_sorted_records(&output);
+        assert_eq!(
+            record_names(&records),
+            vec!["read1", "read1", "read2", "read3"]
+        );
+        assert_eq!(
+            records
+                .iter()
+                .filter(|record| record.read_name == "read1")
+                .map(|record| record.pos)
+                .collect::<Vec<_>>(),
+            vec![1, 2]
+        );
+        assert_eq!(result.records_read, 4);
+        assert_eq!(result.records_written, 4);
+        assert!(
+            result.notes[0].contains("4 temporary run(s)"),
+            "one-byte budget should force one record per run"
+        );
+        let run_prefix = format!(
+            ".{}.bamana-sort-{}.run-",
+            output.file_name().unwrap().to_string_lossy(),
+            std::process::id()
+        );
+        assert!(
+            fs::read_dir(output.parent().expect("output parent"))
+                .expect("output parent should list")
+                .all(|entry| !entry
+                    .expect("directory entry")
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(&run_prefix)),
+            "successful external sort must remove temporary runs"
+        );
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");

@@ -85,12 +85,16 @@ benchmark hook, but it should be interpreted as command smoke timing rather
 than output-write throughput.
 
 ``sort`` is a command-level rewrite timing over the generated BAM fixture. It
-proves the current scanner-backed load, in-memory coordinate ordering, native
+proves the scanner-backed load, default in-memory coordinate ordering, native
 BGZF write, and canonical checksum verification path is runnable through the
-benchmark hook, but it should be interpreted as command smoke timing rather
-than external-memory sort throughput or comparator parity. The timing includes
-full-record materialization, in-memory sorting cost, native BGZF compression,
-output finalization, process startup, and JSON emission.
+benchmark hook. It should be interpreted as command smoke timing rather than
+bounded external-sort throughput or comparator parity. The current profile
+does not supply ``--memory-limit`` and therefore includes full-record
+materialization, in-memory sorting cost, native BGZF compression, output
+finalization, process startup, and JSON emission. Downstream acceptance of the
+bounded path requires a separate real-input benchmark that records memory
+budget, worker count, run count, wall time, peak RSS, and input/output
+identities.
 
 ``merge`` is a command-level merge timing over two copies of the generated BAM
 fixture. It proves the current scanner-backed input loading, reference

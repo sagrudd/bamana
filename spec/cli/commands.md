@@ -1397,8 +1397,13 @@ Synopsis:
 `bamana sort --bam <bamfile> --out <result.bam> [--order <coordinate|queryname>] [--queryname-suborder <natural|lexicographical>] [-j, --threads <N>] [--memory-limit <BYTES>] [--create-index] [--verify-checksum] [--force]`
 
 Semantics:
-Rewrites a BAM into an explicitly requested order using a deterministic
-in-memory engine in the current slice.
+Rewrites a BAM into an explicitly requested order. Without `--memory-limit`,
+records are retained in memory and ordered with up to `--threads` workers.
+With a positive `--memory-limit`, Bamana creates deterministically ordered
+temporary runs bounded by the target record-memory budget and performs a stable
+multiway merge. The budget is not a whole-process RSS limit. Temporary runs
+are placed beside the destination and cleaned after success or failure.
+Natural queryname ordering remains unsupported.
 
 Does prove:
 The output file was written according to the produced order and reported options.
@@ -1411,7 +1416,9 @@ Key output concepts:
 
 Output safety:
 The sorted BAM is written to a temporary file and published through a final
-rename. Existing targets are rejected unless `--force` is supplied.
+rename. Existing targets are rejected unless `--force` is supplied. Run
+ordering is parallel; the final merge and ordered BGZF output are
+single-stream.
 
 ## `merge`
 

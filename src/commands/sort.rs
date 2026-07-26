@@ -379,7 +379,7 @@ mod tests {
             payload
                 .notes
                 .iter()
-                .any(|note| note.contains("not yet enforced"))
+                .any(|note| note.contains("bounded external merge"))
         );
 
         fs::remove_file(input).expect("fixture should be removable");

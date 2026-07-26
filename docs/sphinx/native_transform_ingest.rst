@@ -87,10 +87,16 @@ and optional canonical checksum verification within Bamana-native code.
 The hardened test surface covers coordinate ordering, unmapped placement,
 reverse/tie ordering, lexicographical queryname ordering, header sort metadata,
 overwrite safety, checksum verification reporting, and index deferral. The
-current implementation remains an in-memory first slice, and natural queryname
-ordering remains explicitly deferred. ``scanner_microbench --bamana-bin`` now
-includes a ``sort`` command smoke timing for coordinate rewrite with canonical
-checksum verification.
+default implementation remains deliberately in-memory. Supplying
+``--memory-limit BYTES`` instead accumulates native record layouts to the
+target budget, orders each run with up to ``--threads`` workers, spills runs
+beside the destination, and performs a stable multiway merge into an atomically
+published BAM. Temporary runs are cleaned on success and best-effort cleaned
+on failure. The target is a retained-record budget rather than a whole-process
+RSS ceiling; the final merge and ordered BGZF compression remain
+single-stream. Natural queryname ordering remains explicitly deferred.
+``scanner_microbench --bamana-bin`` includes a ``sort`` command smoke timing
+for coordinate rewrite with canonical checksum verification.
 
 Merge Hardening
 ---------------

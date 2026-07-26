@@ -528,7 +528,7 @@ pub struct AnnotateRgArgs {
     /// Verify checksum preservation with RG excluded from the checksum domain.
     #[arg(long = "verify-checksum")]
     pub verify_checksum: bool,
-    /// Requested worker thread count for future parallel implementations.
+    /// Worker threads used to order each in-memory or external-sort run.
     #[arg(short = 'j', long = "threads", default_value_t = 1)]
     pub threads: usize,
     /// Overwrite an existing output file.
@@ -778,7 +778,7 @@ pub struct SortArgs {
     /// Requested worker thread count for future parallel implementations.
     #[arg(short = 'j', long = "threads", default_value_t = 1)]
     pub threads: usize,
-    /// Target memory budget for future external-sort support.
+    /// Target record-memory budget; enables bounded external merge sorting.
     #[arg(long = "memory-limit")]
     pub memory_limit: Option<u64>,
     /// Attempt to create an index when coordinate output is produced.

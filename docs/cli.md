@@ -150,8 +150,12 @@ reference concordance, or full optional-field semantic validation.
 
 Milestone 8 transform and ingest commands are governed as one public command
 wave: `sort`, `merge`, `explode`, `checksum`, and `consume`. `sort` and
-`merge` report explicit ordering semantics, in-memory first-slice caveats,
-deferred index behavior, and checksum-verification state. `checksum` reports
+`merge` report explicit ordering semantics, deferred index behavior, and
+checksum-verification state. `sort --memory-limit BYTES` performs a bounded
+external merge with parallel run ordering; without the option it retains its
+in-memory strategy. The target budget is not a whole-process RSS ceiling, and
+ordered BGZF output remains single-stream. `merge` remains in-memory.
+`checksum` reports
 explicit checksum domains, algorithms, filters, excluded tags, and whether the
 reported domain is order-sensitive. `explode` reports shard boundaries and
 `FASTQ.GZI` planning evidence without claiming uniform shard sizes or generic

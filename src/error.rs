@@ -61,6 +61,8 @@ pub enum AppError {
     IncompatibleHeaders { path: PathBuf, detail: String },
     #[error("invalid merge request: {path}")]
     InvalidMergeRequest { path: PathBuf, detail: String },
+    #[error("invalid sort request: {path}")]
+    InvalidSortRequest { path: PathBuf, detail: String },
     #[error("invalid consume request: {path}")]
     InvalidConsumeRequest { path: PathBuf, detail: String },
     #[error("mixed input modes are not allowed: {path}")]
@@ -175,6 +177,7 @@ impl AppError {
             Self::MissingIndex { .. } => "missing_index",
             Self::IncompatibleHeaders { .. } => "incompatible_headers",
             Self::InvalidMergeRequest { .. } => "invalid_merge_mode",
+            Self::InvalidSortRequest { .. } => "invalid_sort_request",
             Self::InvalidConsumeRequest { .. } => "invalid_consume_mode",
             Self::MixedInputModesNotAllowed { .. } => "mixed_input_modes_not_allowed",
             Self::UnsupportedInputFormat { .. } => "unsupported_input_format",
@@ -259,6 +262,7 @@ impl AppError {
                     .to_string()
             }
             Self::InvalidMergeRequest { .. } => "Invalid BAM merge options.".to_string(),
+            Self::InvalidSortRequest { .. } => "Invalid BAM sort options.".to_string(),
             Self::InvalidConsumeRequest { .. } => "Invalid consume options.".to_string(),
             Self::MixedInputModesNotAllowed { .. } => {
                 "Mixed raw-read and alignment-bearing inputs are not allowed in the selected consume mode.".to_string()
@@ -361,6 +365,7 @@ impl AppError {
             Self::MissingIndex { detail, .. } => detail.clone(),
             Self::IncompatibleHeaders { detail, .. } => Some(detail.clone()),
             Self::InvalidMergeRequest { detail, .. } => Some(detail.clone()),
+            Self::InvalidSortRequest { detail, .. } => Some(detail.clone()),
             Self::InvalidConsumeRequest { detail, .. } => Some(detail.clone()),
             Self::MixedInputModesNotAllowed { detail, .. } => Some(detail.clone()),
             Self::UnsupportedInputFormat { format, .. } => Some(format.clone()),
@@ -483,6 +488,10 @@ impl AppError {
             ),
             Self::InvalidMergeRequest { .. } => Some(
                 "Use --sort as shorthand for --order coordinate, and only specify --queryname-suborder with --order queryname."
+                    .to_string(),
+            ),
+            Self::InvalidSortRequest { .. } => Some(
+                "Choose a positive memory limit and a supported deterministic sort order."
                     .to_string(),
             ),
             Self::InvalidConsumeRequest { .. } => Some(

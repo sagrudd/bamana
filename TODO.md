@@ -61,6 +61,17 @@ and benchmark documents where that is more precise.
 
 ## 5. Native Performance Core
 
+- [x] Add deterministic bounded external BAM sorting for downstream
+      whole-genome transforms, with a caller-selected record-memory budget,
+      parallel stable run ordering, atomic publication, temporary-run cleanup,
+      contracts, documentation, and spill/merge regression coverage.
+- [ ] Benchmark bounded coordinate and queryname sorting on the GB10 with real
+      whole-genome input; record peak RSS, worker utilization, run count,
+      storage throughput, and checksum identity before claiming downstream
+      performance acceptance.
+- [ ] Use the GB10 evidence to decide whether ordered parallel BGZF compression,
+      pipelined run spill/merge, or both are required; preserve deterministic
+      bytes and avoid increasing the configured record-memory budget.
 - [ ] Resolve existing clippy `-D warnings` failures, including needless borrows,
       single-match control flow, type-complexity warnings, MSRV-incompatible
       `is_multiple_of`, large error/enum variants, pointer-argument warnings,

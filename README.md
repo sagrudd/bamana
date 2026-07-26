@@ -85,7 +85,7 @@ The current semantics are intentionally narrow:
 * `check_tag` tests for BAM auxiliary tag presence using a bounded scan by default and full-file absence only when a complete scan succeeds
 * `validate` performs a deeper streaming BAM structural and internal-consistency pass than `verify`, with finding severities and bounded modes
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
-* `sort` rewrites a BAM into an explicitly requested order using a deterministic in-memory first-slice engine with optional canonical checksum verification
+* `sort` rewrites a BAM into an explicitly requested order using deterministic parallel run ordering, an optional bounded external merge, and optional canonical checksum verification
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
 * `fastq` exports BAM records to an ordered `FASTQ.GZ` stream, preserving input encounter order for read names, sequences, and qualities while intentionally dropping BAM header metadata
 * `unmap` rewrites a BAM as unmapped BAM by removing reference-bound mapping state, CIGAR/mate/coordinate fields, and mapping-related auxiliary tags while preserving non-mapping metadata
@@ -435,14 +435,23 @@ slice. The current order-insensitive canonical mode collects per-record digests
 in memory before sorting them, which is correct and explicit but may need a
 chunked or external-sort strategy for very large BAMs later.
 
-`sort` is the first transformational command in the repository. The current
-implementation reads records into memory, derives deterministic coordinate or
-queryname lexicographical sort keys, rewrites the `@HD` sort metadata, and
-writes a new BGZF/BAM output. Coordinate output is intended to be suitable for
-standard BAM indexing. Queryname output is not suitable for standard coordinate
-BAI indexing. Optional `--verify-checksum` support compares canonical
-order-insensitive checksums of the input and output so content preservation can
-be confirmed explicitly rather than implied.
+`sort` is a native transformational command. It derives deterministic
+coordinate or queryname lexicographical sort keys, rewrites the `@HD` sort
+metadata, and writes a new BGZF/BAM output. Supplying `--memory-limit BYTES`
+enables bounded external merge sorting: records are accumulated to the target
+budget, each run is ordered with up to `--threads` workers and spilled beside
+the destination, and runs are merged stably into an atomically published
+output. Temporary runs are removed on success and best-effort cleaned on
+failure. Omitting `--memory-limit` deliberately retains the in-memory strategy.
+The budget covers retained record layouts and an implementation allowance; it
+is not a whole-process RSS ceiling. Ordered BGZF compression and the final
+multiway merge remain single-stream.
+
+Coordinate output is intended to be suitable for standard BAM indexing.
+Queryname output is not suitable for standard coordinate BAI indexing.
+Optional `--verify-checksum` support compares canonical order-insensitive
+checksums of the input and output so content preservation can be confirmed
+explicitly rather than implied.
 
 `merge` builds on the same writer and comparator family. By default it preserves
 input-file concatenation order. With `--sort` or `--order coordinate`, it reads
