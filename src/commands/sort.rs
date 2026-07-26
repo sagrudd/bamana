@@ -26,6 +26,7 @@ pub struct SortRequest {
     pub memory_limit: Option<u64>,
     pub primary_only: bool,
     pub input_sha256: Option<String>,
+    pub compression_level: u32,
     pub create_index: bool,
     pub verify_checksum: bool,
     pub force: bool,
@@ -61,6 +62,7 @@ pub struct SortResultInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub produced_sub_order: Option<QuerynameSubOrder>,
     pub primary_only: bool,
+    pub compression_level: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -163,6 +165,7 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         memory_limit: request.memory_limit,
         primary_only: request.primary_only,
         expected_input_sha256: expected_input_sha256.clone(),
+        compression_level: request.compression_level,
     }) {
         Ok(result) => result,
         Err(error) => {
@@ -257,6 +260,7 @@ fn base_payload(request: &SortRequest, expected_input_sha256: Option<String>) ->
             produced_order: None,
             produced_sub_order: None,
             primary_only: request.primary_only,
+            compression_level: request.compression_level,
         },
         records: SortRecordCounts {
             records_read: None,
@@ -421,6 +425,7 @@ mod tests {
             memory_limit: Some(1024),
             primary_only: false,
             input_sha256: None,
+            compression_level: 6,
             create_index: true,
             verify_checksum: true,
             force: true,
@@ -430,6 +435,7 @@ mod tests {
         let payload = response.data.expect("success payload should exist");
         assert!(payload.output.written);
         assert_eq!(payload.sort.produced_order, Some(SortOrder::Coordinate));
+        assert_eq!(payload.sort.compression_level, 6);
         assert_eq!(payload.records.records_read, Some(2));
         assert_eq!(payload.records.records_written, Some(2));
         assert!(payload.index.requested);
@@ -483,6 +489,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             input_sha256: None,
+            compression_level: 6,
             create_index: true,
             verify_checksum: false,
             force: true,
@@ -533,6 +540,7 @@ mod tests {
             memory_limit: Some(1),
             primary_only: false,
             input_sha256: Some(format!("sha256:{digest}")),
+            compression_level: 6,
             create_index: false,
             verify_checksum: false,
             force: true,
@@ -569,6 +577,7 @@ mod tests {
             memory_limit: Some(1),
             primary_only: false,
             input_sha256: Some("0".repeat(64)),
+            compression_level: 6,
             create_index: false,
             verify_checksum: false,
             force: true,

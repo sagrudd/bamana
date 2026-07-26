@@ -9,13 +9,14 @@
     "sortInfo": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["requested_order", "requested_sub_order", "produced_order", "produced_sub_order", "primary_only"],
+      "required": ["requested_order", "requested_sub_order", "produced_order", "produced_sub_order", "primary_only", "compression_level"],
       "properties": {
         "requested_order": { "$ref": "./common/defs.schema.json#/$defs/sortOrder" },
         "requested_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
         "produced_order": { "$ref": "./common/defs.schema.json#/$defs/sortOrder" },
         "produced_sub_order": { "$ref": "./common/defs.schema.json#/$defs/querynameSubOrder" },
-        "primary_only": { "type": "boolean" }
+        "primary_only": { "type": "boolean" },
+        "compression_level": { "type": "integer", "minimum": 0, "maximum": 9 }
       }
     },
     "records": {

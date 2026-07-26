@@ -14,7 +14,8 @@
       "requested_sub_order": null,
       "produced_order": null,
       "produced_sub_order": null,
-      "primary_only": false
+      "primary_only": false,
+      "compression_level": 6
     },
     "records": {
       "records_read": null,

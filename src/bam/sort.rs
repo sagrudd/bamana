@@ -14,7 +14,7 @@ use crate::{
         header::{rewrite_header_for_sort, serialize_bam_header_payload},
         records::RecordLayout,
         scan::BamScanner,
-        sort_integrity::verify_input_sha256,
+        sort_integrity::{output_matches_input, temporary_output_path, verify_input_sha256},
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
@@ -46,8 +46,8 @@ pub struct SortExecutionOptions {
     pub memory_limit: Option<u64>,
     pub primary_only: bool,
     pub expected_input_sha256: Option<String>,
+    pub compression_level: u32,
 }
-
 #[derive(Debug)]
 pub struct SortExecution {
     pub overwritten: bool,
@@ -58,7 +58,6 @@ pub struct SortExecution {
     pub produced_sub_order: Option<QuerynameSubOrder>,
     pub notes: Vec<String>,
 }
-
 #[derive(Debug)]
 struct SortableRecord {
     layout: RecordLayout,
@@ -161,7 +160,11 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
     remove_stale_temp(&temp_path);
 
     let write_result = (|| -> Result<u64, AppError> {
-        let mut writer = BgzfWriter::create_with_threads(&temp_path, options.threads)?;
+        let mut writer = BgzfWriter::create_with_threads_and_level(
+            &temp_path,
+            options.threads,
+            options.compression_level,
+        )?;
         writer.write_all(&header_payload)?;
         let mut written = 0_u64;
         for record in &records {
@@ -305,6 +308,7 @@ fn external_sort_bam(
         options.order,
         queryname_suborder,
         options.threads,
+        options.compression_level,
     )
     .inspect_err(|_| {
         let _ = fs::remove_file(&temp_path);
@@ -360,7 +364,11 @@ fn spill_run(
     let path = temporary_run_path(&options.output_path, runs.paths.len());
     remove_stale_temp(&path);
     let write_result = (|| -> Result<(), AppError> {
-        let mut writer = BgzfWriter::create_with_threads(&path, options.threads)?;
+        let mut writer = BgzfWriter::create_with_threads_and_level(
+            &path,
+            options.threads,
+            options.compression_level,
+        )?;
         writer.write_all(header_payload)?;
         for record in records.iter() {
             writer.write_all(&serialize_record_layout(&record.layout))?;
@@ -383,6 +391,7 @@ fn merge_runs(
     order: SortOrder,
     queryname_suborder: Option<QuerynameSubOrder>,
     threads: usize,
+    compression_level: u32,
 ) -> Result<u64, AppError> {
     let mut scanners = run_paths
         .iter()
@@ -402,7 +411,8 @@ fn merge_runs(
     }
 
     let write_result = (|| -> Result<u64, AppError> {
-        let mut writer = BgzfWriter::create_with_threads(output_path, threads)?;
+        let mut writer =
+            BgzfWriter::create_with_threads_and_level(output_path, threads, compression_level)?;
         writer.write_all(header_payload)?;
         let mut written = 0_u64;
         while let Some(item) = heap.pop() {
@@ -519,24 +529,6 @@ fn compare_queryname_records(left: &SortableRecord, right: &SortableRecord) -> O
     compare_queryname_layouts(&left.layout, left.ordinal, &right.layout, right.ordinal)
 }
 
-fn output_matches_input(input: &Path, output: &Path) -> bool {
-    if input == output {
-        return true;
-    }
-
-    let input_canonical = fs::canonicalize(input).ok();
-    let output_canonical = fs::canonicalize(output).ok();
-    input_canonical.is_some() && input_canonical == output_canonical
-}
-
-fn temporary_output_path(output: &Path) -> PathBuf {
-    let stem = output
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or("bamana-sort-output");
-    output.with_file_name(format!(".{stem}.bamana-sort-{}.tmp", std::process::id()))
-}
-
 pub(crate) fn compare_coordinate_layouts(
     left: &RecordLayout,
     left_ordinal: u64,
@@ -643,6 +635,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect("sort should succeed");
 
@@ -691,6 +684,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect("sort should succeed");
 
@@ -735,6 +729,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect("sort should succeed");
 
@@ -786,6 +781,7 @@ mod tests {
             memory_limit: Some(1),
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect("bounded external sort should succeed");
 
@@ -852,6 +848,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect_err("existing output should require force");
 
@@ -891,6 +888,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect_err("directory output should fail at finalization");
 
@@ -928,6 +926,7 @@ mod tests {
             memory_limit: None,
             primary_only: false,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect_err("natural queryname sort should be deferred");
 
@@ -967,6 +966,7 @@ mod tests {
             memory_limit: Some(1),
             primary_only: true,
             expected_input_sha256: None,
+            compression_level: 6,
         })
         .expect("fused primary-only external sort should succeed");
 

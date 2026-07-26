@@ -51,11 +51,17 @@ pub(crate) fn bgzf_block_size(bytes: &[u8]) -> Option<usize> {
     None
 }
 
-pub(crate) fn build_bgzf_member_fitting(payload: &[u8]) -> Result<(Vec<u8>, usize), String> {
+pub(crate) fn build_bgzf_member_fitting_with_level(
+    payload: &[u8],
+    compression_level: u32,
+) -> Result<(Vec<u8>, usize), String> {
+    if compression_level > 9 {
+        return Err("BGZF compression level must be between 0 and 9.".to_string());
+    }
     let mut candidate_len = payload.len().min(BGZF_TARGET_UNCOMPRESSED_BLOCK);
 
     loop {
-        let member = build_bgzf_member(&payload[..candidate_len])?;
+        let member = build_bgzf_member_with_level(&payload[..candidate_len], compression_level)?;
         if member.len() <= BGZF_MAX_BLOCK_SIZE {
             return Ok((member, candidate_len));
         }
@@ -67,11 +73,19 @@ pub(crate) fn build_bgzf_member_fitting(payload: &[u8]) -> Result<(Vec<u8>, usiz
     }
 }
 
+#[cfg(test)]
 pub(crate) fn build_bgzf_member(payload: &[u8]) -> Result<Vec<u8>, String> {
+    build_bgzf_member_with_level(payload, 6)
+}
+
+pub(crate) fn build_bgzf_member_with_level(
+    payload: &[u8],
+    compression_level: u32,
+) -> Result<Vec<u8>, String> {
     let extra = [b'B', b'C', 2, 0, 0, 0];
     let mut encoder = GzBuilder::new()
         .extra(extra.as_slice())
-        .write(Vec::new(), Compression::default());
+        .write(Vec::new(), Compression::new(compression_level));
     encoder
         .write_all(payload)
         .map_err(|error| format!("BGZF member compression failed: {error}"))?;

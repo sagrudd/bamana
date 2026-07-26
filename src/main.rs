@@ -303,6 +303,7 @@ fn main() -> ExitCode {
                 memory_limit: args.memory_limit,
                 primary_only: args.primary_only,
                 input_sha256: args.input_sha256,
+                compression_level: args.compression_level,
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
                 force: args.force,

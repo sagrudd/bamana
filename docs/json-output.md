@@ -372,6 +372,8 @@ Key concepts:
   queryname ordering is requested
 * `sort.primary_only` records whether secondary and supplementary records were
   removed during sorting
+* `sort.compression_level` records the explicit 0–9 BGZF compression level
+  applied to temporary runs and final output
 * `records.records_read`, `records.records_written`, and
   `records.records_filtered` expose the complete transformation count surface
 * `index` reports index intent and any deferred index behavior

@@ -7,7 +7,9 @@ use std::{
 use rayon::{ThreadPool, prelude::*};
 
 use crate::{
-    bgzf::block::{BGZF_EOF_MARKER, BGZF_TARGET_UNCOMPRESSED_BLOCK, build_bgzf_member_fitting},
+    bgzf::block::{
+        BGZF_EOF_MARKER, BGZF_TARGET_UNCOMPRESSED_BLOCK, build_bgzf_member_fitting_with_level,
+    },
     error::AppError,
 };
 
@@ -17,6 +19,7 @@ pub struct BgzfWriter {
     buffer: Vec<u8>,
     compression_threads: usize,
     compression_pool: Option<ThreadPool>,
+    compression_level: u32,
 }
 
 impl BgzfWriter {
@@ -25,6 +28,20 @@ impl BgzfWriter {
     }
 
     pub fn create_with_threads(path: &Path, threads: usize) -> Result<Self, AppError> {
+        Self::create_with_threads_and_level(path, threads, 6)
+    }
+
+    pub fn create_with_threads_and_level(
+        path: &Path,
+        threads: usize,
+        compression_level: u32,
+    ) -> Result<Self, AppError> {
+        if compression_level > 9 {
+            return Err(AppError::WriteError {
+                path: path.to_path_buf(),
+                message: "BGZF compression level must be between 0 and 9.".to_string(),
+            });
+        }
         let compression_threads = threads.max(1);
         let compression_pool = if compression_threads == 1 {
             None
@@ -50,6 +67,7 @@ impl BgzfWriter {
             buffer: Vec::with_capacity(BGZF_TARGET_UNCOMPRESSED_BLOCK * (compression_threads + 1)),
             compression_threads,
             compression_pool,
+            compression_level,
         })
     }
 
@@ -99,7 +117,9 @@ impl BgzfWriter {
                 chunks
                     .collect::<Vec<_>>()
                     .into_par_iter()
-                    .map(build_bgzf_member_fitting)
+                    .map(|chunk| {
+                        build_bgzf_member_fitting_with_level(chunk, self.compression_level)
+                    })
                     .collect::<Vec<_>>()
             });
 
@@ -134,13 +154,14 @@ impl BgzfWriter {
         } else {
             self.buffer.len().min(BGZF_TARGET_UNCOMPRESSED_BLOCK)
         };
-        let (member, consumed) =
-            build_bgzf_member_fitting(&self.buffer[..max_candidate]).map_err(|message| {
-                AppError::WriteError {
-                    path: self.path.clone(),
-                    message,
-                }
-            })?;
+        let (member, consumed) = build_bgzf_member_fitting_with_level(
+            &self.buffer[..max_candidate],
+            self.compression_level,
+        )
+        .map_err(|message| AppError::WriteError {
+            path: self.path.clone(),
+            message,
+        })?;
         self.writer
             .write_all(&member)
             .map_err(|error| AppError::WriteError {
@@ -312,5 +333,29 @@ mod tests {
         fs::remove_file(parallel_path).expect("fixture should be removed");
         assert_eq!(parallel_payload, payload);
         assert_eq!(parallel_bytes, serial_bytes);
+    }
+
+    #[test]
+    fn explicit_fast_compression_is_deterministic_and_round_trips() {
+        let first_path = temp_path("fast-level-first");
+        let second_path = temp_path("fast-level-second");
+        let payload = repeated_payload(BGZF_TARGET_UNCOMPRESSED_BLOCK * 3 + 777);
+        for path in [&first_path, &second_path] {
+            let mut writer = BgzfWriter::create_with_threads_and_level(path, 4, 1)
+                .expect("fast writer should create");
+            writer.write_all(&payload).expect("payload should write");
+            writer.finish().expect("writer should finish");
+        }
+        assert_eq!(read_file(&first_path), read_file(&second_path));
+        assert_eq!(
+            read_bgzf_payloads(&first_path)
+                .expect("fast output should read")
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>(),
+            payload
+        );
+        fs::remove_file(first_path).expect("fixture should be removed");
+        fs::remove_file(second_path).expect("fixture should be removed");
     }
 }

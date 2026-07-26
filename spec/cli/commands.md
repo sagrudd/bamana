@@ -1394,7 +1394,7 @@ Key output concepts:
 ## `sort`
 
 Synopsis:
-`bamana sort --bam <bamfile> --out <result.bam> [--order <coordinate|queryname>] [--queryname-suborder <natural|lexicographical>] [-j, --threads <N>] [--memory-limit <BYTES>] [--primary-only] [--input-sha256 <HEX>] [--create-index] [--verify-checksum] [--force]`
+`bamana sort --bam <bamfile> --out <result.bam> [--order <coordinate|queryname>] [--queryname-suborder <natural|lexicographical>] [-j, --threads <N>] [--memory-limit <BYTES>] [--primary-only] [--input-sha256 <HEX>] [--compression-level <0-9>] [--create-index] [--verify-checksum] [--force]`
 
 Semantics:
 Rewrites a BAM into an explicitly requested order. Without `--memory-limit`,
@@ -1410,6 +1410,10 @@ pass. `--input-sha256` accepts 64 hexadecimal characters, with an optional
 existing parallel BGZF scan instead of rereading the file. A mismatch aborts
 before atomic output publication. Natural queryname ordering remains
 unsupported.
+`--compression-level` governs both temporary BGZF runs and final output,
+defaults to 6, and is recorded in the response. Lower levels trade larger
+temporary and final files for lower compression CPU; select a non-default
+level only from representative storage/CPU benchmark evidence.
 
 Does prove:
 The output file was written according to the produced order and reported options.

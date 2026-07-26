@@ -790,6 +790,9 @@ pub struct SortArgs {
     /// Expected raw SHA-256 of the input BAM, verified during the sort scan.
     #[arg(long = "input-sha256")]
     pub input_sha256: Option<String>,
+    /// BGZF compression level for temporary runs and final output (0-9).
+    #[arg(long = "compression-level", default_value_t = 6, value_parser = clap::value_parser!(u32).range(0..=9))]
+    pub compression_level: u32,
     /// Attempt to create an index when coordinate output is produced.
     #[arg(long = "create-index")]
     pub create_index: bool,

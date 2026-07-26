@@ -253,7 +253,7 @@ cargo run -- explode --input input.sam --out-dir sam_shards --explode 4
 cargo run -- fastq --bam input.bam --out input.fastq.gz -j 8
 cargo run -- unmap --bam aligned.bam --out aligned.unmapped.bam --dry-run
 cargo run -- sort --bam input.bam --out sorted.bam --memory-limit 8589934592 \
-  --input-sha256 sha256:<64-hex-digest> -j 8
+  --input-sha256 sha256:<64-hex-digest> --compression-level 1 -j 8
 cargo run -- benchmark --profile fastq_gz_enumerate --fastq reads.fastq.gz --report fastq-gz-enumerate.pdf --force
 ```
 
