@@ -93,8 +93,11 @@ target budget, orders each run with up to ``--threads`` workers, spills runs
 beside the destination, and performs a stable multiway merge into an atomically
 published BAM. Temporary runs are cleaned on success and best-effort cleaned
 on failure. The target is a retained-record budget rather than a whole-process
-RSS ceiling; the final merge and ordered BGZF compression remain
-single-stream. Natural queryname ordering remains explicitly deferred.
+RSS ceiling. Ordered BGZF output uses a bounded asynchronous pipeline with at
+most two full blocks in flight per worker. Compression overlaps record
+production while sequence-numbered results preserve deterministic bytes; the
+stable multiway heap itself remains single-threaded. Natural queryname ordering
+remains explicitly deferred.
 ``scanner_microbench --bamana-bin`` includes a ``sort`` command smoke timing
 for coordinate rewrite with canonical checksum verification.
 

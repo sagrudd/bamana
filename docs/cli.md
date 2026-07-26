@@ -156,8 +156,11 @@ external merge with parallel run ordering; without the option it retains its
 in-memory strategy. `sort --primary-only` fuses removal of secondary and
 supplementary alignments into either strategy and reports the discarded count,
 avoiding a full intermediate BAM before sorting. The target budget is not a
-whole-process RSS ceiling. Run writes and final ordered BGZF output use bounded
-parallel compression while preserving one deterministic byte stream. `merge`
+whole-process RSS ceiling. Run writes and final ordered BGZF output use a
+bounded asynchronous producer/compressor pipeline while preserving one
+deterministic byte stream. At most two full BGZF blocks per worker are in
+flight and results are written in input sequence, so compression overlaps
+record production without unbounded memory or output reordering. `merge`
 remains in-memory.
 `checksum` reports
 explicit checksum domains, algorithms, filters, excluded tags, and whether the

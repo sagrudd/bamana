@@ -102,7 +102,9 @@ filter
 
    bamana filter --bam input.bam --out filtered.bam --min-length 1000 --max-length 50000 --min-mean-quality 10 --min-complexity 0.55 --mapped-only --primary-only --threads 8
 
-``--threads`` controls bounded ordered BGZF output compression. Filtering and
+``--threads`` controls bounded ordered BGZF output compression. Its
+producer/compressor pipeline keeps at most two full blocks in flight per
+worker and writes completed blocks in input sequence. Filtering and
 retained-record encounter order remain deterministic, and the JSON response
 records the effective worker count as ``execution.compression_threads``.
 

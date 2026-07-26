@@ -1,10 +1,11 @@
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
+    sync::{Arc, Mutex, mpsc},
+    thread,
 };
-
-use rayon::{ThreadPool, prelude::*};
 
 use crate::{
     bgzf::block::{
@@ -17,9 +18,28 @@ pub struct BgzfWriter {
     path: PathBuf,
     writer: BufWriter<File>,
     buffer: Vec<u8>,
-    compression_threads: usize,
-    compression_pool: Option<ThreadPool>,
+    compression_pipeline: Option<CompressionPipeline>,
     compression_level: u32,
+}
+
+struct CompressionJob {
+    sequence: u64,
+    payload: Vec<u8>,
+}
+
+struct CompressionResult {
+    sequence: u64,
+    member: Result<(Vec<u8>, usize), String>,
+}
+
+struct CompressionPipeline {
+    jobs: Option<mpsc::SyncSender<CompressionJob>>,
+    results: mpsc::Receiver<CompressionResult>,
+    workers: Vec<thread::JoinHandle<()>>,
+    pending: BTreeMap<u64, Result<(Vec<u8>, usize), String>>,
+    submitted: u64,
+    written: u64,
+    max_in_flight: u64,
 }
 
 impl BgzfWriter {
@@ -43,18 +63,14 @@ impl BgzfWriter {
             });
         }
         let compression_threads = threads.max(1);
-        let compression_pool = if compression_threads == 1 {
+        let compression_pipeline = if compression_threads == 1 {
             None
         } else {
-            Some(
-                rayon::ThreadPoolBuilder::new()
-                    .num_threads(compression_threads)
-                    .build()
-                    .map_err(|error| AppError::WriteError {
-                        path: path.to_path_buf(),
-                        message: format!("Could not create BGZF compression pool: {error}"),
-                    })?,
-            )
+            Some(CompressionPipeline::new(
+                compression_threads,
+                compression_level,
+                path,
+            )?)
         };
         let file = File::create(path).map_err(|error| AppError::WriteError {
             path: path.to_path_buf(),
@@ -64,26 +80,26 @@ impl BgzfWriter {
         Ok(Self {
             path: path.to_path_buf(),
             writer: BufWriter::new(file),
-            buffer: Vec::with_capacity(BGZF_TARGET_UNCOMPRESSED_BLOCK * (compression_threads + 1)),
-            compression_threads,
-            compression_pool,
+            buffer: Vec::with_capacity(BGZF_TARGET_UNCOMPRESSED_BLOCK * 2),
+            compression_pipeline,
             compression_level,
         })
     }
 
     pub fn write_all(&mut self, bytes: &[u8]) -> Result<(), AppError> {
         self.buffer.extend_from_slice(bytes);
-        let batch_size = BGZF_TARGET_UNCOMPRESSED_BLOCK * self.compression_threads;
-        while self.buffer.len() >= batch_size {
-            self.flush_full_block_batch(self.compression_threads)?;
+        while self.buffer.len() >= BGZF_TARGET_UNCOMPRESSED_BLOCK {
+            self.flush_full_block()?;
         }
         Ok(())
     }
 
     pub fn finish(mut self) -> Result<(), AppError> {
         while self.buffer.len() >= BGZF_TARGET_UNCOMPRESSED_BLOCK {
-            let full_blocks = self.buffer.len() / BGZF_TARGET_UNCOMPRESSED_BLOCK;
-            self.flush_full_block_batch(full_blocks.min(self.compression_threads))?;
+            self.flush_full_block()?;
+        }
+        if let Some(mut pipeline) = self.compression_pipeline.take() {
+            pipeline.finish(&mut self.writer, &self.path)?;
         }
         while !self.buffer.is_empty() {
             self.flush_next_block(true)?;
@@ -102,50 +118,19 @@ impl BgzfWriter {
         Ok(())
     }
 
-    fn flush_full_block_batch(&mut self, block_count: usize) -> Result<(), AppError> {
-        if block_count <= 1 || self.compression_pool.is_none() {
+    fn flush_full_block(&mut self) -> Result<(), AppError> {
+        if self.compression_pipeline.is_none() {
             return self.flush_next_block(false);
         }
 
-        let batch_len = BGZF_TARGET_UNCOMPRESSED_BLOCK * block_count;
-        let chunks = self.buffer[..batch_len].chunks_exact(BGZF_TARGET_UNCOMPRESSED_BLOCK);
-        let results = self
-            .compression_pool
-            .as_ref()
-            .expect("parallel batch requires a compression pool")
-            .install(|| {
-                chunks
-                    .collect::<Vec<_>>()
-                    .into_par_iter()
-                    .map(|chunk| {
-                        build_bgzf_member_fitting_with_level(chunk, self.compression_level)
-                    })
-                    .collect::<Vec<_>>()
-            });
-
-        let members = results
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|message| AppError::WriteError {
-                path: self.path.clone(),
-                message,
-            })?;
-        if members
-            .iter()
-            .any(|(_, consumed)| *consumed != BGZF_TARGET_UNCOMPRESSED_BLOCK)
-        {
-            return self.flush_next_block(false);
-        }
-        for (member, _) in members {
-            self.writer
-                .write_all(&member)
-                .map_err(|error| AppError::WriteError {
-                    path: self.path.clone(),
-                    message: error.to_string(),
-                })?;
-        }
-        self.buffer.drain(..batch_len);
-        Ok(())
+        let payload = self
+            .buffer
+            .drain(..BGZF_TARGET_UNCOMPRESSED_BLOCK)
+            .collect();
+        self.compression_pipeline
+            .as_mut()
+            .expect("parallel writer has a compression pipeline")
+            .submit(payload, &mut self.writer, &self.path)
     }
 
     fn flush_next_block(&mut self, allow_small_block: bool) -> Result<(), AppError> {
@@ -169,6 +154,133 @@ impl BgzfWriter {
                 message: error.to_string(),
             })?;
         self.buffer.drain(..consumed);
+        Ok(())
+    }
+}
+
+impl CompressionPipeline {
+    fn new(threads: usize, compression_level: u32, path: &Path) -> Result<Self, AppError> {
+        let max_in_flight = threads.saturating_mul(2).max(2);
+        let (job_tx, job_rx) = mpsc::sync_channel::<CompressionJob>(max_in_flight);
+        let (result_tx, result_rx) = mpsc::channel();
+        let shared_jobs = Arc::new(Mutex::new(job_rx));
+        let mut workers = Vec::with_capacity(threads);
+        for worker_index in 0..threads {
+            let jobs = Arc::clone(&shared_jobs);
+            let results = result_tx.clone();
+            let worker = thread::Builder::new()
+                .name(format!("bamana-bgzf-{worker_index}"))
+                .spawn(move || {
+                    loop {
+                        let job = {
+                            let receiver = match jobs.lock() {
+                                Ok(receiver) => receiver,
+                                Err(_) => break,
+                            };
+                            match receiver.recv() {
+                                Ok(job) => job,
+                                Err(_) => break,
+                            }
+                        };
+                        let member =
+                            build_bgzf_member_fitting_with_level(&job.payload, compression_level);
+                        if results
+                            .send(CompressionResult {
+                                sequence: job.sequence,
+                                member,
+                            })
+                            .is_err()
+                        {
+                            break;
+                        }
+                    }
+                })
+                .map_err(|error| AppError::WriteError {
+                    path: path.to_path_buf(),
+                    message: format!("Could not create BGZF compression worker: {error}"),
+                })?;
+            workers.push(worker);
+        }
+        drop(result_tx);
+        Ok(Self {
+            jobs: Some(job_tx),
+            results: result_rx,
+            workers,
+            pending: BTreeMap::new(),
+            submitted: 0,
+            written: 0,
+            max_in_flight: max_in_flight as u64,
+        })
+    }
+
+    fn submit(
+        &mut self,
+        payload: Vec<u8>,
+        writer: &mut BufWriter<File>,
+        path: &Path,
+    ) -> Result<(), AppError> {
+        while self.submitted - self.written >= self.max_in_flight {
+            self.receive_one(writer, path)?;
+        }
+        let sequence = self.submitted;
+        self.jobs
+            .as_ref()
+            .expect("active compression pipeline has a sender")
+            .send(CompressionJob { sequence, payload })
+            .map_err(|_| AppError::WriteError {
+                path: path.to_path_buf(),
+                message: "BGZF compression workers stopped before accepting all blocks."
+                    .to_string(),
+            })?;
+        self.submitted += 1;
+        self.write_ready(writer, path)
+    }
+
+    fn receive_one(&mut self, writer: &mut BufWriter<File>, path: &Path) -> Result<(), AppError> {
+        let result = self.results.recv().map_err(|_| AppError::WriteError {
+            path: path.to_path_buf(),
+            message: "BGZF compression workers stopped before returning all blocks.".to_string(),
+        })?;
+        self.pending.insert(result.sequence, result.member);
+        self.write_ready(writer, path)
+    }
+
+    fn write_ready(&mut self, writer: &mut BufWriter<File>, path: &Path) -> Result<(), AppError> {
+        while let Some(member) = self.pending.remove(&self.written) {
+            let (member, consumed) = member.map_err(|message| AppError::WriteError {
+                path: path.to_path_buf(),
+                message,
+            })?;
+            if consumed != BGZF_TARGET_UNCOMPRESSED_BLOCK {
+                return Err(AppError::WriteError {
+                    path: path.to_path_buf(),
+                    message: format!(
+                        "Parallel BGZF block consumed {consumed} bytes instead of the required {BGZF_TARGET_UNCOMPRESSED_BLOCK}."
+                    ),
+                });
+            }
+            writer
+                .write_all(&member)
+                .map_err(|error| AppError::WriteError {
+                    path: path.to_path_buf(),
+                    message: error.to_string(),
+                })?;
+            self.written += 1;
+        }
+        Ok(())
+    }
+
+    fn finish(&mut self, writer: &mut BufWriter<File>, path: &Path) -> Result<(), AppError> {
+        self.jobs.take();
+        while self.written < self.submitted {
+            self.receive_one(writer, path)?;
+        }
+        for worker in self.workers.drain(..) {
+            worker.join().map_err(|_| AppError::WriteError {
+                path: path.to_path_buf(),
+                message: "BGZF compression worker panicked.".to_string(),
+            })?;
+        }
         Ok(())
     }
 }
@@ -211,6 +323,18 @@ mod tests {
 
     fn repeated_payload(len: usize) -> Vec<u8> {
         (0..len).map(|index| (index % 251) as u8).collect()
+    }
+
+    fn high_entropy_payload(len: usize) -> Vec<u8> {
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        (0..len)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                state as u8
+            })
+            .collect()
     }
 
     #[test]
@@ -357,5 +481,35 @@ mod tests {
         );
         fs::remove_file(first_path).expect("fixture should be removed");
         fs::remove_file(second_path).expect("fixture should be removed");
+    }
+
+    #[test]
+    fn pipelined_level_zero_handles_high_entropy_full_blocks() {
+        let serial_path = temp_path("level-zero-serial");
+        let pipeline_path = temp_path("level-zero-pipeline");
+        let payload = high_entropy_payload(BGZF_TARGET_UNCOMPRESSED_BLOCK * 9 + 311);
+        let mut serial = BgzfWriter::create_with_threads_and_level(&serial_path, 1, 0)
+            .expect("serial writer should create");
+        serial
+            .write_all(&payload)
+            .expect("serial payload should write");
+        serial.finish().expect("serial writer should finish");
+        let mut pipeline = BgzfWriter::create_with_threads_and_level(&pipeline_path, 6, 0)
+            .expect("pipeline writer should create");
+        for chunk in payload.chunks(1231) {
+            pipeline.write_all(chunk).expect("payload should write");
+        }
+        pipeline.finish().expect("pipeline writer should finish");
+        assert_eq!(read_file(&pipeline_path), read_file(&serial_path));
+        assert_eq!(
+            read_bgzf_payloads(&pipeline_path)
+                .expect("pipeline output should read")
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>(),
+            payload
+        );
+        fs::remove_file(serial_path).expect("fixture should be removed");
+        fs::remove_file(pipeline_path).expect("fixture should be removed");
     }
 }

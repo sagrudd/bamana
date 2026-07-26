@@ -75,9 +75,11 @@ and benchmark documents where that is more precise.
   - [x] Add bounded ordered parallel BGZF compression to in-memory, spill-run,
         and final external-sort writers; preserve byte-identical output across
         worker counts and expose worker-count evidence in `bgzf_microbench`.
-  - [ ] Compare the parallel writer and remaining single-threaded heap merge on
-        the real GB10 transform before deciding whether pipelined run
-        spill/merge is justified.
+  - [ ] Compare the bounded asynchronous BGZF pipeline and remaining
+        single-threaded heap merge on retained real GB10 data before promoting
+        the pipeline downstream. Require wall-time improvement, deterministic
+        bytes, and bounded in-flight block evidence; do not infer success from
+        CPU utilization alone.
 - [ ] Resolve existing clippy `-D warnings` failures, including needless borrows,
       single-match control flow, type-complexity warnings, MSRV-incompatible
       `is_multiple_of`, large error/enum variants, pointer-argument warnings,

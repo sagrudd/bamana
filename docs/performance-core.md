@@ -40,6 +40,8 @@ Hot-path Bamana code should prefer:
 * deterministic write paths
 * reusable buffers where that materially helps
 * explicit ownership of BGZF block and EOF behavior
+* bounded producer/compressor pipelines that overlap record production,
+  compression, and ordered writes without batch barriers
 
 ## Partial-Decode Examples
 
