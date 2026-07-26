@@ -313,6 +313,9 @@ pub struct FilterArgs {
     /// Retain primary alignments only.
     #[arg(long = "primary-only")]
     pub primary_only: bool,
+    /// Worker threads used for ordered BGZF output compression.
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    pub threads: usize,
     /// Plan and count only; do not write output.
     #[arg(long = "dry-run")]
     pub dry_run: bool,

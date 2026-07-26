@@ -125,6 +125,7 @@ fn main() -> ExitCode {
                     mapped_only: args.mapped_only,
                     unmapped_only: args.unmapped_only,
                     primary_only: args.primary_only,
+                    threads: args.threads,
                     dry_run: args.dry_run,
                     force: args.force,
                 }),

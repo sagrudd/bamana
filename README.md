@@ -279,6 +279,9 @@ BAM via `--bam`, writes one BAM via `--out`, and retains records that satisfy
 all requested inclusive predicates. Current predicates include `--min-length`,
 `--max-length`, `--min-mean-quality`, `--max-mean-quality`, `--min-complexity`,
 `--max-complexity`, `--mapped-only`, `--unmapped-only`, and `--primary-only`.
+`--threads` enables bounded ordered parallel BGZF output compression and is
+reported as `execution.compression_threads`; record evaluation and encounter
+order remain deterministic.
 Mean quality is computed over non-missing BAM quality bytes; records with only
 missing qualities are dropped when a quality predicate is active. Linguistic
 complexity uses the EMBOSS-RS `complex` formula over canonical A/C/G/T k-mers,

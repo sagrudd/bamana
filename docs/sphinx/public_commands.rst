@@ -100,7 +100,11 @@ filter
 
 .. code-block:: bash
 
-   bamana filter --bam input.bam --out filtered.bam --min-length 1000 --max-length 50000 --min-mean-quality 10 --min-complexity 0.55 --mapped-only --primary-only
+   bamana filter --bam input.bam --out filtered.bam --min-length 1000 --max-length 50000 --min-mean-quality 10 --min-complexity 0.55 --mapped-only --primary-only --threads 8
+
+``--threads`` controls bounded ordered BGZF output compression. Filtering and
+retained-record encounter order remain deterministic, and the JSON response
+records the effective worker count as ``execution.compression_threads``.
 
 Predicates are inclusive and combine with logical AND. The current public
 surface supports read-length bounds, mean non-missing BAM base-quality bounds,

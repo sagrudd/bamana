@@ -32,6 +32,7 @@ pub struct FilterRequest {
     pub mapped_only: bool,
     pub unmapped_only: bool,
     pub primary_only: bool,
+    pub threads: usize,
     pub dry_run: bool,
     pub force: bool,
 }
@@ -92,6 +93,7 @@ pub struct FilterExecution {
     pub records_removed_missing_quality: u64,
     pub complexity_records_evaluated: u64,
     pub records_removed_noncanonical_complexity: u64,
+    pub compression_threads: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -179,7 +181,7 @@ pub fn run(request: FilterRequest) -> Result<FilterPayload, AppError> {
     let temp_path = temporary_output_path(&request.out);
     remove_stale_temp(&temp_path);
     let write_result = (|| -> Result<FilterCounters, AppError> {
-        let mut writer = BgzfWriter::create(&temp_path)?;
+        let mut writer = BgzfWriter::create_with_threads(&temp_path, request.threads)?;
         writer.write_all(&header_payload)?;
         let counters = scan_filter_records(&mut scanner, &request, Some(&mut writer))?;
         writer.finish()?;
@@ -642,6 +644,7 @@ fn payload(
             complexity_records_evaluated: counters.complexity_records_evaluated,
             records_removed_noncanonical_complexity: counters
                 .records_removed_noncanonical_complexity,
+            compression_threads: request.threads.max(1),
         },
         output: FilterOutput {
             path: request.out.to_string_lossy().into_owned(),
@@ -749,6 +752,7 @@ mod tests {
             mapped_only: false,
             unmapped_only: false,
             primary_only: false,
+            threads: 1,
             dry_run: false,
             force: true,
         }
@@ -853,10 +857,12 @@ mod tests {
         let mut request = request(&input, &output);
         request.min_length = Some(5);
         request.dry_run = true;
+        request.threads = 4;
 
         let payload = run(request).expect("dry run should succeed");
 
         assert_eq!(payload.execution.records_retained, 3);
+        assert_eq!(payload.execution.compression_threads, 4);
         assert!(!payload.output.written);
         assert!(!output.exists());
         fs::remove_file(input).expect("input should remove");
@@ -879,6 +885,7 @@ mod tests {
             mapped_only: false,
             unmapped_only: false,
             primary_only: false,
+            threads: 1,
             dry_run: true,
             force: false,
         };

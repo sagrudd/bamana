@@ -94,7 +94,8 @@
         "records_removed_noncanonical_complexity": {
           "type": "integer",
           "minimum": 0
-        }
+        },
+        "compression_threads": { "type": "integer", "minimum": 1 }
       }
     },
     "output": {
