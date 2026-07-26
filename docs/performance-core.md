@@ -127,7 +127,7 @@ code that introduces a new native substrate.
 ## Ordered BGZF Pipeline Evidence
 
 The writer overlaps record production, compression, and ordered output with a
-bounded asynchronous pipeline. It permits at most two full 60,000-byte blocks
+bounded asynchronous pipeline. It permits at most two full 64,000-byte blocks
 in flight per requested worker and reorders completed members by sequence
 before writing.
 

@@ -7,11 +7,10 @@ pub const BGZF_EOF_MARKER: [u8; 28] = [
 ];
 
 pub(crate) const BGZF_MAX_BLOCK_SIZE: usize = 65_536;
-// Keep enough headroom for DEFLATE level 1 to expand high-entropy payloads
-// while retaining the complete payload assigned to an independent compression
-// worker. This lets blocks be compressed concurrently without an adaptive
-// retry consuming bytes assigned to the following block.
-pub(crate) const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 60_000;
+// Full independent compression jobs use a fixed payload. If a requested
+// compressed representation expands beyond the BGZF member limit, the member
+// builder deterministically falls back to stored DEFLATE for that payload.
+pub(crate) const BGZF_TARGET_UNCOMPRESSED_BLOCK: usize = 64_000;
 pub(crate) const BGZF_BLOCK_REDUCTION_STEP: usize = 1024;
 
 pub fn is_gzip_signature(bytes: &[u8]) -> bool {
@@ -68,6 +67,12 @@ pub(crate) fn build_bgzf_member_fitting_with_level(
         let member = build_bgzf_member_with_level(&payload[..candidate_len], compression_level)?;
         if member.len() <= BGZF_MAX_BLOCK_SIZE {
             return Ok((member, candidate_len));
+        }
+        if compression_level != 0 {
+            let stored = build_bgzf_member_with_level(&payload[..candidate_len], 0)?;
+            if stored.len() <= BGZF_MAX_BLOCK_SIZE {
+                return Ok((stored, candidate_len));
+            }
         }
 
         if candidate_len <= BGZF_BLOCK_REDUCTION_STEP {
