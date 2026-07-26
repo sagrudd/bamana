@@ -32,6 +32,13 @@
       "mode": null,
       "match": null
     },
+    "input_verification": {
+      "requested": false,
+      "performed": false,
+      "expected_sha256": null,
+      "observed_sha256": null,
+      "match": null
+    },
     "notes": []
   },
   "error": {

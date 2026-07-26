@@ -10,6 +10,7 @@ use std::{
 use flate2::read::GzDecoder;
 
 use crate::{
+    bam::checksum::{Sha256Hasher, hex_digest},
     bgzf::block::{BGZF_EOF_MARKER, bgzf_block_size},
     bgzf::virtual_offset::{VirtualOffset, VirtualOffsetError},
     error::AppError,
@@ -25,6 +26,8 @@ pub struct NativeBgzfReader {
     current_block_start: u64,
     current_block_end: u64,
     has_current_block: bool,
+    raw_hasher: Option<Sha256Hasher>,
+    raw_sha256: Option<String>,
 }
 
 impl NativeBgzfReader {
@@ -41,7 +44,18 @@ impl NativeBgzfReader {
             current_block_start: 0,
             current_block_end: 0,
             has_current_block: false,
+            raw_hasher: None,
+            raw_sha256: None,
         })
+    }
+
+    pub fn enable_raw_sha256(&mut self) {
+        self.raw_hasher = Some(Sha256Hasher::new());
+        self.raw_sha256 = None;
+    }
+
+    pub fn raw_sha256(&self) -> Option<&str> {
+        self.raw_sha256.as_deref()
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize, AppError> {
@@ -111,6 +125,8 @@ impl NativeBgzfReader {
         self.current_block_start = offset.compressed_block_offset();
         self.current_block_end = offset.compressed_block_offset();
         self.has_current_block = false;
+        self.raw_hasher = None;
+        self.raw_sha256 = None;
 
         let member =
             read_bgzf_member(&mut self.file, &self.path)?.ok_or_else(|| AppError::InvalidBam {
@@ -151,8 +167,15 @@ impl NativeBgzfReader {
 
     fn load_next_payload(&mut self) -> Result<(), AppError> {
         loop {
-            let Some(member) = self.inflator.next_payload(&mut self.file)? else {
+            let Some(member) = self
+                .inflator
+                .next_payload(&mut self.file, &mut self.raw_hasher)?
+            else {
                 self.eof = true;
+                self.raw_sha256 = self
+                    .raw_hasher
+                    .take()
+                    .map(|hasher| hex_digest(&hasher.finalize()));
                 self.payload.clear();
                 self.offset = 0;
                 self.has_current_block = false;
@@ -205,8 +228,9 @@ pub fn read_bgzf_payloads(path: &Path) -> Result<Vec<Vec<u8>>, AppError> {
     let mut file = File::open(path).map_err(|error| AppError::from_io(path, error))?;
     let mut inflator = ParallelBgzfInflator::new(path);
     let mut payloads = Vec::new();
+    let mut raw_hasher = None;
 
-    while let Some(member) = inflator.next_payload(&mut file)? {
+    while let Some(member) = inflator.next_payload(&mut file, &mut raw_hasher)? {
         payloads.push(member.payload);
     }
 
@@ -350,9 +374,13 @@ impl ParallelBgzfInflator {
         self.read_error = None;
     }
 
-    fn next_payload(&mut self, file: &mut File) -> Result<Option<InflatedBgzfMember>, AppError> {
+    fn next_payload(
+        &mut self,
+        file: &mut File,
+        raw_hasher: &mut Option<Sha256Hasher>,
+    ) -> Result<Option<InflatedBgzfMember>, AppError> {
         loop {
-            self.fill_pipeline(file)?;
+            self.fill_pipeline(file, raw_hasher)?;
 
             if let Some(result) = self.pending.remove(&self.next_sequence_to_return) {
                 self.next_sequence_to_return += 1;
@@ -383,7 +411,11 @@ impl ParallelBgzfInflator {
         }
     }
 
-    fn fill_pipeline(&mut self, file: &mut File) -> Result<(), AppError> {
+    fn fill_pipeline(
+        &mut self,
+        file: &mut File,
+        raw_hasher: &mut Option<Sha256Hasher>,
+    ) -> Result<(), AppError> {
         while !self.eof && self.in_flight < self.max_in_flight {
             let member = match read_bgzf_member(file, &self.path) {
                 Ok(Some(member)) => member,
@@ -397,6 +429,10 @@ impl ParallelBgzfInflator {
                     break;
                 }
             };
+
+            if let Some(hasher) = raw_hasher.as_mut() {
+                hasher.update(&member.bytes);
+            }
 
             if member.bytes == BGZF_EOF_MARKER {
                 self.eof = true;

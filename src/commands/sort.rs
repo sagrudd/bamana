@@ -25,6 +25,7 @@ pub struct SortRequest {
     pub threads: usize,
     pub memory_limit: Option<u64>,
     pub primary_only: bool,
+    pub input_sha256: Option<String>,
     pub create_index: bool,
     pub verify_checksum: bool,
     pub force: bool,
@@ -38,6 +39,7 @@ pub struct SortPayload {
     pub records: SortRecordCounts,
     pub index: SortIndexInfo,
     pub checksum_verification: ChecksumVerificationInfo,
+    pub input_verification: RawInputVerificationInfo,
     pub notes: Vec<String>,
 }
 
@@ -93,6 +95,18 @@ pub struct ChecksumVerificationInfo {
     pub r#match: Option<bool>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct RawInputVerificationInfo {
+    pub requested: bool,
+    pub performed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observed_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#match: Option<bool>,
+}
+
 pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
     let probe = match probe_path(&request.bam) {
         Ok(probe) => probe,
@@ -131,7 +145,13 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         );
     }
 
-    let mut payload = base_payload(&request);
+    let expected_input_sha256 = match normalize_sha256(request.input_sha256.as_deref()) {
+        Ok(value) => value,
+        Err(error) => {
+            return CommandResponse::failure("sort", Some(request.bam.as_path()), error);
+        }
+    };
+    let mut payload = base_payload(&request, expected_input_sha256.clone());
 
     let sort_result = match sort_bam(&SortExecutionOptions {
         input_path: request.bam.clone(),
@@ -142,6 +162,7 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
         threads: request.threads,
         memory_limit: request.memory_limit,
         primary_only: request.primary_only,
+        expected_input_sha256: expected_input_sha256.clone(),
     }) {
         Ok(result) => result,
         Err(error) => {
@@ -160,6 +181,15 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
     payload.records.records_written = Some(sort_result.records_written);
     payload.records.records_filtered = Some(sort_result.records_filtered);
     payload.notes.extend(sort_result.notes);
+    if let Some(digest) = expected_input_sha256 {
+        payload.input_verification.performed = true;
+        payload.input_verification.observed_sha256 = Some(digest);
+        payload.input_verification.r#match = Some(true);
+        payload.notes.push(
+            "Raw input SHA-256 was verified during the existing parallel BGZF sort scan."
+                .to_string(),
+        );
+    }
 
     update_index_reporting(&request, &mut payload);
 
@@ -213,7 +243,7 @@ pub fn run(request: SortRequest) -> CommandResponse<SortPayload> {
     CommandResponse::success("sort", Some(request.bam.as_path()), payload)
 }
 
-fn base_payload(request: &SortRequest) -> SortPayload {
+fn base_payload(request: &SortRequest, expected_input_sha256: Option<String>) -> SortPayload {
     SortPayload {
         format: "BAM",
         output: SortOutputInfo {
@@ -246,8 +276,30 @@ fn base_payload(request: &SortRequest) -> SortPayload {
             output_digest: None,
             r#match: None,
         },
+        input_verification: RawInputVerificationInfo {
+            requested: expected_input_sha256.is_some(),
+            performed: false,
+            expected_sha256: expected_input_sha256,
+            observed_sha256: None,
+            r#match: None,
+        },
         notes: Vec::new(),
     }
+}
+
+fn normalize_sha256(value: Option<&str>) -> Result<Option<String>, AppError> {
+    let Some(value) = value else { return Ok(None) };
+    let digest = value
+        .strip_prefix("sha256:")
+        .unwrap_or(value)
+        .to_ascii_lowercase();
+    if digest.len() == 64 && digest.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Ok(Some(digest));
+    }
+    Err(AppError::InvalidSortRequest {
+        path: PathBuf::from("<input-sha256>"),
+        detail: "Input SHA-256 must contain exactly 64 hexadecimal characters, optionally prefixed by sha256:.".to_string(),
+    })
 }
 
 fn update_index_reporting(request: &SortRequest, payload: &mut SortPayload) {
@@ -332,7 +384,10 @@ mod tests {
 
     use super::{SortRequest, run};
     use crate::{
-        bam::sort::{QuerynameSubOrder, SortOrder},
+        bam::{
+            checksum::{Sha256Hasher, hex_digest},
+            sort::{QuerynameSubOrder, SortOrder},
+        },
         bgzf::test_support::{
             build_bam_file_with_header_and_records, build_light_record, write_temp_file,
         },
@@ -365,6 +420,7 @@ mod tests {
             threads: 1,
             memory_limit: Some(1024),
             primary_only: false,
+            input_sha256: None,
             create_index: true,
             verify_checksum: true,
             force: true,
@@ -426,6 +482,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            input_sha256: None,
             create_index: true,
             verify_checksum: false,
             force: true,
@@ -450,5 +507,75 @@ mod tests {
 
         fs::remove_file(input).expect("fixture should be removable");
         fs::remove_file(output).expect("fixture should be removable");
+    }
+
+    #[test]
+    fn sort_verifies_raw_input_digest_during_scan() {
+        let bytes = build_bam_file_with_header_and_records(
+            "@SQ\tSN:chr1\tLN:10\n",
+            &[("chr1", 10)],
+            &[build_light_record(0, 1, "read1", 0)],
+        );
+        let mut hasher = Sha256Hasher::new();
+        hasher.update(&bytes);
+        let digest = hex_digest(&hasher.finalize());
+        let input = write_temp_file("sort-input-digest", "bam", &bytes);
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-input-digest-output-{}.bam",
+            std::process::id()
+        ));
+        let response = run(SortRequest {
+            bam: input.clone(),
+            out: output.clone(),
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 2,
+            memory_limit: Some(1),
+            primary_only: false,
+            input_sha256: Some(format!("sha256:{digest}")),
+            create_index: false,
+            verify_checksum: false,
+            force: true,
+        });
+        assert!(response.ok);
+        let payload = response.data.expect("success payload should exist");
+        assert!(payload.input_verification.performed);
+        assert_eq!(payload.input_verification.observed_sha256, Some(digest));
+        fs::remove_file(input).expect("fixture should be removable");
+        fs::remove_file(output).expect("output should be removable");
+    }
+
+    #[test]
+    fn sort_rejects_raw_input_digest_mismatch_before_publication() {
+        let input = write_temp_file(
+            "sort-input-digest-mismatch",
+            "bam",
+            &build_bam_file_with_header_and_records(
+                "@SQ\tSN:chr1\tLN:10\n",
+                &[("chr1", 10)],
+                &[build_light_record(0, 1, "read1", 0)],
+            ),
+        );
+        let output = std::env::temp_dir().join(format!(
+            "bamana-sort-input-digest-mismatch-output-{}.bam",
+            std::process::id()
+        ));
+        let response = run(SortRequest {
+            bam: input.clone(),
+            out: output.clone(),
+            order: SortOrder::Coordinate,
+            queryname_suborder: None,
+            threads: 2,
+            memory_limit: Some(1),
+            primary_only: false,
+            input_sha256: Some("0".repeat(64)),
+            create_index: false,
+            verify_checksum: false,
+            force: true,
+        });
+        assert!(!response.ok);
+        assert_eq!(response.error.expect("error").code, "checksum_mismatch");
+        assert!(!output.exists());
+        fs::remove_file(input).expect("fixture should be removable");
     }
 }

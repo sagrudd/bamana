@@ -28,10 +28,22 @@
         "records_filtered": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
+    "inputVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "performed", "expected_sha256", "observed_sha256", "match"],
+      "properties": {
+        "requested": { "type": "boolean" },
+        "performed": { "type": "boolean" },
+        "expected_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "observed_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "match": { "type": ["boolean", "null"] }
+      }
+    },
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["format", "output", "sort", "records", "index", "checksum_verification", "notes"],
+      "required": ["format", "output", "sort", "records", "index", "checksum_verification", "input_verification", "notes"],
       "properties": {
         "format": { "const": "BAM" },
         "output": { "$ref": "./common/defs.schema.json#/$defs/outputInfo" },
@@ -39,6 +51,7 @@
         "records": { "$ref": "#/$defs/records" },
         "index": { "$ref": "./common/defs.schema.json#/$defs/indexInfo" },
         "checksum_verification": { "$ref": "./common/defs.schema.json#/$defs/checksumVerification" },
+        "input_verification": { "$ref": "#/$defs/inputVerification" },
         "notes": {
           "type": "array",
           "items": { "type": "string" }

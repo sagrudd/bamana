@@ -1394,7 +1394,7 @@ Key output concepts:
 ## `sort`
 
 Synopsis:
-`bamana sort --bam <bamfile> --out <result.bam> [--order <coordinate|queryname>] [--queryname-suborder <natural|lexicographical>] [-j, --threads <N>] [--memory-limit <BYTES>] [--primary-only] [--create-index] [--verify-checksum] [--force]`
+`bamana sort --bam <bamfile> --out <result.bam> [--order <coordinate|queryname>] [--queryname-suborder <natural|lexicographical>] [-j, --threads <N>] [--memory-limit <BYTES>] [--primary-only] [--input-sha256 <HEX>] [--create-index] [--verify-checksum] [--force]`
 
 Semantics:
 Rewrites a BAM into an explicitly requested order. Without `--memory-limit`,
@@ -1405,7 +1405,11 @@ multiway merge. The budget is not a whole-process RSS limit. Temporary runs
 are placed beside the destination and cleaned after success or failure.
 `--primary-only` discards secondary and supplementary records before run
 formation, reports that count, and therefore avoids a separate filtered BAM
-pass. Natural queryname ordering remains unsupported.
+pass. `--input-sha256` accepts 64 hexadecimal characters, with an optional
+`sha256:` prefix, and verifies the raw compressed input bytes during the
+existing parallel BGZF scan instead of rereading the file. A mismatch aborts
+before atomic output publication. Natural queryname ordering remains
+unsupported.
 
 Does prove:
 The output file was written according to the produced order and reported options.
@@ -1414,7 +1418,8 @@ Does not prove:
 Content preservation unless checksum verification was performed and matched.
 
 Key output concepts:
-`output`, `sort`, `records`, `index`, `checksum_verification`, `notes`.
+`output`, `sort`, `records`, `index`, `checksum_verification`,
+`input_verification`, `notes`.
 
 Output safety:
 The sorted BAM is written to a temporary file and published through a final

@@ -377,6 +377,9 @@ Key concepts:
 * `index` reports index intent and any deferred index behavior
 * `checksum_verification` reports whether canonical checksum verification was
   requested, completed, and matched
+* `input_verification` reports raw input SHA-256 intent, the verified digest,
+  and the match result when `--input-sha256` is supplied; hashing shares the
+  existing sequential BGZF read and does not add a second file pass
 * `notes` identify the in-memory or bounded external strategy and worker use
 
 The payload does not imply full BAM validity, external comparator parity,

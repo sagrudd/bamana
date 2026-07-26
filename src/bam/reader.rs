@@ -45,6 +45,22 @@ impl BamReader {
         })
     }
 
+    pub fn open_native_bgzf_with_raw_sha256(path: &Path) -> Result<Self, AppError> {
+        let mut reader = NativeBgzfReader::open(path)?;
+        reader.enable_raw_sha256();
+        Ok(Self {
+            path: path.to_path_buf(),
+            backend: BamReaderBackend::NativeBgzf(reader),
+        })
+    }
+
+    pub fn raw_sha256(&self) -> Option<&str> {
+        match &self.backend {
+            BamReaderBackend::Gzip(_) => None,
+            BamReaderBackend::NativeBgzf(reader) => reader.raw_sha256(),
+        }
+    }
+
     pub fn path(&self) -> &Path {
         &self.path
     }

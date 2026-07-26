@@ -34,6 +34,13 @@
       "output_digest": "1f08cf9d4bd2d740d1f630db99c6214d85f1124cb3b8db2f5f4fbb1d0e8e289a",
       "match": true
     },
+    "input_verification": {
+      "requested": false,
+      "performed": false,
+      "expected_sha256": null,
+      "observed_sha256": null,
+      "match": null
+    },
     "notes": [
       "Sort used a bounded external merge with 6 temporary run(s) and a 8589934592-byte target memory budget.",
       "Run ordering used 20 worker thread(s); the stable multiway merge and ordered BGZF output remained deterministic.",

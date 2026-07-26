@@ -787,6 +787,9 @@ pub struct SortArgs {
     /// Retain only primary alignments while sorting.
     #[arg(long = "primary-only")]
     pub primary_only: bool,
+    /// Expected raw SHA-256 of the input BAM, verified during the sort scan.
+    #[arg(long = "input-sha256")]
+    pub input_sha256: Option<String>,
     /// Attempt to create an index when coordinate output is produced.
     #[arg(long = "create-index")]
     pub create_index: bool,

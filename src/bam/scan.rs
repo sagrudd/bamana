@@ -71,6 +71,22 @@ impl BamScanner {
         })
     }
 
+    pub fn open_with_raw_sha256(path: &Path) -> Result<Self, AppError> {
+        let mut reader = BamReader::open_native_bgzf_with_raw_sha256(path)?;
+        let header = parse_bam_header_from_reader(&mut reader)?;
+        Ok(Self {
+            path: path.to_path_buf(),
+            reader,
+            header,
+            raw_record: Vec::new(),
+            records_read: 0,
+        })
+    }
+
+    pub fn raw_sha256(&self) -> Option<&str> {
+        self.reader.raw_sha256()
+    }
+
     pub fn header(&self) -> &HeaderPayload {
         &self.header
     }

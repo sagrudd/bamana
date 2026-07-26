@@ -14,6 +14,7 @@ use crate::{
         header::{rewrite_header_for_sort, serialize_bam_header_payload},
         records::RecordLayout,
         scan::BamScanner,
+        sort_integrity::verify_input_sha256,
         write::{BgzfWriter, serialize_record_layout},
     },
     error::AppError,
@@ -44,6 +45,7 @@ pub struct SortExecutionOptions {
     pub threads: usize,
     pub memory_limit: Option<u64>,
     pub primary_only: bool,
+    pub expected_input_sha256: Option<String>,
 }
 
 #[derive(Debug)]
@@ -94,7 +96,10 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
         (SortOrder::Queryname, None) => Some(QuerynameSubOrder::Lexicographical),
     };
 
-    let mut scanner = BamScanner::open(&options.input_path)?;
+    let mut scanner = match options.expected_input_sha256 {
+        Some(_) => BamScanner::open_with_raw_sha256(&options.input_path)?,
+        None => BamScanner::open(&options.input_path)?,
+    };
     let parsed_header = scanner.header();
     let rewritten_header_text = rewrite_header_for_sort(
         &parsed_header.header.raw_header_text,
@@ -139,6 +144,11 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
                 .to_string(),
         });
     }
+    verify_input_sha256(
+        &options.input_path,
+        options.expected_input_sha256.as_deref(),
+        scanner.raw_sha256(),
+    )?;
 
     sort_records(
         &mut records,
@@ -273,6 +283,11 @@ fn external_sort_bam(
                     .to_string(),
         });
     }
+    verify_input_sha256(
+        &options.input_path,
+        options.expected_input_sha256.as_deref(),
+        scanner.raw_sha256(),
+    )?;
     if !records.is_empty() {
         spill_run(
             options,
@@ -627,6 +642,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect("sort should succeed");
 
@@ -674,6 +690,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect("sort should succeed");
 
@@ -717,6 +734,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect("sort should succeed");
 
@@ -767,6 +785,7 @@ mod tests {
             threads: 2,
             memory_limit: Some(1),
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect("bounded external sort should succeed");
 
@@ -832,6 +851,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect_err("existing output should require force");
 
@@ -870,6 +890,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect_err("directory output should fail at finalization");
 
@@ -906,6 +927,7 @@ mod tests {
             threads: 1,
             memory_limit: None,
             primary_only: false,
+            expected_input_sha256: None,
         })
         .expect_err("natural queryname sort should be deferred");
 
@@ -944,6 +966,7 @@ mod tests {
             threads: 2,
             memory_limit: Some(1),
             primary_only: true,
+            expected_input_sha256: None,
         })
         .expect("fused primary-only external sort should succeed");
 

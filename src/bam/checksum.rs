@@ -332,7 +332,7 @@ fn frame_chunk(bytes: &[u8]) -> Vec<u8> {
     framed
 }
 
-fn hex_digest(bytes: &[u8]) -> String {
+pub(crate) fn hex_digest(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
@@ -360,7 +360,7 @@ fn build_semantic_note(options: &ChecksumOptions) -> String {
     }
 }
 
-struct Sha256Hasher {
+pub(crate) struct Sha256Hasher {
     state: [u32; 8],
     buffer: [u8; 64],
     buffer_len: usize,
@@ -368,7 +368,7 @@ struct Sha256Hasher {
 }
 
 impl Sha256Hasher {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             state: [
                 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
@@ -386,7 +386,7 @@ impl Sha256Hasher {
         hasher.finalize()
     }
 
-    fn update(&mut self, bytes: impl AsRef<[u8]>) {
+    pub(crate) fn update(&mut self, bytes: impl AsRef<[u8]>) {
         let mut input = bytes.as_ref();
         self.len_bits = self.len_bits.wrapping_add((input.len() as u64) * 8);
 
@@ -418,7 +418,7 @@ impl Sha256Hasher {
         }
     }
 
-    fn finalize(mut self) -> [u8; 32] {
+    pub(crate) fn finalize(mut self) -> [u8; 32] {
         self.buffer[self.buffer_len] = 0x80;
         self.buffer_len += 1;
 

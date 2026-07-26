@@ -18,6 +18,7 @@ pub mod region_traversal;
 pub mod reheader;
 pub mod scan;
 pub mod sort;
+mod sort_integrity;
 pub mod summary;
 pub mod tags;
 pub mod unmap;
