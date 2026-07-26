@@ -145,7 +145,7 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
     remove_stale_temp(&temp_path);
 
     let write_result = (|| -> Result<u64, AppError> {
-        let mut writer = BgzfWriter::create(&temp_path)?;
+        let mut writer = BgzfWriter::create_with_threads(&temp_path, options.threads)?;
         writer.write_all(&header_payload)?;
         let mut written = 0_u64;
         for record in &records {
@@ -169,7 +169,7 @@ pub fn sort_bam(options: &SortExecutionOptions) -> Result<SortExecution, AppErro
     let notes = vec![
         "Sort used the in-memory strategy because no memory limit was supplied.".to_string(),
         format!(
-            "Record ordering used {} worker thread(s); BGZF output compression remains ordered and single-stream.",
+            "Record ordering and ordered BGZF compression used up to {} worker thread(s).",
             options.threads.max(1)
         ),
     ];
@@ -273,6 +273,7 @@ fn external_sort_bam(
         &header_payload,
         options.order,
         queryname_suborder,
+        options.threads,
     )
     .inspect_err(|_| {
         let _ = fs::remove_file(&temp_path);
@@ -302,7 +303,7 @@ fn external_sort_bam(
                 "Sort used a bounded external merge with {run_count} temporary run(s) and a {memory_limit}-byte target memory budget."
             ),
             format!(
-                "Run ordering used {} worker thread(s); the stable multiway merge and ordered BGZF output remained deterministic.",
+                "Run ordering and ordered BGZF compression used up to {} worker thread(s); the stable multiway merge remained deterministic.",
                 options.threads.max(1)
             ),
         ],
@@ -327,7 +328,7 @@ fn spill_run(
     let path = temporary_run_path(&options.output_path, runs.paths.len());
     remove_stale_temp(&path);
     let write_result = (|| -> Result<(), AppError> {
-        let mut writer = BgzfWriter::create(&path)?;
+        let mut writer = BgzfWriter::create_with_threads(&path, options.threads)?;
         writer.write_all(header_payload)?;
         for record in records.iter() {
             writer.write_all(&serialize_record_layout(&record.layout))?;
@@ -349,6 +350,7 @@ fn merge_runs(
     header_payload: &[u8],
     order: SortOrder,
     queryname_suborder: Option<QuerynameSubOrder>,
+    threads: usize,
 ) -> Result<u64, AppError> {
     let mut scanners = run_paths
         .iter()
@@ -368,7 +370,7 @@ fn merge_runs(
     }
 
     let write_result = (|| -> Result<u64, AppError> {
-        let mut writer = BgzfWriter::create(output_path)?;
+        let mut writer = BgzfWriter::create_with_threads(output_path, threads)?;
         writer.write_all(header_payload)?;
         let mut written = 0_u64;
         while let Some(item) = heap.pop() {

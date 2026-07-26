@@ -444,8 +444,11 @@ the destination, and runs are merged stably into an atomically published
 output. Temporary runs are removed on success and best-effort cleaned on
 failure. Omitting `--memory-limit` deliberately retains the in-memory strategy.
 The budget covers retained record layouts and an implementation allowance; it
-is not a whole-process RSS ceiling. Ordered BGZF compression and the final
-multiway merge remain single-stream.
+is not a whole-process RSS ceiling. Run sorting and BGZF member compression use
+up to `--threads` workers. Compressed members are emitted in their original
+order, so serial and parallel writers produce identical bytes. The stable
+multiway merge remains single-threaded; compression proceeds in bounded
+parallel batches without increasing the configured record-memory budget.
 
 Coordinate output is intended to be suitable for standard BAM indexing.
 Queryname output is not suitable for standard coordinate BAI indexing.

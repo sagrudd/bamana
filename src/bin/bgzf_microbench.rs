@@ -20,6 +20,8 @@ struct Args {
     profile: Profile,
     #[arg(long = "iterations", default_value_t = 5)]
     iterations: usize,
+    #[arg(short = 'j', long = "threads", default_value_t = 1)]
+    threads: usize,
     #[arg(long = "workdir")]
     workdir: Option<PathBuf>,
     #[arg(long = "out")]
@@ -54,6 +56,7 @@ struct BenchmarkReport {
     version: u32,
     profile: Profile,
     iterations: usize,
+    threads: usize,
     fixture: FixtureReport,
     results: BenchmarkResults,
     notes: Vec<String>,
@@ -111,16 +114,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if args.iterations == 0 {
         return Err("--iterations must be greater than zero".into());
     }
+    if args.threads == 0 {
+        return Err("--threads must be greater than zero".into());
+    }
 
     let workdir = args.workdir.unwrap_or_else(default_workdir);
     fs::create_dir_all(&workdir)?;
 
     let payload = build_bam_like_payload(args.profile.payload_bytes());
     let fixture = workdir.join(format!("bgzf-microbench-{:?}.bam", args.profile).to_lowercase());
-    write_bgzf_payload(&fixture, &payload)?;
+    write_bgzf_payload(&fixture, &payload, args.threads)?;
     let bgzf_file_bytes = fs::metadata(&fixture)?.len();
 
-    let write_throughput = measure_write(&workdir, &payload, args.iterations)?;
+    let write_throughput = measure_write(&workdir, &payload, args.iterations, args.threads)?;
     let read_throughput = measure_read(&fixture, args.iterations)?;
     let eof_check_latency = measure_eof(&fixture, args.iterations)?;
     let command_timings = match args.bamana_bin.as_deref() {
@@ -152,6 +158,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         version: 1,
         profile: args.profile,
         iterations: args.iterations,
+        threads: args.threads,
         fixture: FixtureReport {
             path: fixture.display().to_string(),
             payload_bytes: payload.len(),
@@ -204,8 +211,12 @@ fn build_bam_like_payload(target_bytes: usize) -> Vec<u8> {
     payload
 }
 
-fn write_bgzf_payload(path: &Path, payload: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-    let mut writer = BgzfWriter::create(path)?;
+fn write_bgzf_payload(
+    path: &Path,
+    payload: &[u8],
+    threads: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut writer = BgzfWriter::create_with_threads(path, threads)?;
     writer.write_all(payload)?;
     writer.finish()?;
     Ok(())
@@ -215,13 +226,14 @@ fn measure_write(
     workdir: &Path,
     payload: &[u8],
     iterations: usize,
+    threads: usize,
 ) -> Result<Measurement, Box<dyn std::error::Error>> {
     let path = workdir.join("bgzf-microbench-write.bam");
     let mut samples = Vec::with_capacity(iterations);
 
     for _ in 0..iterations {
         let started = Instant::now();
-        write_bgzf_payload(&path, payload)?;
+        write_bgzf_payload(&path, payload, threads)?;
         samples.push(started.elapsed().as_secs_f64());
     }
 

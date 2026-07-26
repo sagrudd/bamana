@@ -72,6 +72,12 @@ and benchmark documents where that is more precise.
 - [ ] Use the GB10 evidence to decide whether ordered parallel BGZF compression,
       pipelined run spill/merge, or both are required; preserve deterministic
       bytes and avoid increasing the configured record-memory budget.
+  - [x] Add bounded ordered parallel BGZF compression to in-memory, spill-run,
+        and final external-sort writers; preserve byte-identical output across
+        worker counts and expose worker-count evidence in `bgzf_microbench`.
+  - [ ] Compare the parallel writer and remaining single-threaded heap merge on
+        the real GB10 transform before deciding whether pipelined run
+        spill/merge is justified.
 - [ ] Resolve existing clippy `-D warnings` failures, including needless borrows,
       single-match control flow, type-complexity warnings, MSRV-incompatible
       `is_multiple_of`, large error/enum variants, pointer-argument warnings,

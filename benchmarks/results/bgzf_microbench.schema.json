@@ -10,6 +10,7 @@
     "version": { "type": "integer", "minimum": 1 },
     "profile": { "enum": ["small", "medium", "large"] },
     "iterations": { "type": "integer", "minimum": 1 },
+    "threads": { "type": "integer", "minimum": 1 },
     "fixture": {
       "type": "object",
       "required": ["path", "payload_bytes", "bgzf_file_bytes", "kept"],

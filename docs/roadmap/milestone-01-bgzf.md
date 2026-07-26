@@ -129,9 +129,9 @@ target block boundary through the native BGZF reader.
 
 ## Benchmark Hooks
 
-* `bgzf_microbench --profile small|medium|large` measures native BGZF read
-  throughput, native BGZF write throughput, and EOF-check latency using
-  deterministic generated fixtures
+* `bgzf_microbench --profile small|medium|large --threads N` measures native
+  BGZF read throughput, ordered serial or parallel BGZF write throughput, and
+  EOF-check latency using deterministic generated fixtures
 * `bgzf_microbench --bamana-bin <path>` also captures `verify` and `check_eof`
   command timings against the generated BAM-like BGZF fixture
 * JSON output is governed by
