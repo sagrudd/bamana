@@ -123,3 +123,20 @@ Expected benchmark hooks by milestone:
 
 These hooks should be treated as milestone evidence and reviewed alongside the
 code that introduces a new native substrate.
+
+## Ordered BGZF Pipeline Evidence
+
+The writer overlaps record production, compression, and ordered output with a
+bounded asynchronous pipeline. It permits at most two full 64,000-byte blocks
+in flight per requested worker and reorders completed members by sequence
+before writing.
+
+On the GB10, five alternating real-data external queryname sorts used 19
+workers, a 16 MiB retained-record budget, compression level 1, and the same
+57-run 404 MiB HG002 input. The prior synchronous batch writer averaged 2.61
+seconds wall time; the pipeline averaged 1.31 seconds, a 49.8 percent
+reduction. Pipeline peak RSS was about 215.7 MiB versus 206.5 MiB. All ten
+canonical record-order SHA-256 digests were
+``c5dc7abc3805bba32df900ddf5689f354def44f8f59ec15f157f4e4a19b0e45a``.
+This wall-time and identity evidence, rather than utilization alone, supports
+downstream promotion.

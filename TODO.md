@@ -75,11 +75,12 @@ and benchmark documents where that is more precise.
   - [x] Add bounded ordered parallel BGZF compression to in-memory, spill-run,
         and final external-sort writers; preserve byte-identical output across
         worker counts and expose worker-count evidence in `bgzf_microbench`.
-  - [ ] Compare the bounded asynchronous BGZF pipeline and remaining
-        single-threaded heap merge on retained real GB10 data before promoting
-        the pipeline downstream. Require wall-time improvement, deterministic
-        bytes, and bounded in-flight block evidence; do not infer success from
-        CPU utilization alone.
+  - [x] Compare the bounded asynchronous BGZF pipeline and remaining
+        single-threaded heap merge on retained real GB10 data. Five alternating
+        19-worker, 57-run sorts of the retained 404 MiB BAM averaged 1.31
+        seconds with the pipeline versus 2.61 seconds with synchronous batches.
+        All ten canonical payload digests matched; peak RSS increased by about
+        9 MiB and in-flight blocks remain bounded at two per worker.
 - [ ] Resolve existing clippy `-D warnings` failures, including needless borrows,
       single-match control flow, type-complexity warnings, MSRV-incompatible
       `is_multiple_of`, large error/enum variants, pointer-argument warnings,
