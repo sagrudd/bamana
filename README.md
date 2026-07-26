@@ -465,8 +465,13 @@ compression, and ordered output without unbounded buffering. Serial and
 parallel writers therefore produce identical bytes. The stable multiway merge
 remains single-threaded but no longer alternates with stop-the-world
 compression batches. Full pipeline blocks use a fixed 64,000-byte payload,
-leaving enough space for worst-case DEFLATE and BGZF framing within the
-65,536-byte member limit without cross-block adaptive retries.
+falling back deterministically to stored DEFLATE when the requested level
+expands beyond the 65,536-byte member limit.
+
+Native sequential reads treat canonical EOF members as empty members and
+continue until physical file EOF. This supports valid concatenated BGZF
+streams, prevents an internal EOF member from truncating a BAM scan, and makes
+integrated raw SHA-256 verification cover every byte in the file.
 
 Coordinate output is intended to be suitable for standard BAM indexing.
 Queryname output is not suitable for standard coordinate BAI indexing.

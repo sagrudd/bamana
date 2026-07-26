@@ -11,7 +11,7 @@ use flate2::read::GzDecoder;
 
 use crate::{
     bam::checksum::{Sha256Hasher, hex_digest},
-    bgzf::block::{BGZF_EOF_MARKER, bgzf_block_size},
+    bgzf::block::{BGZF_EOF_MARKER, bgzf_block_size, is_gzip_signature},
     bgzf::virtual_offset::{VirtualOffset, VirtualOffsetError},
     error::AppError,
 };
@@ -435,6 +435,10 @@ impl ParallelBgzfInflator {
             }
 
             if member.bytes == BGZF_EOF_MARKER {
+                if following_member_has_gzip_signature(file, &self.path)? {
+                    continue;
+                }
+                hash_remaining_raw_bytes(file, raw_hasher, &self.path)?;
                 self.eof = true;
                 break;
             }
@@ -458,6 +462,39 @@ impl ParallelBgzfInflator {
         }
 
         Ok(())
+    }
+}
+
+fn following_member_has_gzip_signature(file: &mut File, path: &Path) -> Result<bool, AppError> {
+    let position = file
+        .stream_position()
+        .map_err(|error| AppError::from_io(path, error))?;
+    let mut signature = [0_u8; 3];
+    let count = file
+        .read(&mut signature)
+        .map_err(|error| AppError::from_io(path, error))?;
+    file.seek(SeekFrom::Start(position))
+        .map_err(|error| AppError::from_io(path, error))?;
+    Ok(count == signature.len() && is_gzip_signature(&signature))
+}
+
+fn hash_remaining_raw_bytes(
+    file: &mut File,
+    raw_hasher: &mut Option<Sha256Hasher>,
+    path: &Path,
+) -> Result<(), AppError> {
+    let Some(hasher) = raw_hasher.as_mut() else {
+        return Ok(());
+    };
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let count = file
+            .read(&mut buffer)
+            .map_err(|error| AppError::from_io(path, error))?;
+        if count == 0 {
+            return Ok(());
+        }
+        hasher.update(&buffer[..count]);
     }
 }
 
@@ -865,6 +902,40 @@ mod tests {
 
         fs::remove_file(path).expect("fixture should be removed");
         assert_eq!(payloads, vec![b"payload before eof".to_vec()]);
+    }
+
+    #[test]
+    fn native_reader_skips_internal_eof_and_hashes_complete_raw_stream() {
+        use crate::bam::checksum::{Sha256Hasher, hex_digest};
+
+        let mut bytes = member(b"payload before internal eof");
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        bytes.extend_from_slice(&member(b"payload after internal eof"));
+        bytes.extend_from_slice(&BGZF_EOF_MARKER);
+        let expected_digest = {
+            let mut hasher = Sha256Hasher::new();
+            hasher.update(&bytes);
+            hex_digest(&hasher.finalize())
+        };
+        let path = write_temp_file("internal-eof", &bytes);
+        let mut reader = NativeBgzfReader::open(&path).expect("reader should open");
+        reader.enable_raw_sha256();
+        let mut observed = Vec::new();
+        let mut buffer = [0_u8; 17];
+        loop {
+            let count = reader.read(&mut buffer).expect("read should succeed");
+            if count == 0 {
+                break;
+            }
+            observed.extend_from_slice(&buffer[..count]);
+        }
+
+        fs::remove_file(path).expect("fixture should be removed");
+        assert_eq!(
+            observed,
+            b"payload before internal eofpayload after internal eof"
+        );
+        assert_eq!(reader.raw_sha256(), Some(expected_digest.as_str()));
     }
 
     #[test]

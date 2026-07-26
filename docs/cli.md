@@ -165,6 +165,9 @@ carry 64,000 uncompressed bytes; a level that expands high-entropy bytes beyond
 the BGZF member limit falls back deterministically to stored DEFLATE
 and BGZF framing without a cross-block retry. `merge`
 remains in-memory.
+Sequential native BAM scans skip internal canonical BGZF EOF members and stop
+at physical EOF, so concatenated streams remain readable and integrated raw
+SHA-256 verification covers the complete file.
 `checksum` reports
 explicit checksum domains, algorithms, filters, excluded tags, and whether the
 reported domain is order-sensitive. `explode` reports shard boundaries and
