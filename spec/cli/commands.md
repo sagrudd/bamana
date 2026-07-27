@@ -146,7 +146,7 @@ the reference object and digest before invoking this command.
 ## `consume`
 
 Synopsis:
-`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--memory-limit <BYTES>] [--compression-level <0-9>] [--create-index] [--verify-checksum] [--force] [--reference <FASTA>] [--reference-cache <PATH>] [--reference-policy <strict|allow-embedded|allow-cache|auto-conservative>] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
+`bamana consume --input <path1> <path2> ... --out <result.bam> --mode <alignment|unmapped> [--recursive] [--dry-run] [-j, --threads <N>] [--sort <none|coordinate|queryname>] [--memory-limit <BYTES>] [--compression-level <0-9>] [--primary-only] [--create-index] [--verify-checksum] [--force] [--reference <FASTA>] [--reference-cache <PATH>] [--reference-policy <strict|allow-embedded|allow-cache|auto-conservative>] [--sample <NAME>] [--read-group <ID>] [--platform <ont|illumina|pacbio|unknown>] [--include-glob <PATTERN>] [--exclude-glob <PATTERN>]`
 
 Semantics:
 Acts as Bamana’s input normalization gateway. It discovers files and
@@ -166,7 +166,7 @@ the bounded external sorter:
 minimap2 -a reference.fa reads.fastq |
   bamana consume --input - --out acceptor.name.bam --mode alignment \
     --sort queryname --memory-limit 8589934592 \
-    --compression-level 1 --threads 19
+    --compression-level 1 --primary-only --threads 19
 ```
 
 This specialized path requires an explicit coordinate or lexicographical
@@ -174,7 +174,9 @@ queryname order and a positive record-memory budget. Parsing, deterministic run
 spill, and the stable multiway merge are connected by ordinary iterator
 backpressure, so neither a complete SAM nor an unsorted BAM is staged.
 `compression_level`, `memory_limit`, and `temporary_runs` are reported in
-`output`. Non-default compression and `--memory-limit` are rejected on other
+`output`; `primary_only` and `records_filtered` prove whether secondary and
+supplementary records were discarded before run materialization. Non-default
+compression, `--primary-only`, and `--memory-limit` are rejected on other
 consume paths so provenance cannot claim controls that were not applied.
 
 Mixed-format policy:

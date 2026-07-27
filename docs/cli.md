@@ -643,7 +643,9 @@ The specialized `--input - --mode alignment --sort
 <coordinate|queryname> --memory-limit <bytes>` form streams uncompressed SAM
 directly into bounded external sorting. It avoids complete SAM and unsorted-BAM
 staging, applies iterator backpressure, and reports the applied compression
-level and temporary-run count.
+level, temporary-run count, and primary-filter accounting. Add
+`--primary-only` to discard secondary and supplementary alignments before they
+consume run storage.
 
 `annotate_rg` is the record-level read-group annotation command. It rewrites
 alignment records to insert, replace, or normalize `RG:Z:` aux tags and can

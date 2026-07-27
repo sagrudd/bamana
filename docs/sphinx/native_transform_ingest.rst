@@ -100,6 +100,9 @@ fixed 64,000-byte full-block payload falls back deterministically to stored
 DEFLATE when the requested level expands high-entropy bytes beyond BGZF framing
 without cross-block retries. The stable multiway heap itself remains
 single-threaded. Natural queryname ordering remains explicitly deferred.
+Direct SAM stream sorting can apply ``--primary-only`` before buffering or
+spilling records, reducing transient I/O and reporting the exact number of
+secondary or supplementary alignments discarded.
 Sequential native scans skip internal canonical BGZF EOF members and stop at
 physical EOF. Concatenated streams therefore remain readable, and integrated
 raw SHA-256 verification covers every source byte.

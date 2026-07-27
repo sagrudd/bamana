@@ -43,6 +43,8 @@
       "sort_order": "queryname",
       "memory_limit": 8589934592,
       "compression_level": 1,
+      "primary_only": true,
+      "records_filtered": 1,
       "temporary_runs": 2,
       "mapped_state": "mapped_or_mixed"
     },

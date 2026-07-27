@@ -27,12 +27,14 @@ pub struct StreamSortOptions {
     pub threads: usize,
     pub memory_limit: u64,
     pub compression_level: u32,
+    pub primary_only: bool,
 }
 
 #[derive(Debug)]
 pub struct StreamSortResult {
     pub records_read: u64,
     pub records_written: u64,
+    pub records_filtered: u64,
     pub run_count: usize,
     pub overwritten: bool,
 }
@@ -65,15 +67,20 @@ where
     let mut buffered = Vec::new();
     let mut estimated_bytes = 0_u64;
     let mut records_read = 0_u64;
+    let mut records_filtered = 0_u64;
 
     for record in records {
         let layout = record?;
+        records_read += 1;
+        if options.primary_only && layout.flags & (0x100 | 0x800) != 0 {
+            records_filtered += 1;
+            continue;
+        }
         estimated_bytes = estimated_bytes.saturating_add(estimated_record_bytes(&layout));
         buffered.push(SortableRecord {
             layout,
-            ordinal: records_read,
+            ordinal: records_read - 1,
         });
-        records_read += 1;
         if estimated_bytes >= options.memory_limit {
             spill_run(options, header_payload, &mut buffered, &mut runs)?;
             estimated_bytes = 0;
@@ -95,12 +102,12 @@ where
     .inspect_err(|_| {
         let _ = fs::remove_file(&temp_path);
     })?;
-    if records_written != records_read {
+    if records_written + records_filtered != records_read {
         let _ = fs::remove_file(&temp_path);
         return Err(AppError::InvalidRecord {
             path: options.output_path.clone(),
             detail: format!(
-                "Stream sort read {records_read} records but merged {records_written}."
+                "Stream sort read {records_read} records, filtered {records_filtered}, but merged {records_written}."
             ),
         });
     }
@@ -111,6 +118,7 @@ where
     Ok(StreamSortResult {
         records_read,
         records_written,
+        records_filtered,
         run_count,
         overwritten: preexisting_output && options.force,
     })

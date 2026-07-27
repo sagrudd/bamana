@@ -208,6 +208,7 @@ fn main() -> ExitCode {
                 sort: args.sort,
                 memory_limit: args.memory_limit,
                 compression_level: args.compression_level,
+                primary_only: args.primary_only,
                 create_index: args.create_index,
                 verify_checksum: args.verify_checksum,
                 dry_run: args.dry_run,

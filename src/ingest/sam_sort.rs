@@ -21,11 +21,13 @@ pub struct StreamingSamSortOptions {
     pub threads: usize,
     pub memory_limit: u64,
     pub compression_level: u32,
+    pub primary_only: bool,
 }
 
 #[derive(Debug)]
 pub struct StreamingSamSortExecution {
     pub records_written: u64,
+    pub records_filtered: u64,
     pub run_count: usize,
     pub overwritten: bool,
     pub header_strategy: &'static str,
@@ -68,6 +70,7 @@ pub fn execute_streaming_sam_sort<R: BufRead>(
             threads: options.threads,
             memory_limit: options.memory_limit,
             compression_level: options.compression_level,
+            primary_only: options.primary_only,
         },
         &header_payload,
         stream,
@@ -75,6 +78,7 @@ pub fn execute_streaming_sam_sort<R: BufRead>(
 
     Ok(StreamingSamSortExecution {
         records_written: result.records_written,
+        records_filtered: result.records_filtered,
         run_count: result.run_count,
         overwritten: result.overwritten,
         header_strategy: "streamed_sam_header",
@@ -90,6 +94,14 @@ pub fn execute_streaming_sam_sort<R: BufRead>(
                 options.threads.max(1),
                 options.compression_level
             ),
+            if options.primary_only {
+                format!(
+                    "Primary-only selection discarded {} secondary or supplementary alignment record(s) before run materialization.",
+                    result.records_filtered
+                )
+            } else {
+                "Primary-only selection was not requested.".to_string()
+            },
         ],
     })
 }
@@ -126,6 +138,7 @@ mod tests {
                 threads: 2,
                 memory_limit: 1,
                 compression_level: 1,
+                primary_only: false,
             },
         )
         .expect("stream sort should succeed");
@@ -161,6 +174,46 @@ mod tests {
             .to_string();
         assert_eq!(first, "a");
         assert_eq!(second, "z");
+        assert!(scanner.next_record().expect("end should parse").is_none());
+        fs::remove_file(output).expect("output should remove");
+    }
+
+    #[test]
+    fn filters_supplementary_records_before_stream_run_materialization() {
+        let output = std::env::temp_dir().join(format!(
+            "bamana-stream-sam-primary-only-{}.bam",
+            std::process::id()
+        ));
+        let sam = concat!(
+            "@HD\tVN:1.6\tSO:unsorted\n",
+            "@SQ\tSN:chr1\tLN:100\n",
+            "read\t0\tchr1\t1\t60\t2M\t*\t0\t0\tAC\t!!\n",
+            "read\t2048\tchr1\t3\t60\t2M\t*\t0\t0\tAC\t!!\n",
+        );
+        let execution = execute_streaming_sam_sort(
+            Cursor::new(sam),
+            Path::new("<stdin>"),
+            &StreamingSamSortOptions {
+                output_path: output.clone(),
+                force: true,
+                order: ConsumeSortOrder::Queryname,
+                threads: 2,
+                memory_limit: 1,
+                compression_level: 1,
+                primary_only: true,
+            },
+        )
+        .expect("primary-only stream sort should succeed");
+
+        assert_eq!(execution.records_written, 1);
+        assert_eq!(execution.records_filtered, 1);
+        let mut scanner = BamScanner::open(&output).expect("output should scan");
+        let retained = scanner
+            .next_record()
+            .expect("record should parse")
+            .expect("primary record should exist");
+        assert_eq!(retained.read_name(), "read");
+        assert_eq!(retained.flags() & 0x900, 0);
         assert!(scanner.next_record().expect("end should parse").is_none());
         fs::remove_file(output).expect("output should remove");
     }

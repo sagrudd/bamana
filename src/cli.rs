@@ -571,6 +571,9 @@ pub struct ConsumeArgs {
     /// BGZF compression level for streamed SAM runs and final output (0-9).
     #[arg(long = "compression-level", default_value_t = 6, value_parser = clap::value_parser!(u32).range(0..=9))]
     pub compression_level: u32,
+    /// Retain only primary alignments while directly sorting a SAM stream.
+    #[arg(long = "primary-only")]
+    pub primary_only: bool,
     /// Attempt to create an index when the output order is suitable.
     #[arg(long = "create-index")]
     pub create_index: bool,

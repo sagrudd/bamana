@@ -36,6 +36,7 @@ pub struct ConsumeRequest {
     pub sort: ConsumeSortOrder,
     pub memory_limit: Option<u64>,
     pub compression_level: u32,
+    pub primary_only: bool,
     pub create_index: bool,
     pub verify_checksum: bool,
     pub dry_run: bool,
@@ -106,6 +107,8 @@ pub struct ConsumeOutputInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub memory_limit: Option<u64>,
     pub compression_level: u32,
+    pub primary_only: bool,
+    pub records_filtered: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temporary_runs: Option<usize>,
     pub mapped_state: String,
@@ -164,7 +167,7 @@ pub fn run(request: ConsumeRequest) -> CommandResponse<ConsumePayload> {
 }
 
 fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<PathBuf>) {
-    if request.memory_limit.is_some() || request.compression_level != 6 {
+    if request.memory_limit.is_some() || request.compression_level != 6 || request.primary_only {
         return (
             CommandResponse::failure_with_data(
                 "consume",
@@ -172,7 +175,7 @@ fn run_impl(request: &ConsumeRequest) -> (CommandResponse<ConsumePayload>, Vec<P
                 Some(base_payload(request)),
                 AppError::InvalidConsumeRequest {
                     path: request.out.clone(),
-                    detail: "--memory-limit and non-default --compression-level are supported only for one direct uncompressed SAM stdin input with --mode alignment and an explicit sort order.".to_string(),
+                    detail: "--memory-limit, --primary-only, and non-default --compression-level are supported only for one direct uncompressed SAM stdin input with --mode alignment and an explicit sort order.".to_string(),
                 },
             ),
             Vec::new(),
@@ -454,6 +457,7 @@ fn run_direct_sam_stream<R: BufRead>(
             threads: request.threads,
             memory_limit: request.memory_limit.unwrap_or_default(),
             compression_level: request.compression_level,
+            primary_only: request.primary_only,
         },
     ) {
         Ok(execution) => execution,
@@ -464,6 +468,7 @@ fn run_direct_sam_stream<R: BufRead>(
 
     payload.output.written = true;
     payload.output.records_written = Some(execution.records_written);
+    payload.output.records_filtered = execution.records_filtered;
     payload.output.temporary_runs = Some(execution.run_count);
     payload.header.strategy = execution.header_strategy.to_string();
     payload.header.reference_compatibility = Some(execution.reference_compatibility.to_string());
@@ -651,6 +656,8 @@ fn base_payload(request: &ConsumeRequest) -> ConsumePayload {
             sort_order: request.sort,
             memory_limit: request.memory_limit,
             compression_level: request.compression_level,
+            primary_only: request.primary_only,
+            records_filtered: 0,
             temporary_runs: None,
             mapped_state: mapped_state_for_mode(request.mode).to_string(),
         },
@@ -758,6 +765,7 @@ mod tests {
             sort: ConsumeSortOrder::None,
             memory_limit: None,
             compression_level: 6,
+            primary_only: false,
             create_index: false,
             verify_checksum: false,
             dry_run: false,
