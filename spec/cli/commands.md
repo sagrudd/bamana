@@ -1537,7 +1537,10 @@ represented in FASTQ output.
 
 Key output concepts:
 `format`, `output`, `execution.records_read`, `execution.records_written`,
-`execution.records_with_modification_tags`, `execution.threads_used`, `notes`.
+`execution.records_with_modification_tags`, `execution.payload_sha256`,
+`execution.threads_used`, `notes`. `payload_sha256` covers the complete
+decompressed FASTQ byte stream and is accumulated during export without
+rereading the output.
 
 ## `unmap`
 

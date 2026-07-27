@@ -87,7 +87,7 @@ The current semantics are intentionally narrow:
 * `checksum` computes explicit machine-verifiable checksum domains over deterministic BAM header and record serializations, with order-sensitive and order-insensitive modes
 * `sort` rewrites a BAM into an explicitly requested order using deterministic parallel run ordering, an optional bounded external merge, and optional canonical checksum verification
 * `merge` combines multiple BAM inputs into one BAM using conservative header compatibility checks, explicit input-order or sorted output modes, and optional canonical checksum verification
-* `fastq` exports BAM records to an ordered `FASTQ.GZ` stream, preserving input encounter order for read names, sequences, and qualities while intentionally dropping BAM header metadata
+* `fastq` exports BAM records to an ordered `FASTQ.GZ` stream, preserving input encounter order for read names, sequences, and qualities, reporting its decompressed payload SHA-256 during export, and intentionally dropping BAM header metadata
 * `unmap` rewrites a BAM as unmapped BAM by removing reference-bound mapping state, CIGAR/mate/coordinate fields, and mapping-related auxiliary tags while preserving non-mapping metadata
 * `benchmark` owns selected benchmark profiles by building the local release binary, building the benchmark container, running the profile, and rendering the requested report
 
@@ -499,7 +499,9 @@ output.
 read names, original molecule-orientation sequences and qualities in input
 encounter order and uses
 concatenated gzip members so decode and compression work can run across worker
-threads. Ordinary export omits auxiliary tags. The explicit
+threads. Its JSON response includes the SHA-256 of the complete decompressed
+payload, accumulated in emitted order without rereading the output. Ordinary
+export omits auxiliary tags. The explicit
 `--preserve-modification-tags` mode serializes the complete `MM`/`ML`/`MN`
 trio as SAM-compatible FASTQ comment fields for tag-aware remapping and fails
 closed if a record contains only part of that trio. Records containing none of

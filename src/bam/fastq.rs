@@ -11,6 +11,7 @@ use flate2::{Compression, GzBuilder};
 
 use crate::{
     bam::{
+        checksum::{Sha256Hasher, hex_digest},
         reader::BamReader,
         records::{
             RecordLayout, decode_bam_qualities, decode_bam_sequence, read_next_record_layout,
@@ -37,6 +38,7 @@ pub struct FastqExportExecution {
     pub records_read: u64,
     pub records_written: u64,
     pub records_with_modification_tags: u64,
+    pub payload_sha256: String,
     pub threads_used: usize,
     pub notes: Vec<String>,
 }
@@ -52,6 +54,7 @@ struct BatchResult {
     index: usize,
     record_count: u64,
     modification_tagged_record_count: u64,
+    payload: Vec<u8>,
     compressed: Result<Vec<u8>, AppError>,
 }
 
@@ -78,7 +81,7 @@ pub fn export_bam_to_fastq_gz(
         let _ = fs::remove_file(&temp_path);
     }
 
-    let write_result = (|| -> Result<(u64, u64, u64), AppError> {
+    let write_result = (|| -> Result<(u64, u64, u64, String), AppError> {
         let mut reader = BamReader::open(&options.input_path)?;
         let _header = crate::bam::header::parse_bam_header_from_reader(&mut reader)?;
         let mut writer =
@@ -102,16 +105,21 @@ pub fn export_bam_to_fastq_gz(
             handles.push(thread::spawn(move || {
                 while let Some(job) = recv_job(&job_rx) {
                     let record_count = job.records.len() as u64;
-                    let compressed =
+                    let batch =
                         compress_batch(job.records, &input_path, preserve_modification_tags);
                     let modification_tagged_record_count =
-                        compressed.as_ref().map(|(_, count)| *count).unwrap_or(0);
+                        batch.as_ref().map(|(_, _, count)| *count).unwrap_or(0);
+                    let (payload, compressed) = match batch {
+                        Ok((payload, compressed, _)) => (payload, Ok(compressed)),
+                        Err(error) => (Vec::new(), Err(error)),
+                    };
                     if result_tx
                         .send(BatchResult {
                             index: job.index,
                             record_count,
                             modification_tagged_record_count,
-                            compressed: compressed.map(|(bytes, _)| bytes),
+                            payload,
+                            compressed,
                         })
                         .is_err()
                     {
@@ -127,6 +135,7 @@ pub fn export_bam_to_fastq_gz(
         let mut records_read = 0_u64;
         let mut records_written = 0_u64;
         let mut records_with_modification_tags = 0_u64;
+        let mut payload_hasher = Sha256Hasher::new();
         let mut current_batch = Vec::new();
         let mut current_batch_bytes = 0_usize;
         let mut pending = BTreeMap::new();
@@ -157,6 +166,7 @@ pub fn export_bam_to_fastq_gz(
                     &mut next_to_write,
                     &mut records_written,
                     &mut records_with_modification_tags,
+                    &mut payload_hasher,
                     &temp_path,
                 )?;
             }
@@ -178,13 +188,17 @@ pub fn export_bam_to_fastq_gz(
                 message: "FASTQ export worker channel closed before all batches completed."
                     .to_string(),
             })?;
-            pending.insert(result.index, (result.record_count, result.compressed));
+            pending.insert(
+                result.index,
+                (result.record_count, result.payload, result.compressed),
+            );
             records_with_modification_tags += result.modification_tagged_record_count;
             write_ready_batches(
                 &mut pending,
                 &mut writer,
                 &mut next_to_write,
                 &mut records_written,
+                &mut payload_hasher,
                 &temp_path,
             )?;
         }
@@ -204,16 +218,18 @@ pub fn export_bam_to_fastq_gz(
             records_read,
             records_written,
             records_with_modification_tags,
+            hex_digest(&payload_hasher.finalize()),
         ))
     })();
 
-    let (records_read, records_written, records_with_modification_tags) = match write_result {
-        Ok(counts) => counts,
-        Err(error) => {
-            let _ = fs::remove_file(&temp_path);
-            return Err(error);
-        }
-    };
+    let (records_read, records_written, records_with_modification_tags, payload_sha256) =
+        match write_result {
+            Ok(counts) => counts,
+            Err(error) => {
+                let _ = fs::remove_file(&temp_path);
+                return Err(error);
+            }
+        };
 
     if preexisting_output && options.force {
         fs::remove_file(&options.output_path).map_err(|error| AppError::WriteError {
@@ -252,6 +268,7 @@ pub fn export_bam_to_fastq_gz(
         records_read,
         records_written,
         records_with_modification_tags,
+        payload_sha256,
         threads_used,
         notes,
     })
@@ -284,29 +301,42 @@ fn submit_batch(
 
 fn drain_available_results(
     result_rx: &mpsc::Receiver<BatchResult>,
-    pending: &mut BTreeMap<usize, (u64, Result<Vec<u8>, AppError>)>,
+    pending: &mut BTreeMap<usize, (u64, Vec<u8>, Result<Vec<u8>, AppError>)>,
     writer: &mut BufWriter<File>,
     next_to_write: &mut usize,
     records_written: &mut u64,
     records_with_modification_tags: &mut u64,
+    payload_hasher: &mut Sha256Hasher,
     path: &Path,
 ) -> Result<(), AppError> {
     while let Ok(result) = result_rx.try_recv() {
         *records_with_modification_tags += result.modification_tagged_record_count;
-        pending.insert(result.index, (result.record_count, result.compressed));
+        pending.insert(
+            result.index,
+            (result.record_count, result.payload, result.compressed),
+        );
     }
-    write_ready_batches(pending, writer, next_to_write, records_written, path)
+    write_ready_batches(
+        pending,
+        writer,
+        next_to_write,
+        records_written,
+        payload_hasher,
+        path,
+    )
 }
 
 fn write_ready_batches(
-    pending: &mut BTreeMap<usize, (u64, Result<Vec<u8>, AppError>)>,
+    pending: &mut BTreeMap<usize, (u64, Vec<u8>, Result<Vec<u8>, AppError>)>,
     writer: &mut BufWriter<File>,
     next_to_write: &mut usize,
     records_written: &mut u64,
+    payload_hasher: &mut Sha256Hasher,
     path: &Path,
 ) -> Result<(), AppError> {
-    while let Some((record_count, result)) = pending.remove(next_to_write) {
+    while let Some((record_count, payload, result)) = pending.remove(next_to_write) {
         let compressed = result?;
+        payload_hasher.update(&payload);
         writer
             .write_all(&compressed)
             .map_err(|error| AppError::WriteError {
@@ -323,7 +353,7 @@ fn compress_batch(
     records: Vec<RecordLayout>,
     input_path: &Path,
     preserve_modification_tags: bool,
-) -> Result<(Vec<u8>, u64), AppError> {
+) -> Result<(Vec<u8>, Vec<u8>, u64), AppError> {
     let mut payload = Vec::new();
     let mut tagged_records = 0_u64;
     for record in records {
@@ -348,7 +378,7 @@ fn compress_batch(
         path: input_path.to_path_buf(),
         message: error.to_string(),
     })?;
-    Ok((compressed, tagged_records))
+    Ok((payload, compressed, tagged_records))
 }
 
 fn append_fastq_record(
@@ -773,6 +803,10 @@ mod tests {
         .expect("export should succeed");
 
         assert_eq!(execution.records_read, 2);
+        assert_eq!(
+            execution.payload_sha256,
+            "770da1bc10d2e9172b8b1a9b68f3d9049ab927a4ad53ba3ebe6c2e91c6836251"
+        );
         let mut reader = open_fastq_reader(&output).expect("fastq.gz should open");
         let first_record = read_next_fastq_record(&mut reader, &output)
             .expect("first record should parse")

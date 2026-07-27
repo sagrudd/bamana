@@ -65,7 +65,9 @@ comment fields. The trio is atomic: a record containing only a subset fails
 the export, while a record containing none remains an untagged FASTQ record.
 All legal BAM integer widths for ``MN`` are accepted and serialized as the
 canonical SAM ``MN:i:<value>`` field.
-The JSON response reports ``records_with_modification_tags``. Downstream
+The JSON response reports ``records_with_modification_tags`` and
+``payload_sha256``. The latter hashes the complete decompressed FASTQ payload
+in emitted order during export, avoiding a second output read. Downstream
 aligners must explicitly retain SAM-style FASTQ comments (for example,
 minimap2 ``-y``); the export alone does not prove restoration into the
 remapped BAM. BAM headers, alignment state, and all other auxiliary tags are

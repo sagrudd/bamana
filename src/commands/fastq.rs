@@ -43,6 +43,8 @@ pub struct FastqExecutionInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub records_with_modification_tags: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub payload_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub threads_used: Option<usize>,
 }
 
@@ -104,6 +106,7 @@ pub fn run(request: FastqRequest) -> CommandResponse<FastqPayload> {
             payload.execution.records_written = Some(execution.records_written);
             payload.execution.records_with_modification_tags =
                 Some(execution.records_with_modification_tags);
+            payload.execution.payload_sha256 = Some(execution.payload_sha256);
             payload.execution.threads_used = Some(execution.threads_used);
             payload.notes.extend(execution.notes);
             CommandResponse::success("fastq", Some(request.bam.as_path()), payload)
@@ -129,6 +132,7 @@ fn base_payload(output_path: &Path) -> FastqPayload {
             records_read: None,
             records_written: None,
             records_with_modification_tags: None,
+            payload_sha256: None,
             threads_used: None,
         },
         notes: Vec::new(),

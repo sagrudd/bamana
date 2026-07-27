@@ -89,8 +89,10 @@ contiguous-range splitting in the current slice.
 
 `fastq` is the BAM-to-FASTQ.GZ export command. It accepts one BAM via `--bam`,
 writes a single ordered FASTQ.GZ stream, and reports records read, records
-written, and worker-thread usage. It preserves read names, sequences, and
-qualities in input encounter order. Ordinary export omits auxiliary tags;
+written, worker-thread usage, and the SHA-256 of the complete decompressed
+payload. The digest is accumulated during export without rereading the output.
+It preserves read names, sequences, and qualities in input encounter order.
+Ordinary export omits auxiliary tags;
 ``--preserve-modification-tags`` retains only a complete MM/ML/MN trio as
 SAM-compatible comments, canonicalizing any legal compact BAM ``MN`` integer
 to ``MN:i:<value>``. It does not preserve BAM header metadata, alignment

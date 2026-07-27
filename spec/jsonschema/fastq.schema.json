@@ -13,6 +13,11 @@
         "records_read": { "type": ["integer", "null"], "minimum": 0 },
         "records_written": { "type": ["integer", "null"], "minimum": 0 },
         "records_with_modification_tags": { "type": ["integer", "null"], "minimum": 0 },
+        "payload_sha256": {
+          "description": "SHA-256 of the complete decompressed FASTQ byte stream in emitted record order.",
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "threads_used": { "type": ["integer", "null"], "minimum": 1 }
       }
     },

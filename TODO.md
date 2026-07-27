@@ -65,6 +65,10 @@ and benchmark documents where that is more precise.
       external sorting, with explicit memory/compression provenance, atomic
       publication, temporary-run cleanup, and no complete SAM or unsorted-BAM
       staging.
+- [x] Accumulate the order-sensitive SHA-256 of the complete decompressed
+      FASTQ payload during parallel BAM-to-FASTQ export, expose it in the
+      governed response, and let downstream remapping workflows prove exact
+      payload transport without rereading whole FASTQ outputs.
 - [x] Add deterministic bounded external BAM sorting for downstream
       whole-genome transforms, with a caller-selected record-memory budget,
       parallel stable run ordering, atomic publication, temporary-run cleanup,

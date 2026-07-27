@@ -14,6 +14,7 @@
       "records_read": 240000,
       "records_written": 240000,
       "records_with_modification_tags": 0,
+      "payload_sha256": "6654e7fc0e9d3e1f18427d0c1cdb40e216d715c45d86cb02a42de36667aaec45",
       "threads_used": 8
     },
     "notes": [
