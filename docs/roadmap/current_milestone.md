@@ -47,6 +47,7 @@ one ``C+m`` group. Duplicate targets and ambiguous group syntax fail closed.
 Reverse records count the complemented canonical base right-to-left, matching
 SAM's original-sequencing orientation while returning stored query positions.
 The raw-section API requires the BAM reverse flag instead of defaulting it.
+Valid non-target-only trios return no 5mC result after full ML validation.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`

@@ -1,11 +1,15 @@
 use super::{MmSkippedBaseMode, ModificationDecodeError, bam_base};
 
 pub(super) struct DecodedMm {
+    pub(super) selected: Option<SelectedCm>,
+    pub(super) total_ml_values: usize,
+}
+
+pub(super) struct SelectedCm {
     pub(super) skipped_base_mode: MmSkippedBaseMode,
     pub(super) canonical_positions: Vec<usize>,
     pub(super) called_positions: Vec<usize>,
     pub(super) selected_ml_offset: usize,
-    pub(super) total_ml_values: usize,
 }
 
 struct ParsedGroup {
@@ -62,16 +66,17 @@ pub(super) fn decode_mm_groups(
             .checked_add(group.ml_values)
             .ok_or_else(|| malformed_at(group_index, "ML cardinality overflow"))?;
     }
-    let Some((mode, canonical_positions, called_positions, selected_ml_offset)) = selected else {
-        return Err(ModificationDecodeError::UnsupportedMmCode(
-            "required C+m group absent".to_string(),
-        ));
-    };
     Ok(DecodedMm {
-        skipped_base_mode: mode,
-        canonical_positions,
-        called_positions,
-        selected_ml_offset,
+        selected: selected.map(
+            |(skipped_base_mode, canonical_positions, called_positions, selected_ml_offset)| {
+                SelectedCm {
+                    skipped_base_mode,
+                    canonical_positions,
+                    called_positions,
+                    selected_ml_offset,
+                }
+            },
+        ),
         total_ml_values: ml_offset,
     })
 }
@@ -243,14 +248,14 @@ mod tests {
         for mm in ["A+a.,0;C+h.,0;C+m.,0;", "C+h.,0;C+m.,0;A+a.,0;"] {
             let decoded = decode_mm_groups(mm, &packed("AC"), 2, false).unwrap();
             assert_eq!(decoded.total_ml_values, 3);
-            assert_eq!(decoded.called_positions, vec![1]);
+            assert_eq!(decoded.selected.unwrap().called_positions, vec![1]);
         }
     }
 
     #[test]
     fn multi_code_group_consumes_one_probability_per_code_and_call() {
         let decoded = decode_mm_groups("A+az,0,0;C+m,0;G+h,0;", &packed("AACG"), 4, false).unwrap();
-        assert_eq!(decoded.selected_ml_offset, 4);
+        assert_eq!(decoded.selected.unwrap().selected_ml_offset, 4);
         assert_eq!(decoded.total_ml_values, 6);
     }
 
@@ -259,7 +264,14 @@ mod tests {
         let sequence = "CACCCGATGACCGGCT";
         let mm = "C+m,1,0,0;";
         let decoded = decode_mm_groups(mm, &packed(sequence), sequence.len(), true).unwrap();
-        assert_eq!(decoded.called_positions, vec![12, 8, 5]);
+        assert_eq!(decoded.selected.unwrap().called_positions, vec![12, 8, 5]);
+    }
+
+    #[test]
+    fn accepts_valid_groups_without_target_while_retaining_ml_cardinality() {
+        let decoded = decode_mm_groups("A+a.,0;C+h.,0;", &packed("AC"), 2, false).unwrap();
+        assert!(decoded.selected.is_none());
+        assert_eq!(decoded.total_ml_values, 2);
     }
 
     #[test]

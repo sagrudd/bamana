@@ -174,14 +174,17 @@ pub fn decode_c_m_modifications(
         sequence_length,
         is_reverse_complemented,
     )?;
-    let query_positions = decoded_mm.called_positions;
     if decoded_mm.total_ml_values != ml.len() {
         return Err(ModificationDecodeError::MlCardinality {
             positions: decoded_mm.total_ml_values,
             probabilities: ml.len(),
         });
     }
-    let selected_ml_end = decoded_mm
+    let Some(selected) = decoded_mm.selected else {
+        return Ok(None);
+    };
+    let query_positions = selected.called_positions;
+    let selected_ml_end = selected
         .selected_ml_offset
         .checked_add(query_positions.len())
         .ok_or_else(|| {
@@ -189,7 +192,7 @@ pub fn decode_c_m_modifications(
                 "selected ML slice overflowed its cardinality".to_string(),
             )
         })?;
-    let selected_ml = &ml[decoded_mm.selected_ml_offset..selected_ml_end];
+    let selected_ml = &ml[selected.selected_ml_offset..selected_ml_end];
     let references = project_positions(&query_positions, cigar, sequence_length, reference_start)?;
     let mut modifications: Vec<CytosineModification> = query_positions
         .into_iter()
@@ -204,10 +207,10 @@ pub fn decode_c_m_modifications(
         )
         .collect();
     modifications.sort_by_key(|call| call.query_position);
-    let callable_omitted_cytosines = if decoded_mm.skipped_base_mode == MmSkippedBaseMode::Unknown {
+    let callable_omitted_cytosines = if selected.skipped_base_mode == MmSkippedBaseMode::Unknown {
         None
     } else {
-        let omitted_positions: Vec<_> = decoded_mm
+        let omitted_positions: Vec<_> = selected
             .canonical_positions
             .into_iter()
             .filter(|position| {
@@ -233,7 +236,7 @@ pub fn decode_c_m_modifications(
     };
     Ok(Some(CytosineModificationTrio {
         sequence_length,
-        skipped_base_mode: decoded_mm.skipped_base_mode,
+        skipped_base_mode: selected.skipped_base_mode,
         modifications,
         callable_omitted_cytosines,
     }))
@@ -781,6 +784,24 @@ mod tests {
     }
 
     #[test]
+    fn valid_non_target_groups_return_absent_after_ml_validation() {
+        let non_target_aux = aux(Some("A+a.,0;C+h.,0;"), Some(&[3, 4]), Some(2));
+        assert_eq!(
+            decode_forward(&non_target_aux, &packed("AC"), 2, &cigar(&[(2, 0)]), 10,).unwrap(),
+            None
+        );
+
+        let wrong_ml = aux(Some("A+a.,0;C+h.,0;"), Some(&[3]), Some(2));
+        assert_eq!(
+            decode_forward(&wrong_ml, &packed("AC"), 2, &cigar(&[(2, 0)]), 10),
+            Err(ModificationDecodeError::MlCardinality {
+                positions: 2,
+                probabilities: 1,
+            })
+        );
+    }
+
+    #[test]
     fn distinguishes_absent_and_partial_trios() {
         assert_eq!(
             decode_forward(&[], &packed("C"), 1, &cigar(&[(1, 0)]), 0).unwrap(),
@@ -825,18 +846,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unsupported_codes_and_malformed_deltas() {
+    fn accepts_valid_non_target_codes_and_rejects_malformed_deltas() {
         for (mm, sequence) in [("A+a,0;", "A"), ("C+h,0;", "C"), ("C-m,0;", "C")] {
-            assert!(matches!(
+            assert_eq!(
                 decode_forward(
                     &aux(Some(mm), Some(&[1]), Some(1)),
                     &packed(sequence),
                     1,
                     &cigar(&[(1, 0)]),
                     0
-                ),
-                Err(ModificationDecodeError::UnsupportedMmCode(_))
-            ));
+                )
+                .unwrap(),
+                None
+            );
         }
         for mm in ["C+m,-1;", "C+m,x;", "C+m,1;"] {
             assert!(matches!(

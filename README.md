@@ -544,6 +544,8 @@ remain unknown and are not exposed as callable. Multi-group MM values are
 parsed in wire order: well-formed non-target groups consume their exact ML
 cardinality, while exactly one ``C+m`` group is selected. Duplicate target
 groups or ambiguous group syntax fail without exposing tag payloads.
+If a complete, structurally valid trio contains no ``C+m`` group, its full ML
+cardinality is validated and the decoder returns no 5mC result.
 Reverse-aligned records follow SAM's original-sequencing orientation: deltas
 count the complemented canonical base right-to-left over stored BAM `SEQ`,
 then project the resulting stored query coordinates through CIGAR.

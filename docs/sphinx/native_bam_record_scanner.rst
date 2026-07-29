@@ -65,6 +65,10 @@ slice. Duplicate ``C+m`` groups, malformed group headers or deltas, ambiguous
 modification-code syntax, total ML cardinality mismatch, and differently typed
 tags fail closed. Errors report only the group number and reason, never raw MM
 text or read payload.
+When every group is valid but ``C+m`` is absent, Bamana first validates the
+complete ML cardinality and then returns ``Ok(None)`` for the 5mC projection.
+Malformed groups, cardinality mismatches, and duplicate ``C+m`` groups remain
+errors.
 
 The first supported scientific surface intentionally returns only ``C+m``.
 MM positions retain original-sequencing orientation.  For a forward record,

@@ -48,6 +48,8 @@ and benchmark documents where that is more precise.
       semantics by counting complemented canonical bases right-to-left in
       stored BAM `SEQ`, preserving ML pairing during CIGAR projection. Require
       section-oriented consumers to pass the BAM reverse flag explicitly.
+      Treat a valid trio with no `C+m` group as absent 5mC only after validating
+      all group syntax and the complete ML cardinality.
 
 ## 3. Benchmark And GB10 Readiness
 
