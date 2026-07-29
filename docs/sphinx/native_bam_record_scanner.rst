@@ -74,7 +74,8 @@ right-to-left. Bamana then associates ML values in MM order, converts calls to
 stored query coordinates, sorts those calls without detaching probabilities,
 and projects them through CIGAR. ``BamRecordView`` supplies the reverse flag
 automatically; section-oriented consumers must call
-``decode_c_m_modifications_with_orientation``.  Consumers should treat
+``decode_c_m_modifications`` and pass BAM flag ``0x10`` explicitly. Consumers
+should treat
 ``Ok(None)`` as all three tags absent; partial trios are errors.
 
 The first migration target is ``check_sort``, followed by ``check_map``,

@@ -1,6 +1,6 @@
 //! Test-only maintained-parser oracle for reverse-strand SAM MM orientation.
 
-use bamana::bam::modifications::decode_c_m_modifications_with_orientation;
+use bamana::bam::modifications::decode_c_m_modifications;
 use noodles_sam::{alignment::record_buf::Sequence, record::data::field::value::BaseModifications};
 
 #[test]
@@ -8,7 +8,7 @@ fn native_reverse_positions_match_noodles_sam_oracle() {
     let sequence = "CACCCGATGACCGGCT";
     let mm = "C+m,1,0,0;";
     let oracle = BaseModifications::parse(mm, true, &Sequence::from(sequence.as_bytes())).unwrap();
-    let native = decode_c_m_modifications_with_orientation(
+    let native = decode_c_m_modifications(
         &aux(mm, &[10, 20, 30], sequence.len()),
         &packed(sequence),
         sequence.len(),

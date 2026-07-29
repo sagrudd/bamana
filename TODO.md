@@ -46,7 +46,8 @@ and benchmark documents where that is more precise.
       consume ignored groups' exact ML cardinality, and select exactly one
       `C+m` group without exposing raw tag payloads. Apply SAM reverse-record
       semantics by counting complemented canonical bases right-to-left in
-      stored BAM `SEQ`, preserving ML pairing during CIGAR projection.
+      stored BAM `SEQ`, preserving ML pairing during CIGAR projection. Require
+      section-oriented consumers to pass the BAM reverse flag explicitly.
 
 ## 3. Benchmark And GB10 Readiness
 

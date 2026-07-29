@@ -130,7 +130,7 @@ pub fn decode_record_c_m_modifications(
     if record.flag_summary().is_unmapped || record.ref_id() < 0 || record.pos() < 0 {
         return Err(ModificationDecodeError::UnmappedRecord);
     }
-    decode_c_m_modifications_with_orientation(
+    decode_c_m_modifications(
         record.aux_bytes(),
         record.sequence_bytes(),
         record.sequence_len(),
@@ -140,26 +140,12 @@ pub fn decode_record_c_m_modifications(
     )
 }
 
-/// Aux-byte entry point for forward-aligned records.
+/// Aux-byte entry point when the caller owns BAM record sections.
+///
+/// `is_reverse_complemented` must be derived from BAM flag `0x10`; requiring it
+/// prevents section-oriented consumers from silently applying forward-only MM
+/// semantics to reverse records.
 pub fn decode_c_m_modifications(
-    aux: &[u8],
-    packed_sequence: &[u8],
-    sequence_length: usize,
-    cigar: &[u8],
-    reference_start: i64,
-) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
-    decode_c_m_modifications_with_orientation(
-        aux,
-        packed_sequence,
-        sequence_length,
-        cigar,
-        reference_start,
-        false,
-    )
-}
-
-/// Aux-byte entry point when the caller owns the BAM reverse-alignment flag.
-pub fn decode_c_m_modifications_with_orientation(
     aux: &[u8],
     packed_sequence: &[u8],
     sequence_length: usize,
@@ -485,10 +471,27 @@ mod tests {
         bytes
     }
 
+    fn decode_forward(
+        aux: &[u8],
+        packed_sequence: &[u8],
+        sequence_length: usize,
+        cigar: &[u8],
+        reference_start: i64,
+    ) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
+        decode_c_m_modifications(
+            aux,
+            packed_sequence,
+            sequence_length,
+            cigar,
+            reference_start,
+            false,
+        )
+    }
+
     #[test]
     fn projects_matches_soft_clips_insertions_and_deletions() {
         let sequence = "CCACCCCCC";
-        let result = decode_c_m_modifications(
+        let result = decode_forward(
             &aux(Some("C+m,0,0,0,0,0,0,0,0;"), Some(&[1; 8]), Some(9)),
             &packed(sequence),
             9,
@@ -519,7 +522,7 @@ mod tests {
 
     #[test]
     fn mm_deltas_count_only_canonical_cytosines() {
-        let result = decode_c_m_modifications(
+        let result = decode_forward(
             &aux(Some("C+m,1,0;"), Some(&[20, 30]), Some(6)),
             &packed("ACGCCC"),
             6,
@@ -553,7 +556,7 @@ mod tests {
 
     #[test]
     fn selects_exact_ml_slice_with_preceding_following_and_multi_code_groups() {
-        let result = decode_c_m_modifications(
+        let result = decode_forward(
             &aux(
                 Some("A+az.,0,0;C+h.,0;C+m.,1;G+h.,0;"),
                 Some(&[10, 11, 12, 13, 20, 44, 50]),
@@ -575,7 +578,7 @@ mod tests {
             ("A+a.,0;C+h.,0;C+m.,0;", vec![1, 2, 77]),
             ("C+h.,0;C+m.,0;A+a.,0;", vec![2, 77, 1]),
         ] {
-            let selected = decode_c_m_modifications(
+            let selected = decode_forward(
                 &aux(Some(mm), Some(&ml), Some(2)),
                 &packed("AC"),
                 2,
@@ -604,7 +607,7 @@ mod tests {
             ("C+m?,1;", MmSkippedBaseMode::Unknown, None),
         ];
         for (mm, expected_mode, expected_omitted) in cases {
-            let result = decode_c_m_modifications(
+            let result = decode_forward(
                 &aux(Some(mm), Some(&[20]), Some(5)),
                 &packed("ACACC"),
                 5,
@@ -628,7 +631,7 @@ mod tests {
 
     #[test]
     fn projects_callable_omitted_cytosines_through_cigar() {
-        let result = decode_c_m_modifications(
+        let result = decode_forward(
             &aux(Some("C+m.,1;"), Some(&[20]), Some(6)),
             &packed("CCCCCC"),
             6,
@@ -666,7 +669,7 @@ mod tests {
 
     #[test]
     fn reverse_mm_deltas_are_complemented_and_projected_in_stored_coordinates() {
-        let result = decode_c_m_modifications_with_orientation(
+        let result = decode_c_m_modifications(
             &aux(Some("C+m,0,1;"), Some(&[7, 9]), Some(5)),
             &packed("GGTGG"),
             5,
@@ -758,7 +761,7 @@ mod tests {
 
     #[test]
     fn accepts_empty_mm_and_ml_arrays() {
-        let result = decode_c_m_modifications(
+        let result = decode_forward(
             &aux(Some("C+m;"), Some(&[]), Some(2)),
             &packed("AC"),
             2,
@@ -780,11 +783,11 @@ mod tests {
     #[test]
     fn distinguishes_absent_and_partial_trios() {
         assert_eq!(
-            decode_c_m_modifications(&[], &packed("C"), 1, &cigar(&[(1, 0)]), 0).unwrap(),
+            decode_forward(&[], &packed("C"), 1, &cigar(&[(1, 0)]), 0).unwrap(),
             None
         );
         assert_eq!(
-            decode_c_m_modifications(
+            decode_forward(
                 &aux(Some("C+m,0;"), None, Some(1)),
                 &packed("C"),
                 1,
@@ -797,7 +800,7 @@ mod tests {
 
     #[test]
     fn rejects_mn_mismatch_and_ml_cardinality() {
-        let mismatch = decode_c_m_modifications(
+        let mismatch = decode_forward(
             &aux(Some("C+m,0;"), Some(&[1]), Some(2)),
             &packed("C"),
             1,
@@ -808,7 +811,7 @@ mod tests {
             mismatch,
             Err(ModificationDecodeError::MnMismatch { .. })
         ));
-        let cardinality = decode_c_m_modifications(
+        let cardinality = decode_forward(
             &aux(Some("C+m,0;"), Some(&[]), Some(1)),
             &packed("C"),
             1,
@@ -825,7 +828,7 @@ mod tests {
     fn rejects_unsupported_codes_and_malformed_deltas() {
         for (mm, sequence) in [("A+a,0;", "A"), ("C+h,0;", "C"), ("C-m,0;", "C")] {
             assert!(matches!(
-                decode_c_m_modifications(
+                decode_forward(
                     &aux(Some(mm), Some(&[1]), Some(1)),
                     &packed(sequence),
                     1,
@@ -837,7 +840,7 @@ mod tests {
         }
         for mm in ["C+m,-1;", "C+m,x;", "C+m,1;"] {
             assert!(matches!(
-                decode_c_m_modifications(
+                decode_forward(
                     &aux(Some(mm), Some(&[1]), Some(1)),
                     &packed("C"),
                     1,
@@ -854,18 +857,18 @@ mod tests {
         let mut duplicate = aux(Some("C+m,0;"), Some(&[1]), Some(1));
         duplicate.extend_from_slice(b"MNi\x01\0\0\0");
         assert_eq!(
-            decode_c_m_modifications(&duplicate, &packed("C"), 1, &cigar(&[(1, 0)]), 0),
+            decode_forward(&duplicate, &packed("C"), 1, &cigar(&[(1, 0)]), 0),
             Err(ModificationDecodeError::DuplicateTag(*b"MN"))
         );
 
         let wrong_ml = b"MMZC+m,0;\0MLBi\x01\0\0\0\x01\0\0\0MNi\x01\0\0\0";
         assert!(matches!(
-            decode_c_m_modifications(wrong_ml, &packed("C"), 1, &cigar(&[(1, 0)]), 0),
+            decode_forward(wrong_ml, &packed("C"), 1, &cigar(&[(1, 0)]), 0),
             Err(ModificationDecodeError::MalformedAux(_))
         ));
 
         assert!(matches!(
-            decode_c_m_modifications(
+            decode_forward(
                 &aux(Some("C+m,0;"), Some(&[1]), Some(1)),
                 &packed("C"),
                 1,
