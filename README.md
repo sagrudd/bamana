@@ -544,6 +544,9 @@ remain unknown and are not exposed as callable. Multi-group MM values are
 parsed in wire order: well-formed non-target groups consume their exact ML
 cardinality, while exactly one ``C+m`` group is selected. Duplicate target
 groups or ambiguous group syntax fail without exposing tag payloads.
+Reverse-aligned records follow SAM's original-sequencing orientation: deltas
+count the complemented canonical base right-to-left over stored BAM `SEQ`,
+then project the resulting stored query coordinates through CIGAR.
 `check_sort`, `check_map`,
 `summary`, `check_tag`, `validate`, `inspect_duplication`, and
 `forensic_inspect` now use the scanner for scanner-compatible record traversal

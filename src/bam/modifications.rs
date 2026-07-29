@@ -1,8 +1,8 @@
 //! Strict, Bamana-native decoding of the standard cytosine modification trio.
 //!
-//! SAM `MM` positions are expressed against the record's `SEQ` field. BAM
-//! already stores reverse alignments in that orientation, so callers must not
-//! reverse the decoded query positions before CIGAR projection.
+//! SAM `MM` positions retain original-sequencing orientation. For a
+//! reverse-aligned BAM record, deltas count the complemented canonical base
+//! right-to-left across stored `SEQ`.
 
 use std::{error::Error, fmt};
 
@@ -130,22 +130,42 @@ pub fn decode_record_c_m_modifications(
     if record.flag_summary().is_unmapped || record.ref_id() < 0 || record.pos() < 0 {
         return Err(ModificationDecodeError::UnmappedRecord);
     }
-    decode_c_m_modifications(
+    decode_c_m_modifications_with_orientation(
         record.aux_bytes(),
         record.sequence_bytes(),
         record.sequence_len(),
         record.cigar_bytes(),
         i64::from(record.pos()),
+        record.flag_summary().is_reverse,
     )
 }
 
-/// Aux-byte entry point for consumers that already own BAM record sections.
+/// Aux-byte entry point for forward-aligned records.
 pub fn decode_c_m_modifications(
     aux: &[u8],
     packed_sequence: &[u8],
     sequence_length: usize,
     cigar: &[u8],
     reference_start: i64,
+) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
+    decode_c_m_modifications_with_orientation(
+        aux,
+        packed_sequence,
+        sequence_length,
+        cigar,
+        reference_start,
+        false,
+    )
+}
+
+/// Aux-byte entry point when the caller owns the BAM reverse-alignment flag.
+pub fn decode_c_m_modifications_with_orientation(
+    aux: &[u8],
+    packed_sequence: &[u8],
+    sequence_length: usize,
+    cigar: &[u8],
+    reference_start: i64,
+    is_reverse_complemented: bool,
 ) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
     let Some((mm, ml, mn)) = extract_trio(aux)? else {
         return Ok(None);
@@ -162,7 +182,12 @@ pub fn decode_c_m_modifications(
         ));
     }
 
-    let decoded_mm = groups::decode_mm_groups(&mm, packed_sequence, sequence_length)?;
+    let decoded_mm = groups::decode_mm_groups(
+        &mm,
+        packed_sequence,
+        sequence_length,
+        is_reverse_complemented,
+    )?;
     let query_positions = decoded_mm.called_positions;
     if decoded_mm.total_ml_values != ml.len() {
         return Err(ModificationDecodeError::MlCardinality {
@@ -180,7 +205,7 @@ pub fn decode_c_m_modifications(
         })?;
     let selected_ml = &ml[decoded_mm.selected_ml_offset..selected_ml_end];
     let references = project_positions(&query_positions, cigar, sequence_length, reference_start)?;
-    let modifications: Vec<CytosineModification> = query_positions
+    let mut modifications: Vec<CytosineModification> = query_positions
         .into_iter()
         .zip(references)
         .zip(selected_ml.iter().copied())
@@ -192,6 +217,7 @@ pub fn decode_c_m_modifications(
             },
         )
         .collect();
+    modifications.sort_by_key(|call| call.query_position);
     let callable_omitted_cytosines = if decoded_mm.skipped_base_mode == MmSkippedBaseMode::Unknown {
         None
     } else {
@@ -345,6 +371,24 @@ pub(super) fn bam_base(sequence: &[u8], position: usize) -> u8 {
 }
 
 fn project_positions(
+    positions: &[usize],
+    cigar: &[u8],
+    sequence_length: usize,
+    reference_start: i64,
+) -> Result<Vec<Option<i64>>, ModificationDecodeError> {
+    let mut indexed: Vec<_> = positions.iter().copied().enumerate().collect();
+    indexed.sort_by_key(|(_, position)| *position);
+    let sorted_positions: Vec<_> = indexed.iter().map(|(_, position)| *position).collect();
+    let sorted =
+        project_sorted_positions(&sorted_positions, cigar, sequence_length, reference_start)?;
+    let mut projected = vec![None; positions.len()];
+    for ((original_index, _), reference_position) in indexed.into_iter().zip(sorted) {
+        projected[original_index] = reference_position;
+    }
+    Ok(projected)
+}
+
+fn project_sorted_positions(
     positions: &[usize],
     cigar: &[u8],
     sequence_length: usize,
@@ -621,15 +665,14 @@ mod tests {
     }
 
     #[test]
-    fn reverse_oriented_seq_is_not_flipped_before_projection() {
-        // A reverse BAM record stores SEQ in alignment orientation. Its C calls
-        // therefore project left-to-right through CIGAR exactly as encoded.
-        let result = decode_c_m_modifications(
+    fn reverse_mm_deltas_are_complemented_and_projected_in_stored_coordinates() {
+        let result = decode_c_m_modifications_with_orientation(
             &aux(Some("C+m,0,1;"), Some(&[7, 9]), Some(5)),
-            &packed("CCACC"),
+            &packed("GGTGG"),
             5,
             &cigar(&[(5, 0)]),
             200,
+            true,
         )
         .unwrap()
         .unwrap();
@@ -637,20 +680,24 @@ mod tests {
             result
                 .modifications
                 .iter()
-                .map(|call| call.reference_position)
+                .map(|call| (
+                    call.query_position,
+                    call.reference_position,
+                    call.probability
+                ))
                 .collect::<Vec<_>>(),
-            vec![Some(200), Some(203)]
+            vec![(1, Some(201), 9), (4, Some(204), 7)]
         );
         assert_eq!(
             result.callable_omitted_cytosines,
             Some(vec![
                 OmittedCanonicalCytosine {
-                    query_position: 1,
-                    reference_position: Some(201),
+                    query_position: 0,
+                    reference_position: Some(200),
                 },
                 OmittedCanonicalCytosine {
-                    query_position: 4,
-                    reference_position: Some(204),
+                    query_position: 3,
+                    reference_position: Some(203),
                 },
             ])
         );
@@ -658,7 +705,7 @@ mod tests {
 
     #[test]
     fn record_view_entry_point_preserves_reverse_seq_orientation() {
-        let sequence = "CCACC";
+        let sequence = "GGTGG";
         let layout = RecordLayout {
             block_size: 0,
             ref_id: 0,
@@ -675,7 +722,7 @@ mod tests {
             cigar_bytes: cigar(&[(5, 0)]),
             sequence_bytes: packed(sequence),
             quality_bytes: vec![30; sequence.len()],
-            aux_bytes: aux(Some("A+a.,0;C+m,0,1;"), Some(&[3, 7, 9]), Some(5)),
+            aux_bytes: aux(Some("A+a.,0;C+h.,0;C+m,0,1;"), Some(&[3, 4, 7, 9]), Some(5)),
         };
         let raw = serialize_record_layout(&layout);
         let record = BamRecordView::parse(&raw).unwrap();
@@ -686,20 +733,24 @@ mod tests {
             result
                 .modifications
                 .iter()
-                .map(|call| call.reference_position)
+                .map(|call| (
+                    call.query_position,
+                    call.reference_position,
+                    call.probability
+                ))
                 .collect::<Vec<_>>(),
-            vec![Some(200), Some(203)]
+            vec![(1, Some(201), 9), (4, Some(204), 7)]
         );
         assert_eq!(
             result.callable_omitted_cytosines,
             Some(vec![
                 OmittedCanonicalCytosine {
-                    query_position: 1,
-                    reference_position: Some(201),
+                    query_position: 0,
+                    reference_position: Some(200),
                 },
                 OmittedCanonicalCytosine {
-                    query_position: 4,
-                    reference_position: Some(204),
+                    query_position: 3,
+                    reference_position: Some(203),
                 },
             ])
         );

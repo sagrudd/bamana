@@ -22,6 +22,7 @@ pub(super) fn decode_mm_groups(
     mm: &str,
     packed_sequence: &[u8],
     sequence_length: usize,
+    is_reverse_complemented: bool,
 ) -> Result<DecodedMm, ModificationDecodeError> {
     if !mm.ends_with(';') {
         return Err(malformed("missing final group terminator"));
@@ -37,7 +38,13 @@ pub(super) fn decode_mm_groups(
         if encoded.is_empty() {
             return Err(malformed_at(group_index, "empty group"));
         }
-        let group = parse_group(encoded, packed_sequence, sequence_length, group_index)?;
+        let group = parse_group(
+            encoded,
+            packed_sequence,
+            sequence_length,
+            is_reverse_complemented,
+            group_index,
+        )?;
         let is_selected =
             group.canonical_base == b'C' && group.strand == b'+' && group.codes == "m";
         if is_selected {
@@ -73,6 +80,7 @@ fn parse_group(
     encoded: &str,
     packed_sequence: &[u8],
     sequence_length: usize,
+    is_reverse_complemented: bool,
     group_index: usize,
 ) -> Result<ParsedGroup, ModificationDecodeError> {
     let (header, deltas) = encoded.split_once(',').unwrap_or((encoded, ""));
@@ -100,9 +108,18 @@ fn parse_group(
     let codes = &header[2..code_end];
     let code_count = modification_code_count(codes)
         .ok_or_else(|| malformed_at(group_index, "unsupported modification-code syntax"))?;
-    let canonical_positions =
-        canonical_positions(bytes[0], packed_sequence, sequence_length, group_index)?;
-    let called_positions = decode_deltas(deltas, &canonical_positions, group_index)?;
+    let canonical_positions = canonical_positions(
+        bytes[0],
+        packed_sequence,
+        sequence_length,
+        is_reverse_complemented,
+        group_index,
+    )?;
+    let mut delta_positions = canonical_positions.clone();
+    if is_reverse_complemented {
+        delta_positions.reverse();
+    }
+    let called_positions = decode_deltas(deltas, &delta_positions, group_index)?;
     let ml_values = called_positions
         .len()
         .checked_mul(code_count)
@@ -134,9 +151,10 @@ fn canonical_positions(
     canonical_base: u8,
     packed_sequence: &[u8],
     sequence_length: usize,
+    is_reverse_complemented: bool,
     group_index: usize,
 ) -> Result<Vec<usize>, ModificationDecodeError> {
-    let expected = match canonical_base {
+    let forward_code = match canonical_base {
         b'A' => Some(1),
         b'C' => Some(2),
         b'G' => Some(4),
@@ -144,9 +162,24 @@ fn canonical_positions(
         b'N' => None,
         _ => return Err(malformed_at(group_index, "unsupported canonical base")),
     };
+    let expected = if is_reverse_complemented {
+        forward_code.map(complement_code)
+    } else {
+        forward_code
+    };
     Ok((0..sequence_length)
         .filter(|position| expected.is_none_or(|code| bam_base(packed_sequence, *position) == code))
         .collect())
+}
+
+fn complement_code(code: u8) -> u8 {
+    match code {
+        1 => 8,
+        2 => 4,
+        4 => 2,
+        8 => 1,
+        _ => code,
+    }
 }
 
 fn decode_deltas(
@@ -208,7 +241,7 @@ mod tests {
     #[test]
     fn accounts_for_observed_group_orders() {
         for mm in ["A+a.,0;C+h.,0;C+m.,0;", "C+h.,0;C+m.,0;A+a.,0;"] {
-            let decoded = decode_mm_groups(mm, &packed("AC"), 2).unwrap();
+            let decoded = decode_mm_groups(mm, &packed("AC"), 2, false).unwrap();
             assert_eq!(decoded.total_ml_values, 3);
             assert_eq!(decoded.called_positions, vec![1]);
         }
@@ -216,15 +249,23 @@ mod tests {
 
     #[test]
     fn multi_code_group_consumes_one_probability_per_code_and_call() {
-        let decoded = decode_mm_groups("A+az,0,0;C+m,0;G+h,0;", &packed("AACG"), 4).unwrap();
+        let decoded = decode_mm_groups("A+az,0,0;C+m,0;G+h,0;", &packed("AACG"), 4, false).unwrap();
         assert_eq!(decoded.selected_ml_offset, 4);
         assert_eq!(decoded.total_ml_values, 6);
     }
 
     #[test]
+    fn reverse_deltas_match_maintained_sam_oracle_positions() {
+        let sequence = "CACCCGATGACCGGCT";
+        let mm = "C+m,1,0,0;";
+        let decoded = decode_mm_groups(mm, &packed(sequence), sequence.len(), true).unwrap();
+        assert_eq!(decoded.called_positions, vec![12, 8, 5]);
+    }
+
+    #[test]
     fn rejects_duplicate_selected_group_and_ambiguous_syntax() {
         assert_eq!(
-            decode_mm_groups("C+m,0;A+a,0;C+m.,0;", &packed("AC"), 2)
+            decode_mm_groups("C+m,0;A+a,0;C+m.,0;", &packed("AC"), 2, false)
                 .err()
                 .unwrap(),
             ModificationDecodeError::DuplicateCmGroup
@@ -236,7 +277,7 @@ mod tests {
             "A+a,;C+m,0;",
         ] {
             assert!(matches!(
-                decode_mm_groups(mm, &packed("AC"), 2),
+                decode_mm_groups(mm, &packed("AC"), 2, false),
                 Err(ModificationDecodeError::MalformedMm(_))
             ));
         }

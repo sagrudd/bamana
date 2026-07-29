@@ -44,7 +44,9 @@ and benchmark documents where that is more precise.
       skipped-base semantics and expose omitted cytosines as callable only for
       default or dot mode. Parse governed multi-group MM values in order,
       consume ignored groups' exact ML cardinality, and select exactly one
-      `C+m` group without exposing raw tag payloads.
+      `C+m` group without exposing raw tag payloads. Apply SAM reverse-record
+      semantics by counting complemented canonical bases right-to-left in
+      stored BAM `SEQ`, preserving ML pairing during CIGAR projection.
 
 ## 3. Benchmark And GB10 Readiness
 

@@ -44,6 +44,8 @@ question-mark omissions remain unknown.  This addition does not change a CLI
 or JSON contract.  The maintained boundary also parses multi-group MM values
 in wire order, accounts for every group's ML cardinality, and selects exactly
 one ``C+m`` group. Duplicate targets and ambiguous group syntax fail closed.
+Reverse records count the complemented canonical base right-to-left, matching
+SAM's original-sequencing orientation while returning stored query positions.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`

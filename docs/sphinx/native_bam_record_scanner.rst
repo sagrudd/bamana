@@ -67,10 +67,15 @@ tags fail closed. Errors report only the group number and reason, never raw MM
 text or read payload.
 
 The first supported scientific surface intentionally returns only ``C+m``.
-MM positions are interpreted against BAM ``SEQ`` exactly as required by SAM.
-Reverse-strand records are therefore not reversed a second time during CIGAR
-projection.  Consumers should treat ``Ok(None)`` as all three tags absent;
-partial trios are errors.
+MM positions retain original-sequencing orientation.  For a forward record,
+deltas count the named canonical base left-to-right in stored BAM ``SEQ``.
+For a reverse-aligned record, they count the complemented canonical base
+right-to-left. Bamana then associates ML values in MM order, converts calls to
+stored query coordinates, sorts those calls without detaching probabilities,
+and projects them through CIGAR. ``BamRecordView`` supplies the reverse flag
+automatically; section-oriented consumers must call
+``decode_c_m_modifications_with_orientation``.  Consumers should treat
+``Ok(None)`` as all three tags absent; partial trios are errors.
 
 The first migration target is ``check_sort``, followed by ``check_map``,
 ``summary``, and ``check_tag``. Validation and forensics paths come after those
