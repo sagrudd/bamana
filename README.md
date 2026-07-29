@@ -534,7 +534,10 @@ BAM record scanner. `BamRecordView` defines the borrowed record-view contract,
 and `BamScanner` provides the native BGZF/header record iteration substrate.
 Scanner-facing helpers centralize common flag, coordinate, MAPQ, read-name,
 sequence-length, section-range, skip-offset, and selected aux-tag access without
-materializing richer record layouts. `check_sort`, `check_map`, `summary`,
+materializing richer record layouts. The native library also exposes strict
+atomic `MM:Z:C+m` / `ML:B:C` / `MN:i` decoding and CIGAR projection for
+downstream modified-base consumers; unsupported codes and partial or malformed
+trios fail explicitly. `check_sort`, `check_map`, `summary`,
 `check_tag`, `validate`, `inspect_duplication`, and `forensic_inspect` now use
 the scanner for scanner-compatible record traversal while preserving existing
 JSON contracts. `scanner_microbench` provides records-per-second and selective

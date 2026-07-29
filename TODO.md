@@ -38,6 +38,9 @@ and benchmark documents where that is more precise.
       available.
 - [ ] Preserve existing public contracts and semantic versioning for all new I/O
       APIs.
+- [x] Add a reusable native atomic `MM`/`ML`/`MN` decoder and BAM-CIGAR
+      projection API for the AlleleAnchor methylation observation boundary,
+      initially restricted to standard `C+m` and `ML:B:C`.
 
 ## 3. Benchmark And GB10 Readiness
 

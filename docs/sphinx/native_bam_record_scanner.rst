@@ -40,6 +40,23 @@ over scanner-owned aux slices as well as materialized aux bytes. Milestone 3
 kept the bounded traversal behavior while adding scanner-facing helpers over
 ``BamRecordView::aux_bytes``.
 
+Modified-base decoding
+----------------------
+
+``src/bam/modifications.rs`` provides a strict library boundary for a complete
+``MM:Z:C+m`` / ``ML:B:C`` / ``MN:i`` trio.  It validates atomic tag presence,
+``MN`` against ``SEQ`` length, delta addressing against canonical cytosines,
+and one-to-one ``ML`` cardinality before projecting calls through BAM CIGAR.
+Soft-clipped and inserted calls have no reference coordinate; deletions and
+reference skips advance the reference cursor.
+
+The first supported surface intentionally rejects non-cytosine bases,
+non-5mC codes, multiple MM groups, and malformed or differently typed tags.
+MM positions are interpreted against BAM ``SEQ`` exactly as required by SAM.
+Reverse-strand records are therefore not reversed a second time during CIGAR
+projection.  Consumers should treat ``Ok(None)`` as all three tags absent;
+partial trios are errors.
+
 The first migration target is ``check_sort``, followed by ``check_map``,
 ``summary``, and ``check_tag``. Validation and forensics paths come after those
 because they mix lightweight record fields with aux traversal and sometimes

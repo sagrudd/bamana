@@ -31,6 +31,15 @@ evidence was recorded and closed after M14.1 through M14.10 completed on
 Status: complete as of 2026-06-01 for Milestone 14. Milestone 15 is active as
 of 2026-06-01.
 
+## Maintained downstream capability additions
+
+The active release-readiness lane includes a Bamana-native library boundary
+for AlleleAnchor modified-base ingestion.  It decodes one atomic standard
+``C+m`` / ``ML:B:C`` / ``MN:i`` trio from borrowed BAM record sections and
+projects canonical-cytosine query positions through CIGAR without reorienting
+reverse-strand ``SEQ``.  Broader MM code support is not implied.  This library
+addition does not change a CLI or JSON contract.
+
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`
 sidecars are not discovered, parsed, planned, or used; `consume` remains

@@ -9,6 +9,7 @@ pub mod fastq;
 pub mod header;
 pub mod index;
 pub mod merge;
+pub mod modifications;
 pub mod reader;
 pub mod record;
 pub mod records;
