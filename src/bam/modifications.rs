@@ -8,6 +8,9 @@ use std::{error::Error, fmt};
 
 use crate::bam::{record::BamRecordView, tags::traverse_aux_fields};
 
+#[path = "modification_groups.rs"]
+mod groups;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CytosineModification {
     pub query_position: usize,
@@ -52,6 +55,7 @@ pub enum ModificationDecodeError {
         observed: u8,
     },
     UnsupportedMmCode(String),
+    DuplicateCmGroup,
     MalformedMm(String),
     MnMismatch {
         mn: usize,
@@ -87,6 +91,7 @@ impl fmt::Display for ModificationDecodeError {
             Self::UnsupportedMmCode(code) => {
                 write!(formatter, "unsupported MM modification code: {code}")
             }
+            Self::DuplicateCmGroup => formatter.write_str("MM contains more than one C+m group"),
             Self::MalformedMm(detail) => write!(formatter, "malformed MM value: {detail}"),
             Self::MnMismatch {
                 mn,
@@ -115,9 +120,10 @@ impl Error for ModificationDecodeError {}
 /// Decode and project a complete `MM:Z:C+m` / `ML:B:C` / `MN:i` trio.
 ///
 /// Returns `Ok(None)` only when all three tags are absent. The supported MM
-/// form is one unstranded standard 5mC group (`C+m`) with optional `.` or `?`
-/// mode suffix. Other bases, strands, modification codes, and multiple groups
-/// are rejected rather than partially interpreted.
+/// form selects one unstranded standard 5mC group (`C+m`) with optional `.`
+/// or `?` mode suffix. Other well-formed groups are consumed in wire order so
+/// their ML entries are skipped exactly. Duplicate C+m groups and syntax whose
+/// ML cardinality cannot be determined are rejected.
 pub fn decode_record_c_m_modifications(
     record: &BamRecordView<'_>,
 ) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
@@ -156,19 +162,28 @@ pub fn decode_c_m_modifications(
         ));
     }
 
-    let decoded_mm = decode_mm_positions(&mm, packed_sequence, sequence_length)?;
+    let decoded_mm = groups::decode_mm_groups(&mm, packed_sequence, sequence_length)?;
     let query_positions = decoded_mm.called_positions;
-    if query_positions.len() != ml.len() {
+    if decoded_mm.total_ml_values != ml.len() {
         return Err(ModificationDecodeError::MlCardinality {
-            positions: query_positions.len(),
+            positions: decoded_mm.total_ml_values,
             probabilities: ml.len(),
         });
     }
+    let selected_ml_end = decoded_mm
+        .selected_ml_offset
+        .checked_add(query_positions.len())
+        .ok_or_else(|| {
+            ModificationDecodeError::MalformedMm(
+                "selected ML slice overflowed its cardinality".to_string(),
+            )
+        })?;
+    let selected_ml = &ml[decoded_mm.selected_ml_offset..selected_ml_end];
     let references = project_positions(&query_positions, cigar, sequence_length, reference_start)?;
     let modifications: Vec<CytosineModification> = query_positions
         .into_iter()
         .zip(references)
-        .zip(ml)
+        .zip(selected_ml.iter().copied())
         .map(
             |((query_position, reference_position), probability)| CytosineModification {
                 query_position,
@@ -320,73 +335,7 @@ fn parse_wrong_type(detail: &str) -> ModificationDecodeError {
     }
 }
 
-struct DecodedMm {
-    skipped_base_mode: MmSkippedBaseMode,
-    canonical_positions: Vec<usize>,
-    called_positions: Vec<usize>,
-}
-
-fn decode_mm_positions(
-    mm: &str,
-    packed_sequence: &[u8],
-    sequence_length: usize,
-) -> Result<DecodedMm, ModificationDecodeError> {
-    let value = mm
-        .strip_suffix(';')
-        .ok_or_else(|| ModificationDecodeError::MalformedMm("missing final ';'".to_string()))?;
-    if value.contains(';') {
-        return Err(ModificationDecodeError::UnsupportedMmCode(
-            "multiple MM groups".to_string(),
-        ));
-    }
-    let (code, deltas) = value.split_once(',').unwrap_or((value, ""));
-    let skipped_base_mode = match code {
-        "C+m" => MmSkippedBaseMode::DefaultCanonical,
-        "C+m." => MmSkippedBaseMode::ExplicitCanonical,
-        "C+m?" => MmSkippedBaseMode::Unknown,
-        _ => return Err(ModificationDecodeError::UnsupportedMmCode(code.to_string())),
-    };
-    let canonical_positions: Vec<_> = (0..sequence_length)
-        .filter(|position| bam_base(packed_sequence, *position) == 2)
-        .collect();
-    if deltas.is_empty() {
-        return Ok(DecodedMm {
-            skipped_base_mode,
-            canonical_positions,
-            called_positions: Vec::new(),
-        });
-    }
-
-    let mut canonical_index = 0_usize;
-    let mut called_positions = Vec::new();
-    for delta in deltas.split(',') {
-        if delta.is_empty() || !delta.bytes().all(|byte| byte.is_ascii_digit()) {
-            return Err(ModificationDecodeError::MalformedMm(format!(
-                "invalid delta '{delta}'"
-            )));
-        }
-        let skipped = delta.parse::<usize>().map_err(|_| {
-            ModificationDecodeError::MalformedMm(format!("delta '{delta}' overflows usize"))
-        })?;
-        canonical_index = canonical_index.checked_add(skipped).ok_or_else(|| {
-            ModificationDecodeError::MalformedMm("canonical-base index overflow".to_string())
-        })?;
-        let position = canonical_positions.get(canonical_index).ok_or_else(|| {
-            ModificationDecodeError::MalformedMm(
-                "delta addresses beyond canonical cytosines in SEQ".to_string(),
-            )
-        })?;
-        called_positions.push(*position);
-        canonical_index += 1;
-    }
-    Ok(DecodedMm {
-        skipped_base_mode,
-        canonical_positions,
-        called_positions,
-    })
-}
-
-fn bam_base(sequence: &[u8], position: usize) -> u8 {
+pub(super) fn bam_base(sequence: &[u8], position: usize) -> u8 {
     let packed = sequence[position / 2];
     if position % 2 == 0 {
         packed >> 4
@@ -559,6 +508,43 @@ mod tests {
     }
 
     #[test]
+    fn selects_exact_ml_slice_with_preceding_following_and_multi_code_groups() {
+        let result = decode_c_m_modifications(
+            &aux(
+                Some("A+az.,0,0;C+h.,0;C+m.,1;G+h.,0;"),
+                Some(&[10, 11, 12, 13, 20, 44, 50]),
+                Some(6),
+            ),
+            &packed("AACCGG"),
+            6,
+            &cigar(&[(6, 0)]),
+            100,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(result.modifications.len(), 1);
+        assert_eq!(result.modifications[0].query_position, 3);
+        assert_eq!(result.modifications[0].reference_position, Some(103));
+        assert_eq!(result.modifications[0].probability, 44);
+
+        for (mm, ml) in [
+            ("A+a.,0;C+h.,0;C+m.,0;", vec![1, 2, 77]),
+            ("C+h.,0;C+m.,0;A+a.,0;", vec![2, 77, 1]),
+        ] {
+            let selected = decode_c_m_modifications(
+                &aux(Some(mm), Some(&ml), Some(2)),
+                &packed("AC"),
+                2,
+                &cigar(&[(2, 0)]),
+                10,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(selected.modifications[0].probability, 77);
+        }
+    }
+
+    #[test]
     fn preserves_default_dot_and_question_skipped_base_modes() {
         let cases = [
             (
@@ -689,7 +675,7 @@ mod tests {
             cigar_bytes: cigar(&[(5, 0)]),
             sequence_bytes: packed(sequence),
             quality_bytes: vec![30; sequence.len()],
-            aux_bytes: aux(Some("C+m,0,1;"), Some(&[7, 9]), Some(5)),
+            aux_bytes: aux(Some("A+a.,0;C+m,0,1;"), Some(&[3, 7, 9]), Some(5)),
         };
         let raw = serialize_record_layout(&layout);
         let record = BamRecordView::parse(&raw).unwrap();
@@ -786,11 +772,11 @@ mod tests {
 
     #[test]
     fn rejects_unsupported_codes_and_malformed_deltas() {
-        for mm in ["A+a,0;", "C+h,0;", "C-m,0;", "C+m,0;C+h,0;"] {
+        for (mm, sequence) in [("A+a,0;", "A"), ("C+h,0;", "C"), ("C-m,0;", "C")] {
             assert!(matches!(
                 decode_c_m_modifications(
                     &aux(Some(mm), Some(&[1]), Some(1)),
-                    &packed("C"),
+                    &packed(sequence),
                     1,
                     &cigar(&[(1, 0)]),
                     0

@@ -41,7 +41,9 @@ reverse-strand ``SEQ``.  Broader MM code support is not implied.  This library
 boundary preserves default, dot, and question-mark skipped-base modes.  It
 projects omitted canonical cytosines only for default and dot modes;
 question-mark omissions remain unknown.  This addition does not change a CLI
-or JSON contract.
+or JSON contract.  The maintained boundary also parses multi-group MM values
+in wire order, accounts for every group's ML cardinality, and selects exactly
+one ``C+m`` group. Duplicate targets and ambiguous group syntax fail closed.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`

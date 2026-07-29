@@ -57,8 +57,16 @@ projects it through the same CIGAR, allowing consumers to reconcile callable
 canonical observations.  For question-mark mode that collection is absent:
 omitted cytosines are unknown and must never be reported as canonical.
 
-The first supported surface intentionally rejects non-cytosine bases,
-non-5mC codes, multiple MM groups, and malformed or differently typed tags.
+Multi-group MM values are parsed in wire order.  Each well-formed non-target
+group is validated against its canonical bases and consumes one ML value per
+called position and modification code.  Exactly one unstranded ``C+m`` group
+is selected, so preceding and following groups cannot shift its probability
+slice. Duplicate ``C+m`` groups, malformed group headers or deltas, ambiguous
+modification-code syntax, total ML cardinality mismatch, and differently typed
+tags fail closed. Errors report only the group number and reason, never raw MM
+text or read payload.
+
+The first supported scientific surface intentionally returns only ``C+m``.
 MM positions are interpreted against BAM ``SEQ`` exactly as required by SAM.
 Reverse-strand records are therefore not reversed a second time during CIGAR
 projection.  Consumers should treat ``Ok(None)`` as all three tags absent;

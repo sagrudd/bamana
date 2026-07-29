@@ -540,7 +540,11 @@ downstream modified-base consumers; unsupported codes and partial or malformed
 trios fail explicitly. The result preserves the MM default, dot, or
 question-mark skipped-base mode. Canonical cytosines omitted by default or dot
 mode are projected as callable canonical positions; question-mark omissions
-remain unknown and are not exposed as callable. `check_sort`, `check_map`,
+remain unknown and are not exposed as callable. Multi-group MM values are
+parsed in wire order: well-formed non-target groups consume their exact ML
+cardinality, while exactly one ``C+m`` group is selected. Duplicate target
+groups or ambiguous group syntax fail without exposing tag payloads.
+`check_sort`, `check_map`,
 `summary`, `check_tag`, `validate`, `inspect_duplication`, and
 `forensic_inspect` now use the scanner for scanner-compatible record traversal
 while preserving existing JSON contracts. `scanner_microbench` provides

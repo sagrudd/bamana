@@ -42,7 +42,9 @@ and benchmark documents where that is more precise.
       projection API for the AlleleAnchor methylation observation boundary,
       initially restricted to standard `C+m` and `ML:B:C`; preserve typed
       skipped-base semantics and expose omitted cytosines as callable only for
-      default or dot mode.
+      default or dot mode. Parse governed multi-group MM values in order,
+      consume ignored groups' exact ML cardinality, and select exactly one
+      `C+m` group without exposing raw tag payloads.
 
 ## 3. Benchmark And GB10 Readiness
 
