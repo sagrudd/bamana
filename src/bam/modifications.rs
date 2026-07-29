@@ -15,10 +15,30 @@ pub struct CytosineModification {
     pub probability: u8,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MmSkippedBaseMode {
+    /// No suffix: skipped canonical bases use the SAM default canonical mode.
+    DefaultCanonical,
+    /// A `.` suffix explicitly declares skipped canonical bases canonical.
+    ExplicitCanonical,
+    /// A `?` suffix declares skipped canonical bases to have unknown status.
+    Unknown,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OmittedCanonicalCytosine {
+    pub query_position: usize,
+    pub reference_position: Option<i64>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CytosineModificationTrio {
     pub sequence_length: usize,
+    pub skipped_base_mode: MmSkippedBaseMode,
     pub modifications: Vec<CytosineModification>,
+    /// Canonical cytosines omitted from MM when SAM semantics make them
+    /// callable as canonical. This is `None` for question-mark mode.
+    pub callable_omitted_cytosines: Option<Vec<OmittedCanonicalCytosine>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -136,7 +156,8 @@ pub fn decode_c_m_modifications(
         ));
     }
 
-    let query_positions = decode_mm_positions(&mm, packed_sequence, sequence_length)?;
+    let decoded_mm = decode_mm_positions(&mm, packed_sequence, sequence_length)?;
+    let query_positions = decoded_mm.called_positions;
     if query_positions.len() != ml.len() {
         return Err(ModificationDecodeError::MlCardinality {
             positions: query_positions.len(),
@@ -144,7 +165,7 @@ pub fn decode_c_m_modifications(
         });
     }
     let references = project_positions(&query_positions, cigar, sequence_length, reference_start)?;
-    let modifications = query_positions
+    let modifications: Vec<CytosineModification> = query_positions
         .into_iter()
         .zip(references)
         .zip(ml)
@@ -156,9 +177,38 @@ pub fn decode_c_m_modifications(
             },
         )
         .collect();
+    let callable_omitted_cytosines = if decoded_mm.skipped_base_mode == MmSkippedBaseMode::Unknown {
+        None
+    } else {
+        let omitted_positions: Vec<_> = decoded_mm
+            .canonical_positions
+            .into_iter()
+            .filter(|position| {
+                modifications
+                    .binary_search_by_key(position, |call| call.query_position)
+                    .is_err()
+            })
+            .collect();
+        let omitted_references =
+            project_positions(&omitted_positions, cigar, sequence_length, reference_start)?;
+        Some(
+            omitted_positions
+                .into_iter()
+                .zip(omitted_references)
+                .map(
+                    |(query_position, reference_position)| OmittedCanonicalCytosine {
+                        query_position,
+                        reference_position,
+                    },
+                )
+                .collect(),
+        )
+    };
     Ok(Some(CytosineModificationTrio {
         sequence_length,
+        skipped_base_mode: decoded_mm.skipped_base_mode,
         modifications,
+        callable_omitted_cytosines,
     }))
 }
 
@@ -270,11 +320,17 @@ fn parse_wrong_type(detail: &str) -> ModificationDecodeError {
     }
 }
 
+struct DecodedMm {
+    skipped_base_mode: MmSkippedBaseMode,
+    canonical_positions: Vec<usize>,
+    called_positions: Vec<usize>,
+}
+
 fn decode_mm_positions(
     mm: &str,
     packed_sequence: &[u8],
     sequence_length: usize,
-) -> Result<Vec<usize>, ModificationDecodeError> {
+) -> Result<DecodedMm, ModificationDecodeError> {
     let value = mm
         .strip_suffix(';')
         .ok_or_else(|| ModificationDecodeError::MalformedMm("missing final ';'".to_string()))?;
@@ -284,18 +340,25 @@ fn decode_mm_positions(
         ));
     }
     let (code, deltas) = value.split_once(',').unwrap_or((value, ""));
-    if !matches!(code, "C+m" | "C+m." | "C+m?") {
-        return Err(ModificationDecodeError::UnsupportedMmCode(code.to_string()));
-    }
-    if deltas.is_empty() {
-        return Ok(Vec::new());
-    }
-
+    let skipped_base_mode = match code {
+        "C+m" => MmSkippedBaseMode::DefaultCanonical,
+        "C+m." => MmSkippedBaseMode::ExplicitCanonical,
+        "C+m?" => MmSkippedBaseMode::Unknown,
+        _ => return Err(ModificationDecodeError::UnsupportedMmCode(code.to_string())),
+    };
     let canonical_positions: Vec<_> = (0..sequence_length)
         .filter(|position| bam_base(packed_sequence, *position) == 2)
         .collect();
+    if deltas.is_empty() {
+        return Ok(DecodedMm {
+            skipped_base_mode,
+            canonical_positions,
+            called_positions: Vec::new(),
+        });
+    }
+
     let mut canonical_index = 0_usize;
-    let mut positions = Vec::new();
+    let mut called_positions = Vec::new();
     for delta in deltas.split(',') {
         if delta.is_empty() || !delta.bytes().all(|byte| byte.is_ascii_digit()) {
             return Err(ModificationDecodeError::MalformedMm(format!(
@@ -313,10 +376,14 @@ fn decode_mm_positions(
                 "delta addresses beyond canonical cytosines in SEQ".to_string(),
             )
         })?;
-        positions.push(*position);
+        called_positions.push(*position);
         canonical_index += 1;
     }
-    Ok(positions)
+    Ok(DecodedMm {
+        skipped_base_mode,
+        canonical_positions,
+        called_positions,
+    })
 }
 
 fn bam_base(sequence: &[u8], position: usize) -> u8 {
@@ -476,6 +543,95 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![(3, Some(13)), (4, Some(14))]
         );
+        assert_eq!(
+            result.callable_omitted_cytosines,
+            Some(vec![
+                OmittedCanonicalCytosine {
+                    query_position: 1,
+                    reference_position: Some(11),
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 5,
+                    reference_position: Some(15),
+                },
+            ])
+        );
+    }
+
+    #[test]
+    fn preserves_default_dot_and_question_skipped_base_modes() {
+        let cases = [
+            (
+                "C+m,1;",
+                MmSkippedBaseMode::DefaultCanonical,
+                Some(vec![1, 4]),
+            ),
+            (
+                "C+m.,1;",
+                MmSkippedBaseMode::ExplicitCanonical,
+                Some(vec![1, 4]),
+            ),
+            ("C+m?,1;", MmSkippedBaseMode::Unknown, None),
+        ];
+        for (mm, expected_mode, expected_omitted) in cases {
+            let result = decode_c_m_modifications(
+                &aux(Some(mm), Some(&[20]), Some(5)),
+                &packed("ACACC"),
+                5,
+                &cigar(&[(5, 0)]),
+                100,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(result.skipped_base_mode, expected_mode);
+            assert_eq!(
+                result.callable_omitted_cytosines.as_ref().map(|calls| {
+                    calls
+                        .iter()
+                        .map(|call| call.query_position)
+                        .collect::<Vec<_>>()
+                }),
+                expected_omitted
+            );
+        }
+    }
+
+    #[test]
+    fn projects_callable_omitted_cytosines_through_cigar() {
+        let result = decode_c_m_modifications(
+            &aux(Some("C+m.,1;"), Some(&[20]), Some(6)),
+            &packed("CCCCCC"),
+            6,
+            &cigar(&[(1, 4), (2, 0), (1, 1), (2, 2), (2, 0)]),
+            100,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(
+            result.callable_omitted_cytosines,
+            Some(vec![
+                OmittedCanonicalCytosine {
+                    query_position: 0,
+                    reference_position: None,
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 2,
+                    reference_position: Some(101),
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 3,
+                    reference_position: None,
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 4,
+                    reference_position: Some(104),
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 5,
+                    reference_position: Some(105),
+                },
+            ])
+        );
     }
 
     #[test]
@@ -498,6 +654,19 @@ mod tests {
                 .map(|call| call.reference_position)
                 .collect::<Vec<_>>(),
             vec![Some(200), Some(203)]
+        );
+        assert_eq!(
+            result.callable_omitted_cytosines,
+            Some(vec![
+                OmittedCanonicalCytosine {
+                    query_position: 1,
+                    reference_position: Some(201),
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 4,
+                    reference_position: Some(204),
+                },
+            ])
         );
     }
 
@@ -535,6 +704,19 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![Some(200), Some(203)]
         );
+        assert_eq!(
+            result.callable_omitted_cytosines,
+            Some(vec![
+                OmittedCanonicalCytosine {
+                    query_position: 1,
+                    reference_position: Some(201),
+                },
+                OmittedCanonicalCytosine {
+                    query_position: 4,
+                    reference_position: Some(204),
+                },
+            ])
+        );
     }
 
     #[test]
@@ -549,6 +731,13 @@ mod tests {
         .unwrap()
         .unwrap();
         assert!(result.modifications.is_empty());
+        assert_eq!(
+            result.callable_omitted_cytosines,
+            Some(vec![OmittedCanonicalCytosine {
+                query_position: 1,
+                reference_position: Some(1),
+            }])
+        );
     }
 
     #[test]

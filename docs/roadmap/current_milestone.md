@@ -38,7 +38,10 @@ for AlleleAnchor modified-base ingestion.  It decodes one atomic standard
 ``C+m`` / ``ML:B:C`` / ``MN:i`` trio from borrowed BAM record sections and
 projects canonical-cytosine query positions through CIGAR without reorienting
 reverse-strand ``SEQ``.  Broader MM code support is not implied.  This library
-addition does not change a CLI or JSON contract.
+boundary preserves default, dot, and question-mark skipped-base modes.  It
+projects omitted canonical cytosines only for default and dot modes;
+question-mark omissions remain unknown.  This addition does not change a CLI
+or JSON contract.
 
 M13.4 freezes CRAI and indexed CRAM queries as unsupported/deferred for
 Milestone 13, not transitional behavior and not native work. Adjacent `.crai`

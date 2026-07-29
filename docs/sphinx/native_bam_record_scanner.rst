@@ -50,6 +50,13 @@ and one-to-one ``ML`` cardinality before projecting calls through BAM CIGAR.
 Soft-clipped and inserted calls have no reference coordinate; deletions and
 reference skips advance the reference cursor.
 
+The typed skipped-base mode distinguishes unsuffixed default canonical mode,
+explicit dot canonical mode, and question-mark unknown mode.  For default and
+dot modes, the result also exposes every canonical ``C`` omitted from MM and
+projects it through the same CIGAR, allowing consumers to reconcile callable
+canonical observations.  For question-mark mode that collection is absent:
+omitted cytosines are unknown and must never be reported as canonical.
+
 The first supported surface intentionally rejects non-cytosine bases,
 non-5mC codes, multiple MM groups, and malformed or differently typed tags.
 MM positions are interpreted against BAM ``SEQ`` exactly as required by SAM.

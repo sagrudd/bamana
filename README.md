@@ -537,10 +537,14 @@ sequence-length, section-range, skip-offset, and selected aux-tag access without
 materializing richer record layouts. The native library also exposes strict
 atomic `MM:Z:C+m` / `ML:B:C` / `MN:i` decoding and CIGAR projection for
 downstream modified-base consumers; unsupported codes and partial or malformed
-trios fail explicitly. `check_sort`, `check_map`, `summary`,
-`check_tag`, `validate`, `inspect_duplication`, and `forensic_inspect` now use
-the scanner for scanner-compatible record traversal while preserving existing
-JSON contracts. `scanner_microbench` provides records-per-second and selective
+trios fail explicitly. The result preserves the MM default, dot, or
+question-mark skipped-base mode. Canonical cytosines omitted by default or dot
+mode are projected as callable canonical positions; question-mark omissions
+remain unknown and are not exposed as callable. `check_sort`, `check_map`,
+`summary`, `check_tag`, `validate`, `inspect_duplication`, and
+`forensic_inspect` now use the scanner for scanner-compatible record traversal
+while preserving existing JSON contracts. `scanner_microbench` provides
+records-per-second and selective
 field-extraction JSON benchmarks for the native scanner. Full BAM semantic
 validation, BAI/CSI random access, native CRAM scanning, writer-heavy BAM
 transforms, and broader BAM operations remain incremental downstream work under

@@ -40,7 +40,9 @@ and benchmark documents where that is more precise.
       APIs.
 - [x] Add a reusable native atomic `MM`/`ML`/`MN` decoder and BAM-CIGAR
       projection API for the AlleleAnchor methylation observation boundary,
-      initially restricted to standard `C+m` and `ML:B:C`.
+      initially restricted to standard `C+m` and `ML:B:C`; preserve typed
+      skipped-base semantics and expose omitted cytosines as callable only for
+      default or dot mode.
 
 ## 3. Benchmark And GB10 Readiness
 
