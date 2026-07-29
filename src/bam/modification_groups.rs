@@ -1,15 +1,37 @@
 use super::{MmSkippedBaseMode, ModificationDecodeError, bam_base};
 
 pub(super) struct DecodedMm {
-    pub(super) selected: Option<SelectedCm>,
+    pub(super) selected: Option<SelectedGroup>,
     pub(super) total_ml_values: usize,
 }
 
-pub(super) struct SelectedCm {
+pub(super) struct SelectedGroup {
     pub(super) skipped_base_mode: MmSkippedBaseMode,
     pub(super) canonical_positions: Vec<usize>,
     pub(super) called_positions: Vec<usize>,
     pub(super) selected_ml_offset: usize,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum TargetGroup {
+    Cm,
+    Aa,
+}
+
+impl TargetGroup {
+    fn matches(self, group: &ParsedGroup) -> bool {
+        match self {
+            Self::Cm => group.canonical_base == b'C' && group.strand == b'+' && group.codes == "m",
+            Self::Aa => group.canonical_base == b'A' && group.strand == b'+' && group.codes == "a",
+        }
+    }
+
+    fn duplicate_error(self) -> ModificationDecodeError {
+        match self {
+            Self::Cm => ModificationDecodeError::DuplicateCmGroup,
+            Self::Aa => ModificationDecodeError::DuplicateAaGroup,
+        }
+    }
 }
 
 struct ParsedGroup {
@@ -27,6 +49,7 @@ pub(super) fn decode_mm_groups(
     packed_sequence: &[u8],
     sequence_length: usize,
     is_reverse_complemented: bool,
+    target: TargetGroup,
 ) -> Result<DecodedMm, ModificationDecodeError> {
     if !mm.ends_with(';') {
         return Err(malformed("missing final group terminator"));
@@ -49,11 +72,9 @@ pub(super) fn decode_mm_groups(
             is_reverse_complemented,
             group_index,
         )?;
-        let is_selected =
-            group.canonical_base == b'C' && group.strand == b'+' && group.codes == "m";
-        if is_selected {
+        if target.matches(&group) {
             if selected.is_some() {
-                return Err(ModificationDecodeError::DuplicateCmGroup);
+                return Err(target.duplicate_error());
             }
             selected = Some((
                 group.skipped_base_mode,
@@ -69,7 +90,7 @@ pub(super) fn decode_mm_groups(
     Ok(DecodedMm {
         selected: selected.map(
             |(skipped_base_mode, canonical_positions, called_positions, selected_ml_offset)| {
-                SelectedCm {
+                SelectedGroup {
                     skipped_base_mode,
                     canonical_positions,
                     called_positions,
@@ -246,7 +267,7 @@ mod tests {
     #[test]
     fn accounts_for_observed_group_orders() {
         for mm in ["A+a.,0;C+h.,0;C+m.,0;", "C+h.,0;C+m.,0;A+a.,0;"] {
-            let decoded = decode_mm_groups(mm, &packed("AC"), 2, false).unwrap();
+            let decoded = decode_mm_groups(mm, &packed("AC"), 2, false, TargetGroup::Cm).unwrap();
             assert_eq!(decoded.total_ml_values, 3);
             assert_eq!(decoded.selected.unwrap().called_positions, vec![1]);
         }
@@ -254,7 +275,14 @@ mod tests {
 
     #[test]
     fn multi_code_group_consumes_one_probability_per_code_and_call() {
-        let decoded = decode_mm_groups("A+az,0,0;C+m,0;G+h,0;", &packed("AACG"), 4, false).unwrap();
+        let decoded = decode_mm_groups(
+            "A+az,0,0;C+m,0;G+h,0;",
+            &packed("AACG"),
+            4,
+            false,
+            TargetGroup::Cm,
+        )
+        .unwrap();
         assert_eq!(decoded.selected.unwrap().selected_ml_offset, 4);
         assert_eq!(decoded.total_ml_values, 6);
     }
@@ -263,13 +291,15 @@ mod tests {
     fn reverse_deltas_match_maintained_sam_oracle_positions() {
         let sequence = "CACCCGATGACCGGCT";
         let mm = "C+m,1,0,0;";
-        let decoded = decode_mm_groups(mm, &packed(sequence), sequence.len(), true).unwrap();
+        let decoded =
+            decode_mm_groups(mm, &packed(sequence), sequence.len(), true, TargetGroup::Cm).unwrap();
         assert_eq!(decoded.selected.unwrap().called_positions, vec![12, 8, 5]);
     }
 
     #[test]
     fn accepts_valid_groups_without_target_while_retaining_ml_cardinality() {
-        let decoded = decode_mm_groups("A+a.,0;C+h.,0;", &packed("AC"), 2, false).unwrap();
+        let decoded =
+            decode_mm_groups("A+a.,0;C+h.,0;", &packed("AC"), 2, false, TargetGroup::Cm).unwrap();
         assert!(decoded.selected.is_none());
         assert_eq!(decoded.total_ml_values, 2);
     }
@@ -277,9 +307,15 @@ mod tests {
     #[test]
     fn rejects_duplicate_selected_group_and_ambiguous_syntax() {
         assert_eq!(
-            decode_mm_groups("C+m,0;A+a,0;C+m.,0;", &packed("AC"), 2, false)
-                .err()
-                .unwrap(),
+            decode_mm_groups(
+                "C+m,0;A+a,0;C+m.,0;",
+                &packed("AC"),
+                2,
+                false,
+                TargetGroup::Cm
+            )
+            .err()
+            .unwrap(),
             ModificationDecodeError::DuplicateCmGroup
         );
         for mm in [
@@ -289,7 +325,7 @@ mod tests {
             "A+a,;C+m,0;",
         ] {
             assert!(matches!(
-                decode_mm_groups(mm, &packed("AC"), 2, false),
+                decode_mm_groups(mm, &packed("AC"), 2, false, TargetGroup::Cm),
                 Err(ModificationDecodeError::MalformedMm(_))
             ));
         }

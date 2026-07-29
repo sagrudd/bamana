@@ -50,6 +50,9 @@ and benchmark documents where that is more precise.
       section-oriented consumers to pass the BAM reverse flag explicitly.
       Treat a valid trio with no `C+m` group as absent 5mC only after validating
       all group syntax and the complete ML cardinality.
+    - [x] Extend the same strict multi-group boundary with reusable `A+a`
+      projection for governed ONT accessibility, including forward/reverse
+      orientation, CIGAR indels, target absence, and privacy-safe failures.
 
 ## 3. Benchmark And GB10 Readiness
 

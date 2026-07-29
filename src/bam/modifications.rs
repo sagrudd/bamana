@@ -9,7 +9,7 @@ use std::{error::Error, fmt};
 use crate::bam::{record::BamRecordView, tags::traverse_aux_fields};
 
 #[path = "modification_groups.rs"]
-mod groups;
+pub(super) mod groups;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CytosineModification {
@@ -56,6 +56,7 @@ pub enum ModificationDecodeError {
     },
     UnsupportedMmCode(String),
     DuplicateCmGroup,
+    DuplicateAaGroup,
     MalformedMm(String),
     MnMismatch {
         mn: usize,
@@ -92,6 +93,7 @@ impl fmt::Display for ModificationDecodeError {
                 write!(formatter, "unsupported MM modification code: {code}")
             }
             Self::DuplicateCmGroup => formatter.write_str("MM contains more than one C+m group"),
+            Self::DuplicateAaGroup => formatter.write_str("MM contains more than one A+a group"),
             Self::MalformedMm(detail) => write!(formatter, "malformed MM value: {detail}"),
             Self::MnMismatch {
                 mn,
@@ -119,7 +121,8 @@ impl Error for ModificationDecodeError {}
 
 /// Decode and project a complete `MM:Z:C+m` / `ML:B:C` / `MN:i` trio.
 ///
-/// Returns `Ok(None)` only when all three tags are absent. The supported MM
+/// Returns `Ok(None)` when all three tags or the exact target group are absent.
+/// The supported MM
 /// form selects one unstranded standard 5mC group (`C+m`) with optional `.`
 /// or `?` mode suffix. Other well-formed groups are consumed in wire order so
 /// their ML entries are skipped exactly. Duplicate C+m groups and syntax whose
@@ -153,6 +156,66 @@ pub fn decode_c_m_modifications(
     reference_start: i64,
     is_reverse_complemented: bool,
 ) -> Result<Option<CytosineModificationTrio>, ModificationDecodeError> {
+    Ok(decode_target_modifications(
+        aux,
+        packed_sequence,
+        sequence_length,
+        cigar,
+        reference_start,
+        is_reverse_complemented,
+        groups::TargetGroup::Cm,
+    )?
+    .map(|trio| CytosineModificationTrio {
+        sequence_length: trio.sequence_length,
+        skipped_base_mode: trio.skipped_base_mode,
+        modifications: trio
+            .modifications
+            .into_iter()
+            .map(|call| CytosineModification {
+                query_position: call.query_position,
+                reference_position: call.reference_position,
+                probability: call.probability,
+            })
+            .collect(),
+        callable_omitted_cytosines: trio.callable_omitted.map(|positions| {
+            positions
+                .into_iter()
+                .map(|position| OmittedCanonicalCytosine {
+                    query_position: position.query_position,
+                    reference_position: position.reference_position,
+                })
+                .collect()
+        }),
+    }))
+}
+
+pub(super) struct ProjectedCall {
+    pub(super) query_position: usize,
+    pub(super) reference_position: Option<i64>,
+    pub(super) probability: u8,
+}
+
+pub(super) struct ProjectedOmission {
+    pub(super) query_position: usize,
+    pub(super) reference_position: Option<i64>,
+}
+
+pub(super) struct ProjectedTrio {
+    pub(super) sequence_length: usize,
+    pub(super) skipped_base_mode: MmSkippedBaseMode,
+    pub(super) modifications: Vec<ProjectedCall>,
+    pub(super) callable_omitted: Option<Vec<ProjectedOmission>>,
+}
+
+pub(super) fn decode_target_modifications(
+    aux: &[u8],
+    packed_sequence: &[u8],
+    sequence_length: usize,
+    cigar: &[u8],
+    reference_start: i64,
+    is_reverse_complemented: bool,
+    target: groups::TargetGroup,
+) -> Result<Option<ProjectedTrio>, ModificationDecodeError> {
     let Some((mm, ml, mn)) = extract_trio(aux)? else {
         return Ok(None);
     };
@@ -173,6 +236,7 @@ pub fn decode_c_m_modifications(
         packed_sequence,
         sequence_length,
         is_reverse_complemented,
+        target,
     )?;
     if decoded_mm.total_ml_values != ml.len() {
         return Err(ModificationDecodeError::MlCardinality {
@@ -194,12 +258,12 @@ pub fn decode_c_m_modifications(
         })?;
     let selected_ml = &ml[selected.selected_ml_offset..selected_ml_end];
     let references = project_positions(&query_positions, cigar, sequence_length, reference_start)?;
-    let mut modifications: Vec<CytosineModification> = query_positions
+    let mut modifications: Vec<ProjectedCall> = query_positions
         .into_iter()
         .zip(references)
         .zip(selected_ml.iter().copied())
         .map(
-            |((query_position, reference_position), probability)| CytosineModification {
+            |((query_position, reference_position), probability)| ProjectedCall {
                 query_position,
                 reference_position,
                 probability,
@@ -225,20 +289,18 @@ pub fn decode_c_m_modifications(
             omitted_positions
                 .into_iter()
                 .zip(omitted_references)
-                .map(
-                    |(query_position, reference_position)| OmittedCanonicalCytosine {
-                        query_position,
-                        reference_position,
-                    },
-                )
+                .map(|(query_position, reference_position)| ProjectedOmission {
+                    query_position,
+                    reference_position,
+                })
                 .collect(),
         )
     };
-    Ok(Some(CytosineModificationTrio {
+    Ok(Some(ProjectedTrio {
         sequence_length,
         skipped_base_mode: selected.skipped_base_mode,
         modifications,
-        callable_omitted_cytosines,
+        callable_omitted: callable_omitted_cytosines,
     }))
 }
 

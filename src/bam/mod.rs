@@ -3,6 +3,7 @@
 //! Production BAM hot paths should be implemented here rather than delegated to
 //! general-purpose external format crates.
 
+pub mod adenine_modifications;
 pub mod annotate_rg;
 pub mod checksum;
 pub mod fastq;

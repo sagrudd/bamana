@@ -65,12 +65,12 @@ slice. Duplicate ``C+m`` groups, malformed group headers or deltas, ambiguous
 modification-code syntax, total ML cardinality mismatch, and differently typed
 tags fail closed. Errors report only the group number and reason, never raw MM
 text or read payload.
-When every group is valid but ``C+m`` is absent, Bamana first validates the
-complete ML cardinality and then returns ``Ok(None)`` for the 5mC projection.
-Malformed groups, cardinality mismatches, and duplicate ``C+m`` groups remain
-errors.
+When every group is valid but the requested target is absent, Bamana first
+validates the complete ML cardinality and then returns ``Ok(None)``. Malformed
+groups, cardinality mismatches, and duplicate target groups remain errors.
 
-The first supported scientific surface intentionally returns only ``C+m``.
+The strict scientific surfaces select exact ``C+m`` methylation or exact
+``A+a`` ONT accessibility groups. They do not pool other modification codes.
 MM positions retain original-sequencing orientation.  For a forward record,
 deltas count the named canonical base left-to-right in stored BAM ``SEQ``.
 For a reverse-aligned record, they count the complemented canonical base
@@ -78,8 +78,9 @@ right-to-left. Bamana then associates ML values in MM order, converts calls to
 stored query coordinates, sorts those calls without detaching probabilities,
 and projects them through CIGAR. ``BamRecordView`` supplies the reverse flag
 automatically; section-oriented consumers must call
-``decode_c_m_modifications`` and pass BAM flag ``0x10`` explicitly. Consumers
-should treat
+``decode_c_m_modifications`` or ``decode_a_a_modifications`` and pass BAM flag
+``0x10`` explicitly. Record-view consumers may use the corresponding
+``decode_record_*`` entry point. Consumers should treat
 ``Ok(None)`` as all three tags absent; partial trios are errors.
 
 The first migration target is ``check_sort``, followed by ``check_map``,

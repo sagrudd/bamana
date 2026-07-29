@@ -535,17 +535,17 @@ and `BamScanner` provides the native BGZF/header record iteration substrate.
 Scanner-facing helpers centralize common flag, coordinate, MAPQ, read-name,
 sequence-length, section-range, skip-offset, and selected aux-tag access without
 materializing richer record layouts. The native library also exposes strict
-atomic `MM:Z:C+m` / `ML:B:C` / `MN:i` decoding and CIGAR projection for
-downstream modified-base consumers; unsupported codes and partial or malformed
-trios fail explicitly. The result preserves the MM default, dot, or
+atomic `MM` / `ML:B:C` / `MN:i` decoding and CIGAR projection for downstream
+`C+m` methylation and ONT `A+a` accessibility consumers; partial or malformed
+trios fail explicitly. Each result preserves the MM default, dot, or
 question-mark skipped-base mode. Canonical cytosines omitted by default or dot
 mode are projected as callable canonical positions; question-mark omissions
 remain unknown and are not exposed as callable. Multi-group MM values are
 parsed in wire order: well-formed non-target groups consume their exact ML
-cardinality, while exactly one ``C+m`` group is selected. Duplicate target
+cardinality, while exactly one target group is selected. Duplicate target
 groups or ambiguous group syntax fail without exposing tag payloads.
-If a complete, structurally valid trio contains no ``C+m`` group, its full ML
-cardinality is validated and the decoder returns no 5mC result.
+If a complete, structurally valid trio lacks the requested target group, its
+full ML cardinality is validated and that decoder returns no result.
 Reverse-aligned records follow SAM's original-sequencing orientation: deltas
 count the complemented canonical base right-to-left over stored BAM `SEQ`,
 then project the resulting stored query coordinates through CIGAR.
