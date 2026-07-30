@@ -83,6 +83,22 @@ automatically; section-oriented consumers must call
 ``decode_record_*`` entry point. Consumers should treat
 ``Ok(None)`` as all three tags absent; partial trios are errors.
 
+Mapped interval and bounded sort reuse
+--------------------------------------
+
+``BamRecordView::mapped_reference_interval`` returns ``None`` for an unmapped
+record or a zero-based, half-open ``BamReferenceInterval`` for a mapped record.
+Only ``M``, ``D``, ``N``, ``=``, and ``X`` consume reference span; insertions,
+clips, and padding do not. Errors contain structural CIGAR context only and
+never include the read name, sequence, or aux payload.
+
+The bounded external sorter is already reusable as a library. File-oriented
+consumers use ``bam::sort::sort_bam`` with ``SortExecutionOptions`` and a
+``memory_limit``. Iterator-oriented consumers use
+``bam::stream_sort::sort_record_stream`` with ``StreamSortOptions`` and owned
+``RecordLayout`` values. These entry points preserve the established bounded
+spill, stable merge, output-safety, filtering, and telemetry behavior.
+
 The first migration target is ``check_sort``, followed by ``check_map``,
 ``summary``, and ``check_tag``. Validation and forensics paths come after those
 because they mix lightweight record fields with aux traversal and sometimes

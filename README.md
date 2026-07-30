@@ -534,7 +534,9 @@ BAM record scanner. `BamRecordView` defines the borrowed record-view contract,
 and `BamScanner` provides the native BGZF/header record iteration substrate.
 Scanner-facing helpers centralize common flag, coordinate, MAPQ, read-name,
 sequence-length, section-range, skip-offset, and selected aux-tag access without
-materializing richer record layouts. The native library also exposes strict
+materializing richer record layouts. ``BamRecordView::mapped_reference_interval``
+returns a privacy-safe zero-based half-open interval using reference-consuming
+CIGAR operations. The native library also exposes strict
 atomic `MM` / `ML:B:C` / `MN:i` decoding and CIGAR projection for downstream
 `C+m` methylation and ONT `A+a` accessibility consumers; partial or malformed
 trios fail explicitly. Each result preserves the MM default, dot, or
@@ -551,6 +553,10 @@ count the complemented canonical base right-to-left over stored BAM `SEQ`,
 then project the resulting stored query coordinates through CIGAR.
 Section-oriented callers must pass the BAM `0x10` flag state explicitly;
 there is no forward-default section API.
+Library consumers can invoke the bounded file sorter through
+``bam::sort::sort_bam`` and ``SortExecutionOptions`` or sort an owned record
+iterator through ``bam::stream_sort::sort_record_stream``; both are public
+library boundaries and retain the existing spill/merge behavior.
 `check_sort`, `check_map`,
 `summary`, `check_tag`, `validate`, `inspect_duplication`, and
 `forensic_inspect` now use the scanner for scanner-compatible record traversal

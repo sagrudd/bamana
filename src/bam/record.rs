@@ -45,6 +45,14 @@ pub struct BamRecordCoordinates {
     pub bin: u16,
 }
 
+/// Zero-based, half-open mapped reference interval.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BamReferenceInterval {
+    pub reference_index: usize,
+    pub start: u32,
+    pub end: u32,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BamRecordSkipOffsets {
     pub after_core: usize,
@@ -289,6 +297,49 @@ impl<'a> BamRecordView<'a> {
         }
     }
 
+    /// Return the mapped reference interval without exposing record payload.
+    ///
+    /// Reference-consuming CIGAR operations are `M`, `D`, `N`, `=`, and `X`.
+    /// A mapped record with no reference-consuming operation occupies one base,
+    /// matching BAM indexing and region-overlap behavior.
+    pub fn mapped_reference_interval(
+        &self,
+    ) -> Result<Option<BamReferenceInterval>, BamRecordViewError> {
+        if self.flag_summary().is_unmapped || self.ref_id < 0 || self.pos < 0 {
+            return Ok(None);
+        }
+        let reference_index = usize::try_from(self.ref_id).map_err(|_| {
+            BamRecordViewError::new(
+                "Mapped BAM record reference id could not be represented as an index.",
+            )
+        })?;
+        let start = self.pos as u32;
+        let mut span = 0_u32;
+        for chunk in self.cigar_bytes().chunks_exact(4) {
+            let raw = u32::from_le_bytes(chunk.try_into().expect("chunk size checked"));
+            let length = raw >> 4;
+            let operation = raw & 0x0f;
+            if operation > 8 {
+                return Err(BamRecordViewError::new(
+                    "Mapped BAM record CIGAR contained an unsupported operation code.",
+                ));
+            }
+            if matches!(operation, 0 | 2 | 3 | 7 | 8) {
+                span = span.checked_add(length).ok_or_else(|| {
+                    BamRecordViewError::new("Mapped BAM record reference span overflowed u32.")
+                })?;
+            }
+        }
+        let end = start.checked_add(span.max(1)).ok_or_else(|| {
+            BamRecordViewError::new("Mapped BAM record reference interval overflowed u32.")
+        })?;
+        Ok(Some(BamReferenceInterval {
+            reference_index,
+            start,
+            end,
+        }))
+    }
+
     pub fn mapping_quality(&self) -> u8 {
         self.mapping_quality
     }
@@ -530,6 +581,36 @@ mod tests {
         assert_eq!(view.mapping_quality(), 42);
         assert_eq!(view.sequence_len(), 5);
         assert_eq!(view.read_name(), "readA");
+        assert_eq!(
+            view.mapped_reference_interval().unwrap(),
+            Some(super::BamReferenceInterval {
+                reference_index: 2,
+                start: 100,
+                end: 110,
+            })
+        );
+    }
+
+    #[test]
+    fn mapped_interval_counts_only_reference_consuming_cigar_operations() {
+        let raw = build_mapped_record_with_cigar(&[
+            (2, 4),
+            (3, 0),
+            (1, 1),
+            (2, 7),
+            (4, 2),
+            (5, 3),
+            (1, 5),
+        ]);
+        let view = BamRecordView::parse(&raw).unwrap();
+        assert_eq!(
+            view.mapped_reference_interval().unwrap(),
+            Some(super::BamReferenceInterval {
+                reference_index: 2,
+                start: 100,
+                end: 114,
+            })
+        );
     }
 
     #[test]
@@ -549,6 +630,7 @@ mod tests {
         assert!(!view.has_sequence());
         assert!(!view.has_qualities());
         assert!(!view.has_aux());
+        assert_eq!(view.mapped_reference_interval().unwrap(), None);
 
         let offsets = view.skip_offsets();
         assert_eq!(offsets.after_core, 36);
@@ -609,6 +691,29 @@ mod tests {
         raw.extend_from_slice(&bin_mq_nl.to_le_bytes());
         raw.extend_from_slice(&flag_nc.to_le_bytes());
         raw.extend_from_slice(&5_i32.to_le_bytes());
+        raw.extend_from_slice(&2_i32.to_le_bytes());
+        raw.extend_from_slice(&150_i32.to_le_bytes());
+        raw.extend_from_slice(&200_i32.to_le_bytes());
+        raw.extend_from_slice(&variable);
+        raw
+    }
+
+    fn build_mapped_record_with_cigar(operations: &[(u32, u32)]) -> Vec<u8> {
+        let mut variable = Vec::new();
+        variable.extend_from_slice(b"readA\0");
+        for (length, operation) in operations {
+            variable.extend_from_slice(&((length << 4) | operation).to_le_bytes());
+        }
+        let block_size = 32 + variable.len();
+        let bin_mq_nl = (4681_u32 << 16) | (42_u32 << 8) | 6_u32;
+        let flag_nc = (0x41_u32 << 16) | operations.len() as u32;
+        let mut raw = Vec::with_capacity(4 + block_size);
+        raw.extend_from_slice(&(block_size as i32).to_le_bytes());
+        raw.extend_from_slice(&2_i32.to_le_bytes());
+        raw.extend_from_slice(&100_i32.to_le_bytes());
+        raw.extend_from_slice(&bin_mq_nl.to_le_bytes());
+        raw.extend_from_slice(&flag_nc.to_le_bytes());
+        raw.extend_from_slice(&0_i32.to_le_bytes());
         raw.extend_from_slice(&2_i32.to_le_bytes());
         raw.extend_from_slice(&150_i32.to_le_bytes());
         raw.extend_from_slice(&200_i32.to_le_bytes());

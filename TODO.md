@@ -53,6 +53,9 @@ and benchmark documents where that is more precise.
     - [x] Extend the same strict multi-group boundary with reusable `A+a`
       projection for governed ONT accessibility, including forward/reverse
       orientation, CIGAR indels, target absence, and privacy-safe failures.
+    - [x] Expose the privacy-safe mapped reference half-open interval on
+      `BamRecordView`; confirm the existing bounded `sort_bam` and
+      `sort_record_stream` library boundaries require no sorter changes.
 
 ## 3. Benchmark And GB10 Readiness
 
